@@ -11,9 +11,8 @@ import argparse
 import json
 import re
 import sys
-from collections import namedtuple
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from matplotlib.colors import to_hex
 
@@ -28,6 +27,7 @@ from kenning.report.markdown_components import (
     comparison_text_summarization_report,
     create_report_from_measurements,
     detection_report,
+    generate_html_report,
     performance_report,
     renode_stats_report,
     text_summarization_report,
@@ -369,70 +369,6 @@ class MarkdownReport(Report):
             ) as out:
                 json.dump(report_summary, out)
 
-    def generate_html_report(
-        self,
-        report_path: Path,
-        output_folder: Path,
-        debug: bool = False,
-        override_conf: Optional[Dict] = None,
-    ):
-        """
-        Runs Sphinx with HTML builder for generated report.
-
-        Parameters
-        ----------
-        report_path : Path
-            Path to the generated report file
-        output_folder : Path
-            Where generated HTML report should be saved
-        debug : bool
-            Debug mode -- allows to print more information
-        override_conf : Optional[Dict]
-            Custom configuration of Sphinx app
-        """
-        from sphinx.application import Sphinx
-        from sphinx.cmd.build import handle_exception
-        from sphinx.util.docutils import docutils_namespace, patch_docutils
-
-        with path(reports, "conf.py") as _conf:
-            override_conf = (override_conf or {}) | {
-                # Include only report file
-                "include_patterns": [f"{report_path.name}"],
-                # Ensure report file isn't excluded
-                "exclude_patterns": [],
-                # Use report file as main source
-                "master_doc": f'{report_path.with_suffix("").name}',
-                # Static files for HTML
-                "html_static_path": [f'{_conf.parent / "_static"}'],
-                # Remove PFD button
-                "html_theme_options.pdf_url": [],
-                # Warning about using h2 header
-                "suppress_warnings": ["myst.header"],
-            }
-            app = None
-            try:
-                with patch_docutils(_conf.parent), docutils_namespace():
-                    app = Sphinx(
-                        report_path.parent,
-                        _conf.parent,
-                        output_folder,
-                        output_folder / ".doctrees",
-                        "html",
-                        override_conf,
-                        freshenv=False,
-                    )
-                    app.build(False, [str(report_path)])
-            except Exception as ex:
-                mock_args = namedtuple(
-                    "MockArgs", ("pdb", "verbosity", "traceback")
-                )(pdb=debug, verbosity=debug, traceback=debug)
-                handle_exception(app, mock_args, ex)
-                KLogger.error(
-                    "Error occurred, HTML report won't be generated",
-                    ex.args,
-                    stack_info=True,
-                )
-
     def generate_report(
         self,
         subcommands: Optional[List[str]] = None,
@@ -456,6 +392,7 @@ class MarkdownReport(Report):
         Returns
         -------
         None
+
         """
         KLogger.debug(f"Measurements {self.measurements}")
 
@@ -466,7 +403,7 @@ class MarkdownReport(Report):
         ):
             # Only render HTML report
             KLogger.info("Generating HTML report only!")
-            self.generate_html_report(
+            generate_html_report(
                 self.report_path, self.to_html, KLogger.level == "DEBUG"
             )
             return
@@ -491,6 +428,6 @@ class MarkdownReport(Report):
             self.generate_markdown_report(command, draw_titles=False)
 
         if self.to_html:
-            self.generate_html_report(
+            generate_html_report(
                 self.report_path, self.to_html, KLogger.level == "DEBUG"
             )

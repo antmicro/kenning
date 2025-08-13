@@ -30,6 +30,7 @@ from kenning.report.markdown_components.detection_report import (
 )
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
+    generate_html_report,
     get_plot_wildcard_path,
 )
 from kenning.report.markdown_components.performance_report import (
@@ -56,4 +57,5 @@ __all__ = [
     "comparison_performance_report",
     "comparison_renode_stats_report",
     "comparison_text_summarization_report",
+    "generate_html_report",
 ]

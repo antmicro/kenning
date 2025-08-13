@@ -19,8 +19,10 @@ from bokeh.models.css import ImportedStyleSheet
 from jinja2 import Template
 
 from kenning.core.drawing import DEFAULT_PLOT_SIZE, Plot, choose_theme
-from kenning.report.markdown_components.general import get_plot_wildcard_path
-from kenning.report.markdown_report import MarkdownReport
+from kenning.report.markdown_components.general import (
+    generate_html_report,
+    get_plot_wildcard_path,
+)
 from kenning.resources import reports
 from kenning.utils.class_loader import (
     get_all_subclasses,
@@ -295,7 +297,7 @@ def generate_compatibility_report(
     report_path.write_text(content)
 
     # Save html report
-    MarkdownReport.generate_html_report(
+    generate_html_report(
         report_path,
         html_path,
         override_conf={

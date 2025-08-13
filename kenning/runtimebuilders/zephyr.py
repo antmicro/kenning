@@ -16,17 +16,10 @@ from functools import wraps
 from pathlib import Path
 from typing import List, Optional, Union
 
+from kenning.core.exceptions import WestExecutionError
 from kenning.core.platform import Platform
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
-
-
-class WestExecutionError(Exception):
-    """
-    Exception raised when West fails.
-    """
-
-    ...
 
 
 class WestRun:

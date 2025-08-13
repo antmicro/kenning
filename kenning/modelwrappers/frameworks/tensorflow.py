@@ -12,8 +12,8 @@ from typing import List, Optional
 import numpy as np
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.model import ModelWrapper
-from kenning.core.runtime import ModelNotLoadedError
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 

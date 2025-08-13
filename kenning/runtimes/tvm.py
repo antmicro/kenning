@@ -13,9 +13,11 @@ import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import Executable, VirtualMachine
 
-from kenning.core.runtime import (
+from kenning.core.exceptions import (
     InputNotPreparedError,
     ModelNotPreparedError,
+)
+from kenning.core.runtime import (
     Runtime,
 )
 from kenning.utils.logger import KLogger

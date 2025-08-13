@@ -11,11 +11,13 @@ from typing import Any, Dict, List, Literal, Optional
 import onnx
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import (
+from kenning.core.exceptions import (
     CompilationError,
     ConversionError,
     IOSpecificationNotFoundError,
+)
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.resource_manager import PathOrURI, ResourceURI

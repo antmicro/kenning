@@ -65,14 +65,6 @@ RUNTIMES = "runtimes"
 AUTOML = "automl"
 
 
-class AmbiguousImport(Exception):
-    """
-    Exception raised if two or more classes with a provided name exist.
-    """
-
-    ...
-
-
 class ConfigKey(str, Enum):
     """
     Enum with fields available in configuration.

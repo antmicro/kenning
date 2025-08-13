@@ -15,6 +15,9 @@ from urllib.request import HTTPError
 import numpy as np
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    ModelSizeError,
+)
 from kenning.core.helpers.utils import _get_model_size
 from kenning.core.measurements import (
     Measurements,
@@ -28,45 +31,6 @@ from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.logger import LoggerProgressBar, TqdmCallback
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-class ModelSizeError(Exception):
-    """
-    Exception raised when retrieving size of the model failed.
-    """
-
-    pass
-
-
-class VariableBatchSizeNotSupportedError(Exception):
-    """
-    Exception raised when trying to create a model which is not fitted to
-    handle variable batch sizes yet.
-    """
-
-    def __init__(
-        self,
-        msg="Inference batch size greater than one not supported for this model.",  # noqa: E501
-        *args,
-        **kwargs,
-    ):
-        super().__init__(msg, *args, **kwargs)
-
-
-class TrainingParametersMissingError(Exception):
-    """
-    Exception raised when trying train a model without defined training
-    parameters.
-    """
-
-    def __init__(
-        self,
-        params,
-        msg="Missing train parameters: {}",
-        *args,
-        **kwargs,
-    ):
-        super().__init__(msg.format(", ".join(params)), *args, **kwargs)
 
 
 class ModelWrapper(IOInterface, ArgumentsHandler, ABC):

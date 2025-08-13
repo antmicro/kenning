@@ -13,10 +13,12 @@ from iree.compiler import tools as ireecmp
 from iree.compiler import version
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import (
+from kenning.core.exceptions import (
     CompilationError,
     IOSpecificationNotFoundError,
+)
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.resource_manager import PathOrURI

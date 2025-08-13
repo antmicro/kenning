@@ -10,17 +10,10 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+from kenning.core.exceptions import UARTNotFoundInDTSError
 from kenning.platforms.bare_metal import BareMetalPlatform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-class UARTNotFoundInDTSError(Exception):
-    """
-    Exception raised when UART was not found in devicetree.
-    """
-
-    ...
 
 
 class ZephyrPlatform(BareMetalPlatform):

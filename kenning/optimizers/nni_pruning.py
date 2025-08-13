@@ -31,9 +31,14 @@ from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    CompilationError,
+)
 from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import SupportStatus
-from kenning.core.optimizer import CompilationError, Optimizer
+from kenning.core.optimizer import (
+    Optimizer,
+)
 from kenning.onnxconverters.onnx2torch import convert
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class

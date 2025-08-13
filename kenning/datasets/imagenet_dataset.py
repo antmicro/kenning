@@ -13,7 +13,8 @@ from typing import Any, List, Optional, Tuple
 import numpy as np
 from PIL import Image
 
-from kenning.core.dataset import CannotDownloadDatasetError, Dataset
+from kenning.core.dataset import Dataset
+from kenning.core.exceptions import CannotDownloadDatasetError
 from kenning.core.measurements import Measurements
 
 

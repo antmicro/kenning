@@ -19,10 +19,13 @@ import numpy as np
 import torch
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import (
+from kenning.core.exceptions import (
+    Ai8xIzerError,
     ConversionError,
     OptimizedModelSizeError,
+)
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform
@@ -34,16 +37,6 @@ from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-class Ai8xIzerError(Exception):
-    """
-    Raised when ai8xizer.py script fails.
-    """
-
-    def __init__(self, model_size: Optional[float] = None, *args):
-        super().__init__(*args)
-        self.model_size = model_size
 
 
 class _Ai8xTools(object):

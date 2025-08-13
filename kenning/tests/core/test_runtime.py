@@ -10,9 +10,10 @@ import numpy as np
 import pytest
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import ModelNotPreparedError
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.model import ModelWrapper
-from kenning.core.runtime import ModelNotPreparedError, Runtime
+from kenning.core.runtime import Runtime
 from kenning.tests.core.conftest import (
     DatasetModelRegistry,
     UnknownFramework,

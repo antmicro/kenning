@@ -8,9 +8,11 @@ Runtime implementation for vLLM runtime.
 
 from typing import Any, List, Optional
 
-from kenning.core.runtime import (
+from kenning.core.exceptions import (
     InputNotPreparedError,
     ModelNotPreparedError,
+)
+from kenning.core.runtime import (
     Runtime,
 )
 from kenning.utils.logger import KLogger

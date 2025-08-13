@@ -15,6 +15,10 @@ from tqdm import tqdm
 
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    ModelTooLargeError,
+    PipelineRunnerInvalidConfigError,
+)
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
@@ -34,22 +38,6 @@ from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.class_loader import ConfigKey, objs_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
-
-
-class PipelineRunnerInvalidConfigError(Exception):
-    """
-    Exception raised when invalid config value is provided to PipelineRunner.
-    """
-
-    pass
-
-
-class ModelTooLargeError(Exception):
-    """
-    Exception raised when provided model is larger than RAM of the board.
-    """
-
-    pass
 
 
 class PipelineRunner(object):

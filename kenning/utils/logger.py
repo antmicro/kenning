@@ -29,6 +29,7 @@ import coloredlogs
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
+from kenning.core.exceptions import DownloadError
 from kenning.utils.singleton import Singleton
 
 PROGRESS_BAR_STACKLEVEL = 2
@@ -286,14 +287,6 @@ class LoggerProgressBar(io.StringIO):
             "bar_format": self.format + "{l_bar}{bar}{r_bar}",
             "disable": self.disable,
         }
-
-
-class DownloadError(Exception):
-    """
-    Raised when given file was not downloaded.
-    """
-
-    ...
 
 
 def download_url(url: str, output_path: str):

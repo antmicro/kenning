@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.pipeline_manager.core import VisualEditorGraphParserError
+from kenning.core.exceptions import VisualEditorGraphParserError
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.tests.pipeline_manager.handler_tests import (

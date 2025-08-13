@@ -11,9 +11,11 @@ from typing import List, Optional
 
 import numpy as np
 
-from kenning.core.runtime import (
+from kenning.core.exceptions import (
     InputNotPreparedError,
     ModelNotPreparedError,
+)
+from kenning.core.runtime import (
     Runtime,
 )
 from kenning.utils.logger import KLogger

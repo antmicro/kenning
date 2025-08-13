@@ -20,6 +20,7 @@ from jsonschema.exceptions import ValidationError
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import ClassInfoInvalidArgument
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
@@ -76,14 +77,6 @@ class Argument:
             lines.append(f"    * `{element}`")
 
         return "\n".join(lines)
-
-
-class ClassInfoInvalidArgument(Exception):
-    """
-    Exception raised when the arguments provided are not valid.
-    """
-
-    pass
 
 
 def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:

@@ -31,39 +31,6 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
-class ModelNotPreparedError(Exception):
-    """
-    Exception raised when trying to run the model without loading it first.
-    """
-
-    def __init__(
-        self,
-        msg="Make sure to run prepare_model method before running it.",
-        *args,
-        **kwargs,
-    ):
-        super().__init__(msg, *args, **kwargs)
-
-
-class InputNotPreparedError(Exception):
-    """
-    Exception raised when trying to run the model without loading the inputs
-    first.
-    """
-
-    def __init__(
-        self,
-        msg="Make sure to run load_input method before running the model.",
-        *args,
-        **kwargs,
-    ):
-        super().__init__(msg, *args, **kwargs)
-
-
-class ModelNotLoadedError(Exception):
-    """Exception raised if a model could not be loaded."""
-
-
 class Runtime(ArgumentsHandler, ABC):
     """
     Runtime object provides an API for testing inference on target devices.

@@ -7,8 +7,9 @@ from typing import Iterator, Tuple, Type
 
 import pytest
 
+from kenning.core.exceptions import CompilationError, ConversionError
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import CompilationError, ConversionError, Optimizer
+from kenning.core.optimizer import Optimizer
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.core.conftest import (
     DatasetModelRegistry,

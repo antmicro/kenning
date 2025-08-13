@@ -15,7 +15,7 @@ import numpy as np
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
-from kenning.core.model import TrainingParametersMissingError
+from kenning.core.exceptions import TrainingParametersMissingError
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.utils.resource_manager import PathOrURI

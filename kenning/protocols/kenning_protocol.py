@@ -16,6 +16,7 @@ from multiprocessing.pool import ThreadPool
 from threading import Lock, Thread
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from kenning.core.exceptions import ProtocolNotStartedError
 from kenning.protocols.bytes_based_protocol import (
     BytesBasedProtocol,
     IncomingEventType,
@@ -44,13 +45,6 @@ FLAG_BINDINGS = {
     TransmissionFlag.IS_KENNING: FlagName.IS_KENNING,
     TransmissionFlag.SERIALIZED: FlagName.SPEC_FLAG_1,
 }
-
-
-class ProtocolNotStartedError(Exception):
-    """
-    Exception raised by the protocol, when attempting to use a protocol
-    object, that is not initialized/started.
-    """
 
 
 class ProtocolEvent(ABC):

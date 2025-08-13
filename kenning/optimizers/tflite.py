@@ -15,8 +15,11 @@ import numpy as np
 import tensorflow as tf
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    EdgeTPUCompilerError,
+    IOSpecificationNotFoundError,
+)
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -57,14 +60,6 @@ def update_h5_file(h5_filepath: PathOrURI) -> None:
 
             model_configuration = fd.attrs.get("training_config")
             assert model_configuration.find('"loss": "mae"') == -1
-
-
-class EdgeTPUCompilerError(Exception):
-    """
-    Exception occurs when edgetpu_compiler fails to compile the model.
-    """
-
-    pass
 
 
 def kerasconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:

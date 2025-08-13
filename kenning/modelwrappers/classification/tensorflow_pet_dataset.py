@@ -16,7 +16,7 @@ import tensorflow as tf
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
-from kenning.core.model import TrainingParametersMissingError
+from kenning.core.exceptions import TrainingParametersMissingError
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.interfaces.io_interface import IOInterface
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper

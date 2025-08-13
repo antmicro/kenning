@@ -26,15 +26,6 @@ from kenning.utils.logger import KLogger
 SPECIFICATION_VERSION = "20240723.13"
 
 
-class VisualEditorGraphParserError(Exception):
-    """
-    Exception occurring when conversion from scenario to graph and vice versa
-    fails.
-    """
-
-    pass
-
-
 class Node(NamedTuple):
     """
     NamedTuple specifying the single node in specification.

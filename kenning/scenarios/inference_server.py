@@ -38,9 +38,10 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
+from kenning.core.exceptions import ModelNotPreparedError
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, ServerAction, ServerStatus
-from kenning.core.runtime import ModelNotPreparedError, Runtime
+from kenning.core.runtime import Runtime
 from kenning.platforms.local import LocalPlatform
 from kenning.utils.args_manager import (
     report_missing,

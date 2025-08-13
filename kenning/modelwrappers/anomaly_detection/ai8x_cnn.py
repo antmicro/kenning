@@ -16,6 +16,7 @@ from typing import List, Literal, Optional
 from sklearn import metrics
 
 from kenning.cli.command_template import TRAIN
+from kenning.core.exceptions import Ai8xUnsupportedDevice
 from kenning.core.platform import Platform
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.anomaly_detection.cnn import (
@@ -24,12 +25,6 @@ from kenning.modelwrappers.anomaly_detection.cnn import (
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-
-class Ai8xUnsupportedDevice(Exception):
-    """
-    Raised if platform, unsupported by ai8x-training framework, is used.
-    """
 
 
 class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):

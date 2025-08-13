@@ -16,6 +16,7 @@ import sensor_msgs.msg
 from rclpy.node import Node
 
 from kenning.core.dataprovider import DataProvider
+from kenning.core.exceptions import ROS2DataproviderException
 from kenning.utils.args_manager import get_parsed_json_dict
 
 
@@ -323,12 +324,3 @@ class ROS2CameraNodeDataProvider(DataProvider):
                 },
             ],
         }
-
-
-class ROS2DataproviderException(Exception):
-    """
-    Exception to be raised when ROS2CameraNodeDataProvider misbehaves.
-    """
-
-    def __init__(self, message):
-        super().__init__(message)

@@ -15,11 +15,13 @@ import tvm
 import tvm.relay as relay
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import (
+from kenning.core.exceptions import (
     CompilationError,
     ConversionError,
     IOSpecificationNotFoundError,
+)
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform

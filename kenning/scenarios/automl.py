@@ -131,15 +131,6 @@ class AutoMLCache:
             )
 
 
-class AutoMLCacheError(Exception):
-    """
-    Raised when unable to fill AutoMLCache path attribute
-    and '--use-previous-results' flag is given.
-    """
-
-    ...
-
-
 class AutoMLCommand(InferenceTester):
     """
     Command template for running AutoML flow.

@@ -16,7 +16,8 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper, VariableBatchSizeNotSupportedError
+from kenning.core.exceptions import VariableBatchSizeNotSupportedError
+from kenning.core.model import ModelWrapper
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     compute_detect_iou,

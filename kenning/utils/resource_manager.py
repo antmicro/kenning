@@ -23,6 +23,7 @@ import requests
 from tqdm import tqdm
 
 import kenning
+from kenning.core.exceptions import ChecksumVerifyError
 from kenning.utils.logger import KLogger, LoggerProgressBar, download_url
 from kenning.utils.singleton import Singleton
 
@@ -965,14 +966,6 @@ class Resources(object):
         get_keys(self._resources_uri)
 
         return result
-
-
-class ChecksumVerifyError(Exception):
-    """
-    Exception raised when downloaded file has invalid checksum.
-    """
-
-    pass
 
 
 PathOrURI = Union[Path, ResourceURI]

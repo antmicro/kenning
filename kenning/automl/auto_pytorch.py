@@ -29,6 +29,11 @@ from sklearn.pipeline import Pipeline
 
 from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    MissingConfigForAutoPyTorchModel,
+    ModelClassNotValid,
+    ModelExtractionError,
+)
 from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
 from kenning.core.runtime import Runtime
@@ -44,31 +49,6 @@ ConfigurationSpace = TypeVar("ConfigSpace.ConfigurationSpace")
 NetworkBackboneComponent = TypeVar(
     "autoPyTorch.pipeline.components.setup.network_backbone.base_network_backbone.NetworkBackboneComponent"
 )
-
-
-class MissingConfigForAutoPyTorchModel(Exception):
-    """
-    Raised when required configuration to initialize
-    AutoPyTorch model was not provided.
-    """
-
-    ...
-
-
-class ModelExtractionError(Exception):
-    """
-    Raised when Kenning model was not properly extracted from AutoPyTorch.
-    """
-
-    ...
-
-
-class ModelClassNotValid(Exception):
-    """
-    Raised when provided model class cannot be imported.
-    """
-
-    ...
 
 
 class AutoPyTorchModel(AutoMLModel):

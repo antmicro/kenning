@@ -14,13 +14,13 @@ from typing import Dict, Iterable, List, Union
 from pipeline_manager import specification_builder
 from pipeline_manager.frontend_builder import build_prepare
 
+from kenning.core.exceptions import VisualEditorGraphParserError
 from kenning.core.flow import KenningFlow
 from kenning.interfaces.io_interface import IOInterface
 from kenning.pipeline_manager.core import (
     SPECIFICATION_VERSION,
     BaseDataflowHandler,
     GraphCreator,
-    VisualEditorGraphParserError,
 )
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler

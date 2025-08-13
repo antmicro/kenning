@@ -10,8 +10,8 @@ from unittest.mock import patch
 import pytest
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.model import ModelWrapper
-from kenning.core.runtime import ModelNotLoadedError
 from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
     Ai8xAnomalyDetectionCNN,
 )

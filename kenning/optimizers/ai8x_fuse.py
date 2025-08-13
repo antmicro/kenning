@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Union
 
 import torch
 
-from kenning.core.optimizer import ConversionError
+from kenning.core.exceptions import ConversionError
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 

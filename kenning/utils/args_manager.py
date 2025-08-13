@@ -36,6 +36,7 @@ from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
     from kenning.utils.class_loader import ConfigKey
+from kenning.core.exceptions import ArgsManagerConvertError
 from kenning.utils.resource_manager import ResourceURI
 
 """
@@ -267,15 +268,6 @@ jsontype_to_type = {
 converter_override = {
     object: dict,
 }
-
-
-class ArgsManagerConvertError(Exception):
-    """
-    Raised when provided value cannot be converted
-    by any of specified converters.
-    """
-
-    ...
 
 
 def convert(converters: Iterable[Callable], v: Any) -> Any:

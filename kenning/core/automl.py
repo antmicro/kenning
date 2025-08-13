@@ -25,6 +25,11 @@ from typing import (
 )
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    AutoMLInvalidArgumentsError,
+    AutoMLInvalidSchemaError,
+    AutoMLModelSizeError,
+)
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
@@ -37,34 +42,6 @@ from kenning.utils.args_manager import (
     traverse_parents_with_args,
 )
 from kenning.utils.logger import KLogger
-
-
-class AutoMLInvalidSchemaError(Exception):
-    """
-    Raised when `arguments_structure` contains not enough information
-    or when data are invalid.
-    """
-
-    ...
-
-
-class AutoMLInvalidArgumentsError(Exception):
-    """
-    Raised when provided arguments (in `use_model`) do not match with
-    model wrapper `arguments_structure`.
-    """
-
-    ...
-
-
-class AutoMLModelSizeError(Exception):
-    """
-    Raised when model size is too big.
-    """
-
-    def __init__(self, model_size: float, *args):
-        super().__init__(*args)
-        self.model_size = model_size
 
 
 class AutoMLModel(ArgumentsHandler, ABC):

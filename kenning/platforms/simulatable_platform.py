@@ -15,20 +15,13 @@ from time import perf_counter, sleep
 from typing import Dict, List, Optional
 
 import kenning.utils.renode_profiler_parser as profiler_parser
+from kenning.core.exceptions import RenodeSimulationError
 from kenning.core.measurements import Measurements, MeasurementsCollector
 from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 KLogger.add_custom_level(logging.INFO + 1, "RENODE")
-
-
-class RenodeSimulationError(Exception):
-    """
-    Exception raised when Renode command fails.
-    """
-
-    ...
 
 
 class SimulatablePlatform(Platform, ABC):

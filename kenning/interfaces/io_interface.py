@@ -28,6 +28,11 @@ from typing import (
 import numpy as np
 from numpy.typing import ArrayLike
 
+from kenning.core.exceptions import (
+    IOCompatibilityError,
+    IOSpecNotFound,
+    IOSpecWrongFormat,
+)
 from kenning.interfaces.io_spec_serializer import IOSpecSerializer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -629,30 +634,3 @@ class IOInterface(ABC):
             if not (l1 == l2 or l2 == -1 or l1 == -1):
                 return False
         return True
-
-
-class IOCompatibilityError(Exception):
-    """
-    Exception is raised when input and output are not compatible.
-    """
-
-    def __init__(self, *args) -> bool:
-        super().__init__(*args)
-
-
-class IOSpecNotFound(Exception):
-    """
-    Exception is raised when IO specification is not found.
-    """
-
-    def __init__(self, *args) -> bool:
-        super().__init__(*args)
-
-
-class IOSpecWrongFormat(Exception):
-    """
-    Exception is raised when IO specification contains unsupported entries.
-    """
-
-    def __init__(self, *args) -> bool:
-        super().__init__(*args)

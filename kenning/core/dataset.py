@@ -933,11 +933,3 @@ class Dataset(ArgumentsHandler, ABC):
             sha.update(struct.pack("f", file.stat().st_mtime))
 
         return sha.digest()
-
-
-class CannotDownloadDatasetError(Exception):
-    """
-    Exception raised when dataset cannot be downloaded automatically.
-    """
-
-    pass

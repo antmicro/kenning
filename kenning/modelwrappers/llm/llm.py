@@ -13,19 +13,11 @@ from jinja2 import Template
 from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import MissingUserMessage
 from kenning.core.model import ModelWrapper
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-
-class MissingUserMessage(Exception):
-    """
-    Exception raised if a template configuration lacks a user message
-    under `user_message` key.
-    """
-
-    pass
 
 
 class LLM(ModelWrapper, ABC):

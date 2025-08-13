@@ -9,7 +9,8 @@ from typing import Type
 
 import pytest
 
-from kenning.core.dataset import CannotDownloadDatasetError, Dataset
+from kenning.core.dataset import Dataset
+from kenning.core.exceptions import CannotDownloadDatasetError
 from kenning.tests.core.conftest import (
     get_dataset_download_path,
     get_reduced_dataset_path,

@@ -16,7 +16,7 @@ from sklearn import metrics
 
 from kenning.automl.auto_pytorch import AutoPyTorchModel
 from kenning.cli.command_template import TRAIN
-from kenning.core.model import TrainingParametersMissingError
+from kenning.core.exceptions import TrainingParametersMissingError
 from kenning.core.platform import Platform
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper

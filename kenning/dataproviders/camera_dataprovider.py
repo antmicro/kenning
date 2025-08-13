@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 
 from kenning.core.dataprovider import DataProvider
+from kenning.core.exceptions import VideoCaptureDeviceException
 from kenning.utils.args_manager import get_parsed_json_dict
 
 
@@ -197,13 +198,3 @@ class CameraDataProvider(DataProvider):
         if self.outputs:
             output_name = list(self.outputs.keys())[0]
         return {output_name: np.expand_dims(frame, 0)}
-
-
-class VideoCaptureDeviceException(Exception):
-    """
-    Exception to be raised when VideoCaptureDevice malfunctions
-    during frame capture.
-    """
-
-    def __init__(self, device_id, message="Video device {} read error"):
-        super().__init__(message.format(device_id))

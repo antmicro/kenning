@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Type, Union
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import (
+    OptimizedModelSizeError,
+)
 from kenning.core.helpers.utils import _get_model_size
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
@@ -27,38 +30,6 @@ EXT_TO_FRAMEWORK = {
     ".pth": "torch",
     ".tflite": "tflite",
 }
-
-
-class ConversionError(Exception):
-    """
-    General purpose exception raised when the model conversion process fails.
-    """
-
-    pass
-
-
-class CompilationError(Exception):
-    """
-    General purpose exception raised when the compilation process fails.
-    """
-
-    pass
-
-
-class IOSpecificationNotFoundError(Exception):
-    """
-    Exception raised when needed input/output specification can not be found.
-    """
-
-    pass
-
-
-class OptimizedModelSizeError(Exception):
-    """
-    Exception raised when retrieving size of the optimized model failed.
-    """
-
-    pass
 
 
 class Optimizer(ArgumentsHandler, ABC):

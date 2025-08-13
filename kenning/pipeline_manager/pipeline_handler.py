@@ -13,13 +13,13 @@ from typing import Any, Dict, List, Tuple, Union
 from pipeline_manager import specification_builder
 from pipeline_manager.frontend_builder import build_prepare
 
+from kenning.core.exceptions import VisualEditorGraphParserError
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.pipeline_manager.core import (
     SPECIFICATION_VERSION,
     BaseDataflowHandler,
     GraphCreator,
-    VisualEditorGraphParserError,
 )
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.utils.class_info import generate_class_info

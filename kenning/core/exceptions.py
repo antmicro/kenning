@@ -493,14 +493,6 @@ class PipelineRunnerInvalidConfigError(KenningError):
     pass
 
 
-class WestExecutionError(KenningError):
-    """
-    West (Zephyr RTOS build tool) failed, when building a Zephyr-based runtime.
-    """
-
-    pass
-
-
 class Ai8xIzerError(KenningError):
     """
     Raised when ai8xizer.py script fails.

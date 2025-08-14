@@ -16,7 +16,7 @@ from functools import wraps
 from pathlib import Path
 from typing import List, Optional, Union
 
-from kenning.core.exceptions import WestExecutionError
+from kenning.core.exceptions import KenningRuntimeBuilderError
 from kenning.core.platform import Platform
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
@@ -223,10 +223,10 @@ class WestRun:
         try:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
-            msg = f"Command: '{' '.join(cmd)}' failed"
+            msg = f"West command: '{' '.join(cmd)}' failed"
             if e.stderr is not None:
                 msg += f" with a message:\n\n{e.stderr.decode()}"
-            raise WestExecutionError(msg) from e
+            raise KenningRuntimeBuilderError(msg) from e
 
     @property
     def _subprocess_cfg(self):

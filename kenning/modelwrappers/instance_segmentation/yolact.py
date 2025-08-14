@@ -432,6 +432,9 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
     def run_inference(self, X: List) -> Any:
         raise NotSupportedError
 
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")
+
 
 class YOLACT(YOLACTWrapper):
     """
@@ -705,3 +708,6 @@ class YOLACT(YOLACTWrapper):
 
     def run_inference(self, X: List) -> Any:
         raise NotSupportedError
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

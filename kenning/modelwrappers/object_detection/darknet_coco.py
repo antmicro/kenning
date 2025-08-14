@@ -58,3 +58,6 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
     def save_model(self, model_path):
         raise NotSupportedError
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

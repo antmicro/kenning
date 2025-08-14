@@ -13,6 +13,7 @@ from typing import Dict, Optional
 from typing_extensions import override
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.utils.resource_manager import PathOrURI
 
@@ -80,3 +81,6 @@ class Llama(LLM):
         return LLM._template_to_str(
             template=template, user_prompt_config=prompt_config
         )
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

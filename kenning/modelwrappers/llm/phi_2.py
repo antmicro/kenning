@@ -12,6 +12,7 @@ from typing import Dict
 
 from typing_extensions import override
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.modelwrappers.llm.llm import LLM
 
 
@@ -38,3 +39,6 @@ class PHI2(LLM):
         return LLM._template_to_str(
             template=template, user_prompt_config=prompt_config
         )
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

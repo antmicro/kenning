@@ -11,6 +11,7 @@ Pretrained on ImageNet dataset.
 from typing import List, Optional
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.utils.class_loader import load_class
@@ -191,3 +192,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self.model_prepared = True
             self.save_model(self.model_path)
             self.model.summary()
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
@@ -180,6 +181,9 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     def get_io_specification_from_model(self):
         return self._get_io_specification()
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")
 
 
 def dict_to_tuple(out_dict: Dict) -> Tuple:

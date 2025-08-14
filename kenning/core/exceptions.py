@@ -62,7 +62,7 @@ class ModulesIncompatibleError(ConfigurationError):
     """
 
 
-class IOSpecNotFound(ConfigurationError):
+class ModuleIOSpecificationNotFoundError(ConfigurationError):
     """
     Kenning module IO specification not found.
     """

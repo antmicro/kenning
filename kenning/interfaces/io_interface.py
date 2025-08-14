@@ -29,8 +29,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from kenning.core.exceptions import (
-    IOSpecNotFound,
     IOSpecWrongFormat,
+    ModuleIOSpecificationNotFoundError,
     ModulesIncompatibleError,
 )
 from kenning.interfaces.io_spec_serializer import IOSpecSerializer
@@ -595,7 +595,7 @@ class IOInterface(ABC):
 
         Raises
         ------
-        IOSpecNotFound
+        ModuleIOSpecificationNotFoundError
             Raised when the input/output of given name was not
             found in the specification
         """
@@ -603,7 +603,7 @@ class IOInterface(ABC):
             if spec["name"] == io_name:
                 return spec
 
-        raise IOSpecNotFound(
+        raise ModuleIOSpecificationNotFoundError(
             f"{io_type} spec with name {io_name} not found in IO "
             f"specification:\n{io_spec}"
         )

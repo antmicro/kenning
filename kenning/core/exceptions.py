@@ -545,11 +545,3 @@ class MissingConfigForAutoPyTorchModel(KenningError):
     """
 
     pass
-
-
-class ModelSizeError(KenningError):
-    """
-    Exception raised when retrieving size of the model failed.
-    """
-
-    pass

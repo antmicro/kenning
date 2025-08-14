@@ -15,9 +15,6 @@ from urllib.request import HTTPError
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import (
-    ModelSizeError,
-)
 from kenning.core.helpers.utils import _get_model_size
 from kenning.core.measurements import (
     Measurements,
@@ -642,5 +639,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return _get_model_size(
             self.model_path,
-            ModelSizeError("Model path does not exist:" f"{self.model_path}"),
+            FileNotFoundError(
+                "Model path does not exist:" f"{self.model_path}"
+            ),
         )

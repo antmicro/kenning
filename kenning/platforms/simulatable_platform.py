@@ -15,7 +15,7 @@ from time import perf_counter, sleep
 from typing import Dict, List, Optional
 
 import kenning.utils.renode_profiler_parser as profiler_parser
-from kenning.core.exceptions import RenodeSimulationError
+from kenning.core.exceptions import SimulationError
 from kenning.core.measurements import Measurements, MeasurementsCollector
 from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
@@ -360,7 +360,7 @@ class SimulatablePlatform(Platform, ABC):
         _, err = monitor.execute_script(str(self.platform_resc_path.resolve()))
 
         if err:
-            raise RenodeSimulationError("RESC execution error: " + err)
+            raise SimulationError("RESC execution error: " + err)
 
         self.machine = next(iter(emu))
 

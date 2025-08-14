@@ -290,9 +290,10 @@ class TargetPlatformCommunicationError(KenningPlatformError):
     """
 
 
-class RenodeSimulationError(KenningPlatformError):
+class SimulationError(KenningPlatformError):
     """
-    Exception raised when a Renode command fails.
+    Simulation-related failure in a simulated platform (most likely originated
+    in the tool used for simulation).
     """
 
 

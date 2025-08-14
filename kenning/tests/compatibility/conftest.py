@@ -14,6 +14,7 @@ from bokeh.models import (
     HTMLTemplateFormatter,
     TableColumn,
 )
+from bokeh.models.css import ImportedStyleSheet
 from jinja2 import Template
 
 from kenning.core.drawing import DEFAULT_PLOT_SIZE, Plot, choose_theme
@@ -165,6 +166,10 @@ class CompatibilityPlot(Plot):
         height: int = DEFAULT_PLOT_SIZE // 3,
     ):
         super().__init__(width, height, title)
+        self.comp_stylesheet = ImportedStyleSheet(
+            url="_static/css/compatibility.css"
+        )
+        self.bokeh_stylesheet = ImportedStyleSheet(url="_static/css/bokeh.css")
         self.data = data
 
     def plot_bokeh(
@@ -187,6 +192,7 @@ class CompatibilityPlot(Plot):
             selectable=False,
             css_classes=["plot"],
             index_position=None,
+            stylesheets=[self.comp_stylesheet, self.bokeh_stylesheet],
         )
         self._output_bokeh_figure(
             data_table,

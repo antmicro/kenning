@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import ModelNotLoadedError
+from kenning.core.exceptions import ModelNotLoadedError, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
     Ai8xAnomalyDetectionCNN,
@@ -185,7 +185,7 @@ class TestModelWrapper:
         model_save_path = get_tmp_path()
         try:
             model.save_model(model_save_path)
-        except NotImplementedError:
+        except NotSupportedError:
             pytest.xfail("save_model not implemented for this model")
         assert model_save_path.exists()
 
@@ -214,7 +214,7 @@ class TestModelWrapper:
         model.prepare_model()
         try:
             model.test_inference()
-        except NotImplementedError:
+        except NotSupportedError:
             pytest.xfail("test_inference not implemented for this model")
 
     @pytest.mark.parametrize(
@@ -248,7 +248,7 @@ class TestModelWrapper:
 
         try:
             model.train_model()
-        except NotImplementedError:
+        except NotSupportedError:
             pytest.xfail("train_model not implemented for this model")
 
     @pytest.mark.parametrize(

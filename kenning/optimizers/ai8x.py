@@ -20,8 +20,8 @@ import torch
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    Ai8xIzerError,
     ConversionError,
+    KenningOptimizerError,
     OptimizedModelSizeError,
 )
 from kenning.core.model import ModelWrapper
@@ -37,6 +37,16 @@ from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
+
+class Ai8xIzerError(KenningOptimizerError):
+    """
+    Raised when ai8xizer.py script fails.
+    """
+
+    def __init__(self, model_size: Optional[float] = None, *args):
+        super().__init__(*args)
+        self.model_size = model_size
 
 
 class _Ai8xTools(object):
@@ -245,7 +255,7 @@ class _Ai8xTools(object):
 
         Raises
         ------
-        CalledProcessError
+        Ai8xIzerError
             Raised when executed script fails.
 
         Return
@@ -607,7 +617,7 @@ class Ai8xCompiler(Optimizer):
                     sample_input_path,
                     self.device,
                 )
-            except Ai8xIzerError as e:
+            except KenningOptimizerError as e:
                 # Retrieve calculated model size and reraise the exception
                 self.ai8x_model_size = e.model_size
                 raise

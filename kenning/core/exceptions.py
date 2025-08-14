@@ -5,8 +5,6 @@
 All custom exceptions thrown in Kenning.
 """
 
-from typing import Optional
-
 
 class KenningError(Exception):
     """
@@ -482,13 +480,3 @@ class ModelNotLoadedError(KenningRuntimeError):
     """Exception raised if a model could not be loaded."""
 
     pass
-
-
-class Ai8xIzerError(KenningError):
-    """
-    Raised when ai8xizer.py script fails.
-    """
-
-    def __init__(self, model_size: Optional[float] = None, *args):
-        super().__init__(*args)
-        self.model_size = model_size

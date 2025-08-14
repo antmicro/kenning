@@ -169,11 +169,20 @@ class RenderReport(CommandTemplate):
 
         automl_stats = None
 
-        if hasattr(args, "automl_stats"):
+        if hasattr(args, "automl_stats") and args.automl_stats:
             automl_stats = args.automl_stats
-            json_cfg[ConfigKey.report]["automl_stats"] = automl_stats
 
-        report = obj_from_json(json_cfg, ConfigKey.report)
+        measurements = None
+
+        if args.measurements[0]:
+            measurements = args.measurements
+
+        report = obj_from_json(
+            json_cfg,
+            ConfigKey.report,
+            automl_stats=automl_stats,
+            measurements=measurements,
+        )
 
         subcommands = get_used_subcommands(args)
 

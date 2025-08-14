@@ -350,7 +350,7 @@ class Report(ArgumentsHandler, ABC):
         return measurementsdata, report_types, automl_stats
 
     @classmethod
-    def from_argparse(cls, args: Namespace) -> "Report":
+    def from_argparse(cls, args: Namespace, **kwargs) -> "Report":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -358,16 +358,24 @@ class Report(ArgumentsHandler, ABC):
         ----------
         args : Namespace
             Arguments from ArgumentParser object.
+        **kwargs :
+            Additional arguments
 
         Returns
         -------
         Report
             Object of class Report.
         """
+        # override parameters with values from kwargs
+
+        for key, value in kwargs.items():
+            if value is not None:
+                setattr(args, key, value)
+
         return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict) -> "Report":
+    def from_json(cls, json_dict: Dict, **kwargs) -> "Report":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -375,10 +383,20 @@ class Report(ArgumentsHandler, ABC):
         ----------
         json_dict : Dict
             Arguments for the constructor.
+        **kwargs :
+            Additional arguments
 
         Returns
         -------
         Report
             Object of class Report.
         """
+        KLogger.debug(f"Report json dict: {json_dict}")
+
+        # override parameters with values from kwargs
+
+        for key, value in kwargs.items():
+            if value is not None:
+                json_dict[key] = value
+
         return super().from_json(json_dict)

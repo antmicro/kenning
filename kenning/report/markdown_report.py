@@ -160,7 +160,11 @@ class MarkdownReport(Report):
         if self.to_html and not isinstance(self.to_html, (str, Path)):
             self.to_html = Path(self.report_path).with_suffix("")
 
-        if self.to_html and (not report_path.exists()):
+        if (
+            self.to_html
+            and not report_path.exists()
+            and not self.measurements[0]
+        ):
             raise argparse.ArgumentError(
                 None,
                 "HTML report cannot be generated, file from "

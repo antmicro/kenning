@@ -20,7 +20,7 @@ from jsonschema.exceptions import ValidationError
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import ClassInfoInvalidArgument
+from kenning.core.exceptions import ClassInfoInvalidArgumentError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
@@ -685,7 +685,7 @@ def instantiate_object(
 
     Raises
     ------
-    ClassInfoInvalidArgument:
+    ClassInfoInvalidArgumentError:
         Raised when invalid name is provided for a class.
     """
     # create a dict of arguments that will be used to create an instance
@@ -698,7 +698,7 @@ def instantiate_object(
         argparse_name = from_argparse_name(arg_tuple[0])
 
         if argparse_name not in parameterschema["properties"].keys():
-            raise ClassInfoInvalidArgument(
+            raise ClassInfoInvalidArgumentError(
                 f"Argparse name {to_argparse_name(argparse_name)} not present "
                 f"in argument specification"
             )
@@ -740,7 +740,7 @@ def instantiate_object_based_on_base_class(
 
     Raises
     ------
-    ClassInfoInvalidArgument:
+    ClassInfoInvalidArgumentError:
         Raised when class could not be created or arguments were missing.
     """
     try:
@@ -785,13 +785,13 @@ def instantiate_object_based_on_base_class(
 
     except ValidationError as e:
         reason = str(e).partition("\n")[0]
-        raise ClassInfoInvalidArgument(
+        raise ClassInfoInvalidArgumentError(
             f"Could not create a {imported_class.__name__} object. "
             f"You need to provide the required arguments.\n"
             f"Reason: {reason}\n"
         )
     except FileNotFoundError as e:
-        raise ClassInfoInvalidArgument(
+        raise ClassInfoInvalidArgumentError(
             f"Could not create a {imported_class.__name__} object.\n"
             f"Reason: {e}\n"
         )
@@ -941,7 +941,7 @@ def generate_class_info(
             class_object = instantiate_object(
                 imported_class, parameterschema, load_class_with_args
             )
-        except ClassInfoInvalidArgument as e:
+        except ClassInfoInvalidArgumentError as e:
             return [str(e)]
 
     # perform static code analysis

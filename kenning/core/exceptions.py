@@ -81,7 +81,7 @@ class ModuleIOSpecificationFormatError(ConfigurationError):
     """
 
 
-class ClassInfoInvalidArgument(ConfigurationError):
+class ClassInfoInvalidArgumentError(ConfigurationError):
     """
     Could not retrieve information on the given class, because arguments were
     invalid.

@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import VariableBatchSizeNotSupportedError
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
@@ -115,7 +115,9 @@ class YOLOWrapper(ModelWrapper, ABC):
         self.load_model(self.model_path)
 
         if self.batch_size > 1:
-            raise VariableBatchSizeNotSupportedError
+            raise NotSupportedError(
+                "Batch size greater than 1 is not supported for this model."
+            )
 
         self.model_prepared = True
 

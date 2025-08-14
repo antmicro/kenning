@@ -553,18 +553,3 @@ class ModelSizeError(KenningError):
     """
 
     pass
-
-
-class VariableBatchSizeNotSupportedError(KenningError):
-    """
-    Exception raised when trying to create a model which is not fitted to
-    handle variable batch sizes yet.
-    """
-
-    def __init__(
-        self,
-        msg="Inference batch size greater than one not supported for this model.",  # noqa: E501
-        *args,
-        **kwargs,
-    ):
-        super().__init__(msg, *args, **kwargs)

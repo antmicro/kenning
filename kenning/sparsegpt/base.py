@@ -20,6 +20,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM, PreTrainedModel
 
+from kenning.core.exceptions import KenningOptimizerError
 from kenning.sparsegpt.quant import Quantizer
 from kenning.sparsegpt.sparsegpt import SparseGPT
 from kenning.sparsegpt.utils import pack_model
@@ -139,7 +140,7 @@ class HijackException(Exception):
     pass
 
 
-class InvalidMetadataException(Exception):
+class InvalidMetadataError(KenningOptimizerError):
     """
     Exception raised when sparsity metadata is invalid.
     """
@@ -375,13 +376,13 @@ class BaseSparseGPTForCausalML(nn.Module):
             Raised if validation fails
         """
         if not (weights[metadata] == 0).all().item():
-            raise InvalidMetadataException(
+            raise InvalidMetadataError(
                 "All values indicated by mask have to be zero"
             )
 
         metadata_view = metadata.reshape(-1, prunem)
         if not (metadata_view.sum(dim=1) == prunen).all().item():
-            raise InvalidMetadataException(
+            raise InvalidMetadataError(
                 f"At least {prunen} values have to be zero "
                 + "in every block of size {prunem}"
             )

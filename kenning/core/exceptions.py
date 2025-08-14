@@ -530,14 +530,6 @@ class VideoCaptureDeviceException(KenningError):
         super().__init__(message.format(device_id))
 
 
-class ROS2DataproviderException(KenningError):
-    """
-    Exception to be raised when ROS2CameraNodeDataProvider misbehaves.
-    """
-
-    pass
-
-
 class MissingConfigForAutoPyTorchModel(KenningError):
     """
     Raised when required configuration to initialize

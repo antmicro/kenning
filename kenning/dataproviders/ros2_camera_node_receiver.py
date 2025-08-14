@@ -16,7 +16,7 @@ import sensor_msgs.msg
 from rclpy.node import Node
 
 from kenning.core.dataprovider import DataProvider
-from kenning.core.exceptions import ROS2DataproviderException
+from kenning.core.exceptions import KenningDataProviderError
 from kenning.utils.args_manager import get_parsed_json_dict
 
 
@@ -119,7 +119,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
     def fetch_input(self) -> sensor_msgs.msg.Image:
         if self._topic_subscriber is None:
-            raise ROS2DataproviderException("Subscriber not initialized")
+            raise KenningDataProviderError("ROS2 Subscriber not initialized")
 
         self._triggered = False
         while not self._triggered:
@@ -223,7 +223,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Raises
         ------
-        ROS2DataproviderException
+        KenningDataProviderError
             If encoding is not supported.
         """
         if encoding == "rgb8":
@@ -234,7 +234,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
             return "GRAY"
 
         else:
-            raise ROS2DataproviderException(
+            raise KenningDataProviderError(
                 "Unsupported image format: {}".format(encoding)
             )
 

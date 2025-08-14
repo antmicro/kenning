@@ -7,7 +7,7 @@ Collection of methods for educing redundancies.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 
 def _get_model_size(
@@ -42,3 +42,24 @@ def _get_model_size(
         else:
             raise Exception(f"Model path does not exist: {model_path}")
     return model_path.stat().st_size / 1024
+
+
+def is_list_of_dicts(value: Any) -> bool:
+    """
+    Check if provided value if a list of dictionaries.
+
+    Parameters
+    ----------
+    value : Any
+        Value to be checked.
+
+    Returns
+    -------
+    bool
+        Whether the provided value if a list of dictionaries.
+    """
+    return (
+        isinstance(value, List)
+        and len(value) > 0
+        and isinstance(value[0], Dict)
+    )

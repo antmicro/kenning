@@ -17,6 +17,7 @@ from kenning.core.exceptions import (
     NotSupportedError,
     VisualEditorGraphParserError,
 )
+from kenning.core.helpers.utils import is_list_of_dicts
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.pipeline_manager.core import (
@@ -108,16 +109,22 @@ class PipelineHandler(BaseDataflowHandler):
                     "installed for this class with 'kenning info'"
                 )
             spec_node = self.nodes[kenning_name]
-            temp = self.pm_graph.create_node(
+
+            parameters = []
+            for key, value in kenning_block.get("parameters", {}).items():
+                # Serialize a list of dictionaries.
+                if is_list_of_dicts(value):
+                    serialized_list = [
+                        repr(dictionary) for dictionary in value
+                    ]
+                    parameters.append({"name": key, "value": serialized_list})
+                else:
+                    parameters.append({"name": key, "value": value})
+
+            return self.pm_graph.create_node(
                 spec_node,
-                [
-                    {"name": key, "value": value}
-                    for key, value in kenning_block.get(
-                        "parameters", {}
-                    ).items()
-                ],
+                parameters,
             )
-            return temp
 
         self.pm_graph.start_new_graph(graph_name="Kenning pipeline")
         node_ids = {}

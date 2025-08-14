@@ -7,6 +7,7 @@ Provides core methods and classes for integrating Kenning
 with Pipeline Manager.
 """
 
+import ast
 import itertools
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -367,6 +368,34 @@ class BaseDataflowHandler(ABC):
             del self.nodes[key]
         return specification
 
+    def _deserialize_dicts(self, serialized_dicts: List) -> List:
+        """
+        Deserialize a list of dictionaries serialized to strings.
+
+        It ensures the list does not contain dictionaries serialized
+        to strings. If the list does not contain a dictionaries
+        serialized to a dictionary, the original value of
+        `serialized_dicts` is preserved.
+
+        Parameters
+        ----------
+        serialized_dicts : List
+            List, potentially containing serialized dictionaries.
+
+        Returns
+        -------
+        List
+            List with all dictionaries deserialized.
+        """
+        return [
+            ast.literal_eval(element)
+            if isinstance(element, str)
+            and element.startswith("{")
+            and element.endswith("}")
+            else element
+            for element in serialized_dicts
+        ]
+
     def parse_dataflow(self, dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
         """
         Parses a `dataflow` that comes from Pipeline Manager application.
@@ -416,6 +445,14 @@ class BaseDataflowHandler(ABC):
                     else parameter.value
                     for parameter in parameters
                 }
+
+                parameters = {
+                    parameter_name: parameter_value
+                    if not isinstance(parameter_value, List)
+                    else self._deserialize_dicts(parameter_value)
+                    for parameter_name, parameter_value in parameters.items()
+                }
+
                 node_id = self.dataflow_graph.create_node(
                     kenning_node, parameters
                 )

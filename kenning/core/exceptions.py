@@ -237,12 +237,6 @@ class KenningOptimizerError(KenningError):
     """
 
 
-class EdgeTPUCompilerError(KenningOptimizerError):
-    """
-    edgetpu_compiler failed to compile the model.
-    """
-
-
 class ConversionError(KenningOptimizerError):
     """
     Model conversion failed.
@@ -251,7 +245,7 @@ class ConversionError(KenningOptimizerError):
 
 class CompilationError(KenningOptimizerError):
     """
-    Compilation process failed.
+    Model compilation process failed.
     """
 
 

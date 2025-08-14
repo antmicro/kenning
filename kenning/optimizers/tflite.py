@@ -16,7 +16,7 @@ import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    EdgeTPUCompilerError,
+    CompilationError,
     IOSpecificationNotFoundError,
 )
 from kenning.core.model import ModelWrapper
@@ -664,7 +664,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         if self.target == "edgetpu":
             edgetpu_compiler = which("edgetpu_compiler")
             if edgetpu_compiler is None:
-                raise EdgeTPUCompilerError(
+                raise CompilationError(
                     "edgetpu_compiler missing - check https://coral.ai/docs/edgetpu/compiler on how to install edgetpu_compiler"  # noqa: E501
                 )
             returncode = subprocess.call(
@@ -674,7 +674,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 f"{Path(self.compiled_model_path).stem}_edgetpu.tflite"
             )
             if not edgetpupath.is_file():
-                raise EdgeTPUCompilerError(
+                raise CompilationError(
                     f"{self.compiled_model_path}_edgetpu.tflite not created"
                 )
 

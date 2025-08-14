@@ -29,7 +29,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from kenning.core.exceptions import (
-    IOSpecWrongFormat,
+    ModuleIOSpecificationFormatError,
     ModuleIOSpecificationNotFoundError,
     ModulesIncompatibleError,
 )
@@ -191,7 +191,7 @@ class IOInterface(ABC):
 
         Raises
         ------
-        IOSpecWrongFormat
+        ModuleIOSpecificationFormatError
             Raised if unsupported `type` or `dtype` is used.
         """
         # validate type
@@ -235,7 +235,7 @@ class IOInterface(ABC):
                 return False
             return True
         elif single_input_spec["type"] != "List":
-            raise IOSpecWrongFormat(
+            raise ModuleIOSpecificationFormatError(
                 f"Unsupported value of `type`: {single_input_spec['type']}"
             )
         # validate List type specification
@@ -271,7 +271,7 @@ class IOInterface(ABC):
             ):
                 return False
         else:
-            raise IOSpecWrongFormat(
+            raise ModuleIOSpecificationFormatError(
                 f"Unsupported specification `dtype`: {input_dtype}"
             )
         return True
@@ -350,7 +350,7 @@ class IOInterface(ABC):
 
         Raises
         ------
-        IOSpecWrongFormat
+        ModuleIOSpecificationFormatError
             Raised if unsupported `type` or `dtype` is used.
         ModulesIncompatibleError
             Raised if data does not match with specification.
@@ -384,12 +384,12 @@ class IOInterface(ABC):
                                     f" {type_cls}, received: {type(data)}"
                                 )
                     else:
-                        raise IOSpecWrongFormat(
+                        raise ModuleIOSpecificationFormatError(
                             f"Unsupported type of `dtype`: {dtype}"
                         )
                 elif spec_item["type"] == "Dict":
                     if "fields" not in spec_item:
-                        raise IOSpecWrongFormat(
+                        raise ModuleIOSpecificationFormatError(
                             "type `Dict` requires to have `fields` defined"
                         )
                     # validate all required fields
@@ -405,7 +405,7 @@ class IOInterface(ABC):
                             [data_item[key]], [spec_dict_item]
                         )
                 else:
-                    raise IOSpecWrongFormat(
+                    raise ModuleIOSpecificationFormatError(
                         f"Unsupported specification `type`: {spec_item['type']}"  # noqa: E501
                     )
                 continue

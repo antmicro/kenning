@@ -75,7 +75,7 @@ class NotSupportedError(ConfigurationError):
     """
 
 
-class IOSpecWrongFormat(ConfigurationError):
+class ModuleIOSpecificationFormatError(ConfigurationError):
     """
     Kenning module IO specification contains unsupported entries.
     """

@@ -25,7 +25,7 @@ from kenning.core.measurements import (
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
-from kenning.interfaces.io_interface import IOSpecWrongFormat
+from kenning.interfaces.io_interface import ModuleIOSpecificationFormatError
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -331,7 +331,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Raises
         ------
-        IOSpecWrongFormat
+        ModuleIOSpecificationFormatError
             Raised if preprocessed input data has more
             than one available shape.
         """
@@ -363,7 +363,7 @@ class Runtime(ArgumentsHandler, ABC):
                 else self.input_spec
             )
         ):
-            raise IOSpecWrongFormat(
+            raise ModuleIOSpecificationFormatError(
                 "Specification of input data after preprocessing has to have only one possible shape"  # noqa: E501
             )
 

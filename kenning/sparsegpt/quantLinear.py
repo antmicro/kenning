@@ -14,13 +14,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from kenning.core.exceptions import NotSupportedError
+from kenning.core.exceptions import KenningOptimizerError, NotSupportedError
 
 INT32_BITS = 32
 METADATA_ELEMENTS_PER_INT16 = 8
 
 
-class PackingError(Exception):
+class PackingError(KenningOptimizerError):
     """
     Exception raised when the parameters for packing method are invalid.
     """

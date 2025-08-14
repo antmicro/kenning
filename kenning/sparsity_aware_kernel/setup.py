@@ -8,6 +8,8 @@ import torch
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
+from kenning.core.exceptions import KenningOptimizerError
+
 DEBUG_CXX_FLAGS = ["-g"]
 OPT_CXX_FLAGS = ["-O2", "-std=c++17"]
 
@@ -19,7 +21,7 @@ OPT_CXX_FLAGS += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
 OPT_NVCC_FLAGS += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
 
 
-class CUTLASSNotInitialized(Exception):
+class CUTLASSNotInitialized(KenningOptimizerError):
     """
     Exception raised when 'cutlass_library' cannot be imported.
     """

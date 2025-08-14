@@ -27,7 +27,7 @@ import numpy as np
 import psutil
 from sklearn.pipeline import Pipeline
 
-from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
+from kenning.core.automl import AutoML, AutoMLModel, ModelSizeError
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelClassNotValidError,
@@ -1057,7 +1057,7 @@ class AutoPyTorchML(AutoML):
             model_size, available_size = self._pre_training_callback(
                 model_wrapper_class, model, logger
             )
-        except AutoMLModelSizeError as ex:
+        except ModelSizeError as ex:
             raise ModelTooLargeError(
                 ex.model_size,
                 f"Model (with size {ex.model_size}) cannot be optimized"

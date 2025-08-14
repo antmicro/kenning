@@ -26,9 +26,9 @@ from typing import (
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    AutoMLInvalidArgumentsError,
-    AutoMLInvalidSchemaError,
-    AutoMLModelSizeError,
+    InvalidArgumentsError,
+    InvalidSchemaError,
+    ModelSizeError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
@@ -64,7 +64,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
 
         Raises
         ------
-        AutoMLInvalidSchemaError
+        InvalidSchemaError
             If schema does not contain required fields.
         """
         classes = [cls]
@@ -84,23 +84,23 @@ class AutoMLModel(ArgumentsHandler, ABC):
         # Check whether merged schema contains necessary params
         for name, config in schema.items():
             if config.get("type", None) is None or "default" not in config:
-                raise AutoMLInvalidSchemaError(
+                raise InvalidSchemaError(
                     f"{cls.__name__}:{config} misses `type` or `default`"
                 )
 
             _type, sub_type = get_type(config["type"])
             if _type is list:
                 if not sub_type:
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} misses list element type"
                     )
                 if len(sub_type) > 1:
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} list contains"
                         " more than one sub-type"
                     )
                 if any(isinstance(t, tuple) for t in sub_type):
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} union types ({_type}) "
                         "are not supported for AutoML params"
                     )
@@ -114,7 +114,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
                         for arg in ("enum", "item_range")
                     )
                 ):
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} has to define "
                         "`list_range` and `item_range` or `enum`"
                     )
@@ -122,7 +122,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
                     config.get(arg, None) is None
                     for arg in ("list_range", "enum")
                 ):
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} has to define "
                         "`list_range` and `enum`"
                     )
@@ -131,16 +131,16 @@ class AutoMLModel(ArgumentsHandler, ABC):
                     _type in (int, float)
                     and config.get("item_range", None) is None
                 ):
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} has to define "
                         "`item_range` or `enum`"
                     )
                 if _type is str:
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} has to define `enum`"
                     )
                 if config.get("nullable", False):
-                    raise AutoMLInvalidSchemaError(
+                    raise InvalidSchemaError(
                         f"{cls.__name__}:{name} can only be nullable for enum values"  # noqa: E501
                     )
 
@@ -177,7 +177,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
 
         Raises
         ------
-        AutoMLInvalidArgumentsError
+        InvalidArgumentsError
             If parameter or its configuration does not exist.
         """
         arg_structure = {}
@@ -185,7 +185,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
             arg_structure |= cls_.arguments_structure
 
         if name not in arg_structure:
-            raise AutoMLInvalidArgumentsError(
+            raise InvalidArgumentsError(
                 f"Class `{cls.__name__}` does not have `{name}` parameter"
             )
         for conf_key, conf_value in conf.items():
@@ -193,7 +193,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
                 conf_key not in arg_structure[name]
                 and conf_key not in supported_keywords
             ):
-                raise AutoMLInvalidArgumentsError(
+                raise InvalidArgumentsError(
                     f"Parameter `{name}` of class `{cls.__name__}` "
                     f"does not have `{conf}` option"
                 )
@@ -567,7 +567,7 @@ class AutoML(ArgumentsHandler, ABC):
 
         Raises
         ------
-        AutoMLModelSizeError
+        ModelSizeError
             If model size is invalid from other reasons
             than not fitting into the platform memory.
         """
@@ -614,7 +614,7 @@ class AutoML(ArgumentsHandler, ABC):
                         opt.dataset = self.reduced_dataset
                     runner._handle_optimizations()
                 except Ai8xIzerError as ex:
-                    raise AutoMLModelSizeError(ex.model_size) from ex
+                    raise ModelSizeError(ex.model_size) from ex
                 finally:
                     for opt in self.optimizers:
                         opt.model_wrapper = None

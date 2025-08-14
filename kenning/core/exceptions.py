@@ -145,21 +145,21 @@ class ModelClassNotValidError(KenningAutoMLError):
     """
 
 
-class AutoMLInvalidSchemaError(KenningAutoMLError):
+class InvalidSchemaError(KenningAutoMLError):
     """
     Raised when `arguments_structure` contains not enough information
     or when data are invalid.
     """
 
 
-class AutoMLInvalidArgumentsError(KenningAutoMLError):
+class InvalidArgumentsError(KenningAutoMLError):
     """
     Raised when provided arguments (in `use_model`) do not match with
     model wrapper `arguments_structure`.
     """
 
 
-class AutoMLModelSizeError(KenningAutoMLError):
+class ModelSizeError(KenningAutoMLError):
     """
     Raised when the model size is invalid.
     """

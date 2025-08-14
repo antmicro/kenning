@@ -229,6 +229,14 @@ class KenningDataProviderError(KenningError):
     pass
 
 
+class InputDeviceError(KenningDataProviderError):
+    """
+    Exception to be raised when fetching data from a device fails.
+    """
+
+    pass
+
+
 """
 Errors raised by implementations of the kenning.core.dataset module.
 """
@@ -518,16 +526,6 @@ class Ai8xUnsupportedDevice(KenningError):
     """
 
     pass
-
-
-class VideoCaptureDeviceException(KenningError):
-    """
-    Exception to be raised when VideoCaptureDevice malfunctions
-    during frame capture.
-    """
-
-    def __init__(self, device_id, message="Video device {} read error"):
-        super().__init__(message.format(device_id))
 
 
 class MissingConfigForAutoPyTorchModel(KenningError):

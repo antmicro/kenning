@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 
 from kenning.core.dataprovider import DataProvider
-from kenning.core.exceptions import VideoCaptureDeviceException
+from kenning.core.exceptions import InputDeviceError
 from kenning.utils.args_manager import get_parsed_json_dict
 
 
@@ -125,7 +125,7 @@ class CameraDataProvider(DataProvider):
         if ret:
             return frame
         else:
-            raise VideoCaptureDeviceException(self.device_id)
+            raise InputDeviceError(self.device_id)
 
     def detach_from_source(self):
         if self.device:

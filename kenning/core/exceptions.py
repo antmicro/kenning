@@ -11,8 +11,6 @@ class KenningError(Exception):
     Generic error in Kenning.
     """
 
-    pass
-
 
 """
 Miscellaneous errors.
@@ -25,15 +23,11 @@ class DownloadError(KenningError):
     error.
     """
 
-    pass
-
 
 class ChecksumVerifyError(KenningError):
     """
     Exception raised when downloaded file has invalid checksum.
     """
-
-    pass
 
 
 class ArgsManagerConvertError(KenningError):
@@ -42,16 +36,12 @@ class ArgsManagerConvertError(KenningError):
     format.
     """
 
-    pass
-
 
 class ModelTooLargeError(KenningError):
     """
     Optimization flow could not be executed, because the model is too large and
     will not fit into the memory of the selected device.
     """
-
-    pass
 
 
 """
@@ -71,15 +61,11 @@ class IOCompatibilityError(ConfigurationError):
     Attempted to use Kenning modules with incompatible input/output.
     """
 
-    pass
-
 
 class IOSpecNotFound(ConfigurationError):
     """
     Kenning module IO specification not found.
     """
-
-    pass
 
 
 class NotSupportedError(ConfigurationError):
@@ -88,15 +74,11 @@ class NotSupportedError(ConfigurationError):
     Kenning (or by that specific module implementation).
     """
 
-    pass
-
 
 class IOSpecWrongFormat(ConfigurationError):
     """
     Kenning module IO specification contains unsupported entries.
     """
-
-    pass
 
 
 class ClassInfoInvalidArgument(ConfigurationError):
@@ -105,16 +87,12 @@ class ClassInfoInvalidArgument(ConfigurationError):
     invalid.
     """
 
-    pass
-
 
 class AmbiguousImport(ConfigurationError):
     """
     Exception raised by ClassLoader if two or more classes with a provided name
     exist.
     """
-
-    pass
 
 
 """
@@ -154,23 +132,17 @@ class KenningAutoMLError(KenningError):
     Generic error in the AutoML module.
     """
 
-    pass
-
 
 class ModelExtractionError(KenningAutoMLError):
     """
     Raised when the model could not be properly extracted from ModelWrapper.
     """
 
-    pass
-
 
 class ModelClassNotValid(KenningAutoMLError):
     """
     Raised when provided model class cannot be imported.
     """
-
-    pass
 
 
 class AutoMLInvalidSchemaError(KenningAutoMLError):
@@ -179,16 +151,12 @@ class AutoMLInvalidSchemaError(KenningAutoMLError):
     or when data are invalid.
     """
 
-    pass
-
 
 class AutoMLInvalidArgumentsError(KenningAutoMLError):
     """
     Raised when provided arguments (in `use_model`) do not match with
     model wrapper `arguments_structure`.
     """
-
-    pass
 
 
 class AutoMLModelSizeError(KenningAutoMLError):
@@ -211,8 +179,6 @@ class KenningDataConverterError(KenningError):
     Generic error in the DataConverter module.
     """
 
-    pass
-
 
 """
 Errors raised by implementations of the kenning.core.dataprovider module.
@@ -224,15 +190,11 @@ class KenningDataProviderError(KenningError):
     Generic error in the DataProvider module.
     """
 
-    pass
-
 
 class InputDeviceError(KenningDataProviderError):
     """
     Exception to be raised when fetching data from a device fails.
     """
-
-    pass
 
 
 """
@@ -245,15 +207,11 @@ class KenningDatasetError(KenningError):
     Generic error in the Dataset module.
     """
 
-    pass
-
 
 class CannotDownloadDatasetError(KenningDatasetError):
     """
     Selected dataset cannot be automatically downloaded.
     """
-
-    pass
 
 
 """
@@ -267,8 +225,6 @@ class KenningONNXConverterError(KenningError):
     Generic error in the ONNX converter module.
     """
 
-    pass
-
 
 """
 Errors raised by implementations of kenning.core.optimizer module.
@@ -280,23 +236,17 @@ class KenningOptimizerError(KenningError):
     Generic error in the Optimizer module.
     """
 
-    pass
-
 
 class EdgeTPUCompilerError(KenningOptimizerError):
     """
     edgetpu_compiler failed to compile the model.
     """
 
-    pass
-
 
 class ConversionError(KenningOptimizerError):
     """
-    Model conversion faled.
+    Model conversion failed.
     """
-
-    pass
 
 
 class CompilationError(KenningOptimizerError):
@@ -304,23 +254,17 @@ class CompilationError(KenningOptimizerError):
     Compilation process failed.
     """
 
-    pass
-
 
 class IOSpecificationNotFoundError(KenningOptimizerError):
     """
     Could not find model IO specification (IOSpec).
     """
 
-    pass
-
 
 class OptimizedModelSizeError(KenningOptimizerError):
     """
     Could not retrieve size of the model to optimize.
     """
-
-    pass
 
 
 """
@@ -333,8 +277,6 @@ class KenningOutputCollectorError(KenningError):
     Generic error in the OutputCorrector module.
     """
 
-    pass
-
 
 """
 Errors raised by implementations of the kenning.core.platform module.
@@ -346,8 +288,6 @@ class KenningPlatformError(KenningError):
     Generic error in the Platform module.
     """
 
-    pass
-
 
 class UARTNotFoundInDTSError(KenningPlatformError):
     """
@@ -355,15 +295,11 @@ class UARTNotFoundInDTSError(KenningPlatformError):
     could be found in the Zephyr device tree.
     """
 
-    pass
-
 
 class RenodeSimulationError(KenningPlatformError):
     """
     Exception raised when a Renode command fails.
     """
-
-    pass
 
 
 """
@@ -376,8 +312,6 @@ class KenningProtocolError(KenningError):
     Generic error in the Protocol module.
     """
 
-    pass
-
 
 class ProtocolNotStartedError(KenningProtocolError):
     """
@@ -386,16 +320,12 @@ class ProtocolNotStartedError(KenningProtocolError):
     'initialize_server' methods.
     """
 
-    pass
-
 
 class RequestFailure(KenningProtocolError):
     """
     Request sent to the inference server running on a remote target device has
     failed.
     """
-
-    pass
 
 
 """
@@ -408,8 +338,6 @@ class KenningRuntimeBuilderError(KenningError):
     """
     Generic error in the RuntimeBuilder module.
     """
-
-    pass
 
 
 """
@@ -430,8 +358,6 @@ class VisualEditorGraphParserError(VisualEditorError):
     the scenario as a graph.
     """
 
-    pass
-
 
 """
 Errors raised by implementations of kenning.core.runtime module, related to the
@@ -443,8 +369,6 @@ class KenningRuntimeError(KenningError):
     """
     Generic error in the Runtime module (module running inference on models).
     """
-
-    pass
 
 
 class ModelNotPreparedError(KenningRuntimeError):
@@ -478,5 +402,3 @@ class InputNotPreparedError(KenningRuntimeError):
 
 class ModelNotLoadedError(KenningRuntimeError):
     """Exception raised if a model could not be loaded."""
-
-    pass

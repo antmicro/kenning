@@ -183,9 +183,10 @@ class CompatibilityPlot(Plot):
             columns=columns,
             height=DataTable.row_height.property._default
             * (self.data.shape[0] + 1),
-            autosize_mode="fit_viewport",
             sortable=False,
             selectable=False,
+            css_classes=["plot"],
+            index_position=None,
         )
         self._output_bokeh_figure(
             data_table,

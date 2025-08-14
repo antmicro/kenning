@@ -139,7 +139,7 @@ class ModelExtractionError(KenningAutoMLError):
     """
 
 
-class ModelClassNotValid(KenningAutoMLError):
+class ModelClassNotValidError(KenningAutoMLError):
     """
     Raised when provided model class cannot be imported.
     """

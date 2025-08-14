@@ -30,7 +30,7 @@ from sklearn.pipeline import Pipeline
 from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    ModelClassNotValid,
+    ModelClassNotValidError,
     ModelExtractionError,
 )
 from kenning.core.optimizer import Optimizer
@@ -258,7 +258,9 @@ class AutoPyTorchModel(AutoMLModel):
 
         model_class_obj = load_class(cls.model_class)
         if model_class_obj is None:
-            raise ModelClassNotValid(f"{cls.model_class} cannot be imported")
+            raise ModelClassNotValidError(
+                f"{cls.model_class} cannot be imported"
+            )
         schema = cls.form_automl_schema()
         args = {}
         for name, config in schema.items():

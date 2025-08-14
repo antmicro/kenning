@@ -30,7 +30,6 @@ from sklearn.pipeline import Pipeline
 from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    MissingConfigForAutoPyTorchModel,
     ModelClassNotValid,
     ModelExtractionError,
 )
@@ -248,7 +247,7 @@ class AutoPyTorchModel(AutoMLModel):
 
         Raises
         ------
-        MissingConfigForAutoPyTorchModel
+        ValueError
             If config requaries for model is missing.
         """
         assert (
@@ -264,9 +263,7 @@ class AutoPyTorchModel(AutoMLModel):
         args = {}
         for name, config in schema.items():
             if name not in self.config:
-                raise MissingConfigForAutoPyTorchModel(
-                    f"Missing {name} config"
-                )
+                raise ValueError(f"Missing {name} config")
             args[name] = self.config[name]
             _type, _ = get_type(config.get("type", None))
             if _type is not list:
@@ -276,9 +273,7 @@ class AutoPyTorchModel(AutoMLModel):
                 for i in range(self.config[name])
             ]
             if not all(args[name]):
-                raise MissingConfigForAutoPyTorchModel(
-                    f"Missing values in {name} config"
-                )
+                raise ValueError(f"Missing values in {name} config")
         model = model_class_obj(
             **args,
             input_shape=input_shape,
@@ -460,7 +455,7 @@ class AutoPyTorchModel(AutoMLModel):
 
         Raises
         ------
-        MissingConfigForAutoPyTorchModel
+        ValueError
             If AutoPyTorch configuration misses the required field.
         """
         args = cls.form_automl_schema()
@@ -472,9 +467,7 @@ class AutoPyTorchModel(AutoMLModel):
         model_wrapper_params = {}
         for name, config in args.items():
             if name not in backbone_conf:
-                raise MissingConfigForAutoPyTorchModel(
-                    f"Missing {name} in AutoPyTorch config"
-                )
+                raise ValueError(f"Missing {name} in AutoPyTorch config")
             c_type, _ = get_type(config["type"])
             if backbone_conf[name] is None:
                 continue

@@ -509,12 +509,3 @@ class Ai8xIzerError(KenningError):
     def __init__(self, model_size: Optional[float] = None, *args):
         super().__init__(*args)
         self.model_size = model_size
-
-
-class MissingConfigForAutoPyTorchModel(KenningError):
-    """
-    Raised when required configuration to initialize
-    AutoPyTorch model was not provided.
-    """
-
-    pass

@@ -56,7 +56,7 @@ class ConfigurationError(KenningError):
     """
 
 
-class IOCompatibilityError(ConfigurationError):
+class ModulesIncompatibleError(ConfigurationError):
     """
     Attempted to use Kenning modules with incompatible input/output.
     """

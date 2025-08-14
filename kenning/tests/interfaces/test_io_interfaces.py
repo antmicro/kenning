@@ -12,7 +12,10 @@ from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     SegmObject,
 )
-from kenning.interfaces.io_interface import IOCompatibilityError, IOInterface
+from kenning.interfaces.io_interface import (
+    IOInterface,
+    ModulesIncompatibleError,
+)
 
 LIST_SPEC = {
     "test1": [
@@ -233,5 +236,5 @@ class TestIOInterface:
     def test_assert_data_format_invalid(
         self, spec: Dict[str, List], data: List[Any]
     ):
-        with pytest.raises(IOCompatibilityError):
+        with pytest.raises(ModulesIncompatibleError):
             IOInterface.assert_data_format(data, spec["test1"])

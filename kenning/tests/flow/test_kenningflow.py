@@ -11,7 +11,7 @@ import pytest
 
 from kenning.core.flow import KenningFlow
 from kenning.dataproviders.camera_dataprovider import CameraDataProvider
-from kenning.interfaces.io_interface import IOCompatibilityError
+from kenning.interfaces.io_interface import ModulesIncompatibleError
 from kenning.outputcollectors.real_time_visualizers import (
     BaseRealTimeVisualizer,
 )
@@ -265,7 +265,7 @@ class TestKenningFlowScenarios:
             (FLOW_SCENARIO_UNDEF_VARIABLE, pytest.raises(Exception)),
             (
                 FLOW_SCENARIO_INCOMPATIBLE_IO,
-                pytest.raises(IOCompatibilityError),
+                pytest.raises(ModulesIncompatibleError),
             ),
         ],
         ids=[

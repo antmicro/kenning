@@ -10,7 +10,10 @@ from abc import ABC, abstractmethod
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple
 
-from kenning.interfaces.io_interface import IOCompatibilityError, IOInterface
+from kenning.interfaces.io_interface import (
+    IOInterface,
+    ModulesIncompatibleError,
+)
 from kenning.utils.args_manager import ArgumentsHandler
 
 
@@ -39,7 +42,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Raises
         ------
-        IOCompatibilityError
+        ModulesIncompatibleError
             Raised when connections have incompatible types
         """
         self.inputs_sources = inputs_sources
@@ -66,7 +69,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         if not IOInterface.validate(outputs_specs, runner_input_spec):
             self.cleanup()
-            raise IOCompatibilityError(
+            raise ModulesIncompatibleError(
                 f"Input and output are not compatible.\nOutput is:\n"
                 f"{outputs_specs}\nInput is:\n{runner_input_spec}\n"
             )

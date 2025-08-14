@@ -29,9 +29,9 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from kenning.core.exceptions import (
-    IOCompatibilityError,
     IOSpecNotFound,
     IOSpecWrongFormat,
+    ModulesIncompatibleError,
 )
 from kenning.interfaces.io_spec_serializer import IOSpecSerializer
 from kenning.utils.logger import KLogger
@@ -352,11 +352,11 @@ class IOInterface(ABC):
         ------
         IOSpecWrongFormat
             Raised if unsupported `type` or `dtype` is used.
-        IOCompatibilityError
+        ModulesIncompatibleError
             Raised if data does not match with specification.
         """
         if len(spec) != len(data):
-            raise IOCompatibilityError(
+            raise ModulesIncompatibleError(
                 "Number of received data do not match specification"
             )
 
@@ -366,7 +366,7 @@ class IOInterface(ABC):
                     continue
                 if spec_item["type"] == "List":
                     if not isinstance(data_item, List):
-                        raise IOCompatibilityError(
+                        raise ModulesIncompatibleError(
                             f"Data should be a list, received: {type(data_item)}"  # noqa: E501
                         )
                     dtype = spec_item["dtype"]
@@ -379,7 +379,7 @@ class IOInterface(ABC):
                         type_cls = _load_class(dtype)
                         for item in data_item:
                             if not isinstance(item, type_cls):
-                                raise IOCompatibilityError(
+                                raise ModulesIncompatibleError(
                                     "Data does not have right type, required:"
                                     f" {type_cls}, received: {type(data)}"
                                 )
@@ -396,7 +396,7 @@ class IOInterface(ABC):
                     if not isinstance(data_item, Dict) or set(
                         data_item.keys()
                     ) != set(spec_item["fields"].keys()):
-                        raise IOCompatibilityError(
+                        raise ModulesIncompatibleError(
                             "Data is not an Dict or does not have all required key, "  # noqa: E501
                             f"data: {data_item} spec: {spec_item}"
                         )
@@ -417,7 +417,7 @@ class IOInterface(ABC):
                 try:
                     array_item = np.asarray(array_item)
                 except Exception as ex:
-                    raise IOCompatibilityError(
+                    raise ModulesIncompatibleError(
                         "Shape and dtype of received object"
                         f" cannot be retrieved: {array_item}"
                     ) from ex
@@ -439,7 +439,7 @@ class IOInterface(ABC):
 
         Raises
         ------
-        IOCompatibilityError
+        ModulesIncompatibleError
             Raised if entry shape does not match with specification.
         """
         # Check shape
@@ -468,7 +468,7 @@ class IOInterface(ABC):
                     )
                     break
         if not valid_shape:
-            raise IOCompatibilityError(
+            raise ModulesIncompatibleError(
                 "Wrong shape, required: "
                 f"{entry_spec['shape']}, received: {shape}"
             )

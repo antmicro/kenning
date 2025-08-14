@@ -126,7 +126,7 @@ class TestAbstract:
             for method_ast in get_all_methods(class_ast)
         ):
             pytest.fail(
-                msg=f"Class {class_ast.name}: {file_path} is not marked "
+                reason=f"Class {class_ast.name}: {file_path} is not marked "
                 "as abstract, despite having abstract methods"
             )
 
@@ -165,7 +165,7 @@ class TestAbstract:
             )
         if hasattr(cls, "__abstractmethods__") and cls.__abstractmethods__:
             pytest.fail(
-                msg=f"Class {class_ast.name} ({rel_path}) is not marked "
+                reason=f"Class {class_ast.name} ({rel_path}) is not marked "
                 "as abstract and does not implement all abstract method:"
                 f" {list(cls.__abstractmethods__)}"
             )

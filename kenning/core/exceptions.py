@@ -520,14 +520,6 @@ class MissingUserMessage(KenningError):
     pass
 
 
-class Ai8xUnsupportedDevice(KenningError):
-    """
-    Raised if platform, unsupported by ai8x-training framework, is used.
-    """
-
-    pass
-
-
 class MissingConfigForAutoPyTorchModel(KenningError):
     """
     Raised when required configuration to initialize

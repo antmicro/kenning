@@ -16,7 +16,7 @@ from typing import List, Literal, Optional
 from sklearn import metrics
 
 from kenning.cli.command_template import TRAIN
-from kenning.core.exceptions import Ai8xUnsupportedDevice
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.platform import Platform
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.anomaly_detection.cnn import (
@@ -153,8 +153,8 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
         elif "max78002" in platform.name:
             die_type = 87
         if die_type is None:
-            raise Ai8xUnsupportedDevice(
-                f"Platform {platform.name} is not supported"
+            raise NotSupportedError(
+                f"Platform {platform.name} is not supported with Ai8x."
             )
 
         with append_to_sys_path([ai8x_training_path]):

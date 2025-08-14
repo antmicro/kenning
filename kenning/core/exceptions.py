@@ -283,10 +283,10 @@ class KenningPlatformError(KenningError):
     """
 
 
-class UARTNotFoundInDTSError(KenningPlatformError):
+class TargetPlatformCommunicationError(KenningPlatformError):
     """
-    Using runtime working on Zephyr RTOS and UART Protocol, but no UART port
-    could be found in the Zephyr device tree.
+    A remote target device was selected as platform, but communications in the
+    selected protocols could not be established.
     """
 
 

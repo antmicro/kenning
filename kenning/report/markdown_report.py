@@ -157,11 +157,10 @@ class MarkdownReport(Report):
 
         self.measurementsdata = {}
 
-        if self.to_html:
-            if not isinstance(self.to_html, (str, Path)):
-                self.to_html = Path(self.report_path).with_suffix("")
+        if self.to_html and not isinstance(self.to_html, (str, Path)):
+            self.to_html = Path(self.report_path).with_suffix("")
 
-        if self.to_html and not self.measurements:
+        if self.to_html and (not report_path.exists()):
             raise argparse.ArgumentError(
                 None,
                 "HTML report cannot be generated, file from "
@@ -170,7 +169,7 @@ class MarkdownReport(Report):
                 "report.",
             )
 
-        if not self.measurements:
+        if not self.measurements[0] and not self.to_html:
             raise argparse.ArgumentError(
                 None,
                 "'--measurements' have to be defined to generate new report. "
@@ -204,19 +203,20 @@ class MarkdownReport(Report):
         if not self.only_png_images:
             self.image_formats |= {"html"}
 
-        (
-            self.measurementsdata,
-            self.report_types,
-            self.automl_stats,
-        ) = Report.load_measurements_for_report(
-            measurements_files=self.measurements,
-            model_names=self.model_names,
-            skip_unoptimized_model=self.skip_unoptimized_model,
-            report_types=self.report_types,
-            automl_stats_file=self.automl_stats,
-        )
+        if self.measurements[0]:
+            (
+                self.measurementsdata,
+                self.report_types,
+                self.automl_stats,
+            ) = Report.load_measurements_for_report(
+                measurements_files=self.measurements,
+                model_names=self.model_names,
+                skip_unoptimized_model=self.skip_unoptimized_model,
+                report_types=self.report_types,
+                automl_stats_file=self.automl_stats,
+            )
 
-        if self.report_name is None:
+        if self.report_name is None and len(self.measurementsdata) > 0:
             self.report_name = Report.deduce_report_name(
                 self.measurementsdata, report_types
             )
@@ -373,7 +373,7 @@ class MarkdownReport(Report):
         self,
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
-    ) -> None:
+    ):
         """
         Generate report.
 
@@ -388,28 +388,12 @@ class MarkdownReport(Report):
         ------
         argparse.ArgumentError
             if there is missing or wrong arguments
-
-        Returns
-        -------
-        None
-
         """
         KLogger.debug(f"Measurements {self.measurements}")
 
         if (
-            self.to_html
-            and not self.measurements
-            and self.report_path.exists()
-        ):
-            # Only render HTML report
-            KLogger.info("Generating HTML report only!")
-            generate_html_report(
-                self.report_path, self.to_html, KLogger.level == "DEBUG"
-            )
-            return
-
-        if (
-            self.comparison_only
+            not self.to_html
+            and self.comparison_only
             and len(self.measurements) <= 1
             and AUTOML not in subcommands
         ):
@@ -419,13 +403,14 @@ class MarkdownReport(Report):
                 "than one measurements' file.",
             )
 
-        self.img_dir.mkdir(parents=True, exist_ok=True)
+        if self.measurements[0]:
+            self.img_dir.mkdir(parents=True, exist_ok=True)
 
-        with choose_theme(
-            custom_bokeh_theme=True,
-            custom_matplotlib_theme=True,
-        ):
-            self.generate_markdown_report(command, draw_titles=False)
+            with choose_theme(
+                custom_bokeh_theme=True,
+                custom_matplotlib_theme=True,
+            ):
+                self.generate_markdown_report(command, draw_titles=False)
 
         if self.to_html:
             generate_html_report(

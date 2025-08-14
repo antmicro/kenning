@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Type
 import pandas as pd
 import pytest
 from _pytest.terminal import TerminalReporter
+from bokeh.layouts import layout
 from bokeh.models import (
     ColumnDataSource,
     DataTable,
@@ -183,19 +184,25 @@ class CompatibilityPlot(Plot):
             TableColumn(field=col, title=col, formatter=self.formatter(col))
             for col in self.data.columns
         ]
+        calc_height = DataTable.row_height.property._default * (
+            self.data.shape[0] + 1
+        )
         data_table = DataTable(
             source=source,
             columns=columns,
-            height=DataTable.row_height.property._default
-            * (self.data.shape[0] + 1),
+            height=calc_height,
+            max_height=calc_height,
             sortable=False,
             selectable=False,
             css_classes=["plot"],
             index_position=None,
             stylesheets=[self.comp_stylesheet, self.bokeh_stylesheet],
         )
+        # Workaround, because with sizing_mode is set in data_table above
+        # table will not be displayed -
+        final_fig = layout([[data_table]], sizing_mode="stretch_width")
         self._output_bokeh_figure(
-            data_table,
+            final_fig,
             output_path,
             output_formats,
         )

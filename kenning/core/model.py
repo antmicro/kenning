@@ -467,6 +467,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         return measurements
 
+    @abstractmethod
     def train_model(self):
         """
         Trains the model with a given dataset.
@@ -478,13 +479,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         and number of epochs.
 
         The model needs to be saved explicitly.
-
-        Raises
-        ------
-        NotImplementedError
-            Raised when method is not implemented
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:

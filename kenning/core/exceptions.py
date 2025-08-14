@@ -511,15 +511,6 @@ class Ai8xIzerError(KenningError):
         self.model_size = model_size
 
 
-class MissingUserMessage(KenningError):
-    """
-    Exception raised if a template configuration lacks a user message
-    under `user_message` key.
-    """
-
-    pass
-
-
 class MissingConfigForAutoPyTorchModel(KenningError):
     """
     Raised when required configuration to initialize

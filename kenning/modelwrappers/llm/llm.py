@@ -13,7 +13,7 @@ from jinja2 import Template
 from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import MissingUserMessage, NotSupportedError
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.utils.logger import KLogger
@@ -42,7 +42,7 @@ class LLM(ModelWrapper, ABC):
             isinstance(prompt_config, Dict)
             and "user_message" not in prompt_config
         ):
-            raise MissingUserMessage(
+            raise ValueError(
                 "`user_message` key is missing in the "
                 "`prompt_config` dictionary."
             )

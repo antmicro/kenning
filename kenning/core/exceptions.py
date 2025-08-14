@@ -88,7 +88,7 @@ class ClassInfoInvalidArgumentError(ConfigurationError):
     """
 
 
-class AmbiguousImport(ConfigurationError):
+class AmbiguousModuleError(ConfigurationError):
     """
     Exception raised by ClassLoader if two or more classes with a provided name
     exist.

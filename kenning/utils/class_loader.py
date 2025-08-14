@@ -676,7 +676,7 @@ def get_module_path(class_name: str) -> str:
 
     Raises
     ------
-    AmbiguousImport
+    AmbiguousModuleError
         Raised if two or more classes named `class_name` exist.
     ModuleNotFoundError
         Raised if there is no class matching `class_name`.

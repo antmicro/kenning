@@ -75,7 +75,6 @@ from kenning.utils.class_loader import (
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import (
     PipelineRunner,
-    PipelineRunnerInvalidConfigError,
 )
 from kenning.utils.resource_manager import ResourceURI
 
@@ -364,7 +363,7 @@ class InferenceTester(CommandTemplate):
             evaluate_unoptimized = getattr(args, "evaluate_unoptimized", False)
             if evaluate_unoptimized and not ret and output:
                 if not run_optimizations:
-                    raise PipelineRunnerInvalidConfigError(
+                    raise ValueError(
                         "If optimizations are skipped, the model will already "
                         "be unoptimized, thus '--evaluate-unoptimized' is "
                         "redundant"

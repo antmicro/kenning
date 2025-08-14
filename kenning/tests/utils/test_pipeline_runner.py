@@ -23,7 +23,6 @@ from kenning.runtimebuilders.zephyr import (
 )
 from kenning.utils.pipeline_runner import (
     PipelineRunner,
-    PipelineRunnerInvalidConfigError,
 )
 
 
@@ -181,7 +180,7 @@ TEST_EXAMPLE_INVALID_CFG = {
 
 class TestPipelineRunnerRun:
     def test_init_no_dataconverter_and_modelwrapper(self):
-        with pytest.raises(PipelineRunnerInvalidConfigError) as e:
+        with pytest.raises(ValueError) as e:
             PipelineRunner(dataset=None, dataconverter=None, optimizers=[])
 
         assert "Provide either dataconverter or model_wrapper" in str(e.value)
@@ -233,7 +232,7 @@ class TestPipelineRunnerRun:
             dataset=None, dataconverter=dataconverter_mock, optimizers=[]
         )
 
-        with pytest.raises(PipelineRunnerInvalidConfigError) as e:
+        with pytest.raises(ValueError) as e:
             runner.run(run_optimizations=False, run_benchmarks=False)
 
         assert "If both optimizations and benchmarks" in str(e.value)
@@ -247,7 +246,7 @@ class TestPipelineRunnerRun:
             optimizers=[],
         )
 
-        with pytest.raises(PipelineRunnerInvalidConfigError) as e:
+        with pytest.raises(ValueError) as e:
             runner.run(run_optimizations=True, run_benchmarks=False)
 
         assert "Model wrapper is required for" in str(e.value)
@@ -584,7 +583,7 @@ class TestPipelineRunnerRun:
             optimizers=[optimizer_mock],
         )
 
-        with pytest.raises(PipelineRunnerInvalidConfigError):
+        with pytest.raises(ValueError):
             runner.run(run_optimizations=True, run_benchmarks=False)
 
     def test_run_remote_optimizations_on_board(
@@ -619,7 +618,7 @@ class TestPipelineRunnerRun:
             optimizers=[optimizer_mock],
         )
 
-        with pytest.raises(PipelineRunnerInvalidConfigError):
+        with pytest.raises(ValueError):
             runner.run(run_optimizations=True, run_benchmarks=False)
 
     def test_run_formats_difference(

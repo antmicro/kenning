@@ -484,15 +484,6 @@ class ModelNotLoadedError(KenningRuntimeError):
     pass
 
 
-class PipelineRunnerInvalidConfigError(KenningError):
-    """
-    Optimization flow could not be executed, because invalid configuration was
-    provided to the PipelineRunner.
-    """
-
-    pass
-
-
 class Ai8xIzerError(KenningError):
     """
     Raised when ai8xizer.py script fails.

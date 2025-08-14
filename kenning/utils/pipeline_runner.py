@@ -18,7 +18,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelTooLargeError,
     NotSupportedError,
-    PipelineRunnerInvalidConfigError,
 )
 from kenning.core.measurements import (
     Measurements,
@@ -84,7 +83,7 @@ class PipelineRunner(object):
 
         Raises
         ------
-        PipelineRunnerInvalidConfigError
+        ValueError
             Raised when invalid values are provided.
         """
         self.dataset = dataset
@@ -119,9 +118,7 @@ class PipelineRunner(object):
             KLogger.info(f"Set protocol to {self.protocol}")
 
         if not (self.model_wrapper or self.dataconverter):
-            raise PipelineRunnerInvalidConfigError(
-                "Provide either dataconverter or model_wrapper"
-            )
+            raise ValueError("Provide either dataconverter or model_wrapper")
 
         if self.dataconverter is None:
             self.dataconverter = ModelWrapperDataConverter(self.model_wrapper)
@@ -311,11 +308,11 @@ class PipelineRunner(object):
 
         Raises
         ------
-        PipelineRunnerInvalidConfigError
+        ValueError
             Raised when invalid values are provided.
         """
         if not (run_optimizations or run_benchmarks):
-            raise PipelineRunnerInvalidConfigError(
+            raise ValueError(
                 "If both optimizations and benchmarks are skipped, pipeline "
                 "will not be executed"
             )
@@ -338,7 +335,7 @@ class PipelineRunner(object):
         if protocol_required and self.protocol is None:
             msg = "Protocol not specified but required"
             KLogger.error(msg)
-            raise PipelineRunnerInvalidConfigError(msg)
+            raise ValueError(msg)
 
         if protocol_required_by_optimizers and type(
             self.platform
@@ -348,7 +345,7 @@ class PipelineRunner(object):
                 "platform cannot run optimization"
             )
             KLogger.error(msg)
-            raise PipelineRunnerInvalidConfigError(msg)
+            raise ValueError(msg)
 
         if protocol_required_by_optimizers:
             check_request(self.protocol.initialize_client(), "prepare client")
@@ -547,9 +544,7 @@ class PipelineRunner(object):
                 return None
 
         if self.model_wrapper is None:
-            raise PipelineRunnerInvalidConfigError(
-                "Model wrapper is required for optimizations"
-            )
+            raise ValueError("Model wrapper is required for optimizations")
         model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
@@ -899,7 +894,7 @@ class PipelineRunner(object):
 
         Raises
         ------
-        PipelineRunnerInvalidConfigError :
+        ValueError :
             Raised if blocks are incompatible.
         """
         chain = [model_wrapper] + optimizers + [runtime]
@@ -925,7 +920,7 @@ class PipelineRunner(object):
 
             output_formats_str = ", ".join(previous_block.get_output_formats())
             input_formats_str = ", ".join(previous_block.get_output_formats())
-            raise PipelineRunnerInvalidConfigError(
+            raise ValueError(
                 f"No matching formats between two objects: {previous_block} "
                 f"and {next_block}\n"
                 f"Output block supported formats: {output_formats_str}\n"

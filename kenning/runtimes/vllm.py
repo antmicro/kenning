@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
+    ModelNotLoadedError,
     ModelNotPreparedError,
 )
 from kenning.core.runtime import (
@@ -154,7 +155,7 @@ class VLLMRuntime(Runtime):
 
         Raises
         ------
-        RuntimeError
+        ModelNotLoadedError
             If the config files are missing.
 
         Returns
@@ -189,7 +190,7 @@ class VLLMRuntime(Runtime):
             raise KLogger.error_prepare_exception(
                 "Could not find config.json file in the model directory. "
                 + "Make sure the model is not corrupted",
-                RuntimeError,
+                ModelNotLoadedError,
             )
         if quantization is not None:
             KLogger.info(

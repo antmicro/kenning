@@ -13,7 +13,7 @@ from jinja2 import Template
 from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import NotSupportedError
+from kenning.core.exceptions import KenningModelWrapperError, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.utils.logger import KLogger
@@ -181,7 +181,7 @@ class LLM(ModelWrapper, ABC):
 
         Raises
         ------
-        RuntimeError
+        KenningModelWrapperError
             If the output data is not properly formatted, ie. the length
             of the output does not precede the output string or its
             value does not match the length of the string.
@@ -195,14 +195,14 @@ class LLM(ModelWrapper, ABC):
                 raise KLogger.error_prepare_exception(
                     "Output did not have length defined. "
                     + "Make sure the outputs are sent properly",
-                    RuntimeError,
+                    KenningModelWrapperError,
                 )
 
             if len(prompt_length) + 1 + int(prompt_length) > len(output):
                 raise KLogger.error_prepare_exception(
                     "Output length is greater than the output. "
                     + "Make sure the outputs are sent properly",
-                    RuntimeError,
+                    KenningModelWrapperError,
                 )
 
             prompt = output[0 : len(prompt_length) + 1 + int(prompt_length)]
@@ -213,7 +213,7 @@ class LLM(ModelWrapper, ABC):
             raise KLogger.error_prepare_exception(
                 "The output was not fully consumed. "
                 + "Make sure the outputs are sent properly",
-                RuntimeError,
+                KenningModelWrapperError,
             )
 
         return [result]

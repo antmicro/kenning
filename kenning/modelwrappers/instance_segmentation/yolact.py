@@ -20,7 +20,7 @@ import onnx
 import pyximport
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import NotSupportedError
+from kenning.core.exceptions import KenningModelWrapperError, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
@@ -239,11 +239,11 @@ class YOLACTWrapper(ModelWrapper, ABC):
 
         Raises
         ------
-        RuntimeError
+        KenningModelWrapperError
             If the batch size is not 1.
         """
         if len(X) != 1:
-            raise RuntimeError(
+            raise KenningModelWrapperError(
                 "YOLACT model expects only single image in a batch."
             )
         X = X[0]

@@ -22,6 +22,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
     generate_command_type,
 )
+from kenning.core.exceptions import VisualEditorError
 from kenning.utils.logger import (
     Callback,
     DuplicateStream,
@@ -131,7 +132,7 @@ class PipelineManagerClient(CommandTemplate):
 
             Raises
             ------
-            RuntimeError:
+            VisualEditorError:
                 Raised if frontend building failed
             """
             # provided these files exist, do not build the frontend again
@@ -151,7 +152,7 @@ class PipelineManagerClient(CommandTemplate):
                 / "resources/visual_editor_resources/",
             )
             if build_status != 0:
-                raise RuntimeError("Build error")
+                raise VisualEditorError("Build error")
 
         frontend_files_path = args.workspace_dir / "frontend/dist"
 
@@ -241,7 +242,7 @@ class PipelineManagerClient(CommandTemplate):
                         dataflow_handler, args.file_path, cls, client
                     )
                 else:
-                    raise RuntimeError(
+                    raise VisualEditorError(
                         f"Unrecognized f{args.spec_type} spec_type"
                     )
 

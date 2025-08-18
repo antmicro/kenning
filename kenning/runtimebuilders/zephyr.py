@@ -199,7 +199,7 @@ class WestRun:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError:
             msg = "Setting up virtual environment for west failed."
-            raise RuntimeError(msg)
+            raise KenningRuntimeBuilderError(msg)
 
     def _search_for_zephyr_base(self):
         if (p := os.environ.get("ZEPHYR_BASE", None)) is not None:
@@ -491,7 +491,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
                 stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
-            raise RuntimeError("Module preparation failed") from e
+            raise KenningRuntimeBuilderError(
+                "Module preparation failed"
+            ) from e
 
     def read_platform(self, platform: Platform):
         if type(platform).__name__ == "ZephyrPlatform":

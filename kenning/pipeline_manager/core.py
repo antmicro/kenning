@@ -20,6 +20,7 @@ from pipeline_manager.dataflow_builder.entities import (
     get_uuid,
 )
 
+from kenning.core.exceptions import VisualEditorGraphParserError
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
@@ -638,7 +639,9 @@ class PipelineManagerGraphCreator:
 
             if from_io_spec["type"] == to_io_spec["type"]:
                 return from_interface.id, to_interface.id
-        raise RuntimeError("No compatible connections were found")
+        raise VisualEditorGraphParserError(
+            "No compatible connections were found"
+        )
 
     def create_connection(self, from_id, to_id):
         from_interface_id, to_interface_id = self.find_compatible_io(

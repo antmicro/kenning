@@ -343,7 +343,7 @@ class FlowGraphCreator(GraphCreator):
                 return arg1["name"], arg2["name"]
         from_name = self.nodes[from_id]["type"].split(".")[-1]
         to_name = self.nodes[to_id]["type"].split(".")[-1]
-        raise RuntimeError(
+        raise VisualEditorGraphParserError(
             f"Couldn't find matching connection between "
             f"{from_name} and {to_name}"
         )
@@ -367,7 +367,7 @@ class FlowGraphCreator(GraphCreator):
             from_ = self.nodes[from_id]
             to_ = self.nodes[to_id]
             if local_to in to_["inputs"]:
-                raise RuntimeError(
+                raise VisualEditorGraphParserError(
                     f"Input {local_to} has more than one connection"
                 )
             if local_from in from_["outputs"]:

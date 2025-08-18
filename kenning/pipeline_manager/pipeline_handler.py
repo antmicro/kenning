@@ -358,7 +358,7 @@ class PipelineGraphCreator(GraphCreator):
             self.type_to_id[node.type].append(node_id)
         else:
             if node.type in self.type_to_id:
-                raise RuntimeError(
+                raise VisualEditorGraphParserError(
                     f"There should be only one {node.type} in a pipeline"
                 )
             self.type_to_id[node.type] = node_id
@@ -382,11 +382,11 @@ class PipelineGraphCreator(GraphCreator):
             self.first_optimizer = to_id
         if from_type == "optimizer" and to_type == "optimizer":
             if from_id in self.optimizer_order:
-                raise RuntimeError(error_message)
+                raise VisualEditorGraphParserError(error_message)
             self.optimizer_order[from_id] = to_id
         if from_type == "optimizer" and to_type != "optimizer":
             if from_id in self.optimizer_order:
-                raise RuntimeError(error_message)
+                raise VisualEditorGraphParserError(error_message)
             self.optimizer_order[from_id] = None
 
         if (from_type, to_type) in self.necessary_conn:
@@ -395,7 +395,7 @@ class PipelineGraphCreator(GraphCreator):
     def flush_graph(self) -> Dict:
         for (from_name, to_name), exists in self.necessary_conn.items():
             if not exists:
-                raise RuntimeError(
+                raise VisualEditorGraphParserError(
                     f"No established connection between {from_name} and "
                     f"{to_name}"
                 )

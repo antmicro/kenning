@@ -11,6 +11,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import KenningError
 from kenning.core.model import ModelWrapper
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
@@ -247,7 +248,7 @@ class ModelRuntimeRunner(Runner):
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         model_input = inputs.get("processed_input", inputs.get("input", None))
         if model_input is None:
-            raise RuntimeError("Cannot find input for the model")
+            raise KenningError("Cannot find input for the model")
 
         preds = self.runtime.infer(
             [model_input], self.model, postprocess=False

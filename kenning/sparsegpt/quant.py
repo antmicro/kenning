@@ -13,6 +13,8 @@ The original file was licensed under MIT.
 import torch
 import torch.nn as nn
 
+from kenning.core.exceptions import KenningOptimizerError
+
 
 class Quantizer(nn.Module):
     """
@@ -102,11 +104,11 @@ class Quantizer(nn.Module):
 
         Raises
         ------
-        RuntimeError
+        KenningOptimizerError
             If the quantizer is not configured yet.
         """
         if not self.configured:
-            raise RuntimeError(
+            raise KenningOptimizerError(
                 "Quantizer not configured yet. Call 'configure()' with "
                 "appropriate parameters."
             )

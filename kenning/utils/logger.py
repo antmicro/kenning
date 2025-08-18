@@ -81,6 +81,8 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         "%(message)s"
     )
 
+    custom_log_backends = {}
+
     def __init__(self):
         """
         Initialize the root logger.
@@ -104,6 +106,17 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         sys.stderr = prev_stderr
         if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
             self.configure()
+
+        class CustomBackendDispatcher(logging.Handler):
+            def __init__(self, logger):
+                super().__init__()
+                self.logger = logger
+
+            def emit(self, record):
+                for backend in self.logger.custom_log_backends.values():
+                    backend(f" [{record.levelname}] {self.format(record)}")
+
+        self.addHandler(CustomBackendDispatcher(self))
 
     @staticmethod
     def configure():
@@ -189,6 +202,41 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         setattr(self.__class__, level_name.lower(), custom_log)
         setattr(logging, level_name.lower(), custom_log_root)
 
+    def add_custom_backend(self, name: str, backend: Callable[str, None]):
+        """
+        Registers a callback function, that will be called each time a log
+        is received and will be given the log message as argument.
+
+        Parameters
+        ----------
+        name : str
+            Name under which the callback will be registered.
+        backend: Callable[str, None]
+            The actual callback function, that will receive log messages in the
+            format: [<log level name>] <message>
+        """
+        self.custom_log_backends[name] = backend
+
+    def remove_custom_backend(self, name: str) -> bool:
+        """
+        Removes a previously registered custom log backend (callback) based on
+        its name.
+
+        Parameters
+        ----------
+        name : str
+            Name of the callback to remove.
+
+        Returns
+        -------
+        bool
+            True if the backend was removed, False if backend does not exist.
+        """
+        if name in self.custom_log_backends.keys():
+            self.custom_log_backends.pop(name)
+            return True
+        return False
+
     def error_prepare_exception(
         self, message: str, exception: Exception, *args: Any, **kwargs: Any
     ) -> Exception:
@@ -224,7 +272,6 @@ class _KLogger(logging.Logger, metaclass=Singleton):
 
 
 KLogger = _KLogger()
-
 
 # ----------------
 # Tqdm Loading bar

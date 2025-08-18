@@ -42,7 +42,10 @@ from onnx2torch.utils.common import (
     OperationConverterResult,
 )
 
-from kenning.core.exceptions import NotSupportedError
+from kenning.core.exceptions import (
+    KenningONNXConverterError,
+    NotSupportedError,
+)
 from kenning.utils.logger import KLogger
 
 CONST_NODES = dict()
@@ -202,7 +205,7 @@ def gemm_converter(
 
     Raises
     ------
-    RuntimeError
+    KenningONNXConverterError
         Raised when weights were not found
     """
     a_name = node.input_values[0]
@@ -223,7 +226,7 @@ def gemm_converter(
     weights = extract_value_from_graph(node, graph, b_name)
 
     if weights is None:
-        raise RuntimeError("Missing weights for linear layer")
+        raise KenningONNXConverterError("Missing weights for linear layer")
 
     # Creating and returning Linear layer
     if not trans_b:
@@ -469,7 +472,7 @@ def max_pool_converter(
 
     Raises
     ------
-    RuntimeError
+    KenningONNXConverterError
         Raised when paddings can't be symmetrical
     """
     padding = extract_value_from_graph(node, graph, "pads")
@@ -480,7 +483,9 @@ def max_pool_converter(
         new_padding = []
         for begin_pad, end_pad in zip(begin_pads, end_pads):
             if (begin_pad + end_pad) % 2 != 0:
-                raise RuntimeError("Cannot make paddings symmetrical")
+                raise KenningONNXConverterError(
+                    "Cannot make paddings symmetrical"
+                )
             new_padding.append((begin_pad + end_pad) // 2)
         new_padding.extend(new_padding)
         node._proto_attributes["pads"] = new_padding

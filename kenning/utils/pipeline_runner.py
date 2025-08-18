@@ -16,6 +16,8 @@ from tqdm import tqdm
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
+    CompilationError,
+    KenningOptimizerError,
     ModelTooLargeError,
     NotSupportedError,
 )
@@ -530,8 +532,12 @@ class PipelineRunner(object):
 
         Raises
         ------
-        RuntimeError :
-            When any of the server request fails.
+        ValueError :
+            Model wrapper is missing.
+        KenningOptimizerError :
+            Failed to upload optimizer configuration.
+        CompilationError :
+            Model Compilation failed.
         """
         if not run_optimization:
             if self.optimizers:
@@ -612,14 +618,16 @@ class PipelineRunner(object):
                     "upload optimizers config",
                 )
                 if not ret:
-                    raise RuntimeError("Optimizers config upload failed")
+                    raise KenningOptimizerError(
+                        "Optimizers config upload failed"
+                    )
 
                 ret, compiled_model = check_request(
                     self.protocol.request_optimization(model_path),
                     "request optimization",
                 )
                 if not ret or compiled_model is None:
-                    raise RuntimeError("Model compilation failed")
+                    raise CompilationError("Model compilation failed")
 
                 prev_block = server_optimizers[-1]
                 with open(prev_block.compiled_model_path, "wb") as model_f:

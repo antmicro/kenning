@@ -12,6 +12,7 @@ from pathlib import Path
 from time import sleep
 from typing import List, Optional
 
+from kenning.core.exceptions import KenningPlatformError
 from kenning.core.measurements import Measurements
 from kenning.platforms.simulatable_platform import SimulatablePlatform
 from kenning.platforms.utils import UARTReader
@@ -249,7 +250,7 @@ class BareMetalPlatform(SimulatablePlatform):
             if self.openocd_path is None or not hasattr(
                 self, "openocd_flash_cmd"
             ):
-                raise RuntimeError(
+                raise KenningPlatformError(
                     "In order to run automatic flash, path to OpenOCD (openocd_flash_cmd) and flash script (openocd_flash_cmd) need to be provided"  # noqa: E501
                 )
             if self.runtime_binary_path is not None:
@@ -272,7 +273,7 @@ class BareMetalPlatform(SimulatablePlatform):
 
         Raises
         ------
-        RuntimeError
+        KenningPlatformError
             Raised when OpenOCD fails.
         """
         openocd_cmd = [str(self.openocd_path.expanduser())]
@@ -286,7 +287,7 @@ class BareMetalPlatform(SimulatablePlatform):
             result = subprocess.run(openocd_cmd, capture_output=True)
             result.check_returncode()
         except subprocess.CalledProcessError as e:
-            raise RuntimeError("OpenOCD failed") from e
+            raise KenningPlatformError("OpenOCD failed") from e
         except Exception as e:
             KLogger.debug(f"Flashing error {e}")
             raise

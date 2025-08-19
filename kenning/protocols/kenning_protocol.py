@@ -1305,10 +1305,10 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             if event.message_type not in self.current_protocol_events.keys():
                 self.current_protocol_events[event.message_type] = event
                 event.start_blocking()
-                KLogger.debug(f"{event} has been started in blocking mode.")
                 event_started = True
         if event_started:
             return event.wait(timeout)
+            KLogger.debug(f"{event} has been started in blocking mode.")
         else:
             raise ValueError(
                 f"{event} attempted to start while another event of the same"
@@ -1349,14 +1349,12 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             if event.message_type not in self.current_protocol_events.keys():
                 self.current_protocol_events[event.message_type] = event
                 event.start(success_callback, deny_callback)
-                KLogger.debug(
-                    f"{event} has been started in non-blocking mode."
-                )
             else:
                 raise ValueError(
                     f"{event} attempted to start while another event of the"
                     " same type was in progress."
                 )
+        KLogger.debug(f"{event} has been started in non-blocking mode.")
 
     def finish_event(
         self,

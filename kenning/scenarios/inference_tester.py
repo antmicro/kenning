@@ -170,13 +170,11 @@ class InferenceTester(CommandTemplate):
         # 'test' specific arguments
         if not types or TEST in types:
             if include_measurements:
-                other_group.add_argument(
-                    "--measurements",
-                    help="The path to the output JSON file with measurements",
-                    nargs=1,
-                    type=Path,
-                    default=[None],
-                )
+                flag_group.add_argument(
+                    "--report-cls",
+                    help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
+                    default="MarkdownReport",
+                ).completer = ClassPathCompleter(REPORT)
             other_group.add_argument(
                 "--evaluate-unoptimized",
                 help="Test model before optimization and append measurements",
@@ -191,11 +189,7 @@ class InferenceTester(CommandTemplate):
                 "--protocol-cls",
                 help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
             ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
-            flag_group.add_argument(
-                "--report-cls",
-                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
-                default="MarkdownReport",
-            ).completer = ClassPathCompleter(REPORT)
+
         # Only when scenario is used outside of Kenning CLI
         if not types:
             other_group.add_argument(
@@ -287,6 +281,7 @@ class InferenceTester(CommandTemplate):
         pipeline_runner = PipelineRunner.from_json_cfg(
             json_cfg,
             cfg_path=args.json_cfg,
+            include_measurements=hasattr(args, "report_cls"),
             override=(args, not_parsed),
         )
 
@@ -305,16 +300,19 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        keys = [
-            ConfigKey.platform,
-            ConfigKey.model_wrapper,
-            ConfigKey.dataset,
-            ConfigKey.runtime,
-            ConfigKey.optimizers,
-            ConfigKey.protocol,
-            ConfigKey.dataconverter,
-            ConfigKey.report,
-        ]
+        keys = (
+            [
+                ConfigKey.platform,
+                ConfigKey.model_wrapper,
+                ConfigKey.dataset,
+                ConfigKey.runtime,
+                ConfigKey.optimizers,
+                ConfigKey.protocol,
+            ]
+            + [ConfigKey.report]
+            if hasattr(args, "report_cls")
+            else []
+        )
 
         def required(objs: Dict[ConfigKey, Type]):
             compilercls = objs.get(ConfigKey.optimizers)

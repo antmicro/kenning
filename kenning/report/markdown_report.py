@@ -184,7 +184,7 @@ class MarkdownReport(Report):
                 "report.",
             )
 
-        if not self.measurements[0] and not self.to_html:
+        if self.measurements[0] is None and not self.to_html:
             raise argparse.ArgumentError(
                 None,
                 "'--measurements' have to be defined to generate new report. "

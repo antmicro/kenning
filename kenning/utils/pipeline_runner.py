@@ -157,6 +157,7 @@ class PipelineRunner(object):
         skip_runtime: bool = False,
         cfg_path: Optional[Path] = None,
         override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
+        include_measurements: bool = False,
     ):
         keys = [
             ConfigKey.dataset,
@@ -165,7 +166,7 @@ class PipelineRunner(object):
             ConfigKey.model_wrapper,
             ConfigKey.dataconverter,
             ConfigKey.runtime_builder,
-            ConfigKey.report,
+            *([ConfigKey.report] if include_measurements else []),
             *([ConfigKey.runtime] if not skip_runtime else []),
             *([ConfigKey.optimizers] if not skip_optimizers else []),
         ]

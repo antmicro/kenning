@@ -308,7 +308,11 @@ def objs_from_json(
         args, not_parsed = override
         merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
 
+    KLogger.debug(f"Merged args: {json_cfg}")
+
     objs = {key: obj_from_json(json_cfg, key) for key in keys_regular}
+
+    KLogger.debug(f"Objects: {objs}")
 
     dataset = objs.get(ConfigKey.dataset)
 
@@ -367,8 +371,6 @@ def merge_argparse_and_json(
     """
     keys = keys.difference([ConfigKey.dataconverter, ConfigKey.optimizers])
 
-    KLogger.debug(f"Merged keys: {keys}")
-
     classes = {
         key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
     }
@@ -376,8 +378,8 @@ def merge_argparse_and_json(
     # use default report class when no report class type has been detected
     if ConfigKey.report not in classes.keys() and ConfigKey.report in keys:
         classes[ConfigKey.report] = MarkdownReport
+        json_cfg[ConfigKey.report] = {}
 
-    KLogger.debug(f"Merged classes: {classes}")
     args = parse_classes(
         list(classes.values()), args, not_parsed, override_only=True
     )

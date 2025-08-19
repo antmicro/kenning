@@ -592,9 +592,9 @@ def add_argparse_argument(
 
             if get_origin(prop_type) in {UnionType, Union}:
                 union_types = get_args(prop_type)
-
+                # KLogger.debug(f"Union types: {union_types}")
                 keywords["type"] = lambda v: convert(
-                    v=v, converters=get_args(prop_type)
+                    v=v, converters=union_types
                 )
 
                 if bool in union_types:

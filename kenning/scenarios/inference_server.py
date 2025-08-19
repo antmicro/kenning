@@ -38,7 +38,7 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
-from kenning.core.exceptions import ModelNotPreparedError
+from kenning.core.exceptions import ModelNotPreparedError, NotSupportedError
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, ServerAction, ServerStatus
 from kenning.core.runtime import Runtime
@@ -102,9 +102,22 @@ class InferenceServer(object):
 
         def client_disconnected_callback():
             self.status = ServerStatus(ServerAction.WAITING_FOR_CLIENT)
+            try:
+                self.protocol.stop_sending_logs()
+            except NotSupportedError:
+                KLogger.debug(
+                    "Attempted to stop sending logs, but the selected protocol"
+                    " does not support sending logs in the first place."
+                )
 
         def client_connected_callback(addr):
             self.status = ServerStatus(ServerAction.CLIENT_CONNECTED)
+            try:
+                self.protocol.start_sending_logs()
+            except NotSupportedError:
+                KLogger.warning(
+                    "Selected protocol does not support sending logs."
+                )
 
         self.status = ServerStatus(
             ServerAction.WAITING_FOR_CLIENT,
@@ -131,6 +144,13 @@ class InferenceServer(object):
             self._optimize_model_callback,
         )
         self.close_server_event.wait()
+        try:
+            self.protocol.stop_sending_logs()
+        except NotSupportedError:
+            KLogger.debug(
+                "Attempted to stop sending logs, but the selected protocol"
+                " does not support sending logs in the first place."
+            )
         self.status = ServerStatus(ServerAction.IDLE)
         self.protocol.disconnect()
 

@@ -464,6 +464,7 @@ def get_parsed_args_dict(
             and value is not None
             and get_origin(arg_properties["type"]) not in (UnionType, Union)
         ):
+            KLogger.debug(f"Parsing value {value} of {arg_name}")
             value = arg_properties["type"](value)
 
         parsed_args[arg_name] = value

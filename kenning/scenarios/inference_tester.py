@@ -344,6 +344,13 @@ class InferenceTester(CommandTemplate):
 
         subcommands = get_used_subcommands(args)
 
+        output = None
+
+        if pipeline_runner.output is None:
+            output = args.measurements[0]
+        else:
+            output = pipeline_runner.output
+
         verbosity = args.verbosity
         convert_to_onnx = getattr(args, "convert_to_onnx", False)
         max_target_side_optimizers = getattr(
@@ -359,6 +366,7 @@ class InferenceTester(CommandTemplate):
         )
         try:
             ret = pipeline_runner.run(
+                output=output,
                 verbosity=verbosity,
                 convert_to_onnx=convert_to_onnx,
                 max_target_side_optimizers=max_target_side_optimizers,
@@ -368,15 +376,15 @@ class InferenceTester(CommandTemplate):
             )
 
             evaluate_unoptimized = getattr(args, "evaluate_unoptimized", False)
-            if evaluate_unoptimized and not ret and pipeline_runner.output:
+            if evaluate_unoptimized and not ret and output:
                 if not run_optimizations:
                     raise ValueError(
                         "If optimizations are skipped, the model will already "
                         "be unoptimized, thus '--evaluate-unoptimized' is "
                         "redundant"
                     )
-                unoptimized_output = pipeline_runner.output.parent / (
-                    "unoptmized_" + pipeline_runner.output.name
+                unoptimized_output = output.parent / (
+                    "unoptmized_" + output.name
                 )
                 pipeline_runner.optimizers = []
                 ret |= pipeline_runner.run(
@@ -388,7 +396,7 @@ class InferenceTester(CommandTemplate):
                     run_benchmarks=run_benchmarks,
                 )
                 MeasurementsCollector.set_unoptimized(
-                    pipeline_runner.output, unoptimized_output
+                    output, unoptimized_output
                 )
         except ValidationError as ex:
             KLogger.error(

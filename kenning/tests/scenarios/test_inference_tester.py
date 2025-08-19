@@ -67,6 +67,7 @@ def measurements_expected(
     mock.run = run
     mock.optimizers = [None]
     mock.dataset = mocker.Mock()
+    mock.output = None
 
     name = f"{module}.get_command"
     mocker.patch(name, return_value="")

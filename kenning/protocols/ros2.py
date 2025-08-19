@@ -355,6 +355,12 @@ class ROS2Protocol(Protocol):
             "Kenning Server cannot use ROS2 (the protocol is client-side only)"
         )
 
+    def start_sending_logs(self):
+        raise NotSupportedError("ROS2 protocol does not support sending logs.")
+
+    def stop_sending_logs(self):
+        raise NotSupportedError("ROS2 protocol does not support sending logs.")
+
     def listen_to_server_logs(self):
         raise NotSupportedError("ROS2 protocol does not support sending logs.")
 

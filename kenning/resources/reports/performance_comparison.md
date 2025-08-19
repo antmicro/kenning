@@ -182,16 +182,25 @@ header-rows: 0
 align: center
 ---
 * - Model name
+{% if 'session_utilization_cpus_percent_avg_path' in data %}
   - Average CPU usage [%]
+{%- endif -%}
+{% if 'session_utilization_mem_percent' in data %}
   - Average memory usage [%]
+{%- endif -%}
 {% if 'session_utilization_gpu_mem_utilization_path' in data %}
   - Average GPU usage [%]
   - Average GPU memory usage [MB]
 {% endif %}
 {% for model_name in data["model_names"] %}
 * - {{model_name}}
+
+{% if 'session_utilization_cpus_percent_avg_path' in data %}
   - {{'%.3f' % data[model_name]["session_utilization_cpus_percent_avg_mean"]}}
+{%- endif -%}
+{% if 'session_utilization_mem_percent' in data %}
   - {{'%.3f' % data[model_name]["session_utilization_mem_percent_mean"]}}
+{%- endif -%}
 {% if 'session_utilization_gpu_mem_utilization_mean' in data[model_name] %}
   - {{'%.3f' % data[model_name]["session_utilization_gpu_utilization_mean"]}}
   - {{'%.6f' % data[model_name]["session_utilization_gpu_mem_utilization_mean"]}}

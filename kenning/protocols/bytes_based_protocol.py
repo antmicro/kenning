@@ -36,6 +36,14 @@ from kenning.utils.logger import KLogger
 
 KLogger.add_custom_level(logging.INFO + 2, "DEVICE")
 
+# Name for the custom logging backend registered in KLogger used to send logs
+# over the protocol.
+CUSTOM_LOGGING_BACKEND_NAME = "send logs over protocol"
+
+# Maximum size of a log message sent over the protocol is 255 bytes, because
+# message size field is only 1 byte.
+MAX_LOG_MESSAGE_SIZE = 255
+
 
 class IncomingEventType(Enum):
     """
@@ -548,18 +556,37 @@ class BytesBasedProtocol(Protocol, ABC):
             data: bytes,
             flags: List[TransmissionFlag],
         ):
-            if TransmissionFlag.IS_ZEPHYR in flags:
-                while len(data) > 0:
-                    size = data[0]
-                    KLogger.device(data[1:size].decode("ascii"))
-                    data = data[size:]
-            elif TransmissionFlag.IS_KENNING in flags:
-                raise NotImplementedError
-            else:
-                KLogger.warning("Received logs from unknown source.")
+            while len(data) > 0:
+                size = data[0]
+                KLogger.device(data[1 : size + 1].decode("ascii"))
+                data = data[size + 1 :]
 
         KLogger.debug("Receiving logs from the server...")
         self.listen(MessageType.LOGS, parse_logs)
+
+    def start_sending_logs(self):
+        def send_log(message: str):
+            if "MessageType.LOGS" not in message:
+                data = message.encode("ascii")[: MAX_LOG_MESSAGE_SIZE + 1]
+                self.log_buffer += min(
+                    len(data), MAX_LOG_MESSAGE_SIZE
+                ).to_bytes(1, "big")
+                self.log_buffer += data
+                if not self.event_active(MessageType.LOGS):
+                    self.transmit(
+                        MessageType.LOGS,
+                        self.log_buffer,
+                        [TransmissionFlag.IS_KENNING],
+                    )
+                    self.log_buffer = b""
+
+        self.log_buffer = b""
+        KLogger.add_custom_backend(CUSTOM_LOGGING_BACKEND_NAME, send_log)
+        KLogger.debug("Sending logs over the protocol...")
+
+    def stop_sending_logs(self):
+        KLogger.debug("Stopping log sending...")
+        KLogger.remove_custom_backend(CUSTOM_LOGGING_BACKEND_NAME)
 
     def serve(
         self,

@@ -44,6 +44,7 @@ from kenning.core.report import Report
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.report.markdown_report import MarkdownReport
 from kenning.utils.args_manager import (
     convert_to_jsontype,
     get_parsed_args_dict,
@@ -365,9 +366,18 @@ def merge_argparse_and_json(
         Remaining arguments.
     """
     keys = keys.difference([ConfigKey.dataconverter, ConfigKey.optimizers])
+
+    KLogger.debug(f"Merged keys: {keys}")
+
     classes = {
         key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
     }
+
+    # use default report class when no report class type has been detected
+    if ConfigKey.report not in classes.keys() and ConfigKey.report in keys:
+        classes[ConfigKey.report] = MarkdownReport
+
+    KLogger.debug(f"Merged classes: {classes}")
     args = parse_classes(
         list(classes.values()), args, not_parsed, override_only=True
     )
@@ -412,6 +422,10 @@ def objs_from_argparse(
         if (class_arg := getattr(args, to_namespace_name(key), None))
         if (cls := load_class(class_arg))
     }
+
+    # use default report class when no report class type has been detected
+    if ConfigKey.report not in classes.keys() and ConfigKey.report in keys:
+        classes[ConfigKey.report] = MarkdownReport
 
     if required:
         required(classes)

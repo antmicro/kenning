@@ -62,64 +62,75 @@ class MarkdownReport(Report):
                 it can receive path to the folder where HTML will be saved",
             "type": bool | Path,
             "default": False,
+            "overridable": True,
         },
         "report_path": {
             "description": "Path to the output MyST file",
             "type": Path,
             "default": None,
+            "overridable": True,
         },
         "root_dir": {
             "description": "Path to root directory for documentation \
                 (paths in the MyST file are relative to this directory)",
             "type": Path,
             "default": None,
+            "overridable": True,
         },
         "img_dir": {
             "description": "Path to the directory where images will be stored",
             "type": Path,
             "default": None,
+            "overridable": True,
         },
         "only_png_images": {
             "description": "Forcing to generate images only in PNG format, \
                 if not specified also images in HTML will be generated",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
         "model_names": {
             "description": "Names of the models used to create measurements\
                   in order",
             "type": str,
             "default": None,
+            "overridable": True,
         },
         "comparison_only": {
             "description": "Creates only sections with comparisons\
                   of metrics and time series",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
         "skip_unoptimized_model": {
             "description": "Do not use measurements \
                 of unoptimized model",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
         "smaller_header": {
             "description": "Use smaller size for header \
                 containing report name",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
         "save_summary": {
             "description": "Saves JSON file with summary data from the report\
                  to file specified in report-path with suffix `.summary.json`",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
         "skip_general_information": {
             "description": "Removes beginning sections listing \
                 used configuration and commands",
             "type": bool,
             "default": False,
+            "overridable": True,
         },
     }
 

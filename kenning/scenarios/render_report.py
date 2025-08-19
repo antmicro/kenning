@@ -41,6 +41,8 @@ from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
     load_class_by_type,
+    merge_argparse_and_json,
+    obj_from_json,
 )
 from kenning.utils.logger import KLogger
 
@@ -166,47 +168,13 @@ class RenderReport(CommandTemplate):
             # Get it from argument line if definition not present in cfg file
             return RenderReport._run_from_flags(args, command, not_parsed)
 
-        reportcls = None
-
-        if "type" in json_cfg[ConfigKey.report].keys():
-            KLogger.debug("Getting report class from config file!")
-            reportcls = load_class_by_type(
-                json_cfg[ConfigKey.report]["type", REPORT]
-            )
-
-        if reportcls is None:
-            KLogger.debug("Getting report class from flag --report-cls")
-            reportcls: Report = load_class_by_type(
-                getattr(args, "report_cls", None), REPORT
-            )
-
-        if reportcls is None:
-            KLogger.info(
-                "Using default MarkdownReport class for report generation!"
-            )
-            reportcls = MarkdownReport
-
-        for key, value in json_cfg[ConfigKey.report]["parameters"].items():
-            if value is not None:
-                setattr(args, key, value)
-
-        # override some arguments from config file with arguments from flags
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
-            + "\n",
-            parents=[reportcls.form_argparse(args)[0]],
-            add_help=False,
+        merge_argparse_and_json(
+            set([ConfigKey.report]), json_cfg, args, not_parsed
         )
 
-        if args.help:
-            raise ParserHelpException(parser)
+        KLogger.debug(f"Report merged json_cfg: {json_cfg[ConfigKey.report]}")
 
-        for key, value in parser.parse_known_args(not_parsed, namespace=args)[
-            0
-        ].__dict__.items():
-            setattr(args, key, value)
-
-        report = reportcls.from_argparse(args)
+        report = obj_from_json(json_cfg, ConfigKey.report)
 
         subcommands = get_used_subcommands(args)
 

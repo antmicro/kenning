@@ -45,22 +45,26 @@ class Report(ArgumentsHandler, ABC):
             "description": "Path to the JSON files with measurements",
             "type": Path | list[Path],
             "default": [None],
+            "overridable": True,
         },
         "report_name": {
             "description": "Name of the report",
             "type": str,
             "default": None,
+            "overridable": True,
         },
         "report_types": {
             "description": "List of types that implement this report",
             "type": list[str],
             "default": None,
+            "overridable": True,
         },
         "automl_stats": {
             "description": "Path to the JSON file with statistics\
                   during the AutoML run",
             "type": Path,
             "default": False,
+            "overridable": True,
         },
     }
 

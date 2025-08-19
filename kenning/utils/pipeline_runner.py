@@ -31,6 +31,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol, check_request
+from kenning.core.report import Report
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.dataconverters.modelwrapper_dataconverter import (
@@ -59,6 +60,7 @@ class PipelineRunner(object):
         runtime: Optional[Runtime] = None,
         runtime_builder: Optional[RuntimeBuilder] = None,
         configuration_path: Optional[Path] = None,
+        report: Optional[Report] = None,
     ):
         """
         Initializes the PipelineRunner object.
@@ -83,6 +85,8 @@ class PipelineRunner(object):
             RuntimeBuilder object that builds the runtime.
         configuration_path : Optional[Path]
             Path to the file containing configuration.
+        report: Optional[Report]
+            Report used to gather some information like measurements.
 
         Raises
         ------
@@ -99,6 +103,11 @@ class PipelineRunner(object):
         self.runtime_builder = runtime_builder
         self.should_cancel = False
         self.configuration_path = configuration_path
+
+        self.output = None
+
+        if report is not None:
+            self.output = report.measurements[0]
 
         # resolve defaults
         if (
@@ -156,6 +165,7 @@ class PipelineRunner(object):
             ConfigKey.model_wrapper,
             ConfigKey.dataconverter,
             ConfigKey.runtime_builder,
+            ConfigKey.report,
             *([ConfigKey.runtime] if not skip_runtime else []),
             *([ConfigKey.optimizers] if not skip_optimizers else []),
         ]
@@ -315,6 +325,9 @@ class PipelineRunner(object):
         ValueError
             Raised when invalid values are provided.
         """
+        if output is None:
+            output = self.output
+
         if not (run_optimizations or run_benchmarks):
             raise ValueError(
                 "If both optimizations and benchmarks are skipped, pipeline "

@@ -214,11 +214,6 @@ class AutoMLCommand(InferenceTester):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        if not_parsed:
-            raise argparse.ArgumentError(
-                None, f"unrecognized arguments: {' '.join(not_parsed)}"
-            )
-
         with open(args.json_cfg, "r") as f:
             cfg = yaml.safe_load(f)
 

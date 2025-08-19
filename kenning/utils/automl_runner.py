@@ -61,11 +61,7 @@ class AutoMLRunner(object):
         cfg: Dict,
         override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
     ):
-        keys = [
-            ConfigKey.dataset,
-            ConfigKey.platform,
-            ConfigKey.optimizers,
-        ]
+        keys = [ConfigKey.dataset, ConfigKey.platform, ConfigKey.optimizers]
 
         objs = objs_from_json(cfg, set(keys), override)
         autoML = obj_from_json(

@@ -66,12 +66,10 @@ from kenning.cli.completers import (
     ClassPathCompleter,
 )
 from kenning.core.measurements import MeasurementsCollector
-from kenning.core.report import Report
 from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
-    obj_from_json,
     objs_from_argparse,
 )
 from kenning.utils.logger import KLogger
@@ -292,12 +290,9 @@ class InferenceTester(CommandTemplate):
             override=(args, not_parsed),
         )
 
-        if (
-            args.measurements[0] is None
-            and ConfigKey.report in json_cfg.keys()
-        ):
-            report: Report = obj_from_json(json_cfg, ConfigKey.report)
-            args.measurements = report.measurements
+        # pass already parsed report to RenderReport
+        if hasattr(args, "report_cls"):
+            args.parsed_report = pipeline_runner.report
 
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner
@@ -350,7 +345,7 @@ class InferenceTester(CommandTemplate):
         from kenning.cli.config import get_used_subcommands
 
         subcommands = get_used_subcommands(args)
-        output = args.measurements[0] if args.measurements[0] else None
+
         verbosity = args.verbosity
         convert_to_onnx = getattr(args, "convert_to_onnx", False)
         max_target_side_optimizers = getattr(
@@ -366,7 +361,6 @@ class InferenceTester(CommandTemplate):
         )
         try:
             ret = pipeline_runner.run(
-                output=output,
                 verbosity=verbosity,
                 convert_to_onnx=convert_to_onnx,
                 max_target_side_optimizers=max_target_side_optimizers,
@@ -376,15 +370,15 @@ class InferenceTester(CommandTemplate):
             )
 
             evaluate_unoptimized = getattr(args, "evaluate_unoptimized", False)
-            if evaluate_unoptimized and not ret and output:
+            if evaluate_unoptimized and not ret and pipeline_runner.output:
                 if not run_optimizations:
                     raise ValueError(
                         "If optimizations are skipped, the model will already "
                         "be unoptimized, thus '--evaluate-unoptimized' is "
                         "redundant"
                     )
-                unoptimized_output = output.parent / (
-                    "unoptmized_" + output.name
+                unoptimized_output = pipeline_runner.output.parent / (
+                    "unoptmized_" + pipeline_runner.output.name
                 )
                 pipeline_runner.optimizers = []
                 ret |= pipeline_runner.run(
@@ -396,7 +390,7 @@ class InferenceTester(CommandTemplate):
                     run_benchmarks=run_benchmarks,
                 )
                 MeasurementsCollector.set_unoptimized(
-                    output, unoptimized_output
+                    pipeline_runner.output, unoptimized_output
                 )
         except ValidationError as ex:
             KLogger.error(

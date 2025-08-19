@@ -193,6 +193,11 @@ class InferenceTester(CommandTemplate):
                 "--protocol-cls",
                 help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
             ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
+            flag_group.add_argument(
+                "--report-cls",
+                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
+                default="MarkdownReport",
+            ).completer = ClassPathCompleter(REPORT)
         # Only when scenario is used outside of Kenning CLI
         if not types:
             other_group.add_argument(

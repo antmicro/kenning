@@ -61,6 +61,8 @@ class ZephyrPlatform(BareMetalPlatform):
         openocd_path: Path = "openocd",
         zephyr_build_path: Optional[PathOrURI] = None,
         llext_binary_path: Optional[PathOrURI] = None,
+        sensor: Optional[str] = None,
+        number_of_batches: int = 16,
     ):
         """
         Constructs Zephyr platform.
@@ -113,6 +115,10 @@ class ZephyrPlatform(BareMetalPlatform):
             Path to Zephyr build directory.
         llext_binary_path : Optional[PathOrURI]
             Path to runtime binary.
+        sensor : Optional[str]
+            Name of the sensor.
+        number_of_batches : int
+            Number of batches available.
         """
         self.zephyr_build_path = zephyr_build_path
         self.llext_binary_path = llext_binary_path
@@ -137,6 +143,8 @@ class ZephyrPlatform(BareMetalPlatform):
             uart_log_baudrate=uart_log_baudrate,
             auto_flash=auto_flash,
             openocd_path=openocd_path,
+            sensor=sensor,
+            number_of_batches=number_of_batches,
         )
 
     def _init_hardware(self):

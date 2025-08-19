@@ -69,7 +69,7 @@ class BareMetalPlatform(SimulatablePlatform):
             "default": None,
         },
         "number_of_batches": {
-            "description": "Number of batches made of samples.",
+            "description": "Number of samples per sample.",
             "type": int,
             "default": 16,
         },
@@ -102,6 +102,8 @@ class BareMetalPlatform(SimulatablePlatform):
         uart_log_baudrate: int = None,
         auto_flash: bool = False,
         openocd_path: Path = "openocd",
+        sensor: Optional[str] = None,
+        number_of_batches: int = 16,
     ):
         """
         Constructs bare-metal platform.
@@ -150,6 +152,10 @@ class BareMetalPlatform(SimulatablePlatform):
             If disabled, the hardware is assumed to be flashed.
         openocd_path : Path
             Path to the OpenOCD.
+        sensor : Optional[str]
+            Name of the sensor.
+        number_of_batches : int
+            Batch size determining the number of samples per batch.
         """
         self.uart_port = uart_port
         self.uart_baudrate = uart_baudrate
@@ -157,6 +163,8 @@ class BareMetalPlatform(SimulatablePlatform):
         self.uart_log_baudrate = uart_log_baudrate
         self.auto_flash = auto_flash
         self.openocd_path = openocd_path
+        self.sensor = sensor
+        self.number_of_batches = number_of_batches
 
         # fields obtained from platforms.yml
         self.display_name = None

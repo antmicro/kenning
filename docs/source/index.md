@@ -17,6 +17,7 @@ sample-automl-report
 kenning-flow
 kenning-development
 kenning-resources
+kenning-protocols
 kenning-platforms
 kenning-api
 ```

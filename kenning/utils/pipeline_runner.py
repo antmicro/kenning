@@ -106,6 +106,8 @@ class PipelineRunner(object):
 
         self.output = None
 
+        self.report = report
+
         if report is not None:
             self.output = report.measurements[0]
 

@@ -237,7 +237,7 @@ class InferenceTester(CommandTemplate):
     ):
         required_args = (
             [1] + [2]
-            if args.measurements[0] is not None
+            if hasattr(args, "report_cls")
             else [] + [3]
             if "compiler_cls" in args
             else []
@@ -256,6 +256,7 @@ class InferenceTester(CommandTemplate):
             "runtime_cls",
             "protocol_cls",
         ]
+
         args = InferenceTester.prepare_args(args, flag_config_args)
 
         if args.json_cfg is not None:
@@ -328,6 +329,9 @@ class InferenceTester(CommandTemplate):
             args, not_parsed, set(keys), required=required
         )
 
+        if ConfigKey.report in objs.keys():
+            args.parsed_report = objs[ConfigKey.report]
+
         pipeline_runner = PipelineRunner.from_objs_dict(objs)
 
         return InferenceTester._run_pipeline(
@@ -346,6 +350,7 @@ class InferenceTester(CommandTemplate):
 
         output = None
 
+        # this is added to make inference testser's tests work
         if pipeline_runner.output is None:
             output = args.measurements[0]
         else:

@@ -226,6 +226,16 @@ class RenderReport(CommandTemplate):
 
         flag_config_args = []
 
+        if hasattr(args, "parsed_report"):
+            KLogger.debug("Parsed report detectd, using aleardy parsed report")
+            report = args.parsed_report
+
+            from kenning.cli.config import get_used_subcommands
+
+            subcommands = get_used_subcommands(args)
+
+            return report.generate_report(subcommands, command)
+
         args = RenderReport.prepare_args(args, flag_config_args)
 
         if args.json_cfg is not None:

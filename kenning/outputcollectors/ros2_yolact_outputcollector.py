@@ -14,7 +14,13 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import rclpy
 import sensor_msgs.msg
-from kenning_computer_vision_msgs.msg import BoxMsg, MaskMsg, SegmentationMsg
+from kenning_computer_vision_msgs.msg import (
+    BoxMsg,
+    FrameSegmentationMsg,
+    MaskMsg,
+    SegmentationMsg,
+    VideoFrameMsg,
+)
 from rclpy.node import Node
 
 from kenning.core.exceptions import NotSupportedError
@@ -106,7 +112,7 @@ class ROS2YolactOutputCollector(OutputCollector):
         self._node = Node(self._node_name)
 
         self._topic_publisher = self._node.create_publisher(
-            SegmentationMsg, self._topic_name, 2
+            FrameSegmentationMsg, self._topic_name, 2
         )
 
     def run(self, inputs: Dict[str, Tuple[int, str]]) -> Dict[str, str]:
@@ -166,7 +172,7 @@ class ROS2YolactOutputCollector(OutputCollector):
         }
 
     def _extract_yolact_output(
-        self, y: List[SegmObject], yolact_msg: SegmentationMsg
+        self, y: List[SegmObject], yolact_msg: FrameSegmentationMsg
     ):
         """
         Extracts YOLACT output from given list of SegmObject.
@@ -175,9 +181,12 @@ class ROS2YolactOutputCollector(OutputCollector):
         ----------
         y : List[SegmObject]
             List of SegmObject to be converted to numpy arrays.
-        yolact_msg : SegmentationMsg
-            SegmentationMsg to be filled with masks, boxes, scores and classes.
+        yolact_msg : FrameSegmentationMsg
+            FrameSegmentationMsg to be filled with masks, boxes,
+            scores and classes.
         """
+        segmentation = SegmentationMsg()
+
         classes, scores, masks, boxes = [], [], [], []
         for obj in y:
             classes.append(obj.clsname)
@@ -193,10 +202,12 @@ class ROS2YolactOutputCollector(OutputCollector):
             box._xmax = float(obj.xmax)
             box._ymax = float(obj.ymax)
             boxes.append(box)
-        yolact_msg._classes = classes
-        yolact_msg._masks = masks
-        yolact_msg._scores = scores
-        yolact_msg._boxes = boxes
+        segmentation.classes = classes
+        segmentation.masks = masks
+        segmentation.scores = scores
+        segmentation.boxes = boxes
+
+        yolact_msg.segmentation = segmentation
 
     def _create_yolact_msg(
         self, image: np.ndarray, y: List[SegmObject]
@@ -216,12 +227,12 @@ class ROS2YolactOutputCollector(OutputCollector):
         SegmentationMsg
             Filled SegmentationMsg message ready to be published.
         """
-        yolact_msg = SegmentationMsg()
+        yolact_msg = FrameSegmentationMsg()
         yolact_msg.frame = self._create_frame_msg(image)
         self._extract_yolact_output(y, yolact_msg)
         return yolact_msg
 
-    def _create_frame_msg(self, image: np.ndarray) -> sensor_msgs.msg.Image:
+    def _create_frame_msg(self, image: np.ndarray) -> VideoFrameMsg:
         """
         Creates ROS2 Image message from given image.
 
@@ -232,24 +243,30 @@ class ROS2YolactOutputCollector(OutputCollector):
 
         Returns
         -------
-        sensor_msgs.msg.Image
-            Image message filled with given image data.
+        VideoFrameMsg
+            VideoFrameMsg message filled with given image data.
         """
         image = image.squeeze()
         if self._input_memory_layout == "NCHW":
             image = np.transpose(image, (1, 2, 0))
 
-        message = sensor_msgs.msg.Image()
+        message = VideoFrameMsg()
 
-        message.header.stamp = self._node.get_clock().now().to_msg()
-        message.header.frame_id = "camera_frame"
-        message.height, message.width = image.shape[0], image.shape[1]
-        message.encoding = self._color_format_to_encoding(
+        frame = sensor_msgs.msg.Image()
+
+        frame.header.stamp = self._node.get_clock().now().to_msg()
+        frame.header.frame_id = "camera_frame"
+        frame.height, frame.width = image.shape[0], image.shape[1]
+        frame.encoding = self._color_format_to_encoding(
             self._input_color_format
         )
-        message.is_bigendian = False
-        message.step = message.width * image.shape[2]
-        message._data = image.tobytes()
+        frame.is_bigendian = False
+        frame.step = frame.width * image.shape[2]
+        frame._data = image.tobytes()
+
+        message.frame = frame
+        message.video_id = "camera_frame"
+
         return message
 
     def _color_format_to_encoding(self, color_format: str) -> str:

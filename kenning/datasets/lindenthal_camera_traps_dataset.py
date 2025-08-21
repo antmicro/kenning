@@ -369,6 +369,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         max_preds: int = 100,
         augment: bool = False,
         use_demonstration_dataset: bool = False,
+        dataset_percentage: float = 1,
     ):
         self.num_classes = 4
         self.augment = augment
@@ -390,6 +391,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
             image_height=image_height,
             min_iou=min_iou,
             max_preds=max_preds,
+            dataset_percentage=dataset_percentage,
         )
 
     def download_original_dataset(self):

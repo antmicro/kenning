@@ -10,9 +10,10 @@ in the environment.
 """
 
 import json
+import time
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Callable, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
 import rclpy
 from rclpy.action import ActionClient
@@ -353,6 +354,91 @@ class ROS2Protocol(Protocol):
     ) -> bool:
         raise NotSupportedError(
             "Kenning Server cannot use ROS2 (the protocol is client-side only)"
+        )
+
+    def request_optimization(
+        self,
+        model_path: Path,
+        get_time_func: Callable[[], float] = time.perf_counter,
+    ) -> Tuple[bool, Optional[bytes]]:
+        """
+        Request optimization of model.
+
+        Parameters
+        ----------
+        model_path : Path
+            Path to the model for optimization.
+        get_time_func : Callable[[], float]
+            Function that returns current timestamp.
+
+        Returns
+        -------
+        Tuple[bool, Optional[bytes]]
+            First element is equal to True if optimization finished
+            successfully and the second element contains compiled model.
+
+        Raises
+        ------
+        NotSupportedError
+            Indicates that function is not currently supported by
+            ROS2 Protocol.
+        """
+        raise NotSupportedError(
+            "ROS2 protocol does not support request optimization."
+        )
+
+    def upload_optimizers(self, optimizers_cfg: Dict[str, Any]) -> bool:
+        """
+        Upload optimizers config to the target device.
+
+        Parameters
+        ----------
+        optimizers_cfg : Dict[str, Any]
+            Config JSON of optimizers.
+
+        Returns
+        -------
+        bool
+            True if data upload finished successfully.
+
+        Raises
+        ------
+        NotSupportedError
+            Indicates that function is not currently supported by
+            ROS2 Protocol.
+        """
+        raise NotSupportedError(
+            "ROS2 protocol does not support upload opimizers."
+        )
+
+    def upload_runtime(self, path: Path) -> bool:
+        """
+        Uploads the runtime to the target device.
+
+        This method takes the binary from given Path and sends it to the target
+        device.
+
+        This method should receive the status of runtime loading from the
+        target.
+
+        Parameters
+        ----------
+        path : Path
+            Path to the runtime binary.
+
+        Returns
+        -------
+        bool
+            True if runtime upload finished successfully.
+
+        Raises
+        ------
+        NotSupportedError
+            Indicates that function is not currently supported by
+            ROS2 Protocol.
+        """
+        raise NotSupportedError(
+            "ROS2 protocol does not support upload runtime."
         )
 
     def start_sending_logs(self):

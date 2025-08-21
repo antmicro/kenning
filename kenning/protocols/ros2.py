@@ -92,6 +92,7 @@ class ROS2Protocol(Protocol):
         model_service_name: str = "cvnode_prepare",
         measurements_service_type_str: str = "std_srvs.srv.Trigger",
         measurements_service_name: str = "cvnode_measurements",
+        timeout: int = -1,
     ):
         """
         Initializes ROS2Protocol object.
@@ -112,6 +113,9 @@ class ROS2Protocol(Protocol):
             Import path to the service class for MEASUREMENTS request to use.
         measurements_service_name: str
             Name of the service to get measurements.
+        timeout : int
+            Response receive timeout in seconds. If negative, then waits for
+            responses forever.
         """
         # ROS2 node
         self.node = None
@@ -140,7 +144,7 @@ class ROS2Protocol(Protocol):
         # Last message's future
         self.future = None
 
-        super().__init__()
+        super().__init__(timeout=timeout)
 
     def log_info(self, message: str):
         """

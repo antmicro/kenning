@@ -304,6 +304,7 @@ class InferenceTester(CommandTemplate):
             ConfigKey.runtime,
             ConfigKey.optimizers,
             ConfigKey.protocol,
+            ConfigKey.dataconverter,
         ]
 
         def required(objs: Dict[ConfigKey, Type]):

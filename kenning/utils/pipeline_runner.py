@@ -154,6 +154,7 @@ class PipelineRunner(object):
             ConfigKey.platform,
             ConfigKey.protocol,
             ConfigKey.model_wrapper,
+            ConfigKey.dataconverter,
             ConfigKey.runtime_builder,
             *([ConfigKey.runtime] if not skip_runtime else []),
             *([ConfigKey.optimizers] if not skip_optimizers else []),

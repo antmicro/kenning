@@ -116,6 +116,9 @@ iree = [
 onnxruntime = [
     "onnxruntime>=1.12.0",
 ]
+onnxruntime_gpu = [
+    "onnxruntime-gpu==1.18.0",
+]
 test = [
     "filelock",
     "pexpect",

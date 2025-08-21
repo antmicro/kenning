@@ -72,11 +72,87 @@ python -m kenning report \
     --measurements build/yolact-tvm.json build/yolact-onnx.json
 ```
 
+Brief summary of theses two models' performance:
+
+:::{figure} ./img/yolact-cpu-mean-performance-comparison.*
+---
+name: yolact-cpu-mean-performance-comparison
+alt: Mean performance comparison
+align: center
+---
+
+Model size, speed and quality comparison for two YOLACT Optimizers
+:::
+
+| Model name             | Inference time [s]   | CPU usage [%]    | Memory usage [%]    |
+|------------------------|----------------------|------------------|---------------------|
+| build.yolact-tvm.json  | 1.077                | 52.910           | 26.487              |
+| build.yolact-onnx.json | 0.226                | 52.087           | 23.545              |
+
 ## GPU Experiments
 
 {{uses_gpu}}
 
 ### TVM optimization
+
+To run TVM on GPU you will instead need to follow installation guide:
+https://tvm.apache.org/docs/install/from_source.html in order to install TVM that is compatible with CUDA.
+
+---
+
+If you are using Linux follow these steps:
+  1. Ensure installation of:
+    - GCC >= 7.1 /  Clang >= 5.0
+    - CMAKE >= 3.24
+    - LLVM >= 15
+    - Git
+    - Python >= 3.8
+
+  2. Clone tvm repository:
+```bash test-skip
+git clone --recursive https://github.com/apache/tvm tvm
+git checkout -b v0.14.0
+```
+
+  3. Configure the build by setting the necessary flags in `config.cmake`:
+```bash test-skip
+cd tvm && mkdir build && cd build
+cp ../cmake/config.cmake .
+
+echo "set(USE_CUBLAS ON)">> config.cmake
+echo "set(USE_CUDA ON)"  >> config.cmake
+echo "set(USE_CUDNN ON)" >> config.cmake
+echo "set(USE_MICRO ON)" >> config.cmake
+echo "set(USE_LLVM ON)"  >> config.cmake
+```
+
+  4. Build it using:
+```bash test-skip
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ .. && cmake --build . --parallel $(nproc) && make install && ldconfig
+```
+
+  5. Add created libraries to `TVM_LIBRARY_PATH`:
+```bash
+export TVM_LIBRARY_PATH=/usr/lib/
+```
+
+  6. Remember to uninstall previously installed tvm version:
+```bash
+pip uninstall -y apache-tvm
+```
+
+  7. Finally install new version using `pip`:
+```bash
+pip install /tvm/python
+```
+
+---
+
+  CUDA runtime is very strict about `gcc` versions so if you get an error: `unsupported GNU version! gcc versions later than 11 are not supported!`,
+  then just set the necessary flag:
+```bash
+export NVCC_APPEND_FLAGS='-allow-unsupported-compiler'
+```
 
 To run TVM optimizer on GPU we need to change the pipeline configuration file and specify that we will be using CUDA.
 
@@ -97,6 +173,25 @@ python -m kenning optimize test \
 ```
 
 ### ONNX optimization
+
+If you want to run ONNX on GPU need to install onnxruntime that supports gpu usage:
+
+First uninstall the cpu version of `onnxruntime`:
+```bash
+pip uninstall -y onnxruntime
+```
+
+Then install `onnxruntime` that uses gpu:
+```bash
+pip install "kenning[onnxruntime_gpu] @ git+https://github.com/antmicro/kenning.git"
+```
+
+And remember to add necessary CUDA libraries to path:
+```bash
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+export PATH=/usr/local/cuda/bin:$PATH
+```
+
 
 We just have to specify that we want to prioritize using CUDA as execution provider.
 ```{literalinclude} ../scripts/jsonconfigs/yolact-onnx-gpu-detection.json save-as=yolact-onnx-gpu-detection.json
@@ -123,3 +218,20 @@ python -m kenning report \
     --report-types performance detection \
     --measurements build/yolact-gpu-tvm.json build/yolact-gpu-onnx.json
 ```
+
+A short rundown of report:
+
+:::{figure} ./img/yolact-gpu-mean-performance-comparison.*
+---
+name: yolact-gpu-mean-performance-comparison
+alt: Mean performance comparison
+align: center
+---
+
+Model size, speed and quality comparison for two YOLACT Optimizers running on CUDA GPU
+:::
+
+| Model name               | Inference time [s]     | CPU usage [%]      | Memory usage [%]      |
+|--------------------------|------------------------|--------------------|-----------------------|
+| build.yolact-tvm.json    | 0.0113                 | 37.400             | 8.405                 |
+| build.yolact-onnx.json   | 0.0344                 | 30.867             | 7.784                 |

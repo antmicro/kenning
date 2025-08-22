@@ -1,0 +1,41 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
+        "parameters":
+        {
+            "model_path": "kenning:///models/instance_segmentation/yolact.onnx"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.open_images_dataset.OpenImagesDatasetV6",
+        "parameters":
+        {
+            "dataset_root": "./build/OpenImagesDatasetV6",
+            "inference_batch_size": 1,
+            "task": "instance_segmentation",
+            "image_width": 550,
+            "image_height": 550
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.optimizers.onnx.ONNXCompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/compiled_model.onnx"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.onnx.ONNXRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/compiled_model.onnx",
+            "execution_providers": ["CPUExecutionProvider"]
+        }
+    }
+}

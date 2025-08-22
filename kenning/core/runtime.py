@@ -126,10 +126,11 @@ class Runtime(ArgumentsHandler, ABC):
         This will enable performance tracking.
         """
         if not self.disable_performance_measurements:
-            if self.statsmeasurements is None:
-                self.statsmeasurements = SystemStatsCollector(
-                    "session_utilization"
-                )
+            # More than one session is not possible.
+            self.inference_session_end()
+            self.statsmeasurements = SystemStatsCollector(
+                "session_utilization"
+            )
             self.statsmeasurements.start()
         else:
             self.statsmeasurements = None

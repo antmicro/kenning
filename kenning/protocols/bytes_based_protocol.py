@@ -581,12 +581,18 @@ class BytesBasedProtocol(Protocol, ABC):
                     self.log_buffer = b""
 
         self.log_buffer = b""
-        KLogger.add_custom_backend(CUSTOM_LOGGING_BACKEND_NAME, send_log)
         KLogger.debug("Sending logs over the protocol...")
+        KLogger.add_custom_backend(CUSTOM_LOGGING_BACKEND_NAME, send_log)
 
     def stop_sending_logs(self):
-        KLogger.debug("Stopping log sending...")
         KLogger.remove_custom_backend(CUSTOM_LOGGING_BACKEND_NAME)
+        try:
+            self.kill_event(MessageType.LOGS)
+        except ValueError:
+            # 'kill_event' raises value error if the event does not exist,
+            # which is expected here sometimes, therefore we just ignore it.
+            pass
+        KLogger.debug("Log sending stopped.")
 
     def serve(
         self,

@@ -160,6 +160,7 @@ class UARTProtocol(KenningProtocol):
         error_recovery: bool = True,
         timeout: int = -1,
         packet_size: int = 4096,
+        max_message_size: int = 136,
     ):
         """
         Initializes UARTProtocol.
@@ -178,13 +179,15 @@ class UARTProtocol(KenningProtocol):
             responses forever.
         packet_size : int
             Size of the packet.
+        max_message_size : int
+            Maximum size of a single protocol message in bytes.
         """
         self.port = port
         self.baudrate = baudrate
         self.collecteddata = bytes()
         self.connection = None
         self.packet_size = packet_size
-        super().__init__(timeout, error_recovery)
+        super().__init__(timeout, error_recovery, max_message_size)
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=0)

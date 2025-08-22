@@ -44,6 +44,7 @@ class NetworkProtocol(KenningProtocol):
         timeout: int = -1,
         error_recovery: bool = False,
         packet_size: int = 4096,
+        max_message_size: int = 1024 * 1024,
     ):
         """
         Initializes NetworkProtocol.
@@ -62,6 +63,8 @@ class NetworkProtocol(KenningProtocol):
             be turned on.
         packet_size : int
             Receive packet sizes.
+        max_message_size : int
+            Maximum size of a single protocol message in bytes.
         """
         self.host = host
         self.port = port
@@ -71,7 +74,7 @@ class NetworkProtocol(KenningProtocol):
         self.packet_size = packet_size
         self.client_connected_callback = None
         self.client_disconnected_callback = None
-        super().__init__(timeout, error_recovery)
+        super().__init__(timeout, error_recovery, max_message_size)
 
     def accept_client(self, socket: socket.socket, mask: int) -> bool:
         """

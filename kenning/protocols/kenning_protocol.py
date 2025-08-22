@@ -25,6 +25,7 @@ from kenning.protocols.bytes_based_protocol import (
     TransmissionFlag,
 )
 from kenning.protocols.message import (
+    HEADER_SIZE,
     FlagName,
     Flags,
     FlowControlFlags,
@@ -33,8 +34,6 @@ from kenning.protocols.message import (
 )
 from kenning.utils.event_with_args import EventWithArgs
 from kenning.utils.logger import KLogger
-
-MAX_MESSAGE_PAYLOAD_SIZE = 1024 * 1024
 
 # Used for translating internal message flags to transmission flags.
 FLAG_BINDINGS = {
@@ -376,6 +375,42 @@ class OutgoingEvent(ProtocolEvent, ABC):
     with payload and flags.
     """
 
+    def __init__(
+        self,
+        message_type: MessageType,
+        protocol: "KenningProtocol",
+        payload: Optional[bytes],
+        set_flags: List[TransmissionFlag],
+        flow_control: FlowControlFlags,
+    ):
+        """
+        Initializes an outgoing event (transmission or request).
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Message type of the event.
+        protocol: KenningProtocol
+            KenningProtocol class object, that the event belongs to.
+        payload: Optional[bytes]
+            Bytes to be sent in the transmission/request.
+        set_flags: List[TransmissionFlag]
+            User-facing flags to be sent.
+        flow_control: FlowControlFlags
+            FlowControlFlags.TRANSMISSION for a transmission,
+            FlowControlFlags.REQUEST for a request.
+        """
+        super().__init__(message_type, protocol)
+        if payload is None:
+            payload = b""
+        self.max_message_payload_size = (
+            self.protocol.max_message_size - HEADER_SIZE
+        )
+        self.payload = payload
+        self.flags = self.translate_flags(message_type, set_flags)
+        self.flow_control = flow_control
+        self.messages_to_send = self.total_messages
+
     @staticmethod
     def translate_flags(
         message_type: MessageType, flags: List[TransmissionFlag]
@@ -402,6 +437,89 @@ class OutgoingEvent(ProtocolEvent, ABC):
             for flag in flags
             if flag.for_type(message_type)
         }
+
+    @property
+    def total_messages(self) -> int:
+        """
+        Calculate how many outgoing messages this event has to send.
+
+        Returns
+        -------
+        int
+            Number of messages (not counting flow control messages, like
+            ACKNOWLEDGE).
+        """
+        return max(1, ceil(len(self.payload) / self.max_message_payload_size))
+
+    def message(
+        self,
+        message_number: int,
+    ) -> Optional[Message]:
+        """
+        Generates n-th message in a series of messages, with FIRST/LAST flags
+        properly set, TransmissionFlags properly translated to message flags
+        and set, as well as the payload split between the messages.
+
+        Parameters
+        ----------
+        message_number: int
+            Number of message in the series (starting from 0).
+
+        Returns
+        -------
+        Optional[Message]
+            Message, or None if given number is larger than the total number of
+            messages.
+
+        Raises
+        ------
+        ValueError
+            Requested message number is less than 0.
+        """
+        if message_number >= self.total_messages:
+            return None
+        if message_number < 0:
+            raise ValueError(
+                f"Message number cannot be less than 0: {message_number}"
+            )
+        return Message(
+            self.message_type,
+            self.payload[
+                self.max_message_payload_size
+                * message_number : self.max_message_payload_size
+                * (message_number + 1)
+            ],
+            self.flow_control,
+            Flags(
+                dict(
+                    {
+                        str(FlagName.FIRST): message_number == 0,
+                        str(FlagName.LAST): message_number
+                        == (self.total_messages - 1),
+                    },
+                    # Attaching user-facing flags.
+                    **self.flags,
+                )
+            ),
+        )
+
+    def get_remaining_messages(self) -> List[Message]:
+        """
+        Function for getting all outgoing messages left to send in correct
+        order.
+
+        Returns
+        -------
+        List[Message]
+            The list of messages.
+        """
+        return [
+            self.message(i)
+            for i in range(
+                self.total_messages - self.messages_to_send,
+                self.total_messages,
+            )
+        ]
 
 
 class OutgoingTransmission(OutgoingEvent):
@@ -455,35 +573,13 @@ class OutgoingTransmission(OutgoingEvent):
             side (if flag is in the list it will be set to True, otherwise
             will be set to False).
         """
-        super().__init__(message_type, protocol)
-        if payload is None:
-            payload = b""
-        self.messages_to_send = max(
-            1, ceil(len(payload) / MAX_MESSAGE_PAYLOAD_SIZE)
+        super().__init__(
+            message_type,
+            protocol,
+            payload,
+            set_flags,
+            FlowControlFlags.TRANSMISSION,
         )
-        user_facing_flags = self.translate_flags(message_type, set_flags)
-        self.messages = [
-            Message(
-                self.message_type,
-                payload[
-                    MAX_MESSAGE_PAYLOAD_SIZE * i : MAX_MESSAGE_PAYLOAD_SIZE
-                    * (i + 1)
-                ],
-                FlowControlFlags.TRANSMISSION,
-                Flags(
-                    dict(
-                        {
-                            str(FlagName.FIRST): i == 0,
-                            str(FlagName.LAST): i
-                            == (self.messages_to_send - 1),
-                        },
-                        # Attaching user-facing flags.
-                        **user_facing_flags,
-                    )
-                ),
-            )
-            for i in range(self.messages_to_send)
-        ]
 
     def _activate(self):
         """
@@ -492,7 +588,10 @@ class OutgoingTransmission(OutgoingEvent):
         messages to send.
         """
         super()._activate()
-        self.protocol.send_messages(self.message_type, self.messages)
+        self.protocol.send_messages(
+            self.message_type,
+            self.get_remaining_messages(),
+        )
 
     def messages_sent(self, message_count: int):
         if self.state == self.State.PENDING:
@@ -608,20 +707,19 @@ class OutgoingRequest(OutgoingEvent):
         Enum with all states specific to an outgoing request.
 
         List of states and possible state transitions for each state:
-        * PENDING - Called 'messages_sent' on KenningProtocol with the
-          request message, waiting for sending to complete.
+        * PENDING - Called 'messages_sent' on KenningProtocol with the request
+          messages, waiting for sending to complete.
           Transitions:
-          * SENT - 'messages_sent' was called with 1 as argument (informing
-            that the request message has been sent).
-        * SENT - Request message has been sent.
+          * SENT - 'messages_sent' called with the N value (where N is the
+            number of request messages to send).
+        * SENT - Request messages have been sent.
           Transitions:
-          * PENDING - ACKNOWLEDGE message with the FAIL flag set was
-            received. However the 'retry' value is still larger than 0
-            (in which case it will be decremented) or it is negative
-            (which means infinite retries).
+          * PENDING - ACKNOWLEDGE message with the FAIL flag set was received.
+            However the 'retry' value is still larger than 0 (in which case it
+            will be decremented) or it is negative (meaning infinite retries).
           * DENIED - ACKNOWLEDGE message with the FAIL flag set was received.
-            However the 'retry' value is set to 0. Callback/wait mechanism
-            will be triggered (protocol failure).
+            However the 'retry' value is set to 0. Callback/wait mechanism will
+            be triggered (protocol failure).
           * ACCEPTED - A TRANSMISSION message was received (it's FIRST flag
             should be set to 1).
         * ACCEPTED - A Transmission message has been received, further
@@ -630,13 +728,12 @@ class OutgoingRequest(OutgoingEvent):
           Transitions:
           * PENDING - After passing a received message into the inner
             'IncomingTransmission' object, that object changed state to DENIED.
-            However the 'retry' value is still larger than 0 (in which case
-            it will be decremented or it is negative (which means infinite
-            retries).
+            However the 'retry' value is still larger than 0 (in which case it
+            will be decremented or it is negative (meaning infinite retries).
           * DENIED - After passing a received message into the inner
             'IncomingTransmission' object, that object changed state to DENIED.
-            However the 'retry' value is set to 0.
-            Callback/wait mechanism will be triggered (protocol failure).
+            However the 'retry' value is set to 0. Callback/wait mechanism will
+            be triggered (protocol failure).
           * CONFIRMED - After passing a received message into the inner
             'IncomingTransmission' object, it changed state to CONFIRMED.
             Callback/wait mechanism will be triggered (protocol success).
@@ -660,7 +757,7 @@ class OutgoingRequest(OutgoingEvent):
     ):
         """
         Initializes the request, sets the initial state, creates the request
-        message.
+        messages.
 
         Parameters
         ----------
@@ -677,28 +774,23 @@ class OutgoingRequest(OutgoingEvent):
         set_flags: List[TransmissionFlag]
             User-facing flags, that are to be sent with the request message.
         """
-        super().__init__(message_type, protocol)
+        super().__init__(
+            message_type,
+            protocol,
+            payload,
+            set_flags,
+            FlowControlFlags.REQUEST,
+        )
         self.retry = retry
         self.incoming_transmission = None
-        user_facing_flags = self.translate_flags(message_type, set_flags)
-        self.request_message = Message(
-            message_type,
-            payload,
-            FlowControlFlags.REQUEST,
-            Flags(
-                dict(
-                    {
-                        FlagName.FIRST: True,
-                        FlagName.LAST: True,
-                    },
-                    **user_facing_flags,
-                )
-            ),
-        )
 
     def _send_request(self):
         self.state = self.State.PENDING
-        self.protocol.send_messages(self.message_type, [self.request_message])
+        self.messages_to_send = self.total_messages
+        self.protocol.send_messages(
+            self.message_type,
+            self.get_remaining_messages(),
+        )
 
     def _activate(self):
         super()._activate()
@@ -775,12 +867,14 @@ class OutgoingRequest(OutgoingEvent):
 
     def messages_sent(self, message_count: int):
         if self.state == self.State.PENDING:
-            if message_count != 1:
+            if message_count > self.messages_to_send:
                 raise ValueError(
-                    f"Invalid message count: {message_count}"
-                    " (only 1 request message at a time should be sent)."
+                    f"Invalid message count: {message_count}, should be no"
+                    f" more than {self.messages_to_send}."
                 )
-            self.state = self.state.SENT
+            self.messages_to_send -= message_count
+            if self.messages_to_send == 0:
+                self.state = self.state.SENT
         if self.state == self.State.ACCEPTED:
             # The other side accepted our request, so communication
             # is managed by an internal IncomingTransmission class
@@ -806,7 +900,7 @@ class IncomingRequest(IncomingEvent):
         * RECEIVING - Waiting for the request message.
           Transitions:
           * CONFIRMED - 'receive_message' was called with a valid request
-            message.
+            message, with the 'LAST' flag set.
         """
 
         RECEIVING = 4
@@ -817,14 +911,17 @@ class IncomingRequest(IncomingEvent):
 
     def __init__(self, message_type: MessageType, protocol: "KenningProtocol"):
         super().__init__(message_type, protocol)
+        self.payload = b""
 
     def receive_message(self, message: Message):
         super().receive_message(message)
         if message.flow_control_flags == FlowControlFlags.REQUEST:
-            self.payload = message.payload
-            self.flags = message.flags
-            self.state = self.State.CONFIRMED
-            self.signal_callback(True, self)
+            self.payload += message.payload
+            if message.flags.first:
+                self.flags = message.flags
+            if message.flags.last:
+                self.state = self.State.CONFIRMED
+                self.signal_callback(True, self)
         else:
             KLogger.error("Non-request message passed to an Incoming Request")
 
@@ -861,35 +958,31 @@ class Listen(ProtocolEvent):
           triggered (the 'signal_callback' method) and the 'limit' value
           decremented, unless it is set to None.
           Transitions:
-          * RECEIVING_TRANSMISSION - Message starting a transmission was
-            received (this message should have the FIRST flag set to True).
-            The transmission will be managed by a 'IncomingTransmission' class
-            object created inside this object.
+          * RECEIVING - Message starting a transmission was received (this
+            message should have the FIRST flag set to True). A transmission
+            will be managed by a 'IncomingTransmission' class object created
+            inside this object. For a request, 'IncomingRequest' class object
+            will be created.
           * CONFIRMED - Request message was received and after decrementing
             the 'limit' value it is equal to 0.
-        * RECEIVING_TRANSMISSION - Incoming transmission is ongoing. All
-          messages received (and 'messages_sent' calls) are passed to the
-          inner 'IncomingTransmission' object ('self.incoming_transmission').
-          Except request messages (those will be handled in the exact same
-          way as in the LISTENING state).
+        * RECEIVING - Incoming transmission or request is ongoing. All messages
+          received (and 'messages_sent' calls) are passed to the inner object
+          ('self.inner_object').
           Transitions:
-          * LISTENING - After passing a message to 'self.incoming_transmission'
-            or calling 'messages_sent', it changed state to a final state
-            (CONFIRMED or DENIED). Callback system will be triggered with
-            that object. 'limit' value will be decremented, and as long as
-            it is not 0 now (so greater than 0 or None), this 'Listen'
-            object will return to LISTENING state.
-          * CONFIRMED - The 'limit' value is equal to 1 and either a request
-            message was received, or after passing a message to
-            'self.incoming_transmission' it changed state to a final state
-            (CONFIRMED or DENIED). Callback/wait system will be triggered
-            for either the IncomingRequest or the IncomingTransmission.
-            NOTE: If the 'limit' is set to 1 and during an ongoing transmission
-            a request is received, that transmission will be discarded.
+          * LISTENING - After passing a message to 'self.inner_object' or
+            calling 'messages_sent', it changed state to a final state
+            (CONFIRMED or DENIED). Callback system will be triggered with that
+            object. 'limit' value will be decremented, and as long as it is not
+            0 now (so greater than 0 or None), this 'Listen' object will return
+            to LISTENING state.
+          * CONFIRMED - The 'limit' value is equal to 1 and after passing a
+            message to 'self.inner_object' it changed state to a final state
+            (CONFIRMED or DENIED). Callback/wait system will be triggered for
+            either the IncomingRequest or the IncomingTransmission.
         """
 
         LISTENING = 4
-        RECEIVING_TRANSMISSION = 5
+        RECEIVING = 5
 
     State._member_map_.update(ProtocolEvent.State._member_map_)
 
@@ -931,19 +1024,20 @@ class Listen(ProtocolEvent):
             if self.limit == 0:
                 self.state = self.State.CONFIRMED
 
-    def _poll_transmission(self):
+    def _poll_event(self):
         """
-        When first message of the transmission is received, the object will
-        create and IncomingTransmission class object to manage it. This
-        function checks the state of that inner object, and updates the
-        state of this (Listen) abject accordingly. It shall be called
-        after any event, that could update the state in
-        self.incoming_transmission.
+        When first message of a transmission is received, the object will
+        create and IncomingTransmission class object to manage it. When first
+        message of a request is received, and IncomingRequest class object
+        will be created. This function checks the state of that inner object,
+        and updates the state of this (Listen) abject accordingly. It shall be
+        called after any event, that could update the state in
+        self.inner_object.
         """
-        if self.incoming_transmission.is_completed():
+        if self.inner_object.is_completed():
             self.signal_callback(
-                self.incoming_transmission.has_succeeded(),
-                self.incoming_transmission,
+                self.inner_object.has_succeeded(),
+                self.inner_object,
             )
             self.state = self.State.LISTENING
             self._decrement_limit()
@@ -965,46 +1059,64 @@ class Listen(ProtocolEvent):
             self.limit = 1
 
     def receive_message(self, message: Message):
-        # If no type was specified, we infer type from the first arriving
-        # message.
-        if message.flow_control_flags == FlowControlFlags.REQUEST:
-            # Regardless of the state, we always receive an incoming request
-            # message and trigger caallback.
-            incoming_request = IncomingRequest(
-                message.message_type, self.protocol
+        if not self.accepts_messages():
+            raise ValueError(
+                f"{self} received message in state: {self.state}."
             )
-            incoming_request.start_blocking()
-            incoming_request.receive_message(message)
-            self.signal_callback(True, incoming_request)
-            self._decrement_limit()
-        elif self.state == self.State.LISTENING:
-            if message.flow_control_flags == FlowControlFlags.TRANSMISSION:
-                self.state = self.State.RECEIVING_TRANSMISSION
-                self.incoming_transmission = IncomingTransmission(
-                    message.message_type, self.protocol
-                )
-                self.incoming_transmission.start_blocking()
-                self.incoming_transmission.receive_message(message)
-                self._poll_transmission()
-            else:
+        if self.state == self.State.LISTENING:
+            if (
+                not message.flow_control_flags == FlowControlFlags.TRANSMISSION
+                and not message.flow_control_flags == FlowControlFlags.REQUEST
+            ):
                 KLogger.warning(
                     f"Protocol listening for {self.message_type} has received"
                     f" an unexpected message: {message.FlowControlFlags}."
                     " Message has been discarded."
                 )
-        elif self.state == self.State.RECEIVING_TRANSMISSION:
-            self.incoming_transmission.receive_message(message)
-            self._poll_transmission()
+            elif not message.flags.first:
+                KLogger.error(
+                    f"Received a {message} as the first message of a request"
+                    " or transmission, but the FIRST flag was not set."
+                )
+            else:
+                self.state = self.State.RECEIVING
+                # If no type was specified, we infer type from the first
+                # arriving message.
+                if message.flow_control_flags == FlowControlFlags.TRANSMISSION:
+                    self.inner_object = IncomingTransmission(
+                        message.message_type, self.protocol
+                    )
+                else:
+                    self.inner_object = IncomingRequest(
+                        message.message_type, self.protocol
+                    )
+                self.inner_object.start_blocking()
+
+        if self.state == self.State.RECEIVING:
+            if (
+                message.flow_control_flags != FlowControlFlags.TRANSMISSION
+                and type(self.inner_object) is IncomingTransmission
+            ):
+                KLogger.error(
+                    f"Got a {message} while receiving a transmission."
+                )
+            if (
+                message.flow_control_flags != FlowControlFlags.REQUEST
+                and type(self.inner_object) is IncomingRequest
+            ):
+                KLogger.error(f"Got a {message} while receiving a request.")
+            self.inner_object.receive_message(message)
+            self._poll_event()
 
     def accepts_messages(self):
         return (
-            self.state == self.State.RECEIVING_TRANSMISSION
-            and self.incoming_transmission.accepts_messages()
+            self.state == self.State.RECEIVING
+            and self.inner_object.accepts_messages()
         ) or self.state == self.State.LISTENING
 
     def messages_sent(self, message_count: int):
-        if self.state == self.State.RECEIVING_TRANSMISSION:
-            self.incoming_transmission.messages_sent(message_count)
+        if self.state == self.State.RECEIVING:
+            self.inner_object.messages_sent(message_count)
         else:
             raise ValueError("Unexpected messages sent from this object.")
 
@@ -1026,6 +1138,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self,
         timeout: int = -1,
         error_recovery: bool = False,
+        max_message_size: int = 1024,
     ):
         """
         Initializes KenningProtocol.
@@ -1037,6 +1150,14 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         error_recovery: bool
             True if checksum verification and error recovery mechanisms are to
             be turned on.
+        max_message_size: int
+            Maximum size of a single message (larger payloads will be split
+            into multiple messages).
+
+        Raises
+        ------
+        ValueError
+            Maximum message size provided is too low.
         """
         self.selector = selectors.DefaultSelector()
         self.input_buffer = b""
@@ -1046,6 +1167,17 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self.transmitter = None
         self.protocol_running = False
         self.error_recovery = error_recovery
+        # Mimumum max_message_size is size of the header plus 1 byte for
+        # payload. That's because otherwise the protocol would not be able to
+        # send a request/transmission with payload (there is no way to divide
+        # a payload into 0-byte chunks).
+        min_message_size = HEADER_SIZE + 1
+        if min_message_size > max_message_size:
+            raise ValueError(
+                f"Max message size cannot be less than {min_message_size},"
+                f" but was set to: {max_message_size}."
+            )
+        self.max_message_size = max_message_size
         super().__init__(timeout)
 
     def start(self):

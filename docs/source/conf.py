@@ -53,7 +53,7 @@ release = ""
 
 # This is temporary before the clash between myst-parser and immaterial is
 # fixed
-sphinx_immaterial_override_builtin_admonitions = False
+sphinx_immaterial_override_builtin_admonitions = True
 
 # -- General configuration ---------------------------------------------------
 numfig = True
@@ -92,7 +92,7 @@ This example requires a CUDA-enabled GPU for proper execution, along with follow
 * CUDA Toolkit
 * NVML (for report generation)
 :::
-"""
+"""  # noqa: E501
 
 extlinks = {"issue": (dev + "issues/%s", "#")}
 

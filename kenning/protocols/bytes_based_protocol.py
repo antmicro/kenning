@@ -473,9 +473,13 @@ class BytesBasedProtocol(Protocol, ABC):
 
         with open(path, "rb") as llext_file:
             data = llext_file.read()
+            # Since runtime buffer may be dynamically allocated on the target
+            # platform, we place a 4-byte size field at the beginning of the
+            # payload.
+            payload = len(data).to_bytes(4, "little") + data
         return self.check_status(
             ServerStatus(ServerAction.UPLOADING_RUNTIME),
-            self.request_blocking(MessageType.RUNTIME, None, data),
+            self.request_blocking(MessageType.RUNTIME, None, payload),
         )
 
     def upload_io_specification(self, path: Path) -> bool:

@@ -345,11 +345,6 @@ class TestNetworkProtocol(TestCoreProtocol):
         [
             ("upload_model", ServerAction.UPLOADING_MODEL, MessageType.MODEL),
             (
-                "upload_runtime",
-                ServerAction.UPLOADING_RUNTIME,
-                MessageType.RUNTIME,
-            ),
-            (
                 "upload_io_specification",
                 ServerAction.UPLOADING_IOSPEC,
                 MessageType.IO_SPEC,
@@ -377,6 +372,21 @@ class TestNetworkProtocol(TestCoreProtocol):
             method,
             path,
             message_type,
+        )
+
+    def test_upload_runtime(self, tmpfolder: Path, random_byte_data: bytes):
+        path = tmpfolder / uuid.uuid4().hex
+        with open(path, "wb") as file:
+            file.write(random_byte_data)
+
+        assert (
+            len(random_byte_data).to_bytes(4, "little") + random_byte_data,
+            True,
+        ) == self._receive_request(
+            ServerAction.UPLOADING_RUNTIME.to_bytes(),
+            "upload_runtime",
+            path,
+            MessageType.RUNTIME,
         )
 
     def test_request_processing(self):

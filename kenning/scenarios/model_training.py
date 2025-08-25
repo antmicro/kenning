@@ -178,13 +178,16 @@ class TrainModel(CommandTemplate):
 
         if args.help:
             raise ParserHelpException(parser)
-        args = parser.parse_args(not_parsed, namespace=args)
+        args = parser.parse_known_args(not_parsed, namespace=args)
 
-        dataset = datasetcls.from_argparse(args)
-        model = modelwrappercls.from_argparse(dataset, args, from_file=False)
+        dataset = datasetcls.from_argparse(args[0])
+
+        model = modelwrappercls.from_argparse(
+            dataset, args[0], from_file=False
+        )
         platform = None
         if platformcls:
-            platform = platformcls.from_argparse(args)
+            platform = platformcls.from_argparse(args[0])
 
         TrainModel._run(model, platform)
 

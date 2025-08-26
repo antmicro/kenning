@@ -1,0 +1,31 @@
+model_wrapper:
+  type: kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+  parameters:
+    model_path: kenning:///models/instance_segmentation/yolact.onnx
+dataset:
+  type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+  parameters:
+    dataset_root: ./build/OpenImagesDatasetV6
+    inference_batch_size: 1
+    task: instance_segmentation
+    image_width: 550
+    image_height: 550
+optimizers:
+- type: kenning.optimizers.tvm.TVMCompiler
+  parameters:
+    model_framework: onnx
+    target: cuda -libs=cudnncublas
+    opt_level: 3
+    compile_use_vm: false
+    output_conversion_function: default
+    target_host: null
+    compiled_model_path: ./build/compiled-model.tar
+runtime:
+  type: kenning.runtimes.tvm.TVMRuntime
+  parameters:
+    save_model_path: ./build/compiled-model.tar
+    target_device_context: cuda
+    runtime_use_vm: false
+
+
+

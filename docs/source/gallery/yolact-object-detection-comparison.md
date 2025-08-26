@@ -25,8 +25,8 @@ pip install "kenning[object_detection,tvm,onnxruntime,reports] @ git+https://git
 
 The scenario for TVM compilation may look as follows:
 
-```{literalinclude} ../scripts/jsonconfigs/yolact-tvm-cpu-detection.json save-as=yolact-tvm-cpu-detection.json
-:language: json
+```{literalinclude} ../scripts/configs/yolact-tvm-cpu-detection.yml save-as=yolact-tvm-cpu-detection.yml
+:language: yaml
 :lineno-start: 1
 ```
 
@@ -46,7 +46,7 @@ To optimize and test the defined scenario, run:
 
 ```bash
 python -m kenning optimize test \
-    --cfg yolact-tvm-cpu-detection.json \
+    --cfg yolact-tvm-cpu-detection.yml \
     --measurements ./build/yolact-tvm.json \
     --verbosity INFO
 ```
@@ -55,10 +55,10 @@ python -m kenning optimize test \
 
 Switching to a different runtime is a matter of changing several lines in the scenario as shown below:
 
-```{literalinclude} ../scripts/jsonconfigs/yolact-onnx-cpu-detection.json save-as=yolact-onnx-cpu-detection.json
-:language: json
+```{literalinclude} ../scripts/configs/yolact-onnx-cpu-detection.yml save-as=yolact-onnx-cpu-detection.yml
+:language: yaml
 :lineno-start: 1
-:emphasize-lines: 22-40
+:emphasize-lines: 15-24
 ```
 
 `ONNXRuntime` in this specific scenario acts as a passthrough for an existing ONNX model.
@@ -69,7 +69,7 @@ This scenario can be executed with:
 
 ```bash
 python -m kenning optimize test \
-    --cfg yolact-onnx-cpu-detection.json \
+    --cfg yolact-onnx-cpu-detection.yml \
     --measurements ./build/yolact-onnx.json \
     --verbosity INFO
 ```
@@ -159,17 +159,17 @@ To run TVM optimization of YOLACT for GPU, the previous TVM scenario requires ch
 * `TVMCompiler` - need to set `target` to `cuda -libs=cudnn,cublas`
 * `TVMRuntime` - need to configure `target_device_context` to `cuda`
 
-```{literalinclude} ../scripts/jsonconfigs/yolact-tvm-gpu-detection.json save-as=yolact-tvm-gpu-detection.json
-:language: json
+```{literalinclude} ../scripts/configs/yolact-tvm-gpu-detection.yml save-as=yolact-tvm-gpu-detection.yml
+:language: yaml
 :lineno-start: 1
-:emphasize-lines: 27-28,42-42
+:emphasize-lines: 17-17,27-27
 ```
 
 To run it:
 
 ```bash
 python -m kenning optimize test \
-    --cfg yolact-tvm-gpu-detection.json \
+    --cfg yolact-tvm-gpu-detection.yml \
     --measurements ./build/yolact-gpu-tvm.json \
     --verbosity INFO
 ```
@@ -198,8 +198,8 @@ If you want to run ONNX on GPU you need to install `onnxruntime-gpu`:
 
 The only difference compared to CPU-only execution using ONNX Runtime lies in adding new executor in the `runtime`:
 
-```{literalinclude} ../scripts/jsonconfigs/yolact-onnx-gpu-detection.json save-as=yolact-onnx-gpu-detection.json
-:language: json
+```{literalinclude} ../scripts/configs/yolact-onnx-gpu-detection.yml save-as=yolact-onnx-gpu-detection.yml
+:language: yaml
 :lineno-start: 1
 :emphasize-lines: 38
 ```
@@ -207,7 +207,7 @@ The only difference compared to CPU-only execution using ONNX Runtime lies in ad
 Run the scenario as follows:
 ```bash
 python -m kenning optimize test \
-    --cfg yolact-onnx-gpu-detection.json \
+    --cfg yolact-onnx-gpu-detection.yml \
     --measurements ./build/yolact-gpu-onnx.json \
     --verbosity INFO
 ```

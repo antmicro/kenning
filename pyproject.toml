@@ -71,7 +71,7 @@ mxnet = [
     "mxnet",
 ]
 nvidia_perf = [
-    "pynvml>=8.0.4",
+    "pynvml>=8.0.4,<11.5.0",
 ]
 object_detection = [
     "boto3>=1.17.5",

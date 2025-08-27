@@ -42,6 +42,7 @@ class NetworkProtocol(KenningProtocol):
         host: str = "localhost",
         port: int = 12345,
         timeout: int = -1,
+        error_recovery: bool = False,
         packet_size: int = 4096,
     ):
         """
@@ -56,6 +57,9 @@ class NetworkProtocol(KenningProtocol):
         timeout : int
             Response receive timeout in seconds. If negative, then waits for
             responses forever.
+        error_recovery: bool
+            True if checksum verification and error recovery mechanisms are to
+            be turned on.
         packet_size : int
             Receive packet sizes.
         """
@@ -67,7 +71,7 @@ class NetworkProtocol(KenningProtocol):
         self.packet_size = packet_size
         self.client_connected_callback = None
         self.client_disconnected_callback = None
-        super().__init__(timeout)
+        super().__init__(timeout, error_recovery)
 
     def accept_client(self, socket: socket.socket, mask: int) -> bool:
         """

@@ -157,6 +157,7 @@ class UARTProtocol(KenningProtocol):
         self,
         port: str,
         baudrate: int = 9600,
+        error_recovery: bool = True,
         timeout: int = -1,
         packet_size: int = 4096,
     ):
@@ -169,6 +170,9 @@ class UARTProtocol(KenningProtocol):
             UART port.
         baudrate : int
             UART baudrate.
+        error_recovery: bool
+            True if checksum verification and error recovery mechanisms are to
+            be turned on.
         timeout : int
             Response receive timeout in seconds. If negative, then waits for
             responses forever.
@@ -180,7 +184,7 @@ class UARTProtocol(KenningProtocol):
         self.collecteddata = bytes()
         self.connection = None
         self.packet_size = packet_size
-        super().__init__(timeout)
+        super().__init__(timeout, error_recovery)
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=0)

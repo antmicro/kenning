@@ -1014,10 +1014,30 @@ class KenningProtocol(BytesBasedProtocol, ABC):
     Class for managing the flow of Kenning Protocol.
     """
 
+    arguments_structure = {
+        "error_recovery": {
+            "description": "Flag to turn on/off error detection and recovery.",
+            "type": bool,
+            "required": False,
+        },
+    }
+
     def __init__(
         self,
         timeout: int = -1,
+        error_recovery: bool = False,
     ):
+        """
+        Initializes KenningProtocol.
+
+        Parameters
+        ----------
+        timeout: int
+            Timeout for receiving.
+        error_recovery: bool
+            True if checksum verification and error recovery mechanisms are to
+            be turned on.
+        """
         self.selector = selectors.DefaultSelector()
         self.input_buffer = b""
         self.current_protocol_events = {}
@@ -1025,6 +1045,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self.receiver_thread = None
         self.transmitter = None
         self.protocol_running = False
+        self.error_recovery = error_recovery
         super().__init__(timeout)
 
     def start(self):
@@ -1076,7 +1097,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             True if succeeded.
         """
         KLogger.debug(f"Sending message {message}")
-        ret = self.send_data(message.to_bytes())
+        ret = self.send_data(message.to_bytes(not self.error_recovery))
         if not ret:
             KLogger.error(f"Error sending message {message}")
         return ret
@@ -1106,7 +1127,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         """
         while True:
             message, data_parsed, checksum_valid = Message.from_bytes(
-                self.input_buffer
+                self.input_buffer, self.error_recovery
             )
             if message is not None:
                 self.input_buffer = self.input_buffer[data_parsed:]

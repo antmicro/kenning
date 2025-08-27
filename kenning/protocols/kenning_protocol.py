@@ -8,13 +8,12 @@ exchanging inference data between devices).
 """
 
 import selectors
-import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from math import ceil
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Thread
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from kenning.core.exceptions import ProtocolNotStartedError
 from kenning.protocols.bytes_based_protocol import (
@@ -1268,14 +1267,14 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             if timeout <= 0:
                 return None
             if timeout is None or timeout > 0:
-                data = self.gather_data(timeout)
-                if data is not None:
+                data = self.receive_data(timeout)
+                if type(data) is bytes and len(data) > 0:
                     self.input_buffer += data
-                if data is None and timeout is not None:
+                elif timeout is not None:
                     return None
 
     @abstractmethod
-    def send_data(self, data: Any) -> bool:
+    def send_data(self, data: bytes) -> bool:
         """
         Sends data to the target device.
 
@@ -1283,7 +1282,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
 
         Parameters
         ----------
-        data : Any
+        data : bytes
             Data to send.
 
         Returns
@@ -1294,59 +1293,21 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         ...
 
     @abstractmethod
-    def receive_data(self, connection: Any, mask: int) -> Optional[Any]:
+    def receive_data(self, timeout: Optional[float]) -> Optional[bytes]:
         """
         Receives data from the target device.
 
         Parameters
         ----------
-        connection : Any
-            Connection used to read data.
-        mask : int
-            Selector mask from the event.
-
-        Returns
-        -------
-        Optional[Any]
-            Status of receive and optionally data that was received.
-        """
-        ...
-
-    def gather_data(self, timeout: Optional[float] = None) -> Optional[bytes]:
-        """
-        Gathers data from the client.
-
-        This method should be called by receive_message in order to get data
-        from the client.
-
-        Parameters
-        ----------
-        timeout : Optional[float]
-            Receive timeout in seconds. If timeout > 0, this specifies the
-            maximum wait time, in seconds. If timeout <= 0, the call won't
-            block, and will report the currently ready file objects. If timeout
-            is None, the call will block until a monitored file object becomes
-            ready.
+        timeout: Optional[float]
+            Maximum time waiting for data in seconds (None - infinite timeout).
 
         Returns
         -------
         Optional[bytes]
-            Received data.
+            Received bytes, or None if no bytes were received.
         """
-        start_time = time.perf_counter()
-        while True:
-            events = self.selector.select(timeout=timeout)
-            results = b""
-            for key, mask in events:
-                if mask & selectors.EVENT_READ:
-                    callback = key.data
-                    data = callback(key.fileobj, mask)
-                    if data is not None:
-                        results += data
-            if results:
-                return results
-            elif not timeout or (time.perf_counter() - start_time > timeout):
-                return None
+        ...
 
     def receiver(self):
         """

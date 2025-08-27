@@ -6,7 +6,6 @@
 TCP-based inference communication protocol.
 """
 
-import selectors
 import socket
 from typing import Any, Callable, Optional
 
@@ -34,6 +33,11 @@ class NetworkProtocol(KenningProtocol):
             "description": "The port for the target device",
             "type": int,
             "default": 12345,
+        },
+        "packet_size": {
+            "description": "Maximum number of bytes received at a time.",
+            "type": int,
+            "default": 4096,
         },
     }
 
@@ -76,39 +80,38 @@ class NetworkProtocol(KenningProtocol):
         self.client_disconnected_callback = None
         super().__init__(timeout, error_recovery, max_message_size)
 
-    def accept_client(self, socket: socket.socket, mask: int) -> bool:
+    def accept_client(self, timeout: Optional[float]) -> bool:
         """
-        Accepts the new client.
+        Waits (blocking the current thread) on the new client and accepts or
+        rejects the connection.
 
         Parameters
         ----------
-        socket : socket.socket
-            New client's socket.
-        mask : int
-            Selector mask. Not used.
+        timeout: Optional[float]
+            Maximum time waiting for the client in seconds. None means infinite
+            timeout.
 
         Returns
         -------
         bool
             True if client connected successfully, False otherwise.
         """
-        sock, addr = socket.accept()
+        self.serversocket.settimeout(timeout)
+        try:
+            self.serversocket.listen(1)
+            sock, addr = self.serversocket.accept()
+        except TimeoutError:
+            return False
         if self.socket is not None:
             KLogger.debug(f"Connection already established, rejecting {addr}")
             sock.close()
-        else:
-            self.socket = sock
-            KLogger.info(f"Connected client {addr}")
-            self.socket.setblocking(True)
-            self.socket.send(b"\x00")
-            self.selector.register(
-                self.socket,
-                selectors.EVENT_READ | selectors.EVENT_WRITE,
-                self.receive_data,
-            )
-            if self.client_connected_callback is not None:
-                self.client_connected_callback(addr)
-        return None
+            return False
+        self.socket = sock
+        KLogger.info(f"Connected client {addr}")
+        self.socket.send(b"\x00")
+        if self.client_connected_callback is not None:
+            self.client_connected_callback(addr)
+        return True
 
     def initialize_server(
         self,
@@ -119,17 +122,13 @@ class NetworkProtocol(KenningProtocol):
         KLogger.debug(f"Initializing server at {self.host}:{self.port}")
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.serversocket.setblocking(True)
         try:
             self.serversocket.bind((self.host, self.port))
         except OSError as execinfo:
             KLogger.error(f"{execinfo}", stack_info=True)
             self.serversocket = None
             return False
-        self.serversocket.listen(1)
-        self.selector.register(
-            self.serversocket, selectors.EVENT_READ, self.accept_client
-        )
+
         self.client_connected_callback = client_connected_callback
         self.client_disconnected_callback = client_disconnected_callback
         self.start()
@@ -142,69 +141,50 @@ class NetworkProtocol(KenningProtocol):
         if not self.socket.recv(1):
             self.socket = None
             return False
-        self.selector.register(
-            self.socket,
-            selectors.EVENT_READ | selectors.EVENT_WRITE,
-            self.receive_data,
-        )
         self.start()
         return True
 
-    def receive_data(
-        self, socket: socket.socket, mask: int
-    ) -> Optional[bytes]:
+    def receive_data(self, timeout: Optional[float]) -> Optional[bytes]:
         if self.socket is None:
-            raise ProtocolNotStartedError("Protocol not initialized.")
-        data = self.socket.recv(self.packet_size)
-        if not data:
-            KLogger.info("Client disconnected from the server")
-            self.selector.unregister(self.socket)
+            if self.serversocket is None:
+                raise ProtocolNotStartedError("Protocol not initialized.")
+            if not self.accept_client(timeout):
+                return None
+        self.socket.settimeout(timeout)
+        data = None
+        try:
+            data = self.socket.recv(self.packet_size)
+        except TimeoutError:
+            return None
+        if data == b"":
             self.socket.close()
             self.socket = None
-            if self.client_disconnected_callback is not None:
-                self.client_disconnected_callback()
+            if self.serversocket is not None:
+                if self.client_disconnected_callback is not None:
+                    self.client_disconnected_callback()
+                KLogger.info("Client disconnected from the server.")
+            else:
+                KLogger.error("Server abruptly disconnected.")
             return None
-        else:
+        elif type(data) is bytes:
             return data
+        else:
+            return None
 
-    def wait_send(self, data: bytes) -> int:
-        """
-        Wrapper for sending method that waits until write buffer is ready for
-        new data.
-
-        Parameters
-        ----------
-        data : bytes
-            Data to send.
-
-        Returns
-        -------
-        int
-            The number of bytes sent.
-
-        Raises
-        ------
-        ProtocolNotStartedError
-            The protocol has not been initialized, or it has been initialized
-            as server, but no client has connected.
-        """
+    def send_data(self, data: bytes) -> bool:
         if self.socket is None:
             raise ProtocolNotStartedError("Protocol not initialized.")
-        ret = self.socket.send(data)
         while True:
-            events = self.selector.select(timeout=1)
-            for key, mask in events:
-                if key.fileobj == self.socket and mask & selectors.EVENT_WRITE:
-                    return ret
-
-    def send_data(self, data: bytes):
-        index = 0
-        while index < len(data):
-            ret = self.wait_send(data[index:])
+            ret = 0
+            try:
+                ret = self.socket.send(data)
+            except TimeoutError:
+                pass
             if ret < 0:
                 return False
-            index += ret
-        return True
+            data = data[ret:]
+            if len(data) == 0:
+                return True
 
     def disconnect(self):
         self.stop()

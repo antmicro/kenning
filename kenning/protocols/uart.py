@@ -8,7 +8,6 @@ UART-based inference communication protocol.
 
 import enum
 import json
-import selectors
 import struct
 from pathlib import Path
 from typing import Optional
@@ -146,11 +145,6 @@ class UARTProtocol(KenningProtocol):
             "type": int,
             "default": 9600,
         },
-        "endianness": {
-            "description": "Endianness of the bytes",
-            "type": str,
-            "default": "little",
-        },
     }
 
     def __init__(
@@ -159,7 +153,6 @@ class UARTProtocol(KenningProtocol):
         baudrate: int = 9600,
         error_recovery: bool = True,
         timeout: int = -1,
-        packet_size: int = 4096,
         max_message_size: int = 136,
     ):
         """
@@ -177,8 +170,7 @@ class UARTProtocol(KenningProtocol):
         timeout : int
             Response receive timeout in seconds. If negative, then waits for
             responses forever.
-        packet_size : int
-            Size of the packet.
+
         max_message_size : int
             Maximum size of a single protocol message in bytes.
         """
@@ -186,16 +178,11 @@ class UARTProtocol(KenningProtocol):
         self.baudrate = baudrate
         self.collecteddata = bytes()
         self.connection = None
-        self.packet_size = packet_size
+
         super().__init__(timeout, error_recovery, max_message_size)
 
     def initialize_client(self) -> bool:
-        self.connection = serial.Serial(self.port, self.baudrate, timeout=0)
-        self.selector.register(
-            self.connection,
-            selectors.EVENT_READ | selectors.EVENT_WRITE,
-            self.receive_data,
-        )
+        self.connection = serial.Serial(self.port, self.baudrate)
         if self.connection.is_open:
             self.start()
             _, flags = self.request_blocking(
@@ -224,14 +211,11 @@ class UARTProtocol(KenningProtocol):
             return False
         return len(data) == self.connection.write(data)
 
-    def receive_data(
-        self, connection: serial.Serial, mask: int
-    ) -> Optional[bytes]:
+    def receive_data(self, timeout: Optional[float]) -> Optional[bytes]:
         if self.connection is None or not self.connection.is_open:
             return None
-        data = self.connection.read(self.packet_size)
-
-        return data
+        self.connection.timeout = timeout
+        return self.connection.read(1)
 
     def disconnect(self):
         if self.connection is not None and self.connection.is_open:

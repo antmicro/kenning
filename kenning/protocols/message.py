@@ -365,6 +365,7 @@ class Message(object):
     def from_bytes(
         cls,
         data: bytes,
+        verify_checksum: bool = True,
         endianness: Literal["little", "big"] = "little",
     ) -> DeserializedMessage:
         """
@@ -374,6 +375,9 @@ class Message(object):
         ----------
         data : bytes
             Data to be converted to Message.
+        verify_checksum: bool
+            If set to True, message checksum will be verified, otheriwise will
+            assume, that the checksum is always valid.
         endianness : Literal["little", "big"]
             Endianness of the bytes.
 
@@ -424,7 +428,9 @@ class Message(object):
         else:
             message_payload = b""
         checksum_valid = (
-            cls._xor_bytes(data[:full_message_size]) == cls.CHECKSUM_MAGIC
+            (cls._xor_bytes(data[:full_message_size]) == cls.CHECKSUM_MAGIC)
+            if verify_checksum
+            else True
         )
         return DeserializedMessage(
             message=cls(

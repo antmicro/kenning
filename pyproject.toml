@@ -103,6 +103,9 @@ tflite = [
 tvm = [
     "apache-tvm==0.14.dev273; python_version<'3.12'",
 ]
+tinygrad = [
+    "tinygrad==0.11.0",
+]
 iree = [
     "iree-base-compiler[onnx]==3.6.0; python_version<'3.12'",
     "iree-base-runtime==3.6.0; python_version<'3.12'",
@@ -203,7 +206,7 @@ onnx2tf = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

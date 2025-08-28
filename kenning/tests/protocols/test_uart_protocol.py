@@ -103,10 +103,17 @@ def mock_serial() -> Tuple[Path, Path]:
             os.set_blocking(self.fifo_in.fileno(), False)
             os.set_blocking(self.fifo_out.fileno(), False)
             self.is_open = True
+            self.timeout = 0
 
         def read(self, size: int = -1):
-            data = self.fifo_in.read(size)
+            timestamp = time.perf_counter()
+            data = None
+            while time.perf_counter() - timestamp < self.timeout:
+                data = self.fifo_in.read(size)
+                if data is not None:
+                    break
             KLogger.debug(f"SerialMock read {data}")
+
             return data
 
         def write(self, data: bytes):
@@ -355,7 +362,9 @@ class TestUARTProtocol(TestCoreProtocol):
             args=(queue,),
         )
         thread_recv.start()
+
         client.disconnect()
+
         thread_recv.join()
         assert queue.qsize() == 1
         message = queue.get()
@@ -469,8 +478,9 @@ class TestUARTProtocol(TestCoreProtocol):
         client.stop()
         with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(random_byte_data)
-
-        received_data = client.receive_data(None, None)
+        received_data = b""
+        for _ in range(len(random_byte_data)):
+            received_data += client.receive_data(1)
 
         assert random_byte_data == received_data
 

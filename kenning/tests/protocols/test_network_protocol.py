@@ -146,7 +146,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         server.stop()
         server.disconnect()
         with pytest.raises(ProtocolNotStartedError):
-            server.receive_data(None, None)
+            server.receive_data(None)
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_receive_data_data_sent(
@@ -160,7 +160,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         server, client = server_and_client
         server.stop()
         assert client.send_data(random_byte_data)
-        received_data = server.receive_data(None, None)
+        received_data = server.receive_data(None)
         assert random_byte_data == received_data
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -181,7 +181,7 @@ class TestNetworkProtocol(TestCoreProtocol):
 
         server.client_disconnected_callback = mock_client_disconnected_callback
         client.disconnect()
-        received_data = server.receive_data(None, None)
+        received_data = server.receive_data(None)
         assert received_data is None
         assert 1 == mock_client_disconnected_callback_call_count
 
@@ -191,7 +191,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `accept_client()` method.
         """
 
-        def connect():
+        def connect(s):
             """
             Connects to server-socket.
             """
@@ -217,9 +217,9 @@ class TestNetworkProtocol(TestCoreProtocol):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.bind((self.host, self.port))
-                s.listen(1)
-                multiprocessing.Process(target=connect).start()
-                output = protocol.accept_client(s, None)
+                protocol.serversocket = s
+                multiprocessing.Process(target=connect, args=(s,)).start()
+                output = protocol.accept_client(None)
                 s.shutdown(socket.SHUT_RDWR)
             return output
 
@@ -233,29 +233,6 @@ class TestNetworkProtocol(TestCoreProtocol):
         protocol = self.init_protocol()
         run_test(protocol)
         assert socket is not None
-
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_wait_send(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        random_byte_data: bytes,
-    ):
-        """
-        Tests the `wait_send()` method.
-        """
-        server, client = server_and_client
-        server.stop()
-        client.stop()
-        for _ in range(10):
-            # Send the data
-            client_out = client.wait_send(random_byte_data)
-            assert client_out == len(random_byte_data)
-
-            # Receive data
-            server_data = server.receive_data(None, None)
-            assert (
-                server_data == random_byte_data
-            ), f"{server_data}!={random_byte_data}"
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_send_message(

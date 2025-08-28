@@ -4,7 +4,6 @@
 
 import copy
 import multiprocessing
-import socket
 from math import ceil
 from multiprocessing.pool import ThreadPool
 from threading import Event, Lock, Thread
@@ -346,7 +345,7 @@ class MockKenningProtocol(KenningProtocol):
     def initialize_client(self):
         pass
 
-    def receive_data(self, socket: socket.socket, mask: int):
+    def receive_data(self, timeout: float):
         pass
 
     def send_data(self, data: bytes):
@@ -1460,12 +1459,14 @@ class TestKenningProtocol:
             MessageType.IO_SPEC: event_mock_3,
         }
         protocol.send_messages(None, messages)
+        while len(message_dump_buffer) != len(messages):
+            pass
         protocol.stop()
 
-        assert len(messages) == event_mock.messages_sent_count
         assert 0 == event_mock_2.messages_sent_count
         assert 0 == event_mock_3.messages_sent_count
         assert 0 == event_mock_4.messages_sent_count
+        assert len(messages) == event_mock.messages_sent_count
 
         self._assert_message_lists_equal(messages, message_dump_buffer)
 

@@ -436,7 +436,7 @@ class TestUARTProtocol(TestCoreProtocol):
         """
 
         class EmptyMessage:
-            def to_bytes(self):
+            def to_bytes(self, verify_checksum: bool):
                 return b""
 
         # send data

@@ -115,7 +115,7 @@ class TestNetworkProtocol(TestCoreProtocol):
 
         # Send empty message
         class EmptyMessage(object):
-            def to_bytes(self):
+            def to_bytes(self, verify_checksum: bool):
                 return b""
 
         client.send_message(EmptyMessage())

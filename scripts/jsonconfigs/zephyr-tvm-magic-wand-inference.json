@@ -32,8 +32,7 @@
         "type": "kenning.protocols.uart.UARTProtocol",
         "parameters": {
             "port": "/dev/ttyUSB1",
-            "baudrate": 115200,
-            "endianness": "little"
+            "baudrate": 115200
         }
     }
 }

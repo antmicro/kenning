@@ -42,8 +42,7 @@
         "type": "kenning.protocols.uart.UARTProtocol",
         "parameters": {
             "port": "/tmp/uart",
-            "baudrate": 115200,
-            "endianness": "little"
+            "baudrate": 115200
         }
     }
 }

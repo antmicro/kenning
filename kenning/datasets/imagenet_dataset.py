@@ -184,21 +184,30 @@ class ImageNetDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))
-        top_5_count = 0
         currindex = self._dataindex - len(predictions)
         top_5_results = []
+        top_5_count = 0
         for prediction, label in zip(predictions, truth):
-            confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
+            while len(prediction) != self.numclasses:
+                assert len(prediction) == 1
+                prediction = prediction[0]
+
+            ytrue = np.argmax(label)
+            ypred = np.argmax(prediction)
+            confusion_matrix[ytrue, ypred] += 1
+
             top_5 = np.argsort(prediction)[::-1][:5]
             top_5_count += 1 if np.argmax(label) in top_5 else 0
-            top_5_results.append(
-                {
-                    Path(
-                        self.dataX[self._indices[currindex]]
-                    ).name: top_5.tolist()
-                }
-            )
+            if hasattr(self, "_indices"):
+                top_5_results.append(
+                    {
+                        Path(
+                            self.dataX[self._indices[currindex]]
+                        ).name: top_5.tolist()
+                    }
+                )
             currindex += 1
+
         measurements = Measurements()
         measurements.accumulate(
             "eval_confusion_matrix",

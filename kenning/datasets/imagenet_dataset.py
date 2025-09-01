@@ -223,4 +223,11 @@ class ImageNetDataset(Dataset):
         return self.classnames
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
+        if self.preprocess_type == "torch":
+            mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+            std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+            return (mean, std)
+        elif self.preprocess_type == "caffe":
+            mean = np.array([103.939, 116.779, 123.68], dtype=np.float32)
+            return (mean, None)
         raise NotSupportedError("This dataset does not support mean or std.")

@@ -310,6 +310,41 @@ def convert(converters: Iterable[Callable], v: Any) -> Any:
     return c_value
 
 
+def try_to_load_param_from_ros(param_name: str) -> Any:
+    """
+    A function that will try to gather parameters
+    from ROS 2 params gathered by global ROS 2 Node.
+
+    Parameters
+    ----------
+    param_name : str
+        Name of the desired parameter.
+
+    Returns
+    -------
+    Any
+        A parameter with name param_name.
+    """
+    KLogger.debug(f"Trying to get values from ROS2 {param_name}")
+    try:
+        from kenning.utils.ros2_global_context import ROS2GlobalContext
+
+        if ROS2GlobalContext.node is None:
+            return None
+
+        param = ROS2GlobalContext.get_param(param_name)
+
+        if param is not None:
+            KLogger.debug(
+                f"Got {param_name} parameter from ROS 2 with value: {param}"
+            )
+
+        return param
+
+    except ModuleNotFoundError:
+        return None
+
+
 def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
     """
     Validates the given dictionary with the schema.
@@ -336,7 +371,9 @@ def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
 
     # Including default values
     for name, keywords in schema["properties"].items():
-        if name not in json_dict and "default" in keywords:
+        if (value := try_to_load_param_from_ros(name)) is not None:
+            converted_json_dict[name] = value
+        elif name not in json_dict and "default" in keywords:
             converted_json_dict[name] = keywords["default"]
         elif name in json_dict:
             converted_json_dict[name] = json_dict[name]
@@ -423,15 +460,18 @@ def get_parsed_args_dict(
         else:
             argparse_name = arg_name
 
-        if hasattr(args, argparse_name):
-            value = getattr(args, argparse_name)
-        else:
-            try:
-                value = arg_properties["default"]
-            except KeyError:
-                raise Exception(
-                    f"No default value provided for {argparse_name}"
-                )
+        value = try_to_load_param_from_ros(argparse_name)
+
+        if value is None:
+            if hasattr(args, argparse_name):
+                value = getattr(args, argparse_name)
+            else:
+                try:
+                    value = arg_properties["default"]
+                except KeyError:
+                    raise Exception(
+                        f"No default value provided for {argparse_name}"
+                    )
 
         if value is None and override_only:
             continue

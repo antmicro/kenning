@@ -57,6 +57,7 @@ class Report(ArgumentsHandler, ABC):
             "description": "List of types that implement this report",
             "type": List[str],
             "default": None,
+            "enum": [report_types.value for report_types in list(ReportTypes)],
             "overridable": True,
         },
         "automl_stats": {

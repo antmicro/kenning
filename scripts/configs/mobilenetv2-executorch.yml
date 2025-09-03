@@ -1,0 +1,23 @@
+model_wrapper:
+  type: PyTorchPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth
+    model_name: torch-native
+
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: ./build/PetDataset
+    image_memory_layout: NCHW
+
+optimizers:
+  - type: ExecuTorchOptimizer
+    parameters:
+      compiled_model_path: ./build/optimized_mobilenetv2.pte
+      quantize: true
+
+runtime:
+  type: ExecuTorchRuntime
+  parameters:
+    save_model_path: ./build/optimized_mobilenetv2.pte
+    image_memory_layout: NCHW

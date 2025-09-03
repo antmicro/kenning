@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy>=1.23.5,<2.0.0"]
+requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy>=1.21.3,<2.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,7 +29,7 @@ dependencies = [
     "isort>=5.12.0",
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
-    "numpy>=1.23.5,<2.0.0",
+    "numpy>=1.21.3,<2.0.0",
     "onnx==1.16.0",
     "pandoc",
     "Pillow>=8.1.0",
@@ -63,7 +63,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch",
-    "torch>=2.0.1,<=2.3.1",
+    "torch",
     "torchvision>=0.15.0",
 ]
 mxnet = [
@@ -137,6 +137,7 @@ test = [
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
     "tf2onnx",
     "kenning[onnx2tf]",
+    "kenning[executorch]",
 ]
 real_time_visualization = [
     "dearpygui>=1.6.2",
@@ -187,7 +188,7 @@ llm = [
     "autoawq==0.2.5; python_version<'3.12'",
     "rouge-score",
     "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization
-    "vllm==0.5.0; python_version<'3.12'",
+    # "vllm; python_version<'3.12'",
 ]
 
 onnx2tf = [
@@ -205,8 +206,14 @@ onnx2tf = [
     "flatbuffers>=23.1.21",
 ]
 
+executorch = [
+    "torch",
+    "executorch>=0.4.0",
+    "torchao"
+]
+
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets
@@ -317,3 +324,8 @@ directory = "docs/source/generated/coverage"
 [tool.typos.default.extend-identifiers]
 __Pyx_LocalBuf_ND = "__Pyx_LocalBuf_ND"
 nd = "nd"
+
+[tool.uv]
+override-dependencies = [
+    "numpy>=1.23.5,<2.0.0",  # Enforce that numpy version for all packages.
+]

@@ -173,7 +173,7 @@ class InferenceTester(CommandTemplate):
                 flag_group.add_argument(
                     "--report-cls",
                     help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
-                    default="MarkdownReport",
+                    default="StubReport",
                 ).completer = ClassPathCompleter(REPORT)
             other_group.add_argument(
                 "--evaluate-unoptimized",
@@ -260,6 +260,7 @@ class InferenceTester(CommandTemplate):
         args = InferenceTester.prepare_args(args, flag_config_args)
 
         if args.json_cfg is not None:
+            KLogger.debug("Running using parameters from config file")
             if args.help:
                 raise ParserHelpException
             return InferenceTester._run_from_cfg(

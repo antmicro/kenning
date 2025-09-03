@@ -43,7 +43,7 @@ class Report(ArgumentsHandler, ABC):
     arguments_structure = {
         "measurements": {
             "description": "Path to the JSON files with measurements",
-            "type": Path | list[Path],
+            "type": Path | List[Path],
             "default": [None],
             "overridable": True,
         },
@@ -55,7 +55,7 @@ class Report(ArgumentsHandler, ABC):
         },
         "report_types": {
             "description": "List of types that implement this report",
-            "type": list[str],
+            "type": List[str],
             "default": None,
             "overridable": True,
         },

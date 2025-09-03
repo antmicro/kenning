@@ -49,6 +49,11 @@ def get_default_runtime(
 
         return PyTorchRuntime(model_path)
 
+    if model_framework == "executorch":
+        from kenning.runtimes.executorch import ExecuTorchRuntime
+
+        return ExecuTorchRuntime(model_path)
+
     if model_framework == "iree":
         from kenning.runtimes.iree import IREERuntime
 

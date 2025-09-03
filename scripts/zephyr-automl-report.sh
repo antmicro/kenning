@@ -16,4 +16,5 @@ python3 -m kenning automl optimize test report \
   --root-dir $DOCS_DIR/source \
   --img-dir $DOCS_DIR/source/generated/img \
   --comparison-only \
-  --smaller-header
+  --smaller-header \
+  --main-quality-metric f1

@@ -64,6 +64,7 @@ EXPECTED_FAIL = [
     ("PyTorchAnomalyDetectionVAE", "Ai8xCompiler"),
     ("PyTorchAnomalyDetectionVAE", "NNIPruningOptimizer"),
     ("PyTorchCOCOMaskRCNN", "Ai8xCompiler"),
+    ("PyTorchCOCOMaskRCNN", "ExecuTorchOptimizer"),
     ("PyTorchCOCOMaskRCNN", "NNIPruningOptimizer"),
     ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
     ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),

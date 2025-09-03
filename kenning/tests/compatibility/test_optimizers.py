@@ -39,6 +39,7 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 
 EXPECTED_FAIL = [
     ("NNIPruningOptimizer", "Ai8xCompiler"),
+    ("NNIPruningOptimizer", "ExecuTorchOptimizer"),
     ("NNIPruningOptimizer", "NNIPruningOptimizer"),
     ("NNIPruningOptimizer", "ONNXCompiler"),
     ("NNIPruningOptimizer", "TVMCompiler"),

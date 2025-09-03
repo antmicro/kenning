@@ -227,11 +227,32 @@ class DatasetModelRegistry:
             onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
             onnx_compiler.init()
             onnx_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
             )
 
             torch_model = onnx2torch.convert(onnx_model_path)
             torch_save(torch_model, model_path, pickle_module=dill)
+
+        elif framework == "executorch":
+            from kenning.optimizers.executorch import ExecuTorchOptimizer
+
+            dataset = get_dataset_random_mock(PetDataset)
+
+            executorch_model_path = get_tmp_path(".pte")
+            executorch_compiler = ExecuTorchOptimizer(
+                dataset, executorch_model_path
+            )
+
+            model = PyTorchPetDatasetMobileNetV2(
+                PyTorchPetDatasetMobileNetV2.pretrained_model_uri,
+                dataset=dataset,
+            )
+            model.model_path = executorch_model_path
+
+            executorch_compiler.compile(
+                ResourceURI(PyTorchPetDatasetMobileNetV2.pretrained_model_uri),
+                model.get_io_specification_from_model(),
+            )
 
         elif framework == "darknet":
             dataset = get_dataset_random_mock(COCODataset2017)

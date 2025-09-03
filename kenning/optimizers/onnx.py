@@ -88,7 +88,7 @@ def torchconversion(
     import torch
 
     dev = "cpu"
-    model = torch.load(str(model_path), map_location=dev)
+    model = torch.load(str(model_path), map_location=dev, weights_only=False)
 
     if not isinstance(model, torch.nn.Module):
         raise CompilationError(

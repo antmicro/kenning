@@ -175,6 +175,7 @@ class InferenceTester(CommandTemplate):
                     help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
                     default="StubReport",
                 ).completer = ClassPathCompleter(REPORT)
+
             other_group.add_argument(
                 "--evaluate-unoptimized",
                 help="Test model before optimization and append measurements",
@@ -226,8 +227,6 @@ class InferenceTester(CommandTemplate):
     def _fill_missing_namespace_args(args: argparse.Namespace):
         if "json_cfg" not in args:
             args.json_cfg = None
-        if "measurements" not in args:
-            args.measurements = [None]
         if "evaluate_unoptimized" not in args:
             args.evaluate_unoptimized = False
 
@@ -280,6 +279,21 @@ class InferenceTester(CommandTemplate):
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
+        if (
+            ConfigKey.report.name in json_cfg.keys()
+            and "type" not in json_cfg[ConfigKey.report.name].keys()
+            and hasattr(args, "report_cls")
+        ):
+            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
+        elif hasattr(args, "report_cls"):
+            json_cfg[ConfigKey.report.name] = {
+                "type": args.report_cls,
+                "parameters": {},
+            }
+
+        if hasattr(args, "report_cls"):
+            KLogger.debug(f"Selected report type: {args.report_cls}")
+
         pipeline_runner = PipelineRunner.from_json_cfg(
             json_cfg,
             cfg_path=args.json_cfg,
@@ -315,6 +329,9 @@ class InferenceTester(CommandTemplate):
             if hasattr(args, "report_cls")
             else []
         )
+
+        if hasattr(args, "report_cls"):
+            KLogger.debug(f"Selected report type: {args.report_cls}")
 
         def required(objs: Dict[ConfigKey, Type]):
             compilercls = objs.get(ConfigKey.optimizers)
@@ -353,7 +370,9 @@ class InferenceTester(CommandTemplate):
 
         # this is added to make inference testser's tests work
         if pipeline_runner.output is None:
-            output = args.measurements[0]
+            output = (
+                args.measurements[0] if hasattr(args, "measurements") else None
+            )
         else:
             output = pipeline_runner.output
 

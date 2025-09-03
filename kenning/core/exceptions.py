@@ -81,6 +81,12 @@ class ModuleIOSpecificationFormatError(ConfigurationError):
     """
 
 
+class IOSpecificationMissingEntryError(ConfigurationError):
+    """
+    Missing entry in IO specification.
+    """
+
+
 class ClassInfoInvalidArgumentError(ConfigurationError):
     """
     Could not retrieve information on the given class, because arguments were

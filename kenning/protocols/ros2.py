@@ -13,12 +13,10 @@ import json
 import time
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 
-import rclpy
 from rclpy.action import ActionClient
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.node import Node
 
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements, timemeasurements
@@ -30,6 +28,7 @@ from kenning.core.protocol import (
 from kenning.dataconverters.ros2_dataconverter import ROS2DataConverter
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
+from kenning.utils.ros2_global_context import ROS2GlobalContext
 
 GoalHandle = TypeVar("GoalHandle", bound=_rclpy.ActionGoalHandle)
 
@@ -43,11 +42,6 @@ class ROS2Protocol(Protocol):
     """
 
     arguments_structure = {
-        "node_name": {
-            "description": "Name of the ROS2 node",
-            "type": str,
-            "required": True,
-        },
         "process_action_type_str": {
             "description": "Import path to the action class to use",
             "type": str,
@@ -86,7 +80,6 @@ class ROS2Protocol(Protocol):
 
     def __init__(
         self,
-        node_name: str,
         process_action_type_str: str,
         process_action_name: str,
         model_service_type_str: str = "std_srvs.srv.Trigger",
@@ -100,8 +93,6 @@ class ROS2Protocol(Protocol):
 
         Parameters
         ----------
-        node_name : str
-            Name of the ROS2 node.
         process_action_type_str : str
             Import path to the action class to use.
         process_action_name : str
@@ -118,10 +109,6 @@ class ROS2Protocol(Protocol):
             Response receive timeout in seconds. If negative, then waits for
             responses forever.
         """
-        # ROS2 node
-        self.node = None
-        self.node_name = node_name
-
         # Action for data processing routine
         self.process_action = None
         self.process_action_name = process_action_name
@@ -147,6 +134,30 @@ class ROS2Protocol(Protocol):
 
         super().__init__(timeout=timeout)
 
+    def _wait_for_future(self, future: Future) -> bool:
+        """
+        A function that will wait for future
+        and terminate if timeout passed.
+
+        Parameters
+        ----------
+        future : Future
+            A future that we are waiting for.
+
+        Return
+        ------
+        bool
+            True if future completed, False when timeout is reached.
+        """
+        start = time.perf_counter()
+        while not future.done():
+            if self.timeout > -1 and (
+                (time.perf_counter() - start) >= self.timeout
+            ):
+                return False
+
+        return True
+
     def log_info(self, message: str):
         """
         Sends the info message to loggers.
@@ -157,8 +168,8 @@ class ROS2Protocol(Protocol):
             Message to be sent.
         """
         KLogger.info(message)
-        if self.node is not None:
-            self.node.get_logger().info(message)
+        if ROS2GlobalContext.node is not None:
+            ROS2GlobalContext.node.get_logger().info(message)
 
     def log_debug(self, message: str):
         """
@@ -170,8 +181,8 @@ class ROS2Protocol(Protocol):
             Message to be sent.
         """
         KLogger.debug(message)
-        if self.node is not None:
-            self.node.get_logger().debug(message)
+        if ROS2GlobalContext.node is not None:
+            ROS2GlobalContext.node.get_logger().debug(message)
 
     def log_warning(self, message: str):
         """
@@ -183,8 +194,8 @@ class ROS2Protocol(Protocol):
             Message to be sent.
         """
         KLogger.warning(message)
-        if self.node is not None:
-            self.node.get_logger().warning(message)
+        if ROS2GlobalContext.node is not None:
+            ROS2GlobalContext.node.get_logger().warning(message)
 
     def log_error(self, message: str):
         """
@@ -196,11 +207,11 @@ class ROS2Protocol(Protocol):
             Message to be sent.
         """
         KLogger.error(message)
-        if self.node is not None:
-            self.node.get_logger().error(message)
+        if ROS2GlobalContext.node is not None:
+            ROS2GlobalContext.node.get_logger().error(message)
 
     def deduce_data_converter_from_io_spec(
-        self, io_specification: Dict | Path
+        self, io_specification: Optional[Union[Dict, Path]] = None
     ) -> ROS2DataConverter:
         KLogger.debug(
             "Loading ros2 data converter with "
@@ -212,24 +223,23 @@ class ROS2Protocol(Protocol):
         )
 
     def initialize_client(self):
-        self.log_debug(f"Initializing action client node {self.node_name}")
+        self.log_debug(
+            f"Initializing action client node {ROS2GlobalContext.node_name()}"
+        )
 
-        if not rclpy.ok():
-            rclpy.init()
-        self.node = Node(self.node_name)
         self.process_action = ActionClient(
-            self.node,
+            ROS2GlobalContext.node,
             self._process_action_type,
             self.process_action_name,
             callback_group=None,
         )
 
-        self.model_service = self.node.create_client(
+        self.model_service = ROS2GlobalContext.node.create_client(
             self._model_service_type,
             self.model_service_name,
         )
 
-        self.measurements_service = self.node.create_client(
+        self.measurements_service = ROS2GlobalContext.node.create_client(
             self._measurements_service_type,
             self.measurements_service_name,
         )
@@ -361,8 +371,9 @@ class ROS2Protocol(Protocol):
 
     def disconnect(self):
         self.log_debug("Disconnecting node")
-        self.node.destroy_node()
-        self.log_debug("Successfully disconnected")
+        ROS2GlobalContext.node.destroy_client(self.model_service)
+        ROS2GlobalContext.node.destroy_client(self.measurements_service)
+        KLogger.debug("Successfully disconnected")
 
     def initialize_server(
         self,

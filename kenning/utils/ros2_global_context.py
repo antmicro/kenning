@@ -79,3 +79,15 @@ class ROS2GlobalContext:
 
         cls.node = None
         cls.node_thread = None
+
+    @classmethod
+    def node_name(cls) -> str:
+        """
+        Function that gets used Node name.
+
+        Returns
+        -------
+        str
+            A name of the created Node.
+        """
+        return cls.node.get_name()

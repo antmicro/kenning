@@ -272,7 +272,7 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     def deduce_data_converter_from_io_spec(
-        self, io_specification: Union[Dict, Path]
+        self, io_specification: Optional[Union[Dict, Path]] = None
     ) -> "DataConverter":
         """
         Function that reads model IO specification and then tries to deduce
@@ -280,7 +280,7 @@ class Protocol(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        io_specification : Union[Dict, Path]
+        io_specification : Optional[Union[Dict, Path]]
             Dictionary with IO specification or Path to file with it.
 
         Returns

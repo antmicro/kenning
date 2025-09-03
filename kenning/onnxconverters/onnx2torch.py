@@ -374,12 +374,12 @@ class ReshapeWithConstShape(torch.nn.Module):
     Artificial torch Reshaping module with constant reshaping shape.
     """
 
-    def __init__(self, size: Tuple[int, ...]) -> None:
+    def __init__(self, shape: Tuple[int, ...]) -> None:
         super().__init__()
-        self.shape = size
+        self.shape = shape
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        return torch.reshape(x[0], torch.Size((x[0].shape[0], *self.shape)))
+        return torch.reshape(x[0], (x[0].shape[0], *self.shape))
 
 
 class Reshape(OnnxReshape):
@@ -441,8 +441,10 @@ def reshape_converter(
             torch_module=torch.nn.Flatten(start_dim=shape.shape[0] - 1),
             onnx_mapping=mapping,
         )
+    # Move torch.Size call here, pass plain tuple to module
+    shape_tuple = tuple(int(s) for s in shape[1:])
     return OperationConverterResult(
-        torch_module=ReshapeWithConstShape(tuple(shape[1:])),
+        torch_module=ReshapeWithConstShape(shape_tuple),
         onnx_mapping=mapping,
     )
 
@@ -654,7 +656,7 @@ class FunctionWrapperForCheckingConst:
             extract_value_from_graph(node, graph, name)
             for name in default_conversion.onnx_mapping.inputs
         ]
-        constant_input = [_input is not None for _input in inputs]
+        constant_input = tuple(_input is not None for _input in inputs)
 
         if all(constant_input):
             # All inputs are constant, so node will be converted

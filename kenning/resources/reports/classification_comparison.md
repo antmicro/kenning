@@ -1,16 +1,16 @@
 ## Classification comparison
 
-### Comparison of inference time, accuracy and model size
+### Comparison of inference time, {{data['bubble_plot_metric']}} and model size
 
 ```{figure} {{data["bubbleplotpath"]}}
 ---
 name: {{data["report_name_simple"]}}_classification_size_inference
-alt: Accuracy vs Inference time vs RAM usage
+alt: {{data['bubble_plot_metric']}} vs Inference time vs RAM usage
 align: center
 ---
 
 Model size, speed and quality summary.
-The accuracy of the model is presented on Y axis.
+The {{data['bubble_plot_metric']}} of the model is presented on Y axis.
 The inference time of the model is presented on X axis.
 The size of the model is represented by the size of its point.
 ```
@@ -23,12 +23,12 @@ align: center
 * - Model name
   - Mean Inference time [s]
   - Size [MB]
-  - Accuracy
+  - {{data['bubble_plot_metric']}}
 {% for model_name in data["model_names"] %}
 * - {{model_name}}
   - {{'%.6f' % data[model_name]["inferencetime_mean"]}}
   - {{'%.3f' % (data[model_name]["size"]/1e6)}}
-  - {{'%.6f' % data[model_name]["accuracy"]}}
+  - {{'%.6f' % data[model_name][data['bubble_plot_metric']]}}
 {% endfor %}
 ```
 

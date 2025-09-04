@@ -31,7 +31,7 @@ def comparison_classification_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
-    bubble_plot_metric: Metric = Metric.ACC,
+    main_quality_metric: Metric = Metric.ACC,
     metrics_for_radar: Optional[List[Metric]] = None,
     **kwargs: Any,
 ) -> str:
@@ -53,7 +53,7 @@ def comparison_classification_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
-    bubble_plot_metric : Metric
+    main_quality_metric : Metric
         Metric presented on Y-axis on bubble plot.
     metrics_for_radar : Optional[List[Metric]]
         List of metrics to use for radar plot. By default,
@@ -114,7 +114,7 @@ def comparison_classification_report(
             ):
                 max_metrics[metric] = classification_metrics[metric]
         available_metrics = available_metrics.intersection(metrics)
-        bubble_plot_data.append(model_metrics[bubble_plot_metric])
+        bubble_plot_data.append(model_metrics[main_quality_metric])
 
         model_inferencetime_mean = performance_metrics["inferencetime_mean"]
         mean_inference_time.append(model_inferencetime_mean)
@@ -137,22 +137,24 @@ def comparison_classification_report(
         metric_visualization[data["model_name"]] = model_metrics
 
     if not skip_inference_metrics:
-        if bubble_plot_metric not in available_metrics:
+        if main_quality_metric not in available_metrics:
             KLogger.error(
-                f"{bubble_plot_metric} not available"
+                f"{main_quality_metric} not available"
                 " for all models, using accuracy"
             )
-            bubble_plot_metric = Metric.ACC
+            main_quality_metric = Metric.ACC
         plot_path = imgdir / "accuracy_vs_inference_time"
         BubblePlot(
-            title="Accuracy vs Mean inference time" if draw_titles else None,
+            title=f"{main_quality_metric.value} vs Mean inference time"
+            if draw_titles
+            else None,
             x_data=mean_inference_time,
             x_label="Mean inference time [s]",
             y_data=[
-                metric_visualization[name][bubble_plot_metric]
+                metric_visualization[name][main_quality_metric]
                 for name in names
             ],
-            y_label=bubble_plot_metric.value,
+            y_label=main_quality_metric.value,
             size_data=model_sizes,
             size_label="Model size",
             bubble_labels=names,
@@ -227,6 +229,7 @@ def comparison_classification_report(
         )
         return ""
 
+    report_variables["bubble_plot_metric"] = main_quality_metric.value
     report_variables["max_metrics"] = max_metrics
     with path(reports, "classification_comparison.md") as reporttemplate:
         return create_report_from_measurements(

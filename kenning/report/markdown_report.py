@@ -17,6 +17,7 @@ from typing import List, Optional
 from matplotlib.colors import to_hex
 
 from kenning.cli.command_template import AUTOML
+from kenning.core.metrics import CLASSIFICATION_METRICS, Metric
 from kenning.report.markdown_components import (
     automl_report,
     classification_report,
@@ -132,6 +133,18 @@ class MarkdownReport(Report):
             "default": False,
             "overridable": True,
         },
+        "report_types": {
+            "description": "List of types that implement this report",
+            "type": list[str],
+            "default": None,
+        },
+        "main_quality_metric": {
+            "description": "Option that allows you to select a metric "
+            "to compare models against",
+            "type": str,
+            "enum": [metric.name.lower() for metric in CLASSIFICATION_METRICS],
+            "default": Metric.ACC.name.lower(),
+        },
     }
 
     def __init__(
@@ -151,6 +164,7 @@ class MarkdownReport(Report):
         save_summary: bool = False,
         skip_general_information: bool = False,
         automl_stats: Optional[Path] = None,
+        main_quality_metric: str = Metric.ACC.name.lower(),
     ):
         super().__init__(measurements, report_name, report_types, automl_stats)
 
@@ -166,7 +180,11 @@ class MarkdownReport(Report):
         self.save_summary = save_summary
         self.skip_general_information = skip_general_information
 
+        KLogger.debug(f"Report measurements: {self.measurements}")
+
         self.measurementsdata = {}
+
+        self.main_quality_metric = Metric[main_quality_metric.upper()]
 
         if self.to_html and not isinstance(self.to_html, (str, Path)):
             self.to_html = Path(self.report_path).with_suffix("")
@@ -332,6 +350,7 @@ class MarkdownReport(Report):
                     cmap=self.cmap,
                     colors=self.colors,
                     draw_titles=draw_titles,
+                    main_quality_metric=self.main_quality_metric,
                 )
         if not self.comparison_only or self.save_summary:
             for _type in self.report_types:

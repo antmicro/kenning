@@ -50,6 +50,12 @@ class IREERuntime(Runtime):
             "default": None,
             "nullable": True,
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples in a single batch.",
+            "type": int,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -58,6 +64,7 @@ class IREERuntime(Runtime):
         driver: str = "local-sync",
         disable_performance_measurements: bool = False,
         llext_binary_path: Optional[PathOrURI] = None,
+        batch_size: int = 1,
     ):
         """
         Constructs IREE runtime.
@@ -72,6 +79,9 @@ class IREERuntime(Runtime):
             Disable collection and processing of performance metrics.
         llext_binary_path : Optional[PathOrURI]
             Path to the LLEXT binary.
+        batch_size : int
+            Batch size for inference, which is a number of sample
+            in a single batch.
         """
         self.model_path = model_path
         self.model = None
@@ -79,7 +89,8 @@ class IREERuntime(Runtime):
         self.driver = driver
         self.llext_binary_path = llext_binary_path
         super().__init__(
-            disable_performance_measurements=disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements,
+            batch_size=batch_size,
         )
 
     def load_input(self, input_data: List[List[np.ndarray]]) -> bool:

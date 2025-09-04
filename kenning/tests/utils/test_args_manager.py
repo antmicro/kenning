@@ -174,6 +174,7 @@ class TestArgsManagerWrapper:
         execution_providers=["CPUExecutionProvider"],
     )
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME = {
+        "batch_size": 1,
         "disable_performance_measurements": False,
         "execution_providers": ["CPUExecutionProvider"],
         "model_path": ResourceURI("build/yolov4.onnx"),
@@ -186,6 +187,7 @@ class TestArgsManagerWrapper:
         )
     )
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME_DEFAULT_MODELPATH = {
+        "batch_size": 1,
         "disable_performance_measurements": False,
         "execution_providers": ["CPUExecutionProvider"],
         "model_path": ResourceURI("model.tar"),

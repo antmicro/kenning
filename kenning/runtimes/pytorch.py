@@ -41,6 +41,12 @@ class PyTorchRuntime(Runtime):
             "type": bool,
             "default": False,
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples in a single batch.",
+            "type": int,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -48,6 +54,7 @@ class PyTorchRuntime(Runtime):
         model_path: PathOrURI,
         disable_performance_measurements: bool = True,
         skip_jit: bool = False,
+        batch_size: int = 1,
     ):
         """
         Constructs PyTorch runtime.
@@ -60,6 +67,9 @@ class PyTorchRuntime(Runtime):
             Disable collection and processing of performance metrics
         skip_jit : bool
             Do not execute Just-In-Time compilation of the model
+        batch_size : int
+            Batch size for inference, which is a number of sample
+            in a single batch.
         """
         import torch
 
@@ -72,7 +82,8 @@ class PyTorchRuntime(Runtime):
         self.input: Optional[List] = None
         self.output: Optional[List] = None
         super().__init__(
-            disable_performance_measurements=disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements,
+            batch_size=batch_size,
         )
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:

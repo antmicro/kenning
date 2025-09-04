@@ -55,6 +55,12 @@ class TFLiteRuntime(Runtime):
             "default": None,
             "nullable": True,
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples in a single batch.",
+            "type": int,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -64,6 +70,7 @@ class TFLiteRuntime(Runtime):
         num_threads: int = 4,
         disable_performance_measurements: bool = False,
         llext_binary_path: Optional[PathOrURI] = None,
+        batch_size: int = 1,
     ):
         """
         Constructs TFLite Runtime pipeline.
@@ -80,6 +87,9 @@ class TFLiteRuntime(Runtime):
             Disable collection and processing of performance metrics.
         llext_binary_path : Optional[PathOrURI]
             Path to the LLEXT binary.
+        batch_size : int
+            Batch size for inference, which is a number of sample
+            in a single batch.
         """
         self.model_path = model_path
         self.interpreter = None
@@ -88,7 +98,8 @@ class TFLiteRuntime(Runtime):
         self.delegates = delegates
         self.llext_binary_path = llext_binary_path
         super().__init__(
-            disable_performance_measurements=disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements,
+            batch_size=batch_size,
         )
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:

@@ -41,6 +41,12 @@ class ONNXRuntime(Runtime):
             "type": list[str],
             "default": ["CPUExecutionProvider"],
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples in a single batch.",
+            "type": int,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -48,6 +54,7 @@ class ONNXRuntime(Runtime):
         model_path: PathOrURI,
         execution_providers: List[str] = ["CPUExecutionProvider"],
         disable_performance_measurements: bool = False,
+        batch_size: int = 1,
     ):
         """
         Constructs ONNX runtime.
@@ -60,13 +67,17 @@ class ONNXRuntime(Runtime):
             List of execution providers ordered by priority.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+        batch_size : int
+            Batch size for inference, which is a number of sample
+            in a single batch.
         """
         self.model_path = model_path
         self.session = None
         self.input = None
         self.execution_providers = execution_providers
         super().__init__(
-            disable_performance_measurements=disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements,
+            batch_size=batch_size,
         )
 
     def load_input(self, input_data: List[np.ndarray]) -> bool:

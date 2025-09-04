@@ -66,6 +66,7 @@ def protocol_mock():
         True,
         bytearray([1, 2, 3, 4]),
     )
+    mock.deduce_data_converter_from_io_spec = lambda x: None
     return mock
 
 

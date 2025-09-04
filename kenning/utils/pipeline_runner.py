@@ -131,6 +131,26 @@ class PipelineRunner(object):
             self.protocol = self.platform.get_default_protocol()
             KLogger.info(f"Set protocol to {self.protocol}")
 
+        if (
+            self.protocol is not None
+            and (self.model_wrapper or self.runtime)
+            and self.dataconverter is None
+        ):
+            io_specification = None
+
+            if self.model_wrapper:
+                io_specification = self.model_wrapper.get_io_specification()
+            elif self.runtime and hasattr(self.runtime, "model_path"):
+                io_specification = self.runtime.get_io_spec_path(
+                    self.runtime.model_path
+                )
+
+            self.dataconverter = (
+                self.protocol.deduce_data_converter_from_io_spec(
+                    io_specification
+                )
+            )
+
         if not (self.model_wrapper or self.dataconverter):
             raise ValueError("Provide either dataconverter or model_wrapper")
 

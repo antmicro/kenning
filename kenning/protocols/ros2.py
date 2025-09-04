@@ -27,6 +27,7 @@ from kenning.core.protocol import (
     ServerDownloadCallback,
     ServerUploadCallback,
 )
+from kenning.dataconverters.ros2_dataconverter import ROS2DataConverter
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
@@ -197,6 +198,18 @@ class ROS2Protocol(Protocol):
         KLogger.error(message)
         if self.node is not None:
             self.node.get_logger().error(message)
+
+    def deduce_data_converter_from_io_spec(
+        self, io_specification: Dict | Path
+    ) -> ROS2DataConverter:
+        KLogger.debug(
+            "Loading ros2 data converter with "
+            f"type: {self.process_action_type_str}"
+        )
+
+        return ROS2DataConverter(
+            ros2_message_type=self.process_action_type_str
+        )
 
     def initialize_client(self):
         self.log_debug(f"Initializing action client node {self.node_name}")

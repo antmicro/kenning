@@ -15,6 +15,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from kenning.core.dataconverter import DataConverter
 from kenning.core.exceptions import RequestFailure
 from kenning.core.measurements import Measurements
 from kenning.utils.args_manager import ArgumentsHandler
@@ -269,6 +270,25 @@ class Protocol(ArgumentsHandler, ABC):
             Called, when the client uploads runtime.
         """
         ...
+
+    def deduce_data_converter_from_io_spec(
+        self, io_specification: Union[Dict, Path]
+    ) -> "DataConverter":
+        """
+        Function that reads model IO specification and then tries to deduce
+        optimal data converter type.
+
+        Parameters
+        ----------
+        io_specification : Union[Dict, Path]
+            Dictionary with IO specification or Path to file with it.
+
+        Returns
+        -------
+        DataConverter
+            Optimal DataConverter type.
+        """
+        return None
 
     @abstractmethod
     def initialize_server(

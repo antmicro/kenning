@@ -26,6 +26,7 @@ from kenning.core.measurements import (
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
 from kenning.interfaces.io_interface import ModuleIOSpecificationFormatError
+from kenning.runtimes.utils import zero_pad_batch
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -45,10 +46,16 @@ class Runtime(ArgumentsHandler, ABC):
             "metrics",
             "type": bool,
             "default": False,
+        },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples in a single batch.",
+            "type": int,
+            "default": 1,
         }
     }
 
-    def __init__(self, disable_performance_measurements: bool = False):
+    def __init__(self, disable_performance_measurements: bool = False, batch_size: int = 1):
         """
         Creates Runtime object.
 
@@ -61,6 +68,7 @@ class Runtime(ArgumentsHandler, ABC):
         self.disable_performance_measurements = (
             disable_performance_measurements
         )
+        self.batch_size = batch_size
         self.input_spec = None
         self.output_spec = None
         self.processed_input_spec = None
@@ -554,16 +562,20 @@ class Runtime(ArgumentsHandler, ABC):
         List[Any]
             Obtained values.
         """
+        original_batch_size = len(X)
+        X = zero_pad_batch(X, self.batch_size)
         prepX = model_wrapper._preprocess_input(X)
         succeed = self.load_input(prepX)
         if not succeed:
             return False
         self._run()
         preds = self.extract_output()
+        preds = preds[:original_batch_size]
         if postprocess:
             return model_wrapper._postprocess_outputs(preds)
 
         return preds
+
 
     def get_time(self) -> float:
         """

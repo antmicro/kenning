@@ -464,8 +464,14 @@ def get_parsed_args_dict(
             and value is not None
             and get_origin(arg_properties["type"]) not in (UnionType, Union)
         ):
-            KLogger.debug(f"Parsing value {value} of {arg_name}")
-            value = arg_properties["type"](value)
+            _type = arg_properties["type"]
+
+            origin = get_origin(_type)
+
+            if origin is not None:
+                _type = origin
+
+            value = _type(value)
 
         parsed_args[arg_name] = value
 
@@ -491,9 +497,11 @@ def get_type(
         where union types are gathered in tuple. Currently, do not
         support nested types.
     """
-    if not isinstance(_type, GenericAlias):
+    main_type = get_origin(_type)
+
+    if main_type is None:
         return _type, None
-    main_type = _type.__origin__
+
     sub_types = [
         arg.__args__ if isinstance(arg, UnionType) else arg
         for arg in _type.__args__
@@ -591,17 +599,29 @@ def add_argparse_argument(
         if "type" in prop:
             prop_type, prop_sub_types = get_type(prop["type"])
 
-            if get_origin(prop_type) in {UnionType, Union}:
-                union_types = get_args(prop_type)
-                # KLogger.debug(f"Union types: {union_types}")
-                keywords["type"] = lambda v: convert(
-                    v=v, converters=union_types
-                )
+            if prop_type in {UnionType, Union}:
+                union_types = set(prop_sub_types)
+
+                con_types = set([])
+
+                for sub_type in union_types:
+                    if get_origin(sub_type) in {list, tuple}:
+                        type_args = get_args(sub_type)
+
+                        con_types.update(type_args)
+                    else:
+                        con_types.add(sub_type)
+
+                keywords["type"] = lambda v: convert(v=v, converters=con_types)
 
                 if bool in union_types:
-                    keywords["default"] = False
+                    if not override_only:
+                        keywords["default"] = False
                     keywords["const"] = True
                     keywords["nargs"] = "?"
+
+                if any([get_type(x)[0] is list for x in union_types]):
+                    keywords["nargs"] = "*"
 
             elif prop_type is bool:
                 assert "default" in prop and prop["default"] in [True, False]
@@ -706,9 +726,9 @@ def add_parameterschema_argument(
         if "type" in prop:
             prop_type, prop_sub_type = get_type(prop["type"])
 
-            if get_origin(prop_type) in (UnionType, Union):
+            if prop_type in {UnionType, Union}:
                 types = []
-                for arg in get_args(prop_type):
+                for arg in prop_sub_type:
                     p_type, p_sub_type = get_type(arg)
 
                     types.append(type_to_jsontype[p_type])

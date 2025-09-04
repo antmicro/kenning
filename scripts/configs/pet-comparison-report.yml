@@ -1,0 +1,11 @@
+report:
+  parameters:
+    measurements:
+      - build/pet-dataset-tflite.json
+      - build/pet-dataset-tvm.json
+    main_quality_metric: g_mean
+    root_dir: build/classification-report
+    img_dir: build/classification-report/imgs
+    report_path: build/classification-report/report.md
+    report_name: Classification comparison on Pet Dataset
+    report_types: [performance,classification]

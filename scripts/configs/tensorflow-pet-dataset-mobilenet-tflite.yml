@@ -1,0 +1,18 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: build/PetDataset
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    compiled_model_path: ./build/compiled-model.tflite
+    model_framework: keras
+report:
+  parameters:
+    measurements: ./build/pet-dataset-tflite.json

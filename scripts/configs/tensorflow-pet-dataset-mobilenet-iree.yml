@@ -1,0 +1,24 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: build/PetDataset
+optimizers:
+- type: IREECompiler
+  parameters:
+    compiled_model_path: ./build/compiled-model.vmbf
+    backend: vulkan
+    model_framework: keras
+runtime:
+  type: IREERuntime
+  parameters:
+    save_model_path: ./build/compiled_model.vmbf
+    driver: vulkan
+report:
+  parameters:
+    measurements: ./build/PetDataset-iree.json

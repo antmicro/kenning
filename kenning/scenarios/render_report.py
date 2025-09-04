@@ -29,7 +29,6 @@ from kenning.cli.command_template import (
     AUTOML,
     DEFAULT_GROUP,
     REPORT,
-    TEST,
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
@@ -41,8 +40,7 @@ from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
     load_class_by_type,
-    merge_argparse_and_json,
-    obj_from_json,
+    objs_from_json,
 )
 from kenning.utils.logger import KLogger
 
@@ -77,8 +75,6 @@ class RenderReport(CommandTemplate):
         other_group = groups[DEFAULT_GROUP]
         # Group specific for this scenario,
         # doesn't have to be added to global groups
-        run_in_sequence = TEST in types
-
         required_prefix = "* "
         groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
@@ -93,20 +89,6 @@ class RenderReport(CommandTemplate):
 
         if AUTOML not in types:
             other_group.add_argument(
-                "--measurements",
-                help="Path to the JSON files with measurements"
-                + (
-                    f" created with {TEST} subcommand"
-                    if run_in_sequence
-                    else ". If more than one file is provided, model comparison will be generated."  # noqa: E501
-                )
-                + " It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
-                type=Path,
-                nargs=1 if run_in_sequence else "*",
-                default=[None],
-                # required=run_in_sequence,
-            ).completer = FilesCompleter("*.json")
-            other_group.add_argument(
                 "--automl-stats",
                 help="Path to the JSON file with statistics during the AutoML run",  # noqa: E501
                 type=Path,
@@ -117,6 +99,7 @@ class RenderReport(CommandTemplate):
         other_group.add_argument(
             "--report-cls",
             help="Report type that will be used in report generation",
+            default="MarkdownReport",
         ).completer = ClassPathCompleter(REPORT)
 
         return parser, groups
@@ -125,8 +108,6 @@ class RenderReport(CommandTemplate):
     def _fill_missing_namespace_args(args: argparse.Namespace):
         if "json_cfg" not in args:
             args.json_cfg = None
-        if "measurements" not in args:
-            args.measurements = [None]
         if "evaluate_unoptimized" not in args:
             args.evaluate_unoptimized = False
 
@@ -164,17 +145,28 @@ class RenderReport(CommandTemplate):
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
-        if ConfigKey.report not in json_cfg.keys():
+        if ConfigKey.report.name not in json_cfg.keys():
+            KLogger.debug(
+                f"No {ConfigKey.report.name} in config file ,"
+                " loading from command line"
+            )
             # Get it from argument line if definition not present in cfg file
             return RenderReport._run_from_flags(args, command, not_parsed)
 
-        merge_argparse_and_json(
-            set([ConfigKey.report]), json_cfg, args, not_parsed
+        # set default type for Report
+        if ConfigKey.report.name in json_cfg.keys():
+            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
+        elif ConfigKey.report.name not in json_cfg.keys():
+            json_cfg[ConfigKey.report.name] = {
+                "parameters": {},
+                "type": args.report_cls,
+            }
+
+        objs = objs_from_json(
+            json_cfg, set([ConfigKey.report]), override=(args, not_parsed)
         )
 
-        KLogger.debug(f"Report merged json_cfg: {json_cfg[ConfigKey.report]}")
-
-        report = obj_from_json(json_cfg, ConfigKey.report)
+        report = objs[ConfigKey.report]
 
         subcommands = get_used_subcommands(args)
 
@@ -196,8 +188,7 @@ class RenderReport(CommandTemplate):
         if reportcls is None:
             reportcls = MarkdownReport
 
-        KLogger.debug(f"Report-cls {reportcls}")
-        KLogger.debug(f"Aleardy parsed {args}")
+        KLogger.debug(f"Using report type {reportcls}")
 
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
@@ -227,7 +218,9 @@ class RenderReport(CommandTemplate):
         flag_config_args = []
 
         if hasattr(args, "parsed_report"):
-            KLogger.debug("Parsed report detectd, using aleardy parsed report")
+            KLogger.debug(
+                "Parsed report has been found, using aleardy parsed report"
+            )
             report = args.parsed_report
 
             from kenning.cli.config import get_used_subcommands
@@ -239,6 +232,7 @@ class RenderReport(CommandTemplate):
         args = RenderReport.prepare_args(args, flag_config_args)
 
         if args.json_cfg is not None:
+            KLogger.debug("Running using parameters from config file")
             if args.help:
                 raise ParserHelpException
             return RenderReport._run_from_cfg(

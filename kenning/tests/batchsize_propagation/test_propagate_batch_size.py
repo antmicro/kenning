@@ -94,7 +94,9 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
         compiler.init()
         compiler.compile(input_model_path=Path(model_path))
 
-        runtime = TFLiteRuntime(model_path=tmp_model_path)
+        runtime = TFLiteRuntime(
+            model_path=tmp_model_path, batch_size=batch_size
+        )
 
         dataconverter = ModelWrapperDataConverter(model)
 
@@ -109,6 +111,7 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
         pipeline_runner.run()
 
         assert compiler.dataset.batch_size == batch_size
+        assert runtime.batch_size == batch_size
 
         for model_input_spec in model.io_specification["input"]:
             assert model_input_spec["shape"][0] == batch_size
@@ -169,7 +172,9 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
         compiler_tvm.init()
         compiler_tvm.compile(input_model_path=Path(compiled_model_path_tflite))
 
-        runtime = TVMRuntime(model_path=compiled_model_path_tvm)
+        runtime = TVMRuntime(
+            model_path=compiled_model_path_tvm, batch_size=batch_size
+        )
 
         dataconverter = ModelWrapperDataConverter(model)
 
@@ -185,6 +190,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
 
         assert compiler_tflite.dataset.batch_size == batch_size
         assert compiler_tvm.dataset.batch_size == batch_size
+        assert runtime.batch_size == batch_size
 
         for model_input_spec in model.io_specification["processed_input"]:
             assert model_input_spec["shape"][0] == batch_size
@@ -243,11 +249,14 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
         compiler.compile(
             input_model_path=Path(model_path),
         )
-        runtime = IREERuntime(model_path=compiled_model_path)
+        runtime = IREERuntime(
+            model_path=compiled_model_path, batch_size=batch_size
+        )
 
         runtime.prepare_local()
 
         assert compiler.dataset.batch_size == batch_size
+        assert runtime.batch_size == batch_size
 
         for model_input_spec in model.io_specification["processed_input"]:
             assert model_input_spec["shape"][0] == batch_size

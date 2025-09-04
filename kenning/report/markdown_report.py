@@ -17,7 +17,7 @@ from typing import List, Optional
 from matplotlib.colors import to_hex
 
 from kenning.cli.command_template import AUTOML
-from kenning.core.metrics import CLASSIFICATION_METRICS, Metric
+from kenning.core.metrics import Metric
 from kenning.report.markdown_components import (
     automl_report,
     classification_report,
@@ -69,6 +69,7 @@ class MarkdownReport(Report):
             "description": "Path to the output MyST file",
             "type": Path,
             "default": None,
+            "required": True,
             "overridable": True,
         },
         "root_dir": {
@@ -133,28 +134,24 @@ class MarkdownReport(Report):
             "default": False,
             "overridable": True,
         },
-        "report_types": {
-            "description": "List of types that implement this report",
-            "type": list[str],
-            "default": None,
-        },
         "main_quality_metric": {
             "description": "Option that allows you to select a metric "
             "to compare models against",
             "type": str,
-            "enum": [metric.name.lower() for metric in CLASSIFICATION_METRICS],
+            "enum": [metric.name.lower() for metric in list(Metric)],
             "default": Metric.ACC.name.lower(),
+            "overridable": True,
         },
     }
 
     def __init__(
         self,
         measurements: List[Path] | Path = [None],
-        report_name: str = None,
-        report_path: Optional[Path] = None,
+        report_name: Optional[str] = None,
+        report_path: Path = None,
         to_html: bool | Path = False,
         root_dir: Optional[Path] = None,
-        report_types: list[str] = None,
+        report_types: List[str] = None,
         img_dir: Optional[Path] = None,
         model_names: Optional[str] = None,
         only_png_images: bool = False,
@@ -186,8 +183,11 @@ class MarkdownReport(Report):
 
         self.main_quality_metric = Metric[main_quality_metric.upper()]
 
-        if self.to_html and not isinstance(self.to_html, (str, Path)):
-            self.to_html = Path(self.report_path).with_suffix("")
+        if self.to_html:
+            if isinstance(self.to_html, Path):
+                self.to_html = Path(self.to_html).with_suffix("")
+            else:
+                self.to_html = Path(self.report_path).with_suffix("")
 
         if (
             self.to_html

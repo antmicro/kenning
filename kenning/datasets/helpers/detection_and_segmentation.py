@@ -10,7 +10,7 @@ object detection models and datasets.
 from abc import ABC
 from collections import namedtuple
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -40,40 +40,38 @@ iscrowd : Optional[bool]
     crowd.
 """
 
-SegmObject = namedtuple(
-    "SegmObject",
-    [
-        "clsname",
-        "maskpath",
-        "xmin",
-        "ymin",
-        "xmax",
-        "ymax",
-        "mask",
-        "score",
-        "iscrowd",
-    ],
-)
-SegmObject.__doc__ = """
-Represents single segmentable mask in an image.
 
-Attributes
-----------
-clsname : str
-    Class of the object.
-maskpath : Optional[Path]
-    Path to mask file.
-xmin,ymin,xmax,ymax : float
-    Coordinates of the bounding box.
-mask : np.array
-    Loaded mask image.
-score : float
-    The probability of correctness of the detected object.
-iscrowd : Optional[bool]
-    Tells if the bounding box is a crowd of objects.
-    None or False if not crowd, True if bounding box represents
-    crowd.
-"""
+class SegmObject(NamedTuple):
+    """
+    Represents single segmentable mask in an image.
+
+    Attributes
+    ----------
+    clsname : str
+        Class of the object.
+    maskpath : Optional[Path]
+        Path to mask file.
+    xmin,ymin,xmax,ymax : float
+        Coordinates of the bounding box.
+    mask : np.array
+        Loaded mask image.
+    score : float
+        The probability of correctness of the detected object.
+    iscrowd : Optional[bool]
+        Tells if the bounding box is a crowd of objects.
+        None or False if not crowd, True if bounding box represents
+        crowd.
+    """
+
+    clsname: str
+    maskpath: str
+    xmin: float
+    ymin: float
+    xmax: float
+    ymax: float
+    mask: np.ndarray
+    score: float
+    iscrowd: bool
 
 
 def compute_ap(

@@ -30,7 +30,7 @@ dependencies = [
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
     "numpy>=1.23.5,<2.0.0",
-    "onnx<1.15.0",
+    "onnx==1.16.0",
     "pandoc",
     "Pillow>=8.1.0",
     "psutil>=5.8.0",
@@ -104,14 +104,15 @@ tvm = [
     "apache-tvm==0.14.dev273; python_version<'3.12'",
 ]
 iree = [
-    "iree-compiler==20230209.425; python_version<'3.12'",
-    "iree-runtime==20230209.425; python_version<'3.12'",
-    "iree-tools-tf==20230209.425; python_version<'3.12'",
-    "iree-tools-tflite==20230209.425; python_version<'3.12'",
+    "iree-base-compiler[onnx]==3.6.0; python_version<'3.12'",
+    "iree-base-runtime==3.6.0; python_version<'3.12'",
+    "iree-tools-tf==20250718.1326; python_version<'3.12'",
+    "iree-tools-tflite==20250718.1326; python_version<'3.12'",
     "iree-compiler; python_version=='3.12'",
     "iree-runtime; python_version=='3.12'",
     "iree-tools-tf; python_version=='3.12'",
     "iree-tools-tflite; python_version=='3.12'",
+    "tf2onnx",
 ]
 onnxruntime = [
     "onnxruntime>=1.12.0",

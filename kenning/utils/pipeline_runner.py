@@ -588,6 +588,8 @@ class PipelineRunner(object):
                 model_path = self.model_wrapper.get_path()
                 self.model_wrapper.save_io_specification(model_path)
                 return model_path
+            elif hasattr(self.runtime, "model_path"):
+                return self.runtime.model_path
             else:
                 return None
 
@@ -720,7 +722,7 @@ class PipelineRunner(object):
         measurements : Measurements
             Measurements to which metrics will be saved to.
         model_path : Path
-            Path to the model used for in ference.
+            Path to the model used for inference.
         remote : bool
             True if the inference is performed on remote platform.
         """

@@ -52,10 +52,14 @@ class Runtime(ArgumentsHandler, ABC):
             "description": "The number of samples in a single batch.",
             "type": int,
             "default": 1,
-        }
+        },
     }
 
-    def __init__(self, disable_performance_measurements: bool = False, batch_size: int = 1):
+    def __init__(
+        self,
+        disable_performance_measurements: bool = False,
+        batch_size: int = 1,
+    ):
         """
         Creates Runtime object.
 
@@ -63,6 +67,9 @@ class Runtime(ArgumentsHandler, ABC):
         ----------
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+        batch_size : int
+            Batch size for inference, which is a number of sample
+            in a single batch.
         """
         self.statsmeasurements = None
         self.disable_performance_measurements = (
@@ -575,7 +582,6 @@ class Runtime(ArgumentsHandler, ABC):
             return model_wrapper._postprocess_outputs(preds)
 
         return preds
-
 
     def get_time(self) -> float:
         """

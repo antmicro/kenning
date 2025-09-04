@@ -44,7 +44,6 @@ from kenning.core.report import Report
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
-from kenning.report.markdown_report import MarkdownReport
 from kenning.utils.args_manager import (
     convert_to_jsontype,
     get_parsed_args_dict,
@@ -308,11 +307,7 @@ def objs_from_json(
         args, not_parsed = override
         merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
 
-    KLogger.debug(f"Merged args: {json_cfg}")
-
     objs = {key: obj_from_json(json_cfg, key) for key in keys_regular}
-
-    KLogger.debug(f"Objects: {objs}")
 
     dataset = objs.get(ConfigKey.dataset)
 
@@ -375,11 +370,6 @@ def merge_argparse_and_json(
         key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
     }
 
-    # use default report class when no report class type has been detected
-    if ConfigKey.report not in classes.keys() and ConfigKey.report in keys:
-        classes[ConfigKey.report] = MarkdownReport
-        json_cfg[ConfigKey.report] = {}
-
     args = parse_classes(
         list(classes.values()), args, not_parsed, override_only=True
     )
@@ -425,14 +415,8 @@ def objs_from_argparse(
         if (cls := load_class(class_arg))
     }
 
-    # use default report class when no report class type has been detected
-    if ConfigKey.report not in classes.keys() and ConfigKey.report in keys:
-        classes[ConfigKey.report] = MarkdownReport
-
     if required:
         required(classes)
-
-    KLogger.debug(f"Classes: {classes}")
 
     args = parse_classes(list(classes.values()), args, not_parsed)
 
@@ -509,7 +493,6 @@ def parse_classes(
         Raised when report types cannot be deduced from measurements data.
     """
     command = get_command(with_slash=False)
-    KLogger.debug(f"Command: {command}")
 
     parser = argparse.ArgumentParser(
         " ".join(map(lambda x: x.strip(), command)) + "\n",
@@ -582,9 +565,6 @@ def any_from_json(
         If a class is available and contains `from_json` method, it
         returns object of this class.
     """
-    if block_type == ConfigKey.report.value and "type" not in json_cfg:
-        json_cfg["type"] = "kenning.report.markdown_report.MarkdownReport"
-
     if cls := load_class_from_json(json_cfg, block_type):
         return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
 
@@ -806,8 +786,6 @@ def append_to_sys_path(paths: List[Path]) -> Generator[None, None, None]:
     """
     prev_sys_path = sys.path
     sys.path = list(map(str, paths)) + sys.path[:]
-
-    KLogger.debug(f"Paths added to sys.path: {paths}")
 
     try:
         yield

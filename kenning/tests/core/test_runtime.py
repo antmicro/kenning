@@ -14,6 +14,7 @@ from kenning.core.exceptions import ModelNotPreparedError
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.model import ModelWrapper
 from kenning.core.runtime import Runtime
+from kenning.runtimes.utils import zero_pad_batch
 from kenning.tests.core.conftest import (
     DatasetModelRegistry,
     UnknownFramework,
@@ -397,3 +398,27 @@ class TestRuntime:
 
             data = runtime.upload_output(b"")
             assert len(data) == model_output_size
+
+
+@pytest.mark.parametrize(
+    "actual_batch_count, target_batch_count, shape",
+    (
+        (1, 2, (2, 2, 2)),
+        (20, 32, (2, 2, 2)),
+        (20, 32, (2, 2)),
+        (20, 32, (2)),
+        (20, 32, (1, 20, 20, 20)),
+        (20, 64, (2, 2, 2)),
+        (20, 1024, (2, 2, 2)),
+        (20, 32, (5, 1024, 1024)),
+        (32, 32, (2, 2, 2)),
+    ),
+)
+def test_zero_padding_batches(
+    actual_batch_count: int, target_batch_count: int, shape: Tuple[int, ...]
+):
+    """Test the helper function for zero-padding batches."""
+    batch = (np.ones(shape) for _ in range(actual_batch_count))
+    zero_padded_batch = zero_pad_batch(batch, target_batch_count)
+
+    assert len(zero_padded_batch) == target_batch_count

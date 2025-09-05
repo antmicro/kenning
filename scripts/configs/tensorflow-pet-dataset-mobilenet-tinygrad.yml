@@ -1,0 +1,18 @@
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: build/PetDataset
+optimizers:
+- type: TinygradOptimizer
+  parameters:
+    compiled_model_path: ./build/compiled_model.tar
+runtime:
+  type: TinygradRuntime
+  parameters:
+    jit_optimize: true
+    jit_prune: true
+    save_model_path: ./build/compiled_model.tar

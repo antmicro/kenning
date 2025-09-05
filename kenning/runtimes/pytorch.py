@@ -156,10 +156,7 @@ class PyTorchRuntime(Runtime):
 
         self.input = input_data
         for id, inp in enumerate(self.input):
-            if isinstance(inp, torch.Tensor):
-                self.input[id] = inp.to(self.device)
-            else:
-                self.input[id] = torch.from_numpy(inp.copy()).to(self.device)
+            self.input[id] = torch.from_numpy(inp.copy()).to(self.device)
         return True
 
     def run(self):

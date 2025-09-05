@@ -135,27 +135,18 @@ class PyTorchWrapper(ModelWrapper, ABC):
         else:
             torch.save(self.model, model_path)
 
-    def preprocess_input(self, X: List[np.ndarray]) -> List[Any]:
-        import torch
-
-        return [torch.Tensor(x).to(self.device) for x in X]
-
-    def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
-        import torch
-
-        if isinstance(y, torch.Tensor):
-            return y.detach().cpu().numpy()
-        if isinstance(y, np.ndarray):
-            return y
-        if isinstance(y, list):
-            return [self.postprocess_outputs(_y) for _y in y]
-        raise NotSupportedError
-
     def run_inference(self, X: List[Any]) -> List[Any]:
+        import torch
+
         self.prepare_model()
+        X = [torch.Tensor(x).to(self.device) for x in X]
         y = self.model(*X)
         if not isinstance(y, (list, tuple)):
             y = [y]
+        y = [
+            yy.detach().cpu().numpy() if isinstance(yy, torch.Tensor) else yy
+            for yy in y
+        ]
         return y
 
     def get_framework_and_version(self):

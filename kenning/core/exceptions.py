@@ -122,6 +122,21 @@ class TrainingParametersMissingError(KenningModelWrapperError):
         super().__init__(msg.format(", ".join(params)), *args, **kwargs)
 
 
+class ParametersMismatchError(KenningModelWrapperError):
+    """
+    Exception raised when two parameters contradict.
+    """
+
+    def __init__(
+        self,
+        params,
+        msg="Mismatched parameters: {}",
+        *args,
+        **kwargs,
+    ):
+        super().__init__(msg.format(", ".join(params)), *args, **kwargs)
+
+
 """
 Errors specific to the AutoML workflow.
 """

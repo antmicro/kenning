@@ -651,7 +651,11 @@ def add_argparse_argument(
             keywords["help"] = prop["description"]
         if "default" in prop and not override_only:
             keywords["default"] = prop["default"]
-        if "required" in prop and prop["required"]:
+        if (
+            "required" in prop
+            and prop["required"]
+            and ("overridable" not in prop or not prop["overridable"])
+        ):
             keywords["required"] = prop["required"]
         if "enum" in prop:
             keywords["choices"] = prop["enum"]

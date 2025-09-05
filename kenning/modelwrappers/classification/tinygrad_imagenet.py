@@ -13,10 +13,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import NotSupportedError
+from kenning.core.exceptions import NotSupportedError, ParametersMismatchError
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.modelwrappers.frameworks.tinygrad import TinygradWrapper
-from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -78,7 +77,7 @@ class TinygradImageNet(TinygradWrapper):
 
         Raises
         ------
-        ValueError
+        ParametersMismatchError
             Raised when dataset batch size and ModelWrapper supported
             sizes do not match
         """
@@ -93,12 +92,9 @@ class TinygradImageNet(TinygradWrapper):
         self.outputshape = [inputshape[0], numclasses]
 
         if dataset and dataset.batch_size != self.inputshape[0]:
-            KLogger.error(
-                "Dataset batch size and ModelWrapper inputshape mismatch"
+            raise ParametersMismatchError(
+                ["dataset.batch_size", "modelwrapper.inputshape[0]"]
             )
-            KLogger.error(f"batch size: {dataset.batch_size}")
-            KLogger.error(f"input shape[0]: {self.inputshape[0]}")
-            raise ValueError
 
     @classmethod
     def _get_io_specification(

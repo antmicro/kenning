@@ -61,6 +61,28 @@ def prepare_models_io_specs():
         model.save_io_specification(model_path)
 
 
+def ensure_types_native_or_numpy(X):
+    from typing import Dict, List, Tuple
+
+    import numpy as np
+
+    if isinstance(X, List) or isinstance(X, Tuple):
+        for x in X:
+            ensure_types_native_or_numpy(x)
+    elif isinstance(X, Dict):
+        for _, x in X.items():
+            ensure_types_native_or_numpy(x)
+    elif isinstance(X, np.ndarray):
+        return
+    elif isinstance(X, (int, float, str)):
+        return
+    else:
+        raise TypeError(
+            f"preprocess_input should return framework agnostic"
+            f"values, got: { type(X) }"
+        )
+
+
 def create_model(model_cls: Type[ModelWrapper], dataset: Dataset):
     if model_cls.pretrained_model_uri is not None:
         model_path = copy_model_to_tmp(
@@ -207,6 +229,32 @@ class TestModelWrapper:
         ],
         indirect=True,
     )
+    def test_preprocess_types(self, model: Type[ModelWrapper]):
+        model.prepare_model()
+
+        sample, y = next(iter(model.dataset.iter_test()))
+        prepX = model._preprocess_input(sample)
+
+        ensure_types_native_or_numpy(prepX)
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_inference(self, model: Type[ModelWrapper]):
         """
         Tests the `test_inference` method.
@@ -216,6 +264,36 @@ class TestModelWrapper:
             model.test_inference()
         except NotSupportedError:
             pytest.xfail("test_inference not implemented for this model")
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_inference[{cls.__name__}]",
+                            f"test_preprocess_types[{cls.__name__}]",
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
+    def test_postprocess_types(self, model: Type[ModelWrapper]):
+        model.prepare_model()
+        sample, y = next(iter(model.dataset.iter_test()))
+        prepX = model._preprocess_input(sample)
+        preds = model._run_inference(prepX)
+        ensure_types_native_or_numpy(preds)
+        posty = model._postprocess_outputs(preds)
+        ensure_types_native_or_numpy(posty)
 
     @pytest.mark.parametrize(
         "model",

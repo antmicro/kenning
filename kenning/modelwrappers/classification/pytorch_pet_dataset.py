@@ -134,16 +134,14 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def preprocess_input(self, X: List[np.ndarray]) -> List[Any]:
         if np.ndim(X[0]) == 3:
             X = [np.expand_dims(X[0], 0)]
-        import torch
 
-        X = [torch.Tensor(np.array(X[0], dtype=np.float32)).to(self.device)]
         if (
             self.dataset
             and getattr(self.dataset, "image_memory_layout", None) == "NCHW"
         ):
             return X
         else:
-            return [X[0].permute(0, 3, 1, 2)]
+            return [x.transpose(0, 3, 1, 2) for x in X]
 
     def create_model_structure(self):
         from torchvision import models

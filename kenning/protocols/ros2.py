@@ -11,12 +11,24 @@ in the environment.
 
 import json
 import time
+from asyncio import Future
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-from rclpy.action import ActionClient
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+if TYPE_CHECKING:
+    from rclpy.impl.implementation_singleton import (
+        rclpy_implementation as _rclpy,
+    )
 
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements, timemeasurements
@@ -28,9 +40,8 @@ from kenning.core.protocol import (
 from kenning.dataconverters.ros2_dataconverter import ROS2DataConverter
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
-from kenning.utils.ros2_global_context import ROS2GlobalContext
 
-GoalHandle = TypeVar("GoalHandle", bound=_rclpy.ActionGoalHandle)
+GoalHandle = TypeVar("GoalHandle", bound="_rclpy.ActionGoalHandle")
 
 
 class ROS2Protocol(Protocol):
@@ -158,58 +169,6 @@ class ROS2Protocol(Protocol):
 
         return True
 
-    def log_info(self, message: str):
-        """
-        Sends the info message to loggers.
-
-        Parameters
-        ----------
-        message : str
-            Message to be sent.
-        """
-        KLogger.info(message)
-        if ROS2GlobalContext.node is not None:
-            ROS2GlobalContext.node.get_logger().info(message)
-
-    def log_debug(self, message: str):
-        """
-        Sends the debug message to loggers.
-
-        Parameters
-        ----------
-        message : str
-            Message to be sent.
-        """
-        KLogger.debug(message)
-        if ROS2GlobalContext.node is not None:
-            ROS2GlobalContext.node.get_logger().debug(message)
-
-    def log_warning(self, message: str):
-        """
-        Sends the warning message to loggers.
-
-        Parameters
-        ----------
-        message : str
-            Message to be sent.
-        """
-        KLogger.warning(message)
-        if ROS2GlobalContext.node is not None:
-            ROS2GlobalContext.node.get_logger().warning(message)
-
-    def log_error(self, message: str):
-        """
-        Sends the error message to loggers.
-
-        Parameters
-        ----------
-        message : str
-            Message to be sent.
-        """
-        KLogger.error(message)
-        if ROS2GlobalContext.node is not None:
-            ROS2GlobalContext.node.get_logger().error(message)
-
     def deduce_data_converter_from_io_spec(
         self, io_specification: Optional[Union[Dict, Path]] = None
     ) -> ROS2DataConverter:
@@ -223,9 +182,13 @@ class ROS2Protocol(Protocol):
         )
 
     def initialize_client(self):
-        self.log_debug(
+        from kenning.utils.ros2_global_context import ROS2GlobalContext
+
+        KLogger.debug(
             f"Initializing action client node {ROS2GlobalContext.node_name()}"
         )
+
+        from rclpy.action import ActionClient
 
         self.process_action = ActionClient(
             ROS2GlobalContext.node,
@@ -264,8 +227,16 @@ class ROS2Protocol(Protocol):
 
         request = self._model_service_type.Request()
         future = self.model_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+
+        success = self._wait_for_future(future)
+
+        if not success or future.cancelled():
+            future.cancel()
+            KLogger.error("Model service call timed out")
+            return False
+
         result = future.result()
+
         if result is None:
             self.log_error("Model service call failed")
             return False
@@ -296,10 +267,17 @@ class ROS2Protocol(Protocol):
 
         self.log_debug("Uploading input")
         self.future = self.process_action.send_goal_async(data)
-        rclpy.spin_until_future_complete(self.node, self.future)
+
+        success = self._wait_for_future(self.future)
+
+        if not success or self.future.cancelled():
+            self.future.cancel()
+            KLogger.error("Input upload timed out")
+            return False
+
         result = self.future.result()
-        if result is None:
-            self.log_error("Input upload failed")
+        if self.future is None:
+            KLogger.error("Input upload failed")
             return False
         if not result.accepted:
             self.log_error("Input upload rejected")
@@ -314,10 +292,19 @@ class ROS2Protocol(Protocol):
             self.log_error("No input uploaded")
             return False
 
+        def _request_processing(future):
+            self._wait_for_future(future)
+
+        if not self.future.done() or self.future.cancelled():
+            self.future.cancel()
+            KLogger.error("Input upload timed out")
+            self.future = None
+            return False
+
         self.future = self.future.result().get_result_async()
         timemeasurements("protocol_inference_step", get_time_func)(
-            rclpy.spin_until_future_complete
-        )(self.node, self.future)
+            _request_processing
+        )(self.future)
         return True
 
     def download_statistics(self, final: bool = False) -> Measurements:
@@ -336,8 +323,16 @@ class ROS2Protocol(Protocol):
 
         request = self._measurements_service_type.Request()
         future = self.measurements_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+
+        success = self._wait_for_future(future)
+
+        if not success or future.cancelled():
+            future.cancel()
+            KLogger.error("Measurements service call timed out")
+            return False
+
         result = future.result()
+
         if result is None:
             self.log_error("Measurements service call failed")
             return measurements
@@ -370,7 +365,9 @@ class ROS2Protocol(Protocol):
         return True, result.result
 
     def disconnect(self):
-        self.log_debug("Disconnecting node")
+        from kenning.utils.ros2_global_context import ROS2GlobalContext
+
+        KLogger.debug("Disconnecting node")
         ROS2GlobalContext.node.destroy_client(self.model_service)
         ROS2GlobalContext.node.destroy_client(self.measurements_service)
         KLogger.debug("Successfully disconnected")

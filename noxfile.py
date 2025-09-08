@@ -60,6 +60,7 @@ def _prepare_pip_params(session: nox.Session, device: str):
         "tflite",
         "tvm",
         "iree",
+        "tinygrad",
         "onnxruntime",
         "test",
         "real_time_visualization",

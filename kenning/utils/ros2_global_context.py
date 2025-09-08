@@ -18,6 +18,8 @@ from kenning.utils.logger import KLogger
 
 KENNING_ROS_NODE_NAME = "kenning"
 
+KENNING_ROS_LOGGER_BACKEND_NAME = "ros2_backend"
+
 
 class ROS2GlobalContext:
     """
@@ -27,6 +29,8 @@ class ROS2GlobalContext:
     node = None
 
     node_thread = None
+
+    logger = None
 
     @classmethod
     def init_node(cls):
@@ -44,6 +48,8 @@ class ROS2GlobalContext:
             KENNING_ROS_NODE_NAME, allow_undeclared_parameters=True
         )
 
+        cls.logger = cls.node.get_logger()
+
         KLogger.debug("Created ROS 2 Node!")
 
         KLogger.debug("Initializing ROS 2 Node thread.")
@@ -51,6 +57,19 @@ class ROS2GlobalContext:
         cls.node_thread = Thread(target=cls.node_loop)
         cls.node_thread.start()
         KLogger.info("Started ROS2 Node!")
+
+        # add ROS2 logger backend
+
+        KLogger.add_custom_backend(
+            KENNING_ROS_LOGGER_BACKEND_NAME, cls.logger_backend
+        )
+
+    @classmethod
+    def logger_backend(cls, msg: str):
+        if cls.logger is None:
+            return
+
+        cls.logger.info(msg)
 
     @classmethod
     def get_param(cls, name: str) -> Any:
@@ -164,6 +183,8 @@ class ROS2GlobalContext:
 
         cls.node = None
         cls.node_thread = None
+
+        KLogger.remove_custom_backend(KENNING_ROS_LOGGER_BACKEND_NAME)
 
     @classmethod
     def node_name(cls) -> str:

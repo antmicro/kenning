@@ -42,6 +42,7 @@ EXPECTED_FAIL = [
     ("Llama", "GPTQOptimizer"),
     ("Llama", "GPTQSparseGPTOptimizer"),
     ("MagicWandModelWrapper", "NNIPruningOptimizer"),
+    ("MagicWandModelWrapper", "TinygradOptimizer"),
     ("MistralInstruct", "AWQOptimizer"),
     ("MistralInstruct", "GPTQOptimizer"),
     ("MistralInstruct", "GPTQSparseGPTOptimizer"),

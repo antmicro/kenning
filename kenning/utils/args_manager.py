@@ -755,6 +755,8 @@ def add_parameterschema_argument(
                         )
                     ],
                 }
+                if "enum" in prop:
+                    keywords["items"]["enum"] = prop["enum"]
 
                 keywords["type"] = [type_to_jsontype[prop_type]]
             else:
@@ -769,7 +771,9 @@ def add_parameterschema_argument(
             if "required" not in schema:
                 schema["required"] = []
             schema["required"].append(argschema_name)
-        if "enum" in prop:
+        if "enum" in prop and (
+            "type" not in keywords.keys() or "array" not in keywords["type"]
+        ):
             keywords["enum"] = prop["enum"]
         if "nullable" in prop and prop["nullable"]:
             if "type" in keywords:

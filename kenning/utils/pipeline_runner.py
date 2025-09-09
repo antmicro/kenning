@@ -131,11 +131,7 @@ class PipelineRunner(object):
             self.protocol = self.platform.get_default_protocol()
             KLogger.info(f"Set protocol to {self.protocol}")
 
-        if (
-            self.protocol is not None
-            and (self.model_wrapper or self.runtime)
-            and self.dataconverter is None
-        ):
+        if self.protocol is not None and self.dataconverter is None:
             io_specification = None
 
             if self.model_wrapper:
@@ -430,7 +426,7 @@ class PipelineRunner(object):
         if run_benchmarks:
             CommandTemplate.current_command = TEST
 
-            if self.runtime is None:
+            if self.runtime is None and not protocol_required:
                 self.model_wrapper.test_inference()
             else:
                 measurements = None
@@ -588,7 +584,9 @@ class PipelineRunner(object):
                 model_path = self.model_wrapper.get_path()
                 self.model_wrapper.save_io_specification(model_path)
                 return model_path
-            elif hasattr(self.runtime, "model_path"):
+            elif self.runtime is not None and hasattr(
+                self.runtime, "model_path"
+            ):
                 return self.runtime.model_path
             else:
                 return None
@@ -801,28 +799,35 @@ class PipelineRunner(object):
         FileNotFoundError
             Raised when IO specification is not found.
         """
-        spec_path = self.runtime.get_io_spec_path(model_path)
-        if not spec_path.exists():
-            KLogger.error("No Input/Output specification found")
-            raise FileNotFoundError("IO specification not found")
-        if (ram_kb := getattr(self.platform, "ram_size_kb", None)) and (
-            (model_kb := model_path.stat().st_size // 1024) > ram_kb
-        ):
-            KLogger.error(
-                f"Model ({model_kb}KB) does not fit "
-                f"into board's RAM ({ram_kb}KB)"
-            )
-            raise ModelTooLargeError(
-                f"Model too large ({model_kb}KB > {ram_kb}KB)"
+        compiled_model_path = None
+
+        if self.runtime is not None:
+            spec_path = self.runtime.get_io_spec_path(model_path)
+            if not spec_path.exists():
+                KLogger.error("No Input/Output specification found")
+                raise FileNotFoundError("IO specification not found")
+            if (ram_kb := getattr(self.platform, "ram_size_kb", None)) and (
+                (model_kb := model_path.stat().st_size // 1024) > ram_kb
+            ):
+                KLogger.error(
+                    f"Model ({model_kb}KB) does not fit "
+                    f"into board's RAM ({ram_kb}KB)"
+                )
+                raise ModelTooLargeError(
+                    f"Model too large ({model_kb}KB > {ram_kb}KB)"
+                )
+
+            check_request(
+                self.protocol.upload_io_specification(spec_path),
+                "upload io spec",
             )
 
-        check_request(
-            self.protocol.upload_io_specification(spec_path), "upload io spec"
-        )
+            compiled_model_path = (
+                self.runtime.preprocess_model_to_upload(model_path)
+                if model_path is not None
+                else None
+            )
 
-        compiled_model_path = self.runtime.preprocess_model_to_upload(
-            model_path
-        )
         check_request(
             self.protocol.upload_model(compiled_model_path), "upload model"
         )

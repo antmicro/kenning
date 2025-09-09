@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
 
@@ -28,12 +29,12 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     InvalidArgumentsError,
     InvalidSchemaError,
-    ModelSizeError,
+    KenningOptimizerError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
-from kenning.core.runtime import Runtime
+from kenning.core.runtime import CompatibilityStatus, Runtime
 from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.args_manager import (
     ArgumentsHandler,
@@ -42,6 +43,8 @@ from kenning.utils.args_manager import (
     traverse_parents_with_args,
 )
 from kenning.utils.logger import KLogger
+
+PipelineRunner = TypeVar("PipelineRunner")
 
 
 class AutoMLModel(ArgumentsHandler, ABC):
@@ -538,12 +541,49 @@ class AutoML(ArgumentsHandler, ABC):
             optimizers=optimizers,
         )
 
+    def _create_runner(
+        self, model_wrapper: Type[ModelWrapper]
+    ) -> PipelineRunner:
+        """
+        Creates PipelineRunner that will be using passed model_wrapper.
+
+        The aforementioned PipelineRunner will be initialized using this
+        object's optimizer, dataset and platform. Runtime will be deduced if
+        not specified by this object's self.runtime
+
+        Parameters
+        ----------
+        model_wrapper: Type[ModelWrapper]
+            ModelWrapper that will be used to initialize PipelineRunner
+
+        Returns
+        -------
+        PipelineRunner
+            Object of class PipelineRunner.
+        """
+        from kenning.utils.pipeline_runner import PipelineRunner
+
+        # Prepare PipelineRunner and get available_size
+        runner = PipelineRunner(
+            dataset=self.reduced_dataset,
+            optimizers=self.optimizers,
+            runtime=self.runtime,
+            platform=self.platform,
+            model_wrapper=model_wrapper,
+        )
+        if self.runtime is None:
+            model_framework = runner._guess_model_framework(False)
+            runner.runtime = get_default_runtime(
+                model_framework, model_wrapper.model_path
+            )
+        return runner
+
     def _pre_training_callback(
         self,
         model_wrapper_cls: Type[ModelWrapper],
         model: Callable,
         logger: Logger = KLogger,
-    ) -> Tuple[Optional[float], Optional[float]]:
+    ) -> Tuple[CompatibilityStatus, Optional[float]]:
         """
         Prepares PipelineRunner and triggers the defined optimizations.
         It also extracts the optimized model size
@@ -560,24 +600,14 @@ class AutoML(ArgumentsHandler, ABC):
 
         Returns
         -------
+        CompatibilityStatus
+            Info whether model initialization succeeded or failed.
         Optional[float]
             The optimized model size.
-        Optional[float]
-            The available space on the platform.
-
-        Raises
-        ------
-        ModelSizeError
-            If model size is invalid from other reasons
-            than not fitting into the platform memory.
         """
         if self.skip_model_size_check:
-            return None, None
+            return CompatibilityStatus.SUCCESS, None
 
-        from kenning.optimizers.ai8x import Ai8xIzerError
-        from kenning.utils.pipeline_runner import PipelineRunner
-
-        available_size = None
         model_size = None
         with NamedTemporaryFile("w") as fd:
             # Save model to file
@@ -588,23 +618,8 @@ class AutoML(ArgumentsHandler, ABC):
             model_wrapper.model_prepared = True
             model_wrapper.save_model(model_wrapper.model_path)
 
-            # Prepare PipelineRunner and get available_size
-            runtime = self.runtime
-            runner = PipelineRunner(
-                dataset=self.reduced_dataset,
-                optimizers=self.optimizers,
-                runtime=runtime,
-                platform=self.platform,
-                model_wrapper=model_wrapper,
-            )
-            if runtime is None:
-                model_framework = runner._guess_model_framework(False)
-                runtime = get_default_runtime(
-                    model_framework, model_wrapper.model_path
-                )
-                runner.runtime = runtime
-            if runtime:
-                available_size = runtime.get_available_ram(self.platform)
+            runner = self._create_runner(model_wrapper)
+            runtime = runner.runtime
 
             # Run Kenning optimize flow for the model
             if self.optimizers:
@@ -612,9 +627,13 @@ class AutoML(ArgumentsHandler, ABC):
                     for opt in self.optimizers:
                         opt.model_wrapper = model_wrapper
                         opt.dataset = self.reduced_dataset
-                    runner._handle_optimizations()
-                except Ai8xIzerError as ex:
-                    raise ModelSizeError(ex.model_size) from ex
+                    is_compatible = runner._handle_optimizations(
+                        run_compatibility_checks=True
+                    )
+                    if not is_compatible:
+                        return CompatibilityStatus.FAILED_CHECK, None
+                except KenningOptimizerError:
+                    return CompatibilityStatus.FAILED_CHECK, None
                 finally:
                     for opt in self.optimizers:
                         opt.model_wrapper = None
@@ -624,12 +643,25 @@ class AutoML(ArgumentsHandler, ABC):
                         -1
                     ].get_optimized_model_size()
                 except OptimizedModelSizeError as ex:
+                    model_size = None
                     logger.warning(
                         f"Cannot retrieve optimized model size: {ex}"
                     )
+                if runtime and model_size and self.platform:
+                    runtime_check_fail = runtime._run_compatibility_checks(
+                        self.platform, self.application_size + model_size
+                    )
+                    if runtime_check_fail != CompatibilityStatus.SUCCESS:
+                        return runtime_check_fail, model_size
                 # Cleanup optimized models
                 for opt in self.optimizers:
                     opt.compiled_model_path.unlink()
             else:
                 model_size = model_wrapper.get_model_size()
-        return model_size, available_size
+                if runtime and self.platform:
+                    runtime_check_fail = runtime._run_compatibility_checks(
+                        self.platform, self.application_size + model_size
+                    )
+                    if runtime_check_fail != CompatibilityStatus.SUCCESS:
+                        return runtime_check_fail, model_size
+        return CompatibilityStatus.SUCCESS, model_size

@@ -19,6 +19,7 @@ from kenning.core.exceptions import (
 from kenning.core.helpers.utils import _get_model_size
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
+from kenning.core.runtime import Runtime
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -451,3 +452,33 @@ class Optimizer(ArgumentsHandler, ABC):
             object with platform details
         """
         pass
+
+    def run_compatibility_checks(
+        self,
+        platform: Platform,
+        runtime: Optional[Runtime],
+        input_model_path: PathOrURI,
+    ) -> bool:
+        """
+        Runs preliminary compatibility checks.
+
+        Performs most basic initial checks of this optimizer
+        in the final pipeline.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        runtime: Optional[Runtime]
+            runtime that will be used, provided only if optimizer
+            is the final optimizer.
+        input_model_path: PathOrURI
+            path to model that would be used during pipeline execution.
+
+        Returns
+        -------
+        bool
+            Information whether compatibility checks were successful.
+            True by default.
+        """
+        return True

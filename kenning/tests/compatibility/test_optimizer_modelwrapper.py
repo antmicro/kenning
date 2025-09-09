@@ -73,6 +73,8 @@ EXPECTED_FAIL = [
     ("YOLACTWithPostprocessing", "NNIPruningOptimizer"),
     ("YOLACTWithPostprocessing", "TVMCompiler"),
     ("YOLACTWithPostprocessing", "TFLiteCompiler"),
+    # After bumping version of IREE, compiling quantized models does not work.
+    ("PersonDetectionModelWrapper", "IREECompiler"),
 ]
 expected_mark = pytest.mark.xfail(reason="Expected incompatible")
 

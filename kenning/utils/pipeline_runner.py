@@ -547,6 +547,7 @@ class PipelineRunner(object):
         self,
         convert_to_onnx: Optional[Path] = None,
         run_optimization: bool = True,
+        run_compatibility_checks: bool = False,
         max_target_side_optimizers: int = -1,
     ) -> Optional[Path]:
         """
@@ -560,6 +561,11 @@ class PipelineRunner(object):
         run_optimization : bool
             Determines if optimizations should be executed, otherwise last
             compiled model path is returned.
+        run_compatibility_checks: bool
+            Declares if compatibility checks between optimizers should be run.
+            If self.runtime is not defined will deduce runtime
+            based on the optimizer.
+            Note: will run only on host
         max_target_side_optimizers : int
             Max number of consecutive target-side optimizers.
 
@@ -567,6 +573,8 @@ class PipelineRunner(object):
         -------
         Optional[Path]
             Path to compiled model.
+            If run_compatibility_checks is set and checks fail,
+            will return None.
 
         Raises
         ------
@@ -688,6 +696,23 @@ class PipelineRunner(object):
 
                 next_block.set_input_type(model_type)
                 next_block.init()
+                if run_compatibility_checks:
+                    runtime = self.runtime
+                    if optimizer_idx == (len(self.optimizers) - 1):
+                        runtime = None
+                    elif runtime is None:
+                        model_framework = self._guess_model_framework(
+                            convert_to_onnx
+                        )
+                        runtime = get_default_runtime(
+                            model_framework, model_path
+                        )
+                    success_check = next_block.run_compatibility_checks(
+                        self.platform, runtime, model_path
+                    )
+                    if not success_check:
+                        return None
+
                 if hasattr(prev_block, "get_io_specification"):
                     next_block.compile(
                         model_path, prev_block.get_io_specification()

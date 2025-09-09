@@ -12,6 +12,7 @@ import json
 import time
 from abc import ABC, abstractmethod
 from argparse import Namespace
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 
@@ -30,6 +31,16 @@ from kenning.runtimes.utils import zero_pad_batch
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
+
+
+class CompatibilityStatus(str, Enum):
+    """
+    Information on the state of ran compatibility test.
+    """
+
+    SUCCESS = "success"
+    FAILED_CHECK = "failed_check"
+    FAILED_TOO_BIG = "model_too_big"
 
 
 class Runtime(ArgumentsHandler, ABC):
@@ -611,3 +622,58 @@ class Runtime(ArgumentsHandler, ABC):
             The size of RAM.
         """
         return getattr(platform, "ram_size_kb", None)
+
+    def run_compatibility_checks(
+        self, platform: Platform, total_app_size: float
+    ) -> bool:
+        """
+        Run initial compatibility checks.
+
+        Performs most basic initial checks of this runtime
+        in the final pipeline.
+
+        Defined optionally, successful by default.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        total_app_size: float
+            total size of running application - model and app.
+
+        Returns
+        -------
+        bool
+            Information whether compatibility checks were successful.
+        """
+        return True
+
+    def _run_compatibility_checks(
+        self, platform: Platform, total_app_size: float
+    ) -> CompatibilityStatus:
+        """
+        Wrapper for custom compatibility_checks.
+
+        In addition to normal compatibility checks will also check if
+        model fits on the device.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        total_app_size: float
+            total size of running application - model and app.
+
+        Returns
+        -------
+        CompatibilityStatus
+            Information whether compatibility checks were successful.
+        """
+        if not self.run_compatibility_checks(platform, total_app_size):
+            return CompatibilityStatus.FAILED_CHECK
+        ram = self.get_available_ram(platform)
+        if ram:
+            too_big = ram < total_app_size
+            if too_big:
+                return CompatibilityStatus.FAILED_TOO_BIG
+        return CompatibilityStatus.SUCCESS

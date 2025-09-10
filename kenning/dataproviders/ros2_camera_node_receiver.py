@@ -7,17 +7,20 @@ A Dataprovider-derived class used to interface with a
 ROS2 CameraNode.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-import rclpy
-import sensor_msgs.msg
-from rclpy.node import Node
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.exceptions import KenningDataProviderError
+
+if TYPE_CHECKING:
+    import sensor_msgs.msg
+
+from kenning.dataproviders.ros2_data_provider import ROS2DataProvider
 from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.ros2_global_context import ROS2GlobalContext
 
 
 class ROS2CameraNodeDataProvider(DataProvider):
@@ -26,11 +29,6 @@ class ROS2CameraNodeDataProvider(DataProvider):
     """
 
     arguments_structure = {
-        "node_name": {
-            "description": "Name of the ROS2 node",
-            "type": str,
-            "required": True,
-        },
         "topic_name": {
             "description": "Name of the topic to receive messages from",
             "type": str,
@@ -73,7 +71,6 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
     def __init__(
         self,
-        node_name: str,
         topic_name: str,
         color_format: Optional[str] = None,
         output_width: int = None,
@@ -83,9 +80,6 @@ class ROS2CameraNodeDataProvider(DataProvider):
         inputs_specs: Dict[str, Dict] = {},
         outputs: Dict[str, str] = {},
     ):
-        self._node = None
-        self._node_name = node_name
-
         self._topic_name = topic_name
         self._topic_subscriber = None
 
@@ -97,6 +91,8 @@ class ROS2CameraNodeDataProvider(DataProvider):
         self._data = None
         self._supported_color_formats = ("RGB", "BGR", "GRAY")
 
+        import sensor_msgs.msg
+
         super().__init__(
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
@@ -104,30 +100,25 @@ class ROS2CameraNodeDataProvider(DataProvider):
         )
 
     def prepare(self):
-        if not rclpy.ok():
-            rclpy.init()
-        self._node = Node(self._node_name)
-
-        self._topic_subscriber = self._node.create_subscription(
+        self._topic_subscriber = ROS2GlobalContext.node.create_subscription(
             sensor_msgs.msg.Image, self._topic_name, self._topic_callback, 2
         )
 
     def detach_from_source(self):
         self._topic_subscriber.destroy()
-        self._node.destroy_node()
-        rclpy.shutdown()
 
     def fetch_input(self) -> sensor_msgs.msg.Image:
         if self._topic_subscriber is None:
             raise KenningDataProviderError("ROS2 Subscriber not initialized")
 
-        self._triggered = False
-        while not self._triggered:
-            rclpy.spin_once(self._node)
+        self._triggered.clear()
+
+        self._triggered.wait()
+
         return self._data
 
     def preprocess_input(
-        self, data: sensor_msgs.msg.Image
+        self, data: "sensor_msgs.msg.Image"
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Converts ROS2 Image message to numpy array.
@@ -204,7 +195,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
         msg : sensor_msgs.msg.Image
             Received message.
         """
-        self._triggered = True
+        self._triggered.set()
         self._data = msg
 
     def _detect_image_format(self, encoding: str) -> str:

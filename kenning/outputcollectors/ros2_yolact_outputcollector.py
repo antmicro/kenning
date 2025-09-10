@@ -9,19 +9,16 @@ Requires 'rclpy' and 'kenning_computer_vision_msgs' packages to be sourced in
 the environment.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import numpy as np
-import rclpy
-import sensor_msgs.msg
-from kenning_computer_vision_msgs.msg import (
-    BoxMsg,
-    FrameSegmentationMsg,
-    MaskMsg,
-    SegmentationMsg,
-    VideoFrameMsg,
-)
-from rclpy.node import Node
+
+if TYPE_CHECKING:
+    from kenning_computer_vision_msgs.msg import (
+        FrameSegmentationMsg,
+        SegmentationMsg,
+        VideoFrameMsg,
+    )
 
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.outputcollector import OutputCollector
@@ -36,11 +33,6 @@ class ROS2YolactOutputCollector(OutputCollector):
     """
 
     arguments_structure = {
-        "node_name": {
-            "description": "Name for the ROS2 node",
-            "type": str,
-            "required": True,
-        },
         "topic_name": {
             "description": "Name of the ROS2 topic for messages to be published to",  # noqa: E501
             "type": str,
@@ -62,7 +54,6 @@ class ROS2YolactOutputCollector(OutputCollector):
 
     def __init__(
         self,
-        node_name: str,
         topic_name: str,
         input_color_format: Optional[str] = "RGB",
         input_memory_layout: Optional[str] = "NHWC",
@@ -75,8 +66,6 @@ class ROS2YolactOutputCollector(OutputCollector):
 
         Parameters
         ----------
-        node_name : str
-            Name for the ROS2 node.
         topic_name : str
             Name of the ROS2 topic for messages to be published to.
         input_color_format : Optional[str]
@@ -90,12 +79,10 @@ class ROS2YolactOutputCollector(OutputCollector):
         outputs : Dict[str, str]
             Outputs of this runner.
         """
-        self._node_name = node_name
         self._topic_name = topic_name
         self._input_color_format = input_color_format
         self._input_memory_layout = input_memory_layout
 
-        self._node = None  # ROS2 node to be spinned
         self._topic_publisher = None  # ROS2 topic publisher
 
         super().__init__(
@@ -107,11 +94,11 @@ class ROS2YolactOutputCollector(OutputCollector):
         self.prepare()
 
     def prepare(self):
-        if not rclpy.ok():
-            rclpy.init()
-        self._node = Node(self._node_name)
+        from kenning_computer_vision_msgs.msg import FrameSegmentationMsg
 
-        self._topic_publisher = self._node.create_publisher(
+        from kenning.utils.ros2_global_context import ROS2GlobalContext
+
+        self._topic_publisher = ROS2GlobalContext.node.create_publisher(
             FrameSegmentationMsg, self._topic_name, 2
         )
 
@@ -126,8 +113,6 @@ class ROS2YolactOutputCollector(OutputCollector):
 
     def detach_from_output(self):
         self._topic_publisher.destroy()
-        self._node.destroy_node()
-        rclpy.shutdown()
 
     def should_close(self):
         return False
@@ -172,7 +157,7 @@ class ROS2YolactOutputCollector(OutputCollector):
         }
 
     def _extract_yolact_output(
-        self, y: List[SegmObject], yolact_msg: FrameSegmentationMsg
+        self, y: List[SegmObject], yolact_msg: "FrameSegmentationMsg"
     ):
         """
         Extracts YOLACT output from given list of SegmObject.
@@ -185,6 +170,12 @@ class ROS2YolactOutputCollector(OutputCollector):
             FrameSegmentationMsg to be filled with masks, boxes,
             scores and classes.
         """
+        from kenning_computer_vision_msgs.msg import (
+            BoxMsg,
+            MaskMsg,
+            SegmentationMsg,
+        )
+
         segmentation = SegmentationMsg()
 
         classes, scores, masks, boxes = [], [], [], []
@@ -211,7 +202,7 @@ class ROS2YolactOutputCollector(OutputCollector):
 
     def _create_yolact_msg(
         self, image: np.ndarray, y: List[SegmObject]
-    ) -> SegmentationMsg:
+    ) -> "SegmentationMsg":
         """
         Creates SegmentationMsg from given image and YOLACT output.
 
@@ -227,12 +218,14 @@ class ROS2YolactOutputCollector(OutputCollector):
         SegmentationMsg
             Filled SegmentationMsg message ready to be published.
         """
+        from kenning_computer_vision_msgs.msg import FrameSegmentationMsg
+
         yolact_msg = FrameSegmentationMsg()
         yolact_msg.frame = self._create_frame_msg(image)
         self._extract_yolact_output(y, yolact_msg)
         return yolact_msg
 
-    def _create_frame_msg(self, image: np.ndarray) -> VideoFrameMsg:
+    def _create_frame_msg(self, image: np.ndarray) -> "VideoFrameMsg":
         """
         Creates ROS2 Image message from given image.
 
@@ -250,11 +243,15 @@ class ROS2YolactOutputCollector(OutputCollector):
         if self._input_memory_layout == "NCHW":
             image = np.transpose(image, (1, 2, 0))
 
+        import sensor_msgs.msg
+
+        from kenning.utils.ros2_global_context import ROS2GlobalContext
+
         message = VideoFrameMsg()
 
         frame = sensor_msgs.msg.Image()
 
-        frame.header.stamp = self._node.get_clock().now().to_msg()
+        frame.header.stamp = ROS2GlobalContext.node.get_clock().now().to_msg()
         frame.header.frame_id = "camera_frame"
         frame.height, frame.width = image.shape[0], image.shape[1]
         frame.encoding = self._color_format_to_encoding(

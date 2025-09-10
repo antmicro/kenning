@@ -398,7 +398,11 @@ def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
         if not isinstance(converter, (list, tuple)):
             converter = [converter]
 
-        if "type" in keywords and "array" in keywords["type"]:
+        if (
+            "type" in keywords
+            and "array" in keywords["type"]
+            and isinstance(value, (list, tuple))
+        ):
             converted_json_dict[name] = [
                 convert(converter, v) if v else v for v in value
             ]
@@ -510,6 +514,8 @@ def get_parsed_args_dict(
 
             if origin is not None:
                 _type = origin
+
+            KLogger.debug(f"Converting value: '{value}' with {_type}")
 
             value = _type(value)
 
@@ -771,15 +777,29 @@ def add_parameterschema_argument(
             prop_type, prop_sub_type = get_type(prop["type"])
 
             if prop_type in {UnionType, Union}:
+                union_types = set(prop_sub_type)
+
+                con_types = set()
+
                 types = []
-                for arg in prop_sub_type:
-                    p_type, p_sub_type = get_type(arg)
 
-                    types.append(type_to_jsontype[p_type])
+                for sub_type in union_types:
+                    origin = get_origin(sub_type)
 
-                prop_type = object
+                    if origin is None:
+                        origin = sub_type
 
-                keywords["convert-type"] = object
+                    if origin in {list, tuple}:
+                        type_args = get_args(sub_type)
+
+                        con_types.update(type_args)
+
+                    else:
+                        con_types.add(sub_type)
+
+                    types.append(type_to_jsontype[origin])
+
+                keywords["convert-type"] = [*con_types]
 
                 keywords["type"] = types
 

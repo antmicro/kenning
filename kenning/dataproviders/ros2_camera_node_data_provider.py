@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from kenning.core.dataprovider import DataProvider
 from kenning.core.exceptions import KenningDataProviderError
 
 if TYPE_CHECKING:
@@ -20,20 +19,14 @@ if TYPE_CHECKING:
 
 from kenning.dataproviders.ros2_data_provider import ROS2DataProvider
 from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.ros2_global_context import ROS2GlobalContext
 
 
-class ROS2CameraNodeDataProvider(DataProvider):
+class ROS2CameraNodeDataProvider(ROS2DataProvider):
     """
     Provides frames collected from ROS 2 topic to Kenning nodes.
     """
 
     arguments_structure = {
-        "topic_name": {
-            "description": "Name of the topic to receive messages from",
-            "type": str,
-            "required": True,
-        },
         "color_format": {
             "argparse_name": "--color-format",
             "description": "Color format for the processed image. "
@@ -80,42 +73,22 @@ class ROS2CameraNodeDataProvider(DataProvider):
         inputs_specs: Dict[str, Dict] = {},
         outputs: Dict[str, str] = {},
     ):
-        self._topic_name = topic_name
-        self._topic_subscriber = None
-
         self._color_format = color_format
         self._output_width = output_width
         self._output_height = output_height
         self._output_memory_layout = output_memory_layout
 
-        self._data = None
         self._supported_color_formats = ("RGB", "BGR", "GRAY")
 
         import sensor_msgs.msg
 
         super().__init__(
+            topic_name=topic_name,
+            message_type=sensor_msgs.msg.Image,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
             outputs=outputs,
         )
-
-    def prepare(self):
-        self._topic_subscriber = ROS2GlobalContext.node.create_subscription(
-            sensor_msgs.msg.Image, self._topic_name, self._topic_callback, 2
-        )
-
-    def detach_from_source(self):
-        self._topic_subscriber.destroy()
-
-    def fetch_input(self) -> sensor_msgs.msg.Image:
-        if self._topic_subscriber is None:
-            raise KenningDataProviderError("ROS2 Subscriber not initialized")
-
-        self._triggered.clear()
-
-        self._triggered.wait()
-
-        return self._data
 
     def preprocess_input(
         self, data: "sensor_msgs.msg.Image"
@@ -184,19 +157,6 @@ class ROS2CameraNodeDataProvider(DataProvider):
             parsed_json_dict["output_memory_layout"],
             outputs,
         )
-
-    def _topic_callback(self, msg: sensor_msgs.msg.Image):
-        """
-        Callback function for ROS2 topic subscriber.
-        Sets the _triggered flag to True and stores the received message.
-
-        Parameters
-        ----------
-        msg : sensor_msgs.msg.Image
-            Received message.
-        """
-        self._triggered.set()
-        self._data = msg
 
     def _detect_image_format(self, encoding: str) -> str:
         """

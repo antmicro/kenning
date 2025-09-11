@@ -10,6 +10,21 @@ from typing import Optional, Tuple
 import pytest
 from schema import Type
 
+from kenning.utils.logger import KLogger
+
+# DO NOT REMOVE
+# removing this import will result in SegFault when running all compatibility
+# test, caused by the tests involving tinygrad and onnx changing some global
+# state. It has the outcome of pyarrow segfaulting when pytest ends.
+try:
+    import tinygrad.frontend.onnx  # noqa: F401
+except ImportError:
+    KLogger.warning(
+        "Could not import onnx frontend for tinygrad, this may influence the "
+        "outcome of this test suite. Try installing the correct version of "
+        "tinygrad with onnx frontend enabled."
+    )
+
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.core.platform import Platform

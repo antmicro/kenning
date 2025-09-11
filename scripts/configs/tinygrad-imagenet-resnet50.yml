@@ -8,7 +8,7 @@ dataset:
 model_wrapper:
   type: TinygradImageNet
   parameters:
-    model_path: model50.safetensors
+    model_path: kenning:///models/classification/tinygrad_imagenet_resnet50.safetensors
     model_file: https://raw.githubusercontent.com/tinygrad/tinygrad/bcc7623025d39f4994eab0394beb83662d879ec8/extra/models/resnet.py
     model_cls: ResNet50
     input_shape: [1, 3, 224, 224]

@@ -25,7 +25,7 @@ class TinygradImageNet(TinygradWrapper):
     """
 
     default_dataset = ImageNetDataset
-    pretrained_model_uri = "./model50.safetensors"
+    pretrained_model_uri = "kenning:///models/classification/tinygrad_imagenet_resnet50.safetensors"
     arguments_structure = {
         "inputshape": {
             "argparse_name": "--input-shape",

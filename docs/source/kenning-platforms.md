@@ -46,7 +46,7 @@ For detailed information on how to set up the SDK, follow [Zephyr documentation]
 
 Based on Docker image for Kenning Zephyr Runtime, it boils down to:
 
-```bash
+```bash test-skip
 docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
 # Get the latest release of Kenning Zephyr Runtime
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
@@ -70,7 +70,7 @@ It can potentially require additional dependencies from `kenning[zephyr]`.
 
 Platform generation can be triggered with a following command:
 
-```bash
+```bash test-skip
 kenning generate-platforms zephyr \
   --zephyr-base ../zephyr \
   --platforms ./platforms.yml

@@ -27,15 +27,14 @@ import numpy as np
 import psutil
 from sklearn.pipeline import Pipeline
 
-from kenning.core.automl import AutoML, AutoMLModel, ModelSizeError
+from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelClassNotValidError,
-    ModelExtractionError,
 )
 from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
-from kenning.core.runtime import Runtime
+from kenning.core.runtime import CompatibilityStatus, Runtime
 from kenning.utils.args_manager import get_type, traverse_parents_with_args
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
@@ -1005,7 +1004,7 @@ class AutoPyTorchML(AutoML):
 
     def pre_training_callback(
         self, data: Dict, logger: Logger = KLogger
-    ) -> Optional[float]:
+    ) -> Tuple[CompatibilityStatus, Optional[float]]:
         """
         Function called by AutoPyTorch right before training.
 
@@ -1020,23 +1019,18 @@ class AutoPyTorchML(AutoML):
 
         Returns
         -------
+        CompatibilityStatus
+            Information whether this model is ready for training
         Optional[float]
             The model size after optimizations.
 
-        Raises
-        ------
-        ModelTooLargeError
-            If model size is too large to fit into the platform.
         """
         # Skip model size check if max size is not specified
         if self.skip_model_size_check:
             logger.info("Skipping the model size check")
-            return
+            return CompatibilityStatus.SUCCESS, None
 
         import torch
-        from autoPyTorch.pipeline.components.training.trainer import (
-            ModelTooLargeError,
-        )
 
         # Extract model and model wrapper class
         model: torch.nn.Module = data["network_backbone"]
@@ -1049,33 +1043,6 @@ class AutoPyTorchML(AutoML):
                 model = extracted_model
                 break
         if model_wrapper_class is None:
-            raise ModelExtractionError(
-                f"Cannot extract Kenning model from: {model}"
-            )
+            return CompatibilityStatus.FAILED_CHECK, None
 
-        try:
-            model_size, available_size = self._pre_training_callback(
-                model_wrapper_class, model, logger
-            )
-        except ModelSizeError as ex:
-            raise ModelTooLargeError(
-                ex.model_size,
-                f"Model (with size {ex.model_size}) cannot be optimized"
-                " due to the size restriction",
-            ) from ex
-
-        if model_size is None or available_size is None:
-            logger.info(
-                "Cannot check the model size with "
-                f"{model_size=} and {available_size=}"
-            )
-            return
-        # Validate model size
-        max_model_size = available_size - self.application_size
-        if max_model_size < model_size:
-            raise ModelTooLargeError(
-                model_size,
-                f"Model size ({model_size} KB) larger "
-                f"than maximum ({max_model_size} KB)",
-            )
-        return model_size
+        return self._pre_training_callback(model_wrapper_class, model, logger)

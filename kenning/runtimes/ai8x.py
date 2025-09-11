@@ -76,6 +76,13 @@ class Ai8xRuntime(Runtime):
     def extract_output(self) -> List[np.ndarray]:
         ...
 
+    def run_compatibility_checks(self, platform: Platform) -> bool:
+        if "max78000" in platform.name:
+            return True
+        if "max78002" in platform.name:
+            return True
+        return False
+
     @staticmethod
     def get_available_ram(platform: Platform) -> Optional[float]:
         return getattr(platform, "ai8x_weights_memory_kb", None)

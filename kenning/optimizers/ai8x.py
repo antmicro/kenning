@@ -29,6 +29,7 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform
+from kenning.core.runtime import Runtime
 from kenning.optimizers.ai8x_codegen import (
     generate_model_bin,
     generate_model_source,
@@ -419,6 +420,9 @@ class Ai8xCompiler(Optimizer):
         "torch": torch_conversion,
     }
 
+    SUPPORTED_DEVICE_IDS = [84, 85, 87]
+    SUPPORTED_DEVICE_NAMES = ["MAX78002", "MAX78000"]
+
     arguments_structure = {
         "ai8x_synthesis_path": {
             "description": "Path to the ai8x-synthesis tool",
@@ -505,6 +509,22 @@ class Ai8xCompiler(Optimizer):
             self.device_id = device_id
         else:
             raise ValueError(f"Unsupported platform {platform.name}")
+
+    def run_compatibility_checks(
+        self,
+        platform: Platform,
+        runtime: Optional[Runtime],
+        input_model_path: PathOrURI,
+    ) -> bool:
+        device = getattr(platform, "ai8x_device", None)
+        device_id = getattr(platform, "ai8x_device_id", None)
+        if device is None or device_id is None:
+            return False
+        if device_id not in Ai8xCompiler.SUPPORTED_DEVICE_IDS:
+            return False
+        if device not in Ai8xCompiler.SUPPORTED_DEVICE_NAMES:
+            return False
+        return True
 
     def get_optimized_model_size(self):
         if self.ai8x_model_size is None:

@@ -8,7 +8,9 @@ Module with main logic of Kenning CLI.
 """
 
 import argparse
+import logging
 import sys
+import traceback
 from typing import Dict
 
 from kenning.cli.autocompletion import configure_autocomplete
@@ -181,9 +183,23 @@ def main():
                 parser.error(er.message)
                 return 2
             except Exception as exp:
+                trace = ""
+                log_level_number = logging.getLevelNamesMapping()
+
+                error_msg = "no error msg"
+                if log_level_number[verbosity] <= log_level_number["DEBUG"]:
+                    trace = "\n" + traceback.format_exc()
+                else:
+                    error_msg += (
+                        "(set higher verbosity level to see traceback)"
+                    )
+
+                if str(exp) != "":
+                    error_msg = f"error msg: {exp}"
+
                 parser.error(
                     f"`{CommandTemplate.current_command}` subcommand did "
-                    f"not end successfully error msg: {exp}",
+                    f"not end successfully, {error_msg}{trace}",
                     print_usage=False,
                 )
         except ParserHelpException as ex:

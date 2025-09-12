@@ -140,10 +140,11 @@ class Plot(ABC, object):
         """
         if backend == "bokeh" or "html" in output_formats:
             try:
-                self.plot_bokeh(
-                    output_path,
-                    output_formats if backend == "bokeh" else ("html",),
-                )
+                with self._cast_to_bokeh_colors():
+                    self.plot_bokeh(
+                        output_path,
+                        output_formats if backend == "bokeh" else ("html",),
+                    )
             except ImportError as e:
                 KLogger.error(f"bokeh backend is not available: {e}")
             except NotImplementedError:
@@ -154,6 +155,29 @@ class Plot(ABC, object):
             output_formats.discard("html")
 
         self.plot_matplotlib(output_path, output_formats)
+
+    @contextmanager
+    def _cast_to_bokeh_colors(self) -> Generator[None, None, None]:
+        """
+        Cast self.colors to correct format.
+
+        Casts colors to bokeh format in the created context if colors were
+        passed in matplotlib format, if hex values were provided, they are
+        unchanged.
+        """
+        old_colors = None
+        if self.colors:
+            old_colors = self.colors[:]
+            self.colors = [
+                self._matplotlib_color_to_bokeh(c)
+                if not isinstance(c, str)
+                else c
+                for c in old_colors
+            ]
+        try:
+            yield
+        finally:
+            self.colors = old_colors
 
     def _plt_figsize(
         self, ratio: Tuple[float, float] = (1, 1)
@@ -1778,10 +1802,12 @@ class ConfusionMatrixPlot(Plot):
             styles=matrix_css_sizes,
         )
 
+        colors = [
+            [self._matplotlib_color_to_bokeh(c) for c in row]
+            for row in self.confusion_matrix_colors
+        ]
         # Preprocess data
-        confusion_matrix_colors = np.rot90(
-            self.confusion_matrix_colors, k=-1
-        ).reshape((-1, 4))
+        confusion_matrix_colors = np.rot90(colors).reshape((-1, 4))
         coords = np.array(
             list(itertools.product(self.class_names, self.class_names)),
             dtype=str,
@@ -2386,7 +2412,7 @@ class TruePositivesPerIoURangeHistogram(Plot):
             How many colors from default color list should be skipped.
         """
         if colors is None:
-            colors = self._get_comparison_color_scheme(color_offset)
+            colors = self._get_comparison_color_scheme(1 + color_offset)
 
         super().__init__(width, height, title, colors=colors[color_offset:])
 
@@ -2547,9 +2573,9 @@ class RecallPrecisionGradients(Plot):
         plt.xlabel("recall")
         plt.ylabel("classes")
         ax = plt.gca()
-        PCM = ax.get_children()[2]
+        sc = plt.cm.ScalarMappable(cmap=self.cmap)
         plt.colorbar(
-            PCM,
+            sc,
             ax=ax,
             orientation="vertical",
             label="precision",
@@ -2595,10 +2621,10 @@ class RecallPrecisionGradients(Plot):
             width_policy="max",
             css_classes=["plot"],
         )
+        colors = [self.cmap(i) for i in range(self.cmap.N)]
         color_mapper = LinearColorMapper(
             palette=[
-                self._matplotlib_color_to_bokeh(color)
-                for color in self.cmap.colors
+                self._matplotlib_color_to_bokeh(color) for color in colors
             ],
             low=0,
             high=1,

@@ -522,6 +522,12 @@ class ViolinComparisonPlot(Plot):
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
+
+        Raises
+        ------
+        ValueError
+            If either empty class data was provided or number of classes
+            mismatch with what is provided in metric_data
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -532,6 +538,23 @@ class ViolinComparisonPlot(Plot):
 
         self.metric_data = metric_data
         self.metric_labels = metric_labels
+        class_count = len(metric_labels)
+        contains_class = [False] * class_count
+        for _, v in metric_data.items():
+            if len(v) != class_count:
+                raise ValueError(
+                    "Violin Plot rendering error: "
+                    "please ensure all class measurements are provided"
+                )
+            for i, class_meas in enumerate(v):
+                if len(class_meas) != 0:
+                    contains_class[i] = True
+
+        if not all(contains_class):
+            raise ValueError(
+                "Violin Plot rendering error: "
+                "please provide non-empty sequences to plot"
+            )
 
     def plot_matplotlib(
         self, output_path: Path, output_formats: Iterable[str]
@@ -556,6 +579,8 @@ class ViolinComparisonPlot(Plot):
             zip(self.colors, self.metric_data.items())
         ):
             for ax, metric_sample in zip(axs, samples):
+                if len(metric_sample) == 0:
+                    continue
                 vp = ax.violinplot(metric_sample, positions=[i], vert=False)
                 for body in vp["bodies"]:
                     body.set_color(color)
@@ -625,8 +650,13 @@ class ViolinComparisonPlot(Plot):
         ):
             renderers = []
             for name, sample in zip(self.metric_labels, samples):
-                x_min = min(sample)
-                x_max = max(sample)
+                if len(sample) == 0:
+                    x_min = 0
+                    x_max = 0
+                else:
+                    x_min = min(sample)
+                    x_max = max(sample)
+
                 x = np.linspace(x_min, x_max, 1000)
                 if x_min == x_max:
                     y = np.full(x.shape, 0.45)
@@ -764,8 +794,6 @@ class ViolinComparisonPlot(Plot):
         # Calculate min and max for each index list.
         result = []
         for index_list in index_lists:
-            if not index_list:
-                continue
             min_value = min(index_list)
             max_value = max(index_list)
             result.append((min_value, max_value))
@@ -807,6 +835,11 @@ class RadarChart(Plot):
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
+
+        Raises
+        ------
+        ValueError
+            If metric labels were provided
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -818,11 +851,16 @@ class RadarChart(Plot):
         self.metric_data = metric_data
         self.metric_labels = metric_labels
 
+        if len(self.metric_labels) == 0:
+            raise ValueError(
+                "RadarChart rendering error: "
+                "please provide non-empty sequences to plot"
+            )
+
     def plot_matplotlib(
         self, output_path: Path, output_formats: Iterable[str]
     ):
         n_metrics = len(self.metric_labels)
-
         angles = [n / n_metrics * 2 * pi for n in range(n_metrics)]
         fig, ax = plt.subplots(
             1,
@@ -1129,6 +1167,11 @@ class BubblePlot(Plot):
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
+
+        Raises
+        ------
+        ValueError
+            if empty sequences were provided
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -1144,6 +1187,12 @@ class BubblePlot(Plot):
         self.size_data = size_data
         self.size_label = size_label
         self.bubble_labels = bubble_labels
+
+        if len(x_data) == 0 or len(y_data) == 0:
+            raise ValueError(
+                "BubblePlot rendering error: "
+                "please provide non-empty sequences to plot"
+            )
 
         x_range = max(x_data) - min(x_data) + 1e-9
         y_range = max(y_data) - min(y_data) + 1e-9
@@ -1376,18 +1425,42 @@ class ConfusionMatrixPlot(Plot):
             Height of the plot.
         cmap : Optional[Any]
             Color map for the plot.
+
+        Raises
+        ------
+        ValueError
+            If empty sequence was provided to the plot or dimensions of
+            confusion_matrix does not correspond to number of class_names.
         """
         if cmap is None:
             if len(class_names) < 50:
                 cmap = plt.get_cmap("BuPu")
             else:
                 cmap = plt.get_cmap("nipy_spectral_r")
+        is_empty = (len(confusion_matrix) == 0) or (
+            any([len(row) == 0 for row in confusion_matrix])
+        )
+        if is_empty:
+            raise ValueError(
+                "Confusion matrix rendering error: "
+                "please provide non-empty confusion_matrix"
+            )
+
+        mismatched_classes = len(confusion_matrix) != len(class_names) or (
+            any([len(row) != len(class_names) for row in confusion_matrix])
+        )
+        if mismatched_classes:
+            raise ValueError(
+                "Confusion matrix rendering error: "
+                "please ensure dimensions of matrix matches class count"
+            )
 
         super().__init__(width, height, title, cmap=cmap)
 
         self.class_names = class_names
 
         confusion_matrix = np.array(confusion_matrix, dtype=np.float32)
+        confusion_matrix[np.isnan(confusion_matrix)] = 0.0
 
         # compute sensitivity
         sensitivity = confusion_matrix.diagonal() / confusion_matrix.sum(
@@ -1403,6 +1476,7 @@ class ConfusionMatrixPlot(Plot):
 
         # compute overall accuracy
         accuracy = np.trace(confusion_matrix) / np.sum(confusion_matrix)
+        accuracy = 0 if np.isnan(accuracy) else accuracy
 
         # normalize confusion matrix
         confusion_matrix /= confusion_matrix.sum(axis=0)
@@ -2821,6 +2895,9 @@ class LinePlot(Plot):
         global_max = -99999999
         global_min = +99999999
         for x in X:
+            if len(x) == 0:
+                global_min, global_max = 0, 0
+                break
             local_max = max(x)
             if local_max > global_max:
                 global_max = local_max
@@ -2893,6 +2970,11 @@ class Barplot(Plot):
             How many colors from default color list should be skipped.
         vertical_x_labels : bool
             Whether labels on x-axis should be vertiacal.
+
+        Raises
+        ------
+        ValueError
+            If empty sequence was provided to the plot
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -2910,6 +2992,13 @@ class Barplot(Plot):
             combined_data.extend(v)
         self.y_data_std = np.std(combined_data)
         self.max_bars_matplotlib = max_bars_matplotlib
+
+        if len(self.y_data) == 0 or len(self.x_data) == 0:
+            raise ValueError(
+                "Barplot rendering error: "
+                "please provide non-empty sequences to plot"
+            )
+
         self.bar_width = 0.8 / len(self.y_data)
         if len(self.y_data) == 1:
             self.bar_offset = [0.0]

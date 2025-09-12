@@ -236,38 +236,7 @@ class MarkdownReport(Report):
         if not self.only_png_images:
             self.image_formats |= {"html"}
 
-        if self.measurements[0]:
-            (
-                self.measurementsdata,
-                self.report_types,
-                self.automl_stats,
-            ) = Report.load_measurements_for_report(
-                measurements_files=self.measurements,
-                model_names=self.model_names,
-                skip_unoptimized_model=self.skip_unoptimized_model,
-                report_types=self.report_types,
-                automl_stats_file=self.automl_stats,
-            )
-
-        if self.report_name is None and len(self.measurementsdata) > 0:
-            self.report_name = Report.deduce_report_name(
-                self.measurementsdata, report_types
-            )
-
-        # Fill missing colors with ones generated from nipy_spectral
-
-        self.colors = KENNING_COLORS
-
-        if len(self.measurementsdata) > len(self.colors):
-            self.colors += [
-                to_hex(c)
-                for c in Plot._get_comparison_color_scheme(
-                    len(self.measurementsdata) - len(self.colors)
-                )
-            ]
-
-        SERVIS_PLOT_OPTIONS["colormap"] = self.colors
-        self.cmap = RED_GREEN_CMAP
+        self._report_types = report_types
 
     def generate_markdown_report(
         self, command: List[str] = [], draw_titles: bool = True
@@ -424,6 +393,39 @@ class MarkdownReport(Report):
             if there is missing or wrong arguments
         """
         KLogger.debug(f"Measurements {self.measurements}")
+
+        if self.measurements[0]:
+            (
+                self.measurementsdata,
+                self.report_types,
+                self.automl_stats,
+            ) = Report.load_measurements_for_report(
+                measurements_files=self.measurements,
+                model_names=self.model_names,
+                skip_unoptimized_model=self.skip_unoptimized_model,
+                report_types=self.report_types,
+                automl_stats_file=self.automl_stats,
+            )
+
+        if self.report_name is None and len(self.measurementsdata) > 0:
+            self.report_name = Report.deduce_report_name(
+                self.measurementsdata, self._report_types
+            )
+
+        # Fill missing colors with ones generated from nipy_spectral
+
+        self.colors = KENNING_COLORS
+
+        if len(self.measurementsdata) > len(self.colors):
+            self.colors += [
+                to_hex(c)
+                for c in Plot._get_comparison_color_scheme(
+                    len(self.measurementsdata) - len(self.colors)
+                )
+            ]
+
+        SERVIS_PLOT_OPTIONS["colormap"] = self.colors
+        self.cmap = RED_GREEN_CMAP
 
         if (
             not self.to_html

@@ -49,7 +49,7 @@ MDL_RT_RUNNER_YOLOV4_JSON = {
             },
         },
     },
-    "inputs": {"input": "cam_frame"},
+    "inputs": {"processed_input": "cam_frame"},
     "outputs": {"detection_output": "predictions"},
 }
 
@@ -78,7 +78,7 @@ MDL_RT_RUNNER_YOLACT_JSON = {
             },
         },
     },
-    "inputs": {"input": "cam_frame"},
+    "inputs": {"processed_input": "cam_frame"},
     "outputs": {"segmentation_output": "predictions"},
 }
 

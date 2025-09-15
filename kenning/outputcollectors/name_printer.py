@@ -40,7 +40,7 @@ class NamePrinter(OutputCollector):
     def __init__(
         self,
         print_type: str = "detector",
-        file_path: Path = None,
+        classification_class_names: Path = None,
         inputs_sources: Dict[str, Tuple[int, str]] = {},
         inputs_specs: Dict[str, Dict] = {},
         outputs: Dict[str, str] = {},
@@ -48,9 +48,9 @@ class NamePrinter(OutputCollector):
         self.frame_counter = 0
         self.print_type = print_type
         self.classnames = []
-        self.file_path = file_path
-        if file_path:
-            with open(file_path, "r") as f:
+        self.file_path = classification_class_names
+        if self.file_path:
+            with open(self.file_path, "r") as f:
                 for line in f:
                     self.classnames.append(line.strip())
         super().__init__(
@@ -92,7 +92,23 @@ class NamePrinter(OutputCollector):
         self.frame_counter += 1
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+        input_data = inputs["frame"]
+        output_data = (
+            inputs["detection_data"]
+            if "detection_data" in inputs
+            else inputs["classification_data"]
+        )
+        self.process_output(input_data, output_data)
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
-        pass
+        return {
+            "input": [
+                {"name": "detection_data", "type": "Any"},
+                {
+                    "name": "classification_data",
+                    "shape": (1, -1),
+                    "dtype": "float32",
+                },
+            ],
+            "output": [],
+        }

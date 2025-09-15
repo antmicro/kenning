@@ -14,5 +14,11 @@ optimizers:
     compiled_model_path: ./build/compiled-model.tflite
     model_framework: keras
 report:
+  type: MarkdownReport
   parameters:
-    measurements: ./build/pet-dataset-tflite.json
+    measurements: ./build/pet-dataset-tflite-cfg.json
+    report_path: ./build/classification-report/report.md
+    report_name: Classification on Pet Dataset using TFLite
+    report_types:
+      - performance
+      - classification

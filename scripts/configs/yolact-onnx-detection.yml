@@ -1,0 +1,26 @@
+model_wrapper:
+  type: kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+  parameters:
+    model_path: kenning:///models/instance_segmentation/yolact.onnx
+dataset:
+  type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+  parameters:
+    dataset_root: ./build/OpenImagesDatasetV6
+    inference_batch_size: 1
+    task: instance_segmentation
+runtime:
+  type: kenning.runtimes.onnx.ONNXRuntime
+  parameters:
+    save_model_path: kenning:///models/instance_segmentation/yolact.onnx
+    execution_providers:
+      - CPUExecutionProvider
+report:
+  parameters:
+    measurements: ./build/yolact-onnx.json
+    report_path: ./build/yolact-report/report.md
+    report_name: YOLACT detection report
+    root_dir: ./build/yolact-report
+    img_dir: ./build/yolact-report/imgs
+    report_types:
+      - performance
+      - detection

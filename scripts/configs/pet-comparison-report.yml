@@ -1,8 +1,8 @@
 report:
   parameters:
     measurements:
-      - build/pet-dataset-tflite.json
-      - build/pet-dataset-tvm.json
+      - build/pet-dataset-tflite-cfg.json
+      - build/pet-dataset-tvm-cfg.json
     main_quality_metric: g_mean
     root_dir: build/classification-report
     img_dir: build/classification-report/imgs

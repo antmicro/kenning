@@ -52,13 +52,33 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         # get input specs mapped to global variables
         runner_input_spec = {}
         runner_io_spec = self.get_io_specification()
-        for local_name, (_, global_name) in self.inputs_sources.items():
-            for spec in runner_io_spec["input"]:
-                if spec["name"] == local_name:
-                    runner_input_spec[global_name] = (
-                        [spec] if isinstance(spec, Dict) else spec
-                    )
+
+        found_global_mapping = False
+        for specname in ("input", "processed_input"):
+            if specname not in runner_io_spec:
+                continue
+            for spec in runner_io_spec[specname]:
+                if found_global_mapping:
                     break
+                for local_name, (
+                    _,
+                    global_name,
+                ) in self.inputs_sources.items():
+                    if spec["name"] == local_name:
+                        runner_input_spec[global_name] = (
+                            [spec] if isinstance(spec, Dict) else spec
+                        )
+                        found_global_mapping = True
+                        break
+        if (
+            not found_global_mapping
+            and runner_io_spec["input"]
+            and inputs_sources
+        ):
+            raise ModulesIncompatibleError(
+                "io_specification is incompatible with "
+                "inputs specified in configuration"
+            )
 
         # get provided inputs spec mapped to global variables
         outputs_specs = {}
@@ -190,7 +210,8 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         for local_name, global_name in self.outputs.items():
             outputs[global_name] = local_outputs[local_name]
 
-        flow_state.append(outputs)
+        if outputs:
+            flow_state.append(outputs)
 
     @abstractmethod
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:

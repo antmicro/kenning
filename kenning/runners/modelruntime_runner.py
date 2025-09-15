@@ -242,8 +242,19 @@ class ModelRuntimeRunner(Runner):
         )
         return cls._get_io_specification(model_io_spec)
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
+    def get_model_io_specification(self) -> Dict[str, List[Dict]]:
         return self._get_io_specification(self.model.get_io_specification())
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        model_spec = self._get_io_specification(
+            self.model.get_io_specification()
+        )
+        input_spec = []
+        for spec in model_spec["input"]:
+            spec["name"] = "processed_input"
+            input_spec.append(spec)
+        model_spec["input"] = input_spec
+        return model_spec
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         model_input = inputs.get("processed_input", inputs.get("input", None))
@@ -255,7 +266,7 @@ class ModelRuntimeRunner(Runner):
         )
         posty = self.model.postprocess_outputs(preds)
 
-        io_spec = self.get_io_specification()
+        io_spec = self.get_model_io_specification()
 
         result = {}
         for out_spec, out_value in zip(io_spec["output"], preds):

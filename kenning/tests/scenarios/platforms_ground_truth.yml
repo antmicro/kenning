@@ -1,0 +1,26 @@
+stm32f746g_disco/stm32f746xx:
+  compilation_flags:
+  - -mcpu=cortex-m7
+  - -model=stm32f746xx
+  flash_size_kb: 1024
+  ram_size_kb: 320
+
+nrf52840dongle/nrf52840:
+  compilation_flags:
+  - -mcpu=cortex-m4f
+  - -model=nrf52840
+  flash_size_kb: 1024
+  ram_size_kb: 256
+
+nrf52840dk/nrf52840:
+  compilation_flags:
+  - -mcpu=cortex-m4f
+  flash_size_kb: 1024
+  ram_size_kb: 256
+
+max32690evkit/max32690/m4:
+  compilation_flags:
+  - -mcpu=cortex-m4f
+  - -model=max32690
+  flash_size_kb: 3072
+  ram_size_kb: 128

@@ -135,6 +135,11 @@ def pytest_addoption(parser: pytest.Parser):
         default="",
         help="File pattern to move from tmp to workdir ('|' separator)",
     )
+    parser.addoption(
+        "--generated-platforms-path",
+        help="Path to generated platforms YAML (produced externally). "
+        "If not set, related tests are skipped.",
+    )
 
 
 @pytest.hookimpl()

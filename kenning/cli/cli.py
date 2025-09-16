@@ -14,7 +14,7 @@ import traceback
 from typing import Dict
 
 from kenning.cli.autocompletion import configure_autocomplete
-from kenning.cli.command_template import LIST, CommandTemplate
+from kenning.cli.command_template import CommandTemplate
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
@@ -63,7 +63,7 @@ def main():
 
     # Parse subcommands and help
     args, rem = parser.parse_known_args(sys.argv[1:i])
-    if len(sys.argv) > 1 and sys.argv[1] != LIST:
+    if len(sys.argv) > 1:
         # skip parsing the rest for the "list" command
         args, rem = parser.parse_known_args(args=rem, namespace=args)
         rem += sys.argv[i:]

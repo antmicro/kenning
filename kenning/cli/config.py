@@ -10,7 +10,7 @@ and mapping to classes extending CommandTemplate.
 """
 
 import argparse
-from typing import Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Dict, Generator, List, Tuple, Type, Union
 
 from kenning.cli.command_template import (
     AUTOML,
@@ -33,6 +33,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
 )
 from kenning.cli.formatter import Formatter
+from kenning.core.exceptions import ConfigurationError
 from kenning.scenarios import (
     automl,
     available_platforms,
@@ -51,9 +52,42 @@ from kenning.scenarios import (
     render_report,
 )
 
-# Subcommands that can be used in sequence list in structure
-# defining possible order
-SEQUENCED_COMMANDS = ([[TRAIN, OPTIMIZE], TEST, REPORT],)
+
+def _sequence(*args):
+    """
+    Representation of subcommands that can be used in a sequence.
+    """
+    return [*args]
+
+
+def _either(*args):
+    """
+    Representation of subcommands that can be used exclusively - this or that.
+    """
+    return tuple([*args])
+
+
+def _optional(arg):
+    """
+    Subcommand arguments that can be optionally skipped.
+    """
+    return _either(arg, None)
+
+
+# Combination of nested Tuples and Lists which together create the logical
+# representation of sequenced commands structure.
+# Each possible path that can be taken should be a valid and correct set of
+# subcomands.
+SEQUENCED_COMMANDS = _either(
+    _sequence(
+        _either(
+            _optional(TRAIN), _sequence(_optional(AUTOML), _optional(OPTIMIZE))
+        ),
+        _either(_sequence(TEST, _optional(REPORT)), _optional(TEST)),
+    ),
+    _sequence(_optional(AUTOML), REPORT),
+)
+
 # Subcommands that can be used one at the time
 BASIC_COMMANDS = (
     AVAILABLE_PLATFORMS,
@@ -125,39 +159,55 @@ def get_used_subcommands(
 
 
 def get_all_sequences(
-    sequence: List[List[str]],
-    prefix: Optional[List[str]] = None,
+    sequence: Union[List, Tuple]
 ) -> Generator[Tuple[str], None, None]:
     """
     Yields possible sequences of commands.
 
     Parameters
     ----------
-    sequence : List[List[str]]
-        Sequence with commands in right order
-    prefix : Optional[List[str]]
-        Prefix appended to the results
+    sequence : Union[List, Tuple]
+        Logical representation of sequenced commands.
+        A list of lists and tuples where each leaf is a string.
+        Every List is treated as an logical AND between sequences of commands.
+        Every tuple is treated as an OR between sequences of commands.
+        Every path through this graph should be a valid
+        cli subcommand configuration.
+
+    Examples
+    --------
+        [automl, train] -> returns [('automl', 'train')]
+        [optimize, (test, None)] -> returns [('optimize', 'test'), ('optimize')]
+        [(automl, train, None), optimize] -> returns [('automl', 'optimize), ('train', 'optimize'), ('optimize')]
 
     Yields
     ------
     Tuple[str]
-        Sequence of commands
-    """
-    if prefix is None:
-        prefix = []
-    if not sequence:
-        for i in range(len(prefix)):
-            yield tuple(prefix[i:])
-        return
-    for item in (
-        sequence[0] if isinstance(sequence[0], List) else [sequence[0]]
-    ):
-        yield from get_all_sequences(sequence[1:], prefix + [item])
+        Possible sequence of commands
+    """  # noqa: E501
+    if sequence is None:
+        yield tuple()
+    elif isinstance(sequence, list) and len(sequence) == 0:
+        yield tuple()
+    # yield tuple with this string
+    elif isinstance(sequence, str):
+        yield tuple([sequence])
+    # yield processed from first element and combine with the rest
+    elif isinstance(sequence, list):
+        prefix = get_all_sequences(sequence[0])
+        for pre in prefix:
+            for sub in get_all_sequences(sequence[1:]):
+                yield tuple([*pre, *sub])
+    # yield processed from each entry
+    elif isinstance(sequence, tuple):
+        for sub in sequence:
+            yield from get_all_sequences(sub)
 
 
 def create_subcommands(
-    subparser: argparse._SubParsersAction,
-    names: Tuple[Union[str, Tuple[str]]],
+    names: Tuple[str],
+    subcommand_parsers: Dict[Tuple[str], argparse.ArgumentParser],
+    subcommand_groups: Dict[Tuple[str], argparse._SubParsersAction],
     number: int = 0,
     with_arguments: bool = False,
 ) -> Dict[Tuple[str], argparse.ArgumentParser]:
@@ -166,10 +216,12 @@ def create_subcommands(
 
     Parameters
     ----------
-    subparser : argparse._SubParsersAction
-        Object which can create parsers
-    names : Tuple[Union[str, Tuple[str]]]
+    names : Tuple[str]
         Sequence of subcommands
+    subcommand_parsers : Dict[Tuple[str], argparse.ArgumentParser]
+        Parsers created so far
+    subcommand_groups : Dict[Tuple[str], argparse._SubParsersAction]
+        Maps parsers created so far to objects which can create parsers.
     number : int
         Depth of subparser
     with_arguments : bool
@@ -179,30 +231,34 @@ def create_subcommands(
     -------
     Dict[Tuple[str], argparse.ArgumentParser]
         Dictionary of parsers associated with sequence of subcommands
+
+    Raises
+    ------
+    ConfigurationError
+        if no root subcommand_group was set in subcommand_groups
     """
     groups = {}
     parsers = {}
     parser = None
     for i, name in enumerate(names):
-        if parser:
+        if names[: i + 1] in subcommand_parsers:
+            parser = subcommand_parsers[names[: i + 1]]
+            continue
+
+        if names[:i] in subcommand_groups:
+            subparser = subcommand_groups[names[:i]]
+        elif parser:
             subparser = parser.add_subparsers(
                 title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(number + i)
             )
-        if isinstance(name[0], tuple):
-            subparsers = {}
-            for n in name:
-                subparsers |= create_subcommands(
-                    subparser,
-                    n,
-                    number + i,
-                    with_arguments=with_arguments,
-                )
-            for key, subp in subparsers.items():
-                parsers[(*names[:i], *key)] = subp
-            continue
+            subcommand_groups.update({names[:i]: subparser})
+        else:
+            raise ConfigurationError("no root subcommand_group was set")
+
         desc = MAP_COMMAND_TO_SCENARIO[name].description
         if not isinstance(desc, str):
             desc = desc[name]
+
         parser = subparser.add_parser(
             name,
             help=desc.split(".", 1)[0].strip("\n"),
@@ -245,9 +301,6 @@ def setup_base_parser(
         add_help=False,
     )
     parsers = {}
-    subparsers = parser.add_subparsers(
-        title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(0)
-    )
 
     flag_group = parser.add_argument_group("Flags")
     flag_group.add_argument(
@@ -256,20 +309,20 @@ def setup_base_parser(
         help=HELP["msg"],
     )
 
-    sequences = set()
-    for sequence in SEQUENCED_COMMANDS:
-        sequences.update(get_all_sequences(sequence))
-    # Append AUTOML subcommand to all sequences without TRAIN
-    sequences.add(
-        (
-            AUTOML,
-            tuple(sequence for sequence in sequences if TRAIN not in sequence),
-        )
+    # define root subcommand group
+    subparsers = parser.add_subparsers(
+        title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(0)
     )
-    for sequence in sorted(sequences, key=lambda x: x[0]):
+    subcommand_groups = {tuple(): subparsers}
+
+    sequences = set(get_all_sequences(SEQUENCED_COMMANDS))
+    for sequence in sorted(sequences):
         parsers.update(
             create_subcommands(
-                subparsers, sequence, with_arguments=with_arguments
+                sequence,
+                parsers,
+                subcommand_groups,
+                with_arguments=with_arguments,
             )
         )
 

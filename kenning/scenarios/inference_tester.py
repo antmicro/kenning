@@ -279,20 +279,19 @@ class InferenceTester(CommandTemplate):
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
-        if (
-            ConfigKey.report.name in json_cfg.keys()
-            and "type" not in json_cfg[ConfigKey.report.name].keys()
-            and hasattr(args, "report_cls")
-        ):
-            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
-        elif hasattr(args, "report_cls"):
+        if ConfigKey.report.name not in json_cfg.keys():
             json_cfg[ConfigKey.report.name] = {
                 "type": args.report_cls,
                 "parameters": {},
             }
+        elif "type" not in json_cfg[ConfigKey.report.name].keys():
+            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
+        elif args.report_cls != "StubReport":
+            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
 
-        if hasattr(args, "report_cls"):
-            KLogger.debug(f"Selected report type: {args.report_cls}")
+        report_types = json_cfg[ConfigKey.report.name]["type"]
+
+        KLogger.debug(f"Selected report type: {report_types}")
 
         pipeline_runner = PipelineRunner.from_json_cfg(
             json_cfg,
@@ -302,8 +301,7 @@ class InferenceTester(CommandTemplate):
         )
 
         # pass already parsed report to RenderReport
-        if hasattr(args, "report_cls"):
-            args.parsed_report = pipeline_runner.report
+        args.parsed_report = pipeline_runner.report
 
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner
@@ -316,22 +314,17 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        keys = (
-            [
-                ConfigKey.platform,
-                ConfigKey.model_wrapper,
-                ConfigKey.dataset,
-                ConfigKey.runtime,
-                ConfigKey.optimizers,
-                ConfigKey.protocol,
-            ]
-            + [ConfigKey.report]
-            if hasattr(args, "report_cls")
-            else []
-        )
+        keys = [
+            ConfigKey.platform,
+            ConfigKey.model_wrapper,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+            ConfigKey.optimizers,
+            ConfigKey.protocol,
+            ConfigKey.report,
+        ]
 
-        if hasattr(args, "report_cls"):
-            KLogger.debug(f"Selected report type: {args.report_cls}")
+        KLogger.debug(f"Selected report type: {args.report_cls}")
 
         def required(objs: Dict[ConfigKey, Type]):
             compilercls = objs.get(ConfigKey.optimizers)

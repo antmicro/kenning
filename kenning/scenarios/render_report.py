@@ -154,13 +154,20 @@ class RenderReport(CommandTemplate):
             return RenderReport._run_from_flags(args, command, not_parsed)
 
         # set default type for Report
-        if ConfigKey.report.name in json_cfg.keys():
+        if (
+            ConfigKey.report.name in json_cfg.keys()
+            and "type" not in json_cfg[ConfigKey.report.name].keys()
+        ):
             json_cfg[ConfigKey.report.name]["type"] = args.report_cls
         elif ConfigKey.report.name not in json_cfg.keys():
             json_cfg[ConfigKey.report.name] = {
                 "parameters": {},
                 "type": args.report_cls,
             }
+
+        report_type = json_cfg[ConfigKey.report.name]["type"]
+
+        KLogger.debug(f"Selected report type: {report_type}")
 
         objs = objs_from_json(
             json_cfg, set([ConfigKey.report]), override=(args, not_parsed)

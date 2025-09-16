@@ -106,6 +106,7 @@ def test_measurements_evaluate_unoptimized(
         json_cfg=json_cfg,
         evaluate_unoptimized=True,
         compiler_cls=None,
+        report_cls="StubReport",
     )
 
     assert (

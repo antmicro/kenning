@@ -28,6 +28,21 @@ from kenning.utils.logger import KLogger, LoggerProgressBar, download_url
 from kenning.utils.singleton import Singleton
 
 
+def create_tar(tar_path: Path, src_path: Path):
+    """
+    Compress directory to tar archive.
+
+    Parameters
+    ----------
+    tar_path : Path
+        Path to where the archive will be saved.
+    src_path : Path
+        Path to directory that will be converted to tar archive.
+    """
+    with tarfile.open(tar_path, mode="w") as tf:
+        tf.add(src_path, arcname=".")
+
+
 def extract_tar(target_dir: Path, src_path: Path):
     """
     Extract the tar file to the provided target directory.

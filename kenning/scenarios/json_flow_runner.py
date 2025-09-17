@@ -16,6 +16,7 @@ from argcomplete.completers import FilesCompleter
 from kenning.cli.command_template import (
     FLOW,
     GROUP_SCHEMA,
+    ROS,
     ArgumentsGroups,
     CommandTemplate,
     generate_command_type,
@@ -52,7 +53,7 @@ class FlowRunner(CommandTemplate):
             "--cfg",
             help="The path to the input JSON file with configuration of the graph",  # noqa: E501
             type=ResourceURI,
-            required=True,
+            required=ROS not in types,
         ).completer = FilesCompleter(allowednames=("yaml", "yml", "json"))
         return parser, groups
 

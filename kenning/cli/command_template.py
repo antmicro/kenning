@@ -29,6 +29,7 @@ CACHE = "cache"
 SEARCH = "search"
 COMPLETION = "completion"
 AUTOML = "automl"
+ROS = "ros"
 GENERATE_PLATFORMS = "generate-platforms"
 AVAILABLE_PLATFORMS = "available-platforms"
 HELP = {

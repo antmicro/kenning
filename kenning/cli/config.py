@@ -25,6 +25,7 @@ from kenning.cli.command_template import (
     LIST,
     OPTIMIZE,
     REPORT,
+    ROS,
     SEARCH,
     SERVER,
     TEST,
@@ -50,6 +51,7 @@ from kenning.scenarios import (
     optimization_runner,
     pipeline_manager_client,
     render_report,
+    ros2,
 )
 
 
@@ -80,12 +82,14 @@ def _optional(arg):
 # subcomands.
 SEQUENCED_COMMANDS = _either(
     _sequence(
+        _optional(ROS),
         _either(
             _optional(TRAIN), _sequence(_optional(AUTOML), _optional(OPTIMIZE))
         ),
         _either(_sequence(TEST, _optional(REPORT)), _optional(TEST)),
     ),
-    _sequence(_optional(AUTOML), REPORT),
+    _sequence(_optional(ROS), _optional(AUTOML), REPORT),
+    _sequence(ROS, FLOW),
 )
 
 # Subcommands that can be used one at the time
@@ -105,6 +109,7 @@ BASIC_COMMANDS = (
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (
     AUTOML,
+    ROS,
     OPTIMIZE,
     TRAIN,
     TEST,
@@ -130,6 +135,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     COMPLETION: configure_autocompletion.ConfigureCompletion,
     GENERATE_PLATFORMS: generate_platforms.GeneratePlatformsCommand,
     AVAILABLE_PLATFORMS: available_platforms.AvailablePlatformsCommand,
+    ROS: ros2.ROS2Initializer,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

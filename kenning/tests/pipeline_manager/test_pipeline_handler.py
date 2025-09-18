@@ -217,14 +217,9 @@ class TestPipelineHandler(HandlerTests):
 
     @pytest.fixture(scope="class")
     def handler(self):
-        from kenning.pipeline_manager.rpc_handler import FlowHandlerRPC
-
         handler = PipelineHandler(layout_algorithm="NoLayout")
         handler.get_specification(
             handler.spec_builder.assets_dir,
-            actions=FlowHandlerRPC(
-                None, None, None, None
-            ).get_navbar_actions(),
         )
         return handler
 

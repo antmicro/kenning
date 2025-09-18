@@ -48,8 +48,8 @@ class PetDataset(Dataset):
 
     resources = Resources(
         {
-            "images": "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz",
-            "annotations": "https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz",
+            "images": "kenning:///datasets/pet_dataset/images.tar.gz",
+            "annotations": "kenning:///datasets/pet_dataset/annotations.tar.gz",
         }
     )
 

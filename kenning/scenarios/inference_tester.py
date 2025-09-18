@@ -371,7 +371,9 @@ class InferenceTester(CommandTemplate):
         # this is added to make inference testser's tests work
         if pipeline_runner.output is None:
             output = (
-                args.measurements[0] if hasattr(args, "measurements") else None
+                args.measurements[0]
+                if getattr(args, "measurements", None) is not None
+                else None
             )
         else:
             output = pipeline_runner.output

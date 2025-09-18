@@ -58,11 +58,7 @@ class PipelineManagerRPC(ABC):
         self.filename = None
 
     @abstractmethod
-    def app_capabilities_get(self):
-        ...
-
-    @abstractmethod
-    def get_navbar_actions(self):
+    def app_capabilities_get(self) -> list:
         ...
 
     async def dataflow_import(
@@ -212,7 +208,6 @@ class PipelineManagerRPC(ABC):
                 )
                 self.pipeline_manager_client.specification = self.dataflow_handler.get_specification(  # noqa: E501
                     workspace_dir=self.pipeline_manager_client.workspace_dir,
-                    actions=self.get_navbar_actions(),
                     spec_save_path=self.pipeline_manager_client.save_specification_path,
                 )
                 KLogger.info("SpecificationBuilder: Generated specification.")
@@ -400,10 +395,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
     Pipeline Manager RPC handlers for compilation and evaluation flow.
     """
 
-    def app_capabilities_get(self):
-        return {"stoppable_methods": []}
-
-    def get_navbar_actions(self):
+    def app_capabilities_get(self) -> list:
         return [
             {
                 "name": "Evaluate",
@@ -572,10 +564,7 @@ class FlowHandlerRPC(PipelineManagerRPC):
     Pipeline Manager RPC callbacks for Kenning Flow applications.
     """
 
-    def app_capabilities_get(self):
-        return {"stoppable_methods": []}
-
-    def get_navbar_actions(self):
+    def app_capabilities_get(self) -> list:
         return [
             {
                 "name": "Run",

@@ -212,7 +212,6 @@ class BaseDataflowHandler(ABC):
     def get_specification(
         self,
         workspace_dir: Path,
-        actions: List[Dict[str, str]],
         spec_save_path: Optional[Path] = None,
     ) -> Dict:
         """
@@ -225,8 +224,6 @@ class BaseDataflowHandler(ABC):
         ----------
         workspace_dir : Path
             Pipeline Manager's workspace directory
-        actions: List[Dict[str, str]]
-            Navbar actions available for a given application
         spec_save_path : Optional[Path]
             Path where the generated specification JSON will be saved.
 
@@ -237,7 +234,6 @@ class BaseDataflowHandler(ABC):
         """
         self.spec_builder.metadata_add_param("twoColumn", True)
         self.spec_builder.metadata_add_param("layout", self.autolayout)
-        self.spec_builder._metadata["navbarItems"] = actions
 
         def strip_io(io_list: list, direction) -> list:
             """

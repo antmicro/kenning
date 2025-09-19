@@ -1,0 +1,873 @@
+{
+    "graphs": [
+        {
+            "id": "70caab08-6e11-4fbd-9bfa-4250c35d6351",
+            "name": "Example of the graph with rectangle groupings",
+            "nodes": [
+                {
+                    "id": "959695f6-3d4c-4455-913f-e72913ef7dc3",
+                    "position": {
+                        "x": 1000,
+                        "y": 300
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Config",
+                            "id": "aff85188-73b0-4894-bc33-681d18784da8",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Data output",
+                            "id": "144a2d93-d0c1-4b39-81d3-8753814b8826",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Dataset",
+                    "instanceName": "Dataset"
+                },
+                {
+                    "id": "da6324b1-0283-4669-b92c-51ad40ec2127",
+                    "position": {
+                        "x": 1002,
+                        "y": 564
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Data input",
+                            "id": "65685949-d04f-4b77-96fc-bb91db61ae45",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Data output",
+                            "id": "85e1f0ec-822c-443c-8382-1649b8103f6a",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "I/O processing - Dataset",
+                    "instanceName": "I/O processing - Dataset"
+                },
+                {
+                    "id": "91505384-65f8-47eb-953f-356e6d4b7114",
+                    "position": {
+                        "x": 1533,
+                        "y": 314
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Inference run",
+                            "id": "f2b53c8a-fac3-4a68-99cd-b4d68cbe30c0",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Dataset holdout",
+                            "id": "b60177c5-5481-487a-8e25-1d8b42194b6e",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Metrics output",
+                            "id": "7b3859c4-9a24-4544-b10a-2176e093f8c4",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model evaluation",
+                    "instanceName": "Model evaluation"
+                },
+                {
+                    "id": "84afc48a-351d-42d9-9d87-c24e3375936c",
+                    "position": {
+                        "x": 704,
+                        "y": 872
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Config",
+                            "id": "321d8936-453e-41b7-986a-90a0596ff3d2",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Model architecture",
+                            "id": "7027fa01-938d-47a5-827b-852fbcd01795",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model preparation",
+                    "instanceName": "Model preparation"
+                },
+                {
+                    "id": "136e4cf1-6a1d-423b-994e-b34b3a02b8d1",
+                    "position": {
+                        "x": 727,
+                        "y": 1189
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model architecture",
+                            "id": "04572707-a4d6-4e33-82d5-0533197f49ce",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Trained model",
+                            "id": "43aa6a8f-3cd2-423b-b659-bb19617ec70a",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model training",
+                    "instanceName": "Model training"
+                },
+                {
+                    "id": "31849d72-e8a4-4c4a-ae49-7801735ea13e",
+                    "position": {
+                        "x": 1080,
+                        "y": 863
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Dataset input",
+                            "id": "f1967005-21ad-4282-880f-029690d16342",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Inference run",
+                            "id": "e97984b6-dd1a-4e57-bbc7-8727dddd35e6",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Prepared data",
+                            "id": "b09b6868-58f7-4ab8-b26c-be5ab6803dd1",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 2
+                        },
+                        {
+                            "name": "Processed inference result",
+                            "id": "07720904-d6c9-4766-b355-04254fff99ad",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "I/O processing - Model",
+                    "instanceName": "I/O processing - Model"
+                },
+                {
+                    "id": "c5071084-ac73-402f-8621-b52e1775e730",
+                    "position": {
+                        "x": 670,
+                        "y": 1520
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model input",
+                            "id": "6d9e6efc-4323-4079-970b-082ceb499b69",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Config",
+                            "id": "1088d33d-3bd6-47d1-b0de-2243999f822e",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Optimized model output",
+                            "id": "fafbeb45-b3e4-464c-9dfd-fde35d885444",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Optimizer",
+                    "instanceName": "Optimizer"
+                },
+                {
+                    "id": "e110e870-6444-468a-af2f-56a0d16e99d0",
+                    "position": {
+                        "x": 1086,
+                        "y": 1528
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model input",
+                            "id": "c94b8584-d14e-4b3d-be1d-58dafa797def",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Model output",
+                            "id": "3c34ba03-829b-40c7-b4a0-3f3d3efd0522",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Compiler",
+                    "instanceName": "Compiler"
+                },
+                {
+                    "id": "4920e89c-4652-42ee-956f-eb75f8856540",
+                    "position": {
+                        "x": 1557,
+                        "y": 1482
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Data input",
+                            "id": "3be46c7d-7e5a-4e38-8caa-07b6dde5767b",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 2
+                        },
+                        {
+                            "name": "Run Info in",
+                            "id": "6b6e38f3-4e74-469f-ad18-e380c8e8e8e2",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 2
+                        },
+                        {
+                            "name": "Data output",
+                            "id": "0547ca31-d65d-49c7-914b-df2059bd32ea",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Run Info out",
+                            "id": "35301270-30a1-4a40-9a8c-6590d8d219b6",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Inference data exchange - Host",
+                    "instanceName": "Inference data exchange - Host"
+                },
+                {
+                    "id": "f809a1f7-0f87-4d5a-a67b-8a0648bad013",
+                    "position": {
+                        "x": 1500,
+                        "y": 2000
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Runtime statistic",
+                            "id": "332ca8cf-bac4-4d14-84ff-2f71923860b8",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Performance metrics",
+                            "id": "d332a5d0-3f26-444a-8bed-eeb5240ea0c2",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Inference runtime evaluation",
+                    "instanceName": "Inference runtime evaluation"
+                },
+                {
+                    "id": "e23367d7-b6b7-4ce9-a65b-8703207ba5ea",
+                    "position": {
+                        "x": 1501,
+                        "y": 1821
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model input",
+                            "id": "28a381c4-c3e2-45e2-a4c6-62322d3d7d95",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Model output",
+                            "id": "6cbe10ac-65eb-4a5b-aefb-90b309382d4c",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model sender",
+                    "instanceName": "Model sender"
+                },
+                {
+                    "id": "4c95acc0-03a4-4277-bfb2-dccdf1afcc43",
+                    "position": {
+                        "x": 2757,
+                        "y": 1630
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model input",
+                            "id": "24c08fb9-07c5-44b6-aaa7-259930368f16",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Model output",
+                            "id": "7a27e7c6-5c51-4e6b-ad7d-12f82977309c",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model receiver",
+                    "instanceName": "Model receiver"
+                },
+                {
+                    "id": "ea8d2b19-2e39-4521-857a-f9913f743f0b",
+                    "position": {
+                        "x": 2324,
+                        "y": 1828
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Inference data in",
+                            "id": "9eff7bc3-4fd4-48ff-b02b-5a92bf2fbc3e",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Inference data out",
+                            "id": "2cf37d27-b7b2-44e0-8830-d34ca9d3ceae",
+                            "direction": "output",
+                            "side": "left",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Send runtime statistics",
+                    "instanceName": "Send runtime statistics"
+                },
+                {
+                    "id": "3f4c3c9b-4950-4f35-b90f-17d51c192c86",
+                    "position": {
+                        "x": 2488,
+                        "y": 315
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Quality metrics",
+                            "id": "912a5e11-962d-4939-b81f-c84505c1d037",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Performance metrics",
+                            "id": "004d547f-9b8a-4f46-ac53-7ade803e2d17",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 1
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "RST report",
+                    "instanceName": "RST report"
+                },
+                {
+                    "id": "4cd29ef5-65cd-47ed-9224-8d49a8a9023e",
+                    "position": {
+                        "x": 2231,
+                        "y": 788
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Inference input",
+                            "id": "972d72b7-7ce1-4087-8727-a6f5ee63e14d",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Dataset input",
+                            "id": "9c67d67c-2e1a-4a36-8992-bc3642d0f8f9",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 2
+                        },
+                        {
+                            "name": "Inference output",
+                            "id": "1d78f024-4c45-4323-9190-40edd3aa87b1",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 3
+                        },
+                        {
+                            "name": "Dataset processed",
+                            "id": "4d318bc3-eab4-4e33-903c-54fdf684e950",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "I/O processing - Runtime",
+                    "instanceName": "I/O processing - Runtime"
+                },
+                {
+                    "id": "2e809fbe-50d6-42ea-8f40-60da3a9b61b2",
+                    "position": {
+                        "x": 2957,
+                        "y": 722
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model",
+                            "id": "6adc9f6e-33f2-449f-a600-e340fd44db4e",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 2
+                        },
+                        {
+                            "name": "Data",
+                            "id": "9d207150-b6da-4193-851b-d04d6eb12ba1",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Inference results",
+                            "id": "c13a4002-b1c9-488c-a5c0-ea8e67aafd1f",
+                            "direction": "output",
+                            "side": "left",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Inference statistics",
+                            "id": "a0b9e135-abb4-4837-9d93-fe88959288d3",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 1
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Inference",
+                    "instanceName": "Inference"
+                },
+                {
+                    "id": "dd74eaee-c9f4-41b8-a5ea-7f4db9531ff4",
+                    "position": {
+                        "x": 2903,
+                        "y": 1135
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Model input",
+                            "id": "7e5370ea-5ec1-4d79-a844-3e6b66553dd3",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Loaded model",
+                            "id": "545ee2aa-4479-4d2f-ad90-8c57cedcd121",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Model loading",
+                    "instanceName": "Model loading"
+                },
+                {
+                    "id": "a9b5a206-d191-487d-87aa-9c725dc859c2",
+                    "position": {
+                        "x": 2319,
+                        "y": 1379
+                    },
+                    "width": 300,
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Data input",
+                            "id": "afb52284-3b4c-4d7a-9a2e-6fcd29ce3e6f",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Run info in",
+                            "id": "1d4a5516-c274-4414-b0dc-6901babb56b8",
+                            "direction": "input",
+                            "side": "right",
+                            "sidePosition": 0
+                        },
+                        {
+                            "name": "Data output",
+                            "id": "c840914c-1cb0-49b5-9922-99e92f36c996",
+                            "direction": "output",
+                            "side": "right",
+                            "sidePosition": 1
+                        },
+                        {
+                            "name": "Run info out",
+                            "id": "3e43330d-d3a2-44d4-a11a-03152a7c27eb",
+                            "direction": "output",
+                            "side": "left",
+                            "sidePosition": 1
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Inference data exchange - Target",
+                    "instanceName": "Inference data exchange - Target"
+                },
+                {
+                    "id": "53c52e94-97cc-4d84-8f1e-02512d7fe25b",
+                    "position": {
+                        "x": 659,
+                        "y": 299
+                    },
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Configuration",
+                            "id": "dcbf304d-c665-475e-b54c-5e5885035c68",
+                            "direction": "output",
+                            "side": "left",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "Config",
+                    "instanceName": "Config"
+                },
+                {
+                    "id": "be907777-f048-4773-9451-fb27712f2996",
+                    "position": {
+                        "x": 1266,
+                        "y": 1823
+                    },
+                    "twoColumn": false,
+                    "interfaces": [
+                        {
+                            "name": "Save model",
+                            "id": "6dbd9405-ce4b-4000-82a5-1706397100b4",
+                            "direction": "input",
+                            "side": "left",
+                            "sidePosition": 0
+                        }
+                    ],
+                    "properties": [],
+                    "enabledInterfaceGroups": [],
+                    "name": "SaveModel",
+                    "instanceName": "SaveModel"
+                }
+            ],
+            "groups": [
+                {
+                    "id": "01ff7d26-3a40-41b0-97ca-fd33423a7beb",
+                    "color": "#600000",
+                    "name": "Dataset Wrapper",
+                    "nodes": [
+                        "959695f6-3d4c-4455-913f-e72913ef7dc3",
+                        "da6324b1-0283-4669-b92c-51ad40ec2127",
+                        "91505384-65f8-47eb-953f-356e6d4b7114"
+                    ]
+                },
+                {
+                    "id": "0bd10a1c-c5b6-4913-8e5e-6ddbc332c941",
+                    "color": "#600060",
+                    "name": "Model Wrapper",
+                    "nodes": [
+                        "84afc48a-351d-42d9-9d87-c24e3375936c",
+                        "136e4cf1-6a1d-423b-994e-b34b3a02b8d1",
+                        "31849d72-e8a4-4c4a-ae49-7801735ea13e"
+                    ]
+                },
+                {
+                    "id": "b8bbdd89-a64e-41e1-a634-4b14b679ad55",
+                    "color": "#990099",
+                    "name": "Model Optimizer",
+                    "nodes": [
+                        "c5071084-ac73-402f-8621-b52e1775e730",
+                        "e110e870-6444-468a-af2f-56a0d16e99d0"
+                    ]
+                },
+                {
+                    "id": "27ae29ee-c0aa-4ef5-900d-795fce2820b5",
+                    "color": "#006000",
+                    "name": "Runtime Protocol - Host",
+                    "nodes": [
+                        "4920e89c-4652-42ee-956f-eb75f8856540",
+                        "f809a1f7-0f87-4d5a-a67b-8a0648bad013",
+                        "e23367d7-b6b7-4ce9-a65b-8703207ba5ea"
+                    ]
+                },
+                {
+                    "id": "2b0c9a1f-4081-4e3c-b1b7-32877b42efde",
+                    "color": "#606000",
+                    "name": "Runtime Protocol - Target",
+                    "nodes": [
+                        "4c95acc0-03a4-4277-bfb2-dccdf1afcc43",
+                        "ea8d2b19-2e39-4521-857a-f9913f743f0b",
+                        "a9b5a206-d191-487d-87aa-9c725dc859c2"
+                    ]
+                },
+                {
+                    "id": "7b10ab94-a529-47ca-9cc7-1f431f1d924a",
+                    "color": "#0000e0",
+                    "name": "Runtime - Target",
+                    "nodes": [
+                        "4cd29ef5-65cd-47ed-9224-8d49a8a9023e",
+                        "2e809fbe-50d6-42ea-8f40-60da3a9b61b2",
+                        "dd74eaee-c9f4-41b8-a5ea-7f4db9531ff4"
+                    ]
+                }
+            ],
+            "connections": [
+                {
+                    "id": "4678e66a-632c-4906-a1c2-41212639d441",
+                    "from": "85e1f0ec-822c-443c-8382-1649b8103f6a",
+                    "to": "b60177c5-5481-487a-8e25-1d8b42194b6e"
+                },
+                {
+                    "id": "cc7ba3c3-cdc3-4fdf-946a-07e6cf805fbd",
+                    "from": "144a2d93-d0c1-4b39-81d3-8753814b8826",
+                    "to": "65685949-d04f-4b77-96fc-bb91db61ae45"
+                },
+                {
+                    "id": "e0c6abd8-d31d-4cc1-960c-a4a7d2d7157a",
+                    "from": "7027fa01-938d-47a5-827b-852fbcd01795",
+                    "to": "04572707-a4d6-4e33-82d5-0533197f49ce"
+                },
+                {
+                    "id": "39a8fa3b-3750-4724-99a5-bf2428a1746b",
+                    "from": "85e1f0ec-822c-443c-8382-1649b8103f6a",
+                    "to": "f1967005-21ad-4282-880f-029690d16342"
+                },
+                {
+                    "id": "f3fc17ab-cbb3-4da4-b284-820f20d8fdca",
+                    "from": "43aa6a8f-3cd2-423b-b659-bb19617ec70a",
+                    "to": "6d9e6efc-4323-4079-970b-082ceb499b69"
+                },
+                {
+                    "id": "77fd30a9-9f02-437f-80bf-09b37213c0cc",
+                    "from": "fafbeb45-b3e4-464c-9dfd-fde35d885444",
+                    "to": "c94b8584-d14e-4b3d-be1d-58dafa797def"
+                },
+                {
+                    "id": "2aa2ff39-601f-4e07-9ca0-bff3fd5bd8e8",
+                    "from": "3c34ba03-829b-40c7-b4a0-3f3d3efd0522",
+                    "to": "28a381c4-c3e2-45e2-a4c6-62322d3d7d95"
+                },
+                {
+                    "id": "48c5c1c1-9fa4-4ba5-898f-b881c6463119",
+                    "from": "35301270-30a1-4a40-9a8c-6590d8d219b6",
+                    "to": "e97984b6-dd1a-4e57-bbc7-8727dddd35e6"
+                },
+                {
+                    "id": "68d3f628-8b8f-4295-90b9-e496829081f7",
+                    "from": "b09b6868-58f7-4ab8-b26c-be5ab6803dd1",
+                    "to": "3be46c7d-7e5a-4e38-8caa-07b6dde5767b"
+                },
+                {
+                    "id": "0942a283-bc35-4609-8d10-722020c2ae27",
+                    "from": "6cbe10ac-65eb-4a5b-aefb-90b309382d4c",
+                    "to": "24c08fb9-07c5-44b6-aaa7-259930368f16"
+                },
+                {
+                    "id": "44949e82-b298-4f20-bc79-677222f93f60",
+                    "from": "2cf37d27-b7b2-44e0-8830-d34ca9d3ceae",
+                    "to": "332ca8cf-bac4-4d14-84ff-2f71923860b8"
+                },
+                {
+                    "id": "cee3f700-ca0a-488a-888b-a9c7e27b35e1",
+                    "from": "7b3859c4-9a24-4544-b10a-2176e093f8c4",
+                    "to": "912a5e11-962d-4939-b81f-c84505c1d037"
+                },
+                {
+                    "id": "7a55e15d-0a65-44eb-ac8f-0697d1e70b4c",
+                    "from": "d332a5d0-3f26-444a-8bed-eeb5240ea0c2",
+                    "to": "004d547f-9b8a-4f46-ac53-7ade803e2d17"
+                },
+                {
+                    "id": "d14985b4-8b94-4a0d-be6a-7604ab75c148",
+                    "from": "07720904-d6c9-4766-b355-04254fff99ad",
+                    "to": "f2b53c8a-fac3-4a68-99cd-b4d68cbe30c0"
+                },
+                {
+                    "id": "f91a3d45-6769-4c04-8da1-e53c93a2c46d",
+                    "from": "7a27e7c6-5c51-4e6b-ad7d-12f82977309c",
+                    "to": "7e5370ea-5ec1-4d79-a844-3e6b66553dd3"
+                },
+                {
+                    "id": "e053b52a-9e44-41dc-a704-fab8bcce7259",
+                    "from": "545ee2aa-4479-4d2f-ad90-8c57cedcd121",
+                    "to": "6adc9f6e-33f2-449f-a600-e340fd44db4e"
+                },
+                {
+                    "id": "e4a518cc-fa3d-4ad8-9bbd-435321e11af3",
+                    "from": "4d318bc3-eab4-4e33-903c-54fdf684e950",
+                    "to": "9d207150-b6da-4193-851b-d04d6eb12ba1"
+                },
+                {
+                    "id": "3f10a3f5-ac90-4229-aa79-1a003fb47312",
+                    "from": "c13a4002-b1c9-488c-a5c0-ea8e67aafd1f",
+                    "to": "972d72b7-7ce1-4087-8727-a6f5ee63e14d"
+                },
+                {
+                    "id": "4c8a838a-1f9c-4945-bed1-3caae3c27187",
+                    "from": "1d78f024-4c45-4323-9190-40edd3aa87b1",
+                    "to": "1d4a5516-c274-4414-b0dc-6901babb56b8"
+                },
+                {
+                    "id": "ca523804-49fe-4064-b8ae-e982e1fe0743",
+                    "from": "c840914c-1cb0-49b5-9922-99e92f36c996",
+                    "to": "9c67d67c-2e1a-4a36-8992-bc3642d0f8f9",
+                    "anchors": [
+                        {
+                            "x": 2735,
+                            "y": 1501
+                        },
+                        {
+                            "x": 2735,
+                            "y": 940
+                        }
+                    ]
+                },
+                {
+                    "id": "319875e1-c840-43e6-ac3a-aa54916e442b",
+                    "from": "a0b9e135-abb4-4837-9d93-fe88959288d3",
+                    "to": "9eff7bc3-4fd4-48ff-b02b-5a92bf2fbc3e"
+                },
+                {
+                    "id": "e82e7ed1-8e7a-4c8d-94b2-4d5c8feb0200",
+                    "from": "0547ca31-d65d-49c7-914b-df2059bd32ea",
+                    "to": "afb52284-3b4c-4d7a-9a2e-6fcd29ce3e6f"
+                },
+                {
+                    "id": "60eb81ff-d6f9-446f-bc7a-679381b758cf",
+                    "from": "3e43330d-d3a2-44d4-a11a-03152a7c27eb",
+                    "to": "6b6e38f3-4e74-469f-ad18-e380c8e8e8e2"
+                },
+                {
+                    "id": "6272c8fd-0a16-473c-b090-db204afc7ff1",
+                    "from": "dcbf304d-c665-475e-b54c-5e5885035c68",
+                    "to": "aff85188-73b0-4894-bc33-681d18784da8"
+                },
+                {
+                    "id": "ab5d1db1-634c-4da4-b55d-889afb3c0a1c",
+                    "from": "dcbf304d-c665-475e-b54c-5e5885035c68",
+                    "to": "321d8936-453e-41b7-986a-90a0596ff3d2"
+                },
+                {
+                    "id": "d4e3dd5d-b9d6-413d-a407-5b646187d0d5",
+                    "from": "dcbf304d-c665-475e-b54c-5e5885035c68",
+                    "to": "1088d33d-3bd6-47d1-b0de-2243999f822e"
+                },
+                {
+                    "id": "ff56c4df-b1e5-41bf-8654-bffb6db3005e",
+                    "from": "3c34ba03-829b-40c7-b4a0-3f3d3efd0522",
+                    "to": "6dbd9405-ce4b-4000-82a5-1706397100b4"
+                }
+            ]
+        }
+    ],
+    "version": "20250623.14",
+    "metadata": {
+        "connectionStyle": "orthogonal",
+        "editableTypes": true,
+        "hideAnchors": true
+    }
+}
+

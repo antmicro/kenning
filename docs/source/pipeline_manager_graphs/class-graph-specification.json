@@ -1,0 +1,525 @@
+{
+    "metadata": {
+        "styles": {
+            "tiny": {
+                "icon": "small",
+                "minimal": true,
+                "pill": {
+                    "text": "user",
+                    "color": "#999999"
+                }
+            }
+        },
+        "editableTypes": true,
+        "toggleableEditableTypes": false,
+        "twoColumn": true,
+        "newGraphNode": false,
+        "interfaces": {
+            "configuration": {
+                "interfaceConnectionPattern": "dotted",
+                "interfaceColor": "#C0C0C0",
+                "interfaceConnectionColor": "#C0C0C0"
+            },
+            "raw_dataset": {
+                "interfaceColor": "#bF2020",
+                "interfaceConnectionColor": "#bF2020"
+            },
+            "processed_dataset": {
+                "interfaceConnectionPattern": "dashed",
+                "interfaceColor": "#088F8F",
+                "interfaceConnectionColor": "#088F8F"
+            },
+            "processed_dataset_wrapped": {
+                "interfaceColor": "#FA8072",
+                "interfaceConnectionColor": "#FA8072"
+            },
+            "inference_result": {
+                "interfaceColor": "#800080",
+                "interfaceConnectionColor": "#800080"
+            },
+            "quality_metrics": {
+                "interfaceConnectionPattern": "dotted",
+                "interfaceColor": "#cd853f",
+                "interfaceConnectionColor": "#cd853f"
+            },
+            "performance_metrics": {
+                "interfaceConnectionPattern": "dotted",
+                "interfaceColor": "#487b48",
+                "interfaceConnectionColor": "#487b48"
+            },
+            "model": {
+                "interfaceColor": "#db7093",
+                "interfaceConnectionColor": "#db7093"
+            },
+            "raw_inference_data": {
+                "interfaceColor": "#40C59D",
+                "interfaceConnectionPattern": "dashed",
+                "interfaceConnectionColor": "#40C59D"
+            },
+            "host_ready_model": {
+                "interfaceColor": "#789b78",
+                "interfaceConnectionColor": "#789b78"
+            },
+            "target_ready_model_bytes": {
+                "interfaceColor": "#FFC0CB",
+                "interfaceConnectionPattern": "dashed",
+                "interfaceConnectionColor": "#FFC0CB"
+            },
+            "processed_dataset_bytes": {
+                "interfaceConnectionPattern": "dashed",
+                "interfaceColor": "#eee8aa",
+                "interfaceConnectionColor": "#eee8aa"
+            },
+            "raw_inference_data_bytes": {
+                "interfaceColor": "#b0e0e6",
+                "interfaceConnectionPattern": "dashed",
+                "interfaceConnectionColor": "#b0e0e6"
+            },
+            "inference_statistics_bytes": {
+                "interfaceConnectionPattern": "dashed",
+                "interfaceColor": "#ffdab9",
+                "interfaceConnectionColor": "#ffdab9"
+            },
+            "inference_statistics": {
+                "interfaceColor": "#663399",
+                "interfaceConnectionPattern": "dashed",
+                "interfaceConnectionColor": "#663399"
+            },
+            "target_ready_model": {
+                "interfaceConnectionPattern": "dashed",
+                "interfaceColor": "#DA70D6",
+                "interfaceConnectionColor": "#DA70D6"
+            },
+            "inference_ready_model": {
+                "interfaceColor": "#4169e1",
+                "interfaceConnectionColor": "#4169e1"
+            },
+            "inference_ready_data": {
+                "interfaceColor": "#CCCCFF",
+                "interfaceConnectionColor": "#CCCCFF"
+            },
+            "runtime_inference_result": {
+                "interfaceColor": "#a6eED1",
+                "interfaceConnectionColor": "#a6eED1"
+            }
+        }
+    },
+    "nodes": [
+        {
+            "abstract": false,
+            "category": "Misc",
+            "style": "tiny",
+            "interfaces": [
+                {
+                    "direction": "output",
+                    "name": "Configuration",
+                    "type": "configuration"
+                }
+            ],
+            "name": "Config"
+        },
+        {
+            "abstract": false,
+            "category": "Misc",
+            "style": "tiny",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Save model",
+                    "type": "host_ready_model"
+                }
+            ],
+            "name": "SaveModel"
+        },
+        {
+            "abstract": false,
+            "category": "Dataset",
+            "color": "#800000",
+            "interfaces": [
+                {
+                    "direction": "output",
+                    "name": "Data output",
+                    "type": "raw_dataset"
+                },
+                {
+                    "direction": "input",
+                    "name": "Config",
+                    "type": "configuration"
+                }
+            ],
+            "name": "Dataset"
+        },
+        {
+            "abstract": false,
+            "category": "Dataset",
+            "color": "#800000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Data input",
+                    "type": "raw_dataset"
+                },
+                {
+                    "direction": "output",
+                    "name": "Data output",
+                    "type": "processed_dataset_wrapped"
+                }
+            ],
+            "name": "I/O processing - Dataset"
+        },
+        {
+            "abstract": false,
+            "category": "Dataset",
+            "color": "#800000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Inference run",
+                    "type": "inference_result"
+                },
+                {
+                    "direction": "input",
+                    "name": "Dataset holdout",
+                    "type": "processed_dataset_wrapped"
+                },
+                {
+                    "direction": "output",
+                    "name": "Metrics output",
+                    "type": "quality_metrics"
+                }
+            ],
+            "name": "Model evaluation"
+        },
+        {
+            "abstract": false,
+            "category": "Report",
+            "color": "#FF0000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Quality metrics",
+                    "type": "quality_metrics"
+                },
+                {
+                    "direction": "input",
+                    "name": "Performance metrics",
+                    "type": "performance_metrics"
+                }
+            ],
+            "name": "RST report",
+            "pill": {
+                "text": "user",
+                "color": "#999999"
+            }
+        },
+        {
+            "abstract": false,
+            "category": "ModelWrapper",
+            "color": "#800080",
+            "interfaces": [
+                {
+                    "direction": "output",
+                    "name": "Model architecture",
+                    "type": "model"
+                },
+                {
+                    "direction": "input",
+                    "name": "Config",
+                    "type": "configuration"
+                }
+            ],
+            "name": "Model preparation"
+        },
+        {
+            "abstract": false,
+            "category": "ModelWrapper",
+            "color": "#800080",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model architecture",
+                    "type": "model"
+                },
+                {
+                    "direction": "output",
+                    "name": "Trained model",
+                    "type": "model"
+                }
+            ],
+            "name": "Model training"
+        },
+        {
+            "abstract": false,
+            "category": "ModelWrapper",
+            "color": "#800080",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Dataset input",
+                    "type": "processed_dataset_wrapped"
+                },
+                {
+                    "direction": "output",
+                    "name": "Prepared data",
+                    "type": "processed_dataset"
+                },
+                {
+                    "direction": "input",
+                    "name": "Inference run",
+                    "type": "raw_inference_data"
+                },
+                {
+                    "direction": "output",
+                    "name": "Processed inference result",
+                    "type": "inference_result"
+                }
+            ],
+            "name": "I/O processing - Model"
+        },
+        {
+            "abstract": false,
+            "category": "ModelCompiler",
+            "color": "#FF00FF",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model input",
+                    "type": "model"
+                },
+                {
+                    "direction": "output",
+                    "name": "Optimized model output",
+                    "type": "model"
+                },
+                {
+                    "direction": "input",
+                    "name": "Config",
+                    "type": "configuration"
+                }
+            ],
+            "name": "Optimizer"
+        },
+        {
+            "abstract": false,
+            "category": "ModelCompiler",
+            "color": "#FF00FF",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model input",
+                    "type": "model"
+                },
+                {
+                    "direction": "output",
+                    "name": "Model output",
+                    "type": "host_ready_model"
+                }
+            ],
+            "name": "Compiler"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Host",
+            "color": "#008000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model input",
+                    "type": "host_ready_model"
+                },
+                {
+                    "direction": "output",
+                    "name": "Model output",
+                    "type": "target_ready_model_bytes"
+                }
+            ],
+            "name": "Model sender"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Host",
+            "color": "#008000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Data input",
+                    "type": "processed_dataset"
+                },
+                {
+                    "direction": "output",
+                    "name": "Data output",
+                    "type": "processed_dataset_bytes"
+                },
+                {
+                    "direction": "input",
+                    "name": "Run Info in",
+                    "type": "raw_inference_data_bytes"
+                },
+                {
+                    "direction": "output",
+                    "name": "Run Info out",
+                    "type": "raw_inference_data"
+                }
+            ],
+            "name": "Inference data exchange - Host"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Host",
+            "color": "#008000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Runtime statistic",
+                    "type": "inference_statistics_bytes"
+                },
+                {
+                    "direction": "output",
+                    "name": "Performance metrics",
+                    "type": "performance_metrics"
+                }
+            ],
+            "name": "Inference runtime evaluation"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Target",
+            "color": "#808000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Inference data in",
+                    "type": "inference_statistics"
+                },
+                {
+                    "direction": "output",
+                    "name": "Inference data out",
+                    "type": "inference_statistics_bytes"
+                }
+            ],
+            "name": "Send runtime statistics"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Target",
+            "color": "#808000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model input",
+                    "type": "target_ready_model_bytes"
+                },
+                {
+                    "direction": "output",
+                    "name": "Model output",
+                    "type": "target_ready_model"
+                }
+            ],
+            "name": "Model receiver"
+        },
+        {
+            "abstract": false,
+            "category": "RuntimeProtocol - Target",
+            "color": "#808000",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Data input",
+                    "type": "processed_dataset_bytes"
+                },
+                {
+                    "direction": "output",
+                    "name": "Data output",
+                    "type": "processed_dataset"
+                },
+                {
+                    "direction": "input",
+                    "name": "Run info in",
+                    "type": "raw_inference_data"
+                },
+                {
+                    "direction": "output",
+                    "name": "Run info out",
+                    "type": "raw_inference_data_bytes"
+                }
+            ],
+            "name": "Inference data exchange - Target"
+        },
+        {
+            "abstract": false,
+            "category": "Runtime - Target",
+            "color": "#000080",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model input",
+                    "type": "target_ready_model"
+                },
+                {
+                    "direction": "output",
+                    "name": "Loaded model",
+                    "type": "inference_ready_model"
+                }
+            ],
+            "name": "Model loading"
+        },
+        {
+            "abstract": false,
+            "category": "Runtime - Target",
+            "color": "#000080",
+            "interfaces": [
+                {
+                    "direction": "input",
+                    "name": "Model",
+                    "type": "inference_ready_model"
+                },
+                {
+                    "direction": "input",
+                    "name": "Data",
+                    "type": "inference_ready_data"
+                },
+                {
+                    "direction": "output",
+                    "name": "Inference results",
+                    "type": "runtime_inference_result"
+                },
+                {
+                    "direction": "output",
+                    "name": "Inference statistics",
+                    "type": "inference_statistics"
+                }
+            ],
+            "name": "Inference"
+        },
+        {
+            "abstract": false,
+            "category": "Runtime - Target",
+            "color": "#000080",
+            "interfaces": [
+                {
+                    "direction": "output",
+                    "name": "Inference output",
+                    "type": "raw_inference_data"
+                },
+                {
+                    "direction": "input",
+                    "name": "Inference input",
+                    "type": "runtime_inference_result"
+                },
+                {
+                    "direction": "input",
+                    "name": "Dataset input",
+                    "type": "processed_dataset"
+                },
+                {
+                    "direction": "output",
+                    "name": "Dataset processed",
+                    "type": "inference_ready_data"
+                }
+            ],
+            "name": "I/O processing - Runtime"
+        }
+    ],
+    "version": "20250917.9",
+    "graphs": []
+}

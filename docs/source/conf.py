@@ -75,6 +75,7 @@ extensions = list(
             "kenning.utils.sphinx_literalinclude",
             "kenning.utils.sphinx_codeblock",
             "sphinx_tabs.tabs",
+            # Extensions enabling pipeline manager graphs
             "pipeline_manager.sphinxext.draw_graph",
         ]
     )

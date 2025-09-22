@@ -272,6 +272,10 @@ def generate_compatibility_report(
     logs: Dict[str, Dict],
     config: pytest.Config,
 ):
+    from antmicro_sphinx_utils.defaults import (
+        extensions as default_extensions,
+    )
+
     root = Path(config.option.test_compat_dir)
     if root.exists():
         shutil.rmtree(root)
@@ -319,12 +323,21 @@ def generate_compatibility_report(
     content = tm.render(data=data, zip=zip)
     report_path.write_text(content)
 
+    extensions = list(
+        set(
+            default_extensions
+            + [
+                "kenning.utils.sphinx_html_as_figure",
+            ]
+        )
+    )
     # Save html report
     generate_html_report(
         report_path,
         html_path,
         override_conf={
-            "html_css_files": ["css/bokeh.css", "css/compatibility.css"]
+            "html_css_files": ["css/bokeh.css", "css/compatibility.css"],
+            "extensions": extensions,
         },
     )
 

@@ -110,10 +110,7 @@ uv sync --extra tensorflow,tflite,tvm,reports
 
 ## Kenning structure
 
-```{pipeline_manager}
-:spec: pipeline_manager_graphs/class-graph-specification.json
-:graph: pipeline_manager_graphs/class-graph-dataflow.json
-```
+![](img/class-flow.png)
 
 The `kenning` module consists of the following submodules:
 

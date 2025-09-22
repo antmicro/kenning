@@ -2,17 +2,10 @@
 
 ## Deployment API overview
 
-```{figure} img/class-flow.png
----
-name: class-flow
-alt: Kenning core classes and interactions between them
-align: center
----
 
-Kenning core classes and interactions between them.
-The green blocks represent the flow of input data passed to the model for inference.
-The orange blocks represent the flow of model deployment, from training to inference on target device.
-The grey blocks represent the inference results and metrics flow.
+```{pipeline_manager}
+:spec: pipeline_manager_graphs/class-graph-specification.json
+:graph: pipeline_manager_graphs/class-graph-dataflow.json
 ```
 
 {{projecturl}} provides:

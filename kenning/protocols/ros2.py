@@ -207,22 +207,22 @@ class ROS2Protocol(Protocol):
             self.measurements_service_name,
         )
 
-        self.log_debug("Successfully initialized client")
+        KLogger.debug("Successfully initialized client")
         return True
 
     def upload_io_specification(self, path: Path) -> bool:
-        self.log_warning(
+        KLogger.warning(
             "IO specification is not supported in ROS2 protocol. " "Skipping."
         )
         return True
 
     def upload_model(self, path: Path) -> bool:
-        self.log_debug("Uploading model")
+        KLogger.debug("Uploading model")
         if self.model_service is None:
-            self.log_error("Model service is not initialized")
+            KLogger.error("Model service is not initialized")
             return False
         elif not self.model_service.wait_for_service(timeout_sec=1.0):
-            self.log_error("Model service not available")
+            KLogger.error("Model service not available")
             return False
 
         request = self._model_service_type.Request()
@@ -238,9 +238,9 @@ class ROS2Protocol(Protocol):
         result = future.result()
 
         if result is None:
-            self.log_error("Model service call failed")
+            KLogger.error("Model service call failed")
             return False
-        self.log_debug("Model uploaded successfully")
+        KLogger.debug("Model uploaded successfully")
         return True
 
     def upload_input(self, data: GoalHandle) -> bool:
@@ -259,13 +259,13 @@ class ROS2Protocol(Protocol):
             True if the message was sent successfully, False otherwise.
         """
         if self.process_action is None:
-            self.log_error("Process action is not initialized")
+            KLogger.error("Process action is not initialized")
             return False
         elif not self.process_action.wait_for_server(timeout_sec=1.0):
-            self.log_error("Action server not available")
+            KLogger.error("Action server not available")
             return False
 
-        self.log_debug("Uploading input")
+        KLogger.debug("Uploading input")
         self.future = self.process_action.send_goal_async(data)
 
         success = self._wait_for_future(self.future)
@@ -280,16 +280,16 @@ class ROS2Protocol(Protocol):
             KLogger.error("Input upload failed")
             return False
         if not result.accepted:
-            self.log_error("Input upload rejected")
+            KLogger.error("Input upload rejected")
             return False
-        self.log_debug("Input uploaded successfully")
+        KLogger.debug("Input uploaded successfully")
         return True
 
     def request_processing(
         self, get_time_func: Callable[[], float] = perf_counter
     ) -> bool:
         if self.future is None:
-            self.log_error("No input uploaded")
+            KLogger.error("No input uploaded")
             return False
 
         def _request_processing(future):
@@ -312,13 +312,13 @@ class ROS2Protocol(Protocol):
         if final is False:
             return measurements
 
-        self.log_debug("Downloading statistics")
+        KLogger.debug("Downloading statistics")
 
         if self.measurements_service is None:
-            self.log_error("Measurements service is not initialized")
+            KLogger.error("Measurements service is not initialized")
             return measurements
         elif not self.measurements_service.wait_for_service(timeout_sec=1.0):
-            self.log_error("Measurements service not available")
+            KLogger.error("Measurements service not available")
             return measurements
 
         request = self._measurements_service_type.Request()
@@ -334,7 +334,7 @@ class ROS2Protocol(Protocol):
         result = future.result()
 
         if result is None:
-            self.log_error("Measurements service call failed")
+            KLogger.error("Measurements service call failed")
             return measurements
 
         jsondata = json.loads(result.message)
@@ -352,16 +352,16 @@ class ROS2Protocol(Protocol):
             and received processing goal handle result.
         """
         if self.future is None:
-            self.log_error("No input uploaded")
+            KLogger.error("No input uploaded")
             return False, None
 
         KLogger.debug("Downloading output")
         result = self.future.result()
         self.future = None
         if result is None:
-            self.log_error("Output download failed")
+            KLogger.error("Output download failed")
             return False, None
-        self.log_debug("Output downloaded successfully")
+        KLogger.debug("Output downloaded successfully")
         return True, result.result
 
     def disconnect(self):

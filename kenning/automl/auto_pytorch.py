@@ -947,6 +947,9 @@ class AutoPyTorchML(AutoML):
                     "The number of models that failed due to the too large size": stats[  # noqa: E501
                         "memout"
                     ],
+                    "The number of models that failed due to incompatibility": stats[  # noqa: E501
+                        "incompatbile"
+                    ],
                 },
                 "trained_model_metrics": metrics_over_time,
                 "training_start_time": training_start_time,

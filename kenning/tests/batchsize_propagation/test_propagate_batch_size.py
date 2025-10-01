@@ -23,10 +23,10 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (
 from kenning.modelwrappers.classification.tflite_person_detection import (
     PersonDetectionModelWrapper,
 )
-from kenning.optimizers.iree import IREECompiler
+from kenning.optimizers.onnx import ONNXCompiler
 from kenning.optimizers.tflite import TFLiteCompiler
 from kenning.optimizers.tvm import TVMCompiler
-from kenning.runtimes.iree import IREERuntime
+from kenning.runtimes.onnx import ONNXRuntime
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
 from kenning.tests.core.conftest import get_reduced_dataset_path
@@ -230,26 +230,17 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
         )
         model.save_io_specification(model.model_path)
 
-        compiler = IREECompiler(
+        compiler = ONNXCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            backend="llvm-cpu",
+            location="host",
             model_framework="tflite",
-            compiler_args=[
-                "iree-llvm-debug-symbols=false",
-                "iree-vm-bytecode-module-strip-source-map=true",
-                "iree-vm-emit-polyglot-zip=false",
-                "iree-llvm-target-triple=riscv32-pc-linux-elf",
-                "iree-llvm-target-cpu=generic-rv32",
-                "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f",
-                "iree-llvm-target-abi=ilp32",
-            ],
+            model_wrapper=model,
         )
-        compiler.init()
         compiler.compile(
             input_model_path=Path(model_path),
         )
-        runtime = IREERuntime(
+        runtime = ONNXRuntime(
             model_path=compiled_model_path, batch_size=batch_size
         )
 

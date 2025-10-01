@@ -7,8 +7,10 @@ Wrapper for IREE compiler.
 """
 
 import re
+import subprocess
 from typing import Dict, List, Literal, Optional, Tuple
 
+import onnx
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 
@@ -21,6 +23,8 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     Optimizer,
 )
+from kenning.optimizers.onnx import kerasconversion, tfliteconversion
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -51,102 +55,6 @@ def input_shapes_dict_to_list(
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def kerasconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
-    """
-    Converts the Keras model to IREE.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Provides the specification of the inputs
-
-    Returns
-    -------
-    bytes
-        Compiled model
-    """
-    import tensorflow as tf
-    from iree.compiler import tf as ireetf
-
-    # Calling the .fit() method of keras model taints the state of the model,
-    # breaking the IREE compiler. Because of that, the workaround is needed.
-    original_model = tf.keras.models.load_model(str(model_path), compile=False)
-    model = tf.keras.models.clone_model(original_model)
-    model.set_weights(original_model.get_weights())
-    del original_model
-
-    inputspec = [
-        tf.TensorSpec(spec["shape"], spec["dtype"]) for spec in input_spec
-    ]
-
-    class WrapperModule(tf.Module):
-        def __init__(self):
-            super().__init__()
-            self.m = model
-            self.m.main = lambda *args: self.m(*args, training=False)
-            self.main = tf.function(input_signature=inputspec)(self.m.main)
-
-    return ireetf.compile_module(
-        WrapperModule(), exported_names=["main"], import_only=True
-    )
-
-
-def tensorflowconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
-    """
-    Converts the TensorFlow model to IREE.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Provides the specification of the inputs
-
-    Returns
-    -------
-    bytes
-        A bytes-like object with the compiled model
-    """
-    import tensorflow as tf
-    from iree.compiler import tf as ireetf
-
-    model = tf.saved_model.load(model_path)
-
-    inputspec = [
-        tf.TensorSpec(spec["shape"], spec["dtype"]) for spec in input_spec
-    ]
-
-    model.main = tf.function(input_signature=inputspec)(
-        lambda *args: model(*args)
-    )
-    return ireetf.compile_module(
-        model, exported_names=["main"], import_only=True
-    )
-
-
-def tfliteconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
-    """
-    Converts the TFLite model to IREE.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Provides the specification of the inputs
-
-    Returns
-    -------
-    bytes
-        A bytes-like object with the compiled output
-    """
-    from iree.compiler import tflite as ireetflite
-
-    return ireetflite.compile_file(str(model_path), import_only=True)
-
-
 backend_convert = {
     # CPU backends
     "dylib": "dylib-llvm-aot",
@@ -165,7 +73,7 @@ class IREECompiler(Optimizer):
 
     inputtypes = {
         "keras": kerasconversion,
-        "tensorflow": tensorflowconversion,
+        "tensorflow": kerasconversion,
         "tflite": tfliteconversion,
     }
 
@@ -270,15 +178,55 @@ class IREECompiler(Optimizer):
                 else io_spec["input"]
             )
         except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError("No output names found")
+
+        try:
+            output_names = [spec["name"] for spec in io_spec["output"]]
+        except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
 
-        imported_model = self.inputtypes[input_type](
-            input_model_path, input_spec
+        # To compile a model with IREE compiler, we first convert it to ONNX
+        # (that's because IREE TensorFlow workflow, as of version 3.6.0 is
+        # highly unstable, so trying to compile directly does not work).
+        onnx_model = self.inputtypes[input_type](
+            input_model_path, input_spec, output_names
         )
+
+        intermediate_onnx_model_path = self.compiled_model_path.with_suffix(
+            ".tmp.onnx"
+        )
+
+        onnx.save(onnx_model, intermediate_onnx_model_path)
+        KLogger.debug(
+            "Saved model in intermediate onnx format at:"
+            f" {intermediate_onnx_model_path}"
+        )
+
+        # Compiled IREE models have an entry function, that has to be called to
+        # start inference. For compiled onnx models, name of that entry
+        # function is the same as the onnx graph name. 'module' is the default
+        # IREE bytecode module name.
+        io_spec["entry_func"] = "module." + onnx_model.graph.name
+
+        intermediate_mlir_path = self.compiled_model_path.with_suffix(
+            ".tmp.mlir"
+        )
+
+        subprocess.call(
+            [
+                "iree-import-onnx",
+                intermediate_onnx_model_path.resolve(),
+                "--opset-version",
+                "17",
+                "-o",
+                intermediate_mlir_path.resolve(),
+            ]
+        )
+
         try:
-            compiled_buffer = ireecmp.compile_str(
-                imported_model,
-                input_type=self.compiler_input_type,
+            compiled_buffer = ireecmp.compile_file(
+                str(intermediate_mlir_path.resolve()),
+                input_type="onnx",
                 extra_args=self.parsed_compiler_args,
                 target_backends=[self.converted_backend],
             )
@@ -287,7 +235,7 @@ class IREECompiler(Optimizer):
 
         with open(self.compiled_model_path, "wb") as f:
             f.write(compiled_buffer)
-        self.save_io_specification(input_model_path, io_spec)
+        self.save_io_specification(self.compiled_model_path, io_spec)
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

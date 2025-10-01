@@ -6,6 +6,7 @@
 Runtime implementation for IREE models.
 """
 
+import json
 from typing import List, Optional
 
 import numpy as np
@@ -85,6 +86,7 @@ class IREERuntime(Runtime):
         """
         self.model_path = model_path
         self.model = None
+        self.io_spec = None
         self.input = None
         self.driver = driver
         self.llext_binary_path = llext_binary_path
@@ -117,6 +119,22 @@ class IREERuntime(Runtime):
             compiled_buffer, driver=self.driver
         )
 
+        with open(str(self.model_path) + ".json") as iospec_file:
+            io_spec = json.load(iospec_file)
+            if io_spec is None:
+                raise ModelNotPreparedError(
+                    "Model IO specification file should be at:"
+                    f" {self.model_path + '.json'}."
+                )
+            # We are retrieving entry function name from iospec and taking only
+            # the function name itself (discaring the module name).
+            entry_func_name = (
+                io_spec["entry_func"].rsplit(".", 1)[-1]
+                if "entry_func" in io_spec.keys()
+                else ""
+            )
+            self.entry_func = getattr(self.model, entry_func_name)
+
         KLogger.info("Model loading ended successfully")
         return True
 
@@ -125,7 +143,8 @@ class IREERuntime(Runtime):
             raise ModelNotPreparedError
         if self.input is None:
             raise InputNotPreparedError
-        self.output = self.model.main(*self.input)
+
+        self.output = self.entry_func(*self.input)
 
     def extract_output(self) -> List[np.ndarray]:
         if self.model is None:

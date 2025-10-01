@@ -40,9 +40,9 @@ DICT_VALID = {
         {"name": "out2", "shape": [3443, 4343, 2132, 9], "dtype": "float128"},
         {"name": "out3", "shape": [344], "dtype": "int5"},
     ],
+    "entry_func": "test func name",
 }
 
-FUNC_NAME_VALID = "test func name"
 MODEL_NAME_VALID = "test model name"
 
 SERIALIZED_IOSPEC = (
@@ -68,7 +68,7 @@ SERIALIZED_IOSPEC = (
 class TestIOSpecSerializer:
     def test_serialize_valid_io_spec(self):
         struct = IOSpecSerializer.io_spec_to_struct(
-            DICT_VALID, FUNC_NAME_VALID, MODEL_NAME_VALID
+            DICT_VALID, MODEL_NAME_VALID
         )
         assert len(struct) == IOSpecSerializer.compute_iospec_struct_size()
         assert struct == SERIALIZED_IOSPEC
@@ -221,11 +221,9 @@ class TestIOSpecSerializer:
         self, valid_io_spec: Dict[str, Any], entry_func_name_len, expectation
     ):
         entry_func = "a" * entry_func_name_len
-
+        valid_io_spec["entry_func"] = entry_func
         with expectation:
-            struct = IOSpecSerializer.io_spec_to_struct(
-                valid_io_spec, entry_func=entry_func
-            )
+            struct = IOSpecSerializer.io_spec_to_struct(valid_io_spec)
 
             assert len(struct) == IOSpecSerializer.compute_iospec_struct_size()
 

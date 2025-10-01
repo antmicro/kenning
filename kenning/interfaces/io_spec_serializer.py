@@ -385,7 +385,6 @@ class IOSpecSerializer:
     def io_spec_to_struct(
         cls,
         io_spec: Dict[str, Any],
-        entry_func: str = "module.main",
         model_name: str = "module",
         byteorder: Literal["little", "big"] = "little",
     ) -> bytes:
@@ -397,8 +396,6 @@ class IOSpecSerializer:
         ----------
         io_spec : Dict[str, Any]
             Input IO specification.
-        entry_func : str
-            Name of the entry function of the module.
         model_name : str
             Name of the model.
         byteorder : Literal['little', 'big']
@@ -428,6 +425,12 @@ class IOSpecSerializer:
         # Post processing is also done in Kenning, not in the target device,
         # so we always want non-processed output
         output_key = "output"
+
+        # Some models (for example IREE models) require calling an entry
+        # function to start inference. For these models the entry function name
+        # should be located in the iospec JSON file. Otherwise an empty string
+        # will be assumed.
+        entry_func = io_spec.get("entry_func", "")
 
         # Filling in the template - inputs
         if len(io_spec[input_key]) > 0:

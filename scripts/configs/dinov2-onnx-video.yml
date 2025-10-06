@@ -1,0 +1,28 @@
+dataset:
+    type: VideoDataset
+    parameters:
+        dataset_root: input.mp4
+        output_video_file_path: out.avi
+        input_memory_layout: NCHW
+        download_dataset: false
+        input_width: 224
+        input_height: 224
+        split_fraction_test: 1
+        postprocess_type: depth
+model_wrapper:
+    type: kenning.modelwrappers.depth_estimation.dinov2ONNX.Dinov2ONNX
+    parameters:
+        model_path: kenning:///models/depth_estimation/dinov2.onnx
+        input_width: 224
+        input_height: 224
+optimizers:
+- type: kenning.optimizers.onnx.ONNXCompiler
+  parameters:
+    compiled_model_path: ./build/compiled_model.onnx
+runtime:
+  type: kenning.runtimes.onnx.ONNXRuntime
+  parameters:
+    save_model_path: ./build/compiled_model.onnx
+    execution_providers:
+    - CUDAExecutionProvider
+    - CPUExecutionProvider

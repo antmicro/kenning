@@ -24,6 +24,11 @@ import psutil
 from kenning.utils.logger import KLogger
 
 try:
+    from jtop import jtop
+except ImportError:
+    jtop = None
+
+try:
     from pynvml.smi import nvidia_smi
 except ImportError:
     nvidia_smi = None
@@ -442,6 +447,7 @@ class SystemStatsCollector(Thread):
         tegrastatsoutputfd = None
         try:
             tegrastats = which("tegrastats")
+            time.sleep(1)
             if tegrastats is not None:
                 tegrastatsoutput = tempfile.NamedTemporaryFile()
                 tegrastatsoutputfd = open(tegrastatsoutput.name, "w")
@@ -458,7 +464,25 @@ class SystemStatsCollector(Thread):
                     f"{self.prefix}_mem_percent": [mem.percent],
                     f"{self.prefix}_timestamp": [time.perf_counter()],
                 }
-                if self.nvidia_smi is not None:
+
+                if jtop is not None:
+                    with jtop() as jetson:
+                        gpu = jetson.stats
+                        if gpu and "GPU" in gpu:
+                            gpumemutilization = float(gpu["RAM"])
+                            gpuutilization = float(gpu["GPU"])
+                            self.measurements += {
+                                f"{self.prefix}_gpu_utilization": [
+                                    gpuutilization
+                                ],
+                                f"{self.prefix}_gpu_mem_utilization": [
+                                    gpumemutilization
+                                ],
+                                f"{self.prefix}_gpu_timestamp": [
+                                    time.perf_counter()
+                                ],
+                            }
+                elif self.nvidia_smi is not None:
                     gpu = self.nvidia_smi.DeviceQuery(
                         "memory.free, memory.total, utilization.gpu"
                     )
@@ -482,6 +506,7 @@ class SystemStatsCollector(Thread):
                                 time.perf_counter()
                             ],
                         }
+
                 with self.runningcondition:
                     self.runningcondition.wait(timeout=self.step)
             if tegrastats:

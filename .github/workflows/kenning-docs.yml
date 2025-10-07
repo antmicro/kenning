@@ -10,6 +10,11 @@ jobs:
   inference-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Free space in the runner
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ggc
+          sudo rm -rf /usr/local/.ghcup
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
@@ -44,6 +49,11 @@ jobs:
       REPORT_NAME: sample-automl.md
       DOCS_DIR: docs
     steps:
+      - name: Free space in the runner
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ggc
+          sudo rm -rf /usr/local/.ghcup
       - name: Checkout sources
         uses: actions/checkout@v4
         with:

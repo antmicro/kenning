@@ -121,7 +121,7 @@ header-rows: 1
 align: center
 ---
 
-{{ displayMetrics('gpu_mem', 'MB', '%.6f') }}
+{{ displayMetrics('gpu_mem', '%', '%.6f') }}
 ```
 {% endif %}
 
@@ -190,7 +190,7 @@ align: center
 {%- endif -%}
 {% if 'session_utilization_gpu_mem_utilization_path' in data %}
   - Average GPU usage [%]
-  - Average GPU memory usage [MB]
+  - Average GPU memory usage [%]
 {% endif %}
 {% for model_name in data["model_names"] %}
 * - {{model_name}}

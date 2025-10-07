@@ -151,7 +151,7 @@ header-rows: 1
 align: center
 ---
 * - Statistic
-  - Memory used [MB]
+  - Memory used [%]
 
 * - Mean
   - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_mean'] }}**

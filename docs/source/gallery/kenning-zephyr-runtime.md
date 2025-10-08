@@ -69,6 +69,7 @@ Run:
 
 ```bash
 west build --board stm32f746g_disco app -- -DEXTRA_CONF_FILE=tflite.conf
+west build -t board-repl
 ```
 
 The built binary can be found in `build/zephyr/zephyr.elf`.
@@ -92,6 +93,7 @@ Run:
 
 ```bash
 west build --board stm32f746g_disco app -- -DEXTRA_CONF_FILE=tvm.conf
+west build -t board-repl
 ```
 
 And now, as previously, run evaluation using Kenning:

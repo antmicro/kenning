@@ -168,6 +168,7 @@ To build the evaluation application, run:
 west build -p always -b max32690evkit/max32690/m4 app -- \
       -DEXTRA_CONF_FILE=tflite.conf \
       -DCONFIG_KENNING_MODEL_PATH=\"./workspace/vae_cats.tflite\"
+west build -t board-repl
 ```
 
 Once the model and evaluation app are ready, you can simulate the board in Renode with:
@@ -266,6 +267,7 @@ To begin evaluation, compile the evaluation app using microTVM as the runtime:
 
 ```bash
 west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE='tvm.conf;boards/max32690evkit_max32690_m4.conf'
+west build -t board-repl
 ```
 
 Then, run:

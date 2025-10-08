@@ -50,7 +50,7 @@
       "input_memory_layout": "NCHW"
     },
     "inputs": {
-      "frame": "cam_frame_original",
+      "frame_original": "cam_frame_original",
       "output": "predictions"
     }
   }

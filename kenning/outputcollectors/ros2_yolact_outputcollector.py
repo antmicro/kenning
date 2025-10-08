@@ -107,7 +107,7 @@ class ROS2YolactOutputCollector(OutputCollector):
             return {}
 
         y = inputs["output"][0] if inputs["output"] else []
-        yolact_msg = self._create_yolact_msg(inputs["frame"], y)
+        yolact_msg = self._create_yolact_msg(inputs["frame_original"], y)
         self._topic_publisher.publish(yolact_msg)
         return {}
 
@@ -239,6 +239,8 @@ class ROS2YolactOutputCollector(OutputCollector):
         VideoFrameMsg
             VideoFrameMsg message filled with given image data.
         """
+        from kenning_computer_vision_msgs.msg import VideoFrameMsg
+
         image = image.squeeze()
         if self._input_memory_layout == "NCHW":
             image = np.transpose(image, (1, 2, 0))

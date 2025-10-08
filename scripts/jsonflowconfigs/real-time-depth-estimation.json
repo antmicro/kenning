@@ -1,0 +1,53 @@
+[
+    {
+        "type": "kenning.dataproviders.camera_dataprovider.CameraDataProvider",
+        "parameters": {
+            "video_file_path": "/dev/video0",
+            "input_memory_layout": "NCHW",
+            "input_width": 224,
+            "input_height": 224
+        },
+        "outputs": {
+            "frame": "cam_frame"
+        }
+    },
+    {
+        "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
+        "parameters": {
+            "model_wrapper": {
+                "type": "kenning.modelwrappers.depth_estimation.dinov2ONNX.Dinov2ONNX",
+                "parameters": {
+                    "model_path": "kenning:///models/depth_estimation/dinov2.onnx",
+                    "input_width": 224,
+                    "input_height": 224
+                }
+            },
+            "runtime": {
+                "type": "kenning.runtimes.onnx.ONNXRuntime",
+                "parameters":
+                {
+                    "save_model_path": "kenning:///models/depth_estimation/dinov2.onnx",
+                    "execution_providers": ["CPUExecutionProvider"]
+                }
+            }
+        },
+        "inputs": {
+            "processed_input": "cam_frame"
+        },
+        "outputs": {
+            "processed_output": "depth_est"
+        }
+    },
+    {
+        "type": "kenning.outputcollectors.video_recorder.DepthVideoRecorder",
+        "parameters": {
+            "input_memory_layout": "NCHW",
+            "input_color_format": "BGR",
+            "output_framerate": 3
+        },
+        "inputs": {
+            "frame_original" : "cam_frame",
+            "model_out": "depth_est"
+        }
+    }
+]

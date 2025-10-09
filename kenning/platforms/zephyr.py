@@ -189,7 +189,7 @@ class ZephyrPlatform(BareMetalPlatform):
 
         # find dts, repl and runtime binary
         try:
-            dts_path = next(self.zephyr_build_path.glob("*_flat.dts"))
+            dts_path = self.zephyr_build_path / "zephyr" / "zephyr.dts"
         except StopIteration:
             KLogger.error(
                 f"Devicetree file not found in {self.zephyr_build_path}"

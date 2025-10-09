@@ -433,7 +433,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         if "board-repl" in self.extra_targets:
             board = self.board.split("/")[0]
             output_files[f"{board}.repl"] = f"{board}.repl"
-            output_files[f"{board}_flat.dts"] = f"{board}_flat.dts"
+            output_files["zephyr/zephyr.dts"] = "zephyr/zephyr.dts"
 
         self._westrun.build(
             self.board,

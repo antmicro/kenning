@@ -31,7 +31,6 @@ class MMPoseModelWrapper(ModelWrapper):
 
     pretrained_model_uri = "kenning:///models/pose_estimation/mmpose_rtmo.onnx"
     default_dataset = ImageNetDataset
-    pretrained_model_uri = "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
     arguments_structure = {
         "device": {"description": "Device used for inference.", "type": str},
         "keypoint_threshold": {

@@ -348,7 +348,7 @@ The available implementations of dataconverter are included in the `kenning.data
 Example implementations:
 
 * [ModelWrapperDataConverter](https://github.com/antmicro/kenning/blob/main/kenning/dataconverters/modelwrapper_dataconverter.py) implement conversions by utilizing the [ModelWrapper](modelwrapper-api) classes,
-* [ROS2SegmentationDataConverter](https://github.com/antmicro/kenning/blob/main/kenning/dataconverters/ros2_segmentation_dataconverter.py) performs conversions by utilizing ROS2 action for segmentation problems from [kenning_computer_vision_msgs](https://github.com/antmicro/ros2-kenning-computer-vision-msgs) repository.
+* [ROS2DataConverter](https://github.com/antmicro/kenning/blob/main/kenning/dataconverters/ros2_dataconverter.py) performs conversions by utilizing ROS2 action.
 
 ```{eval-rst}
 .. autoclass:: kenning.core.dataconverter.DataConverter

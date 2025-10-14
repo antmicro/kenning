@@ -461,6 +461,12 @@ class TVMCompiler(Optimizer):
             "type": float,
             "default": 0.25,
         },
+        "module_name": {
+            "argparse_name": "--module-name",
+            "description": "The name of a module, `tvmgen_{MODULE_NAME}` will be used as prefix for generated functions",  # noqa: E501
+            "type": str,
+            "default": "default",
+        },
     }
 
     def __init__(
@@ -485,6 +491,7 @@ class TVMCompiler(Optimizer):
         use_int8_precision: bool = False,
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
+        module_name: str | None = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -544,6 +551,10 @@ class TVMCompiler(Optimizer):
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
             used for calibrating the model.
+        module_name : str | None
+           The name of a module, `tvmgen_{module_name}` will be used as prefix
+           for generated functions and entrypoint function will be names
+           as `TVM{ModuleName}SystemLibEntryPoint`.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
@@ -580,6 +591,7 @@ class TVMCompiler(Optimizer):
         self.use_int8_precision = use_int8_precision
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
+        self.module_name = module_name
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def init(self):
@@ -702,6 +714,9 @@ class TVMCompiler(Optimizer):
                     target=self.target_obj,
                     target_host=self.target_host_obj,
                     params=params,
+                    mod_name=self.module_name
+                    if self.module_name
+                    else "default",
                 )
 
             if self.target_microtvm_board:
@@ -752,13 +767,27 @@ class TVMCompiler(Optimizer):
                     with open(self.zephyr_header_template, "r") as template_f:
                         template = template_f.read()
 
-                    template = template.replace(
-                        "{{TVMGEN_FUNCTIONS}}", template_tvmgen_functions
+                    mod_name = (
+                        f"_{self.module_name}" if self.module_name else ""
                     )
-                    template = template.replace(
-                        "{{TVMGEN_FUNCTIONS_COUNT}}",
-                        template_tvmgen_functions_count,
+                    mod_name_macro = mod_name.upper()
+                    mod_name_pascal = "".join(
+                        [m.title() for m in mod_name.split("_")]
                     )
+
+                    to_replace = [
+                        ("{{TVMGEN_FUNCTIONS}}", template_tvmgen_functions),
+                        (
+                            "{{TVMGEN_FUNCTIONS_COUNT}}",
+                            template_tvmgen_functions_count,
+                        ),
+                        ("{{MOD_NAME}}", mod_name),
+                        ("{{MOD_NAME_MACRO}}", mod_name_macro),
+                        ("{{MOD_NAME_FUNC}}", mod_name_pascal),
+                    ]
+                    for pattern, value in to_replace:
+                        template = template.replace(pattern, value)
+
                     with open(outputpath.with_suffix(".h"), "w") as header_f:
                         header_f.write(template)
 
@@ -837,9 +866,10 @@ class TVMCompiler(Optimizer):
         self.target = "zephyr"
         self.target_attrs = target_attrs
         self.target_microtvm_board = platform.name
-        self.zephyr_header_template = ResourceURI(
-            "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
-        )
+        if self.zephyr_header_template is None:
+            self.zephyr_header_template = ResourceURI(
+                "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
+            )
         KLogger.info(f"Set TVMCompiler target to zephyr, {platform.name}")
 
     def get_framework_and_version(self):

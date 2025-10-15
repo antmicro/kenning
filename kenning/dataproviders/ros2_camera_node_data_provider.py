@@ -7,7 +7,7 @@ A Dataprovider-derived class used to interface with a
 ROS2 CameraNode.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -72,6 +72,7 @@ class ROS2CameraNodeDataProvider(ROS2DataProvider):
         inputs_sources: Dict[str, Tuple[int, str]] = {},
         inputs_specs: Dict[str, Dict] = {},
         outputs: Dict[str, str] = {},
+        message_type: Optional[Any] = None,
     ):
         self._color_format = color_format
         self._output_width = output_width
@@ -80,11 +81,14 @@ class ROS2CameraNodeDataProvider(ROS2DataProvider):
 
         self._supported_color_formats = ("RGB", "BGR", "GRAY")
 
-        import sensor_msgs.msg
+        if message_type is None:
+            import sensor_msgs.msg
+
+            message_type = sensor_msgs.msg.Image
 
         super().__init__(
             topic_name=topic_name,
-            message_type=sensor_msgs.msg.Image,
+            message_type=message_type,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
             outputs=outputs,

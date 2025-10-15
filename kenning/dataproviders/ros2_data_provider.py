@@ -72,14 +72,14 @@ class ROS2DataProvider(DataProvider, ABC):
 
         return self._data
 
-    def _topic_callback(self, msg: "sensor_msgs.msg.Image"):
+    def _topic_callback(self, msg: Any):
         """
         Callback function for ROS2 topic subscriber.
         Sets the _triggered flag to True and stores the received message.
 
         Parameters
         ----------
-        msg : sensor_msgs.msg.Image
+        msg : Any
             Received message.
         """
         self._triggered.set()

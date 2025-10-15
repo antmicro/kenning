@@ -588,9 +588,9 @@ class Runtime(ArgumentsHandler, ABC):
             return False
         self._run()
         preds = self.extract_output()
-        preds = preds[:original_batch_size]
+        preds_no_padding = preds[:original_batch_size]
         if postprocess:
-            return model_wrapper._postprocess_outputs(preds)
+            return model_wrapper._postprocess_outputs(preds_no_padding)
 
         return preds
 

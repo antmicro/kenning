@@ -32,8 +32,8 @@ Then, in the Docker container, clone the Kenning Zephyr Runtime repository and i
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime/
 ./scripts/prepare_zephyr_env.sh
-./scripts/prepare_modules.sh
 source .venv/bin/activate
+./scripts/prepare_modules.sh
 ```
 
 :::{note}

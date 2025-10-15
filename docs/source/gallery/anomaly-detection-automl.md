@@ -31,17 +31,21 @@ Then, in the Docker container, initialize the Zephyr application and Kenning Zep
 west init -l app
 west update
 west zephyr-export
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip setuptools
 pushd ./kenning-zephyr-runtime
-./scripts/prepare_zephyr_env.sh
+pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
 ./scripts/prepare_modules.sh
 popd
+python -m west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 ```
 
 :::{note}
 To make sure you have the latest version of the Kenning with AutoML features, run:
 
 ```bash
-pip3 install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
+pip install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
 ```
 :::
 
@@ -164,7 +168,7 @@ To use microTVM runtime, change `-DEXTRA_CONF_FILE` to `"tvm.conf"` and `-DCONFI
 In the end, the app with the model can be simulated with:
 
 ```bash test-skip
-python3 kenning-zephyr-runtime/scripts/run_renode.py --no-kcomm
+python kenning-zephyr-runtime/scripts/run_renode.py --no-kcomm
 ```
 
 To end the simulation, press `Ctrl+C`.

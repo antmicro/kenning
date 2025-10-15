@@ -48,12 +48,18 @@ Based on Docker image for Kenning Zephyr Runtime, it boils down to:
 
 ```bash
 docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
-git clone https://github.com/antmicro/kenning-zephyr-runtime
+# Get the latest release of Kenning Zephyr Runtime
+git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime/
-./scripts/prepare_zephyr_env.sh
-# Install additional ARM toolchain
-~/.local/opt/zephyr-sdk/setup.sh -t aarch64-zephyr-elf
+# Install zephyr SDK and other dependencies
+python3 -m venv .venv --system-site-packages
 source .venv/bin/activate
+pip install pip setuptools --upgrade
+python -m west init -l .
+python -m west update
+python -m west zephyr-export
+pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+python -m west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 pip3 install 'kenning[zephyr] @ git+https://github.com/antmicro/kenning.git'
 ```
 

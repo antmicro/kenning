@@ -74,6 +74,24 @@ class SegmObject(NamedTuple):
     iscrowd: bool
 
 
+class FrameSegmObject(NamedTuple):
+    """
+    Represents segmentation results with
+    associated image.
+
+    Attributes
+    ----------
+    segments : list[SegmObject]
+        List with segmentation results.
+    frame : np.ndarray
+        Image associated with
+        segmentation results.
+    """
+
+    segments: list[SegmObject]
+    frame: np.ndarray
+
+
 def compute_ap(
     recall: List[float], precision: List[float], points: int = 101
 ) -> float:

@@ -173,8 +173,10 @@ class ROS2PoseOutputCollector(OutputCollector):
         from kenning_computer_vision_msgs.msg import (
             BoxMsg,
             KeyPoint2dMsg,
+            MaskMsg,
             PoseEstimationMsg,
             PoseMsg,
+            SegmentationMsg,
         )
 
         if not isinstance(y, list):
@@ -182,8 +184,11 @@ class ROS2PoseOutputCollector(OutputCollector):
 
         estimation = PoseEstimationMsg()
 
+        segmentation = SegmentationMsg()
+
         poses = []
-        boxes = []
+
+        classes, scores, masks, boxes = [], [], [], []
 
         for obj in y:
             keypoints = []
@@ -193,6 +198,7 @@ class ROS2PoseOutputCollector(OutputCollector):
 
                 keypoint.x = point.x
                 keypoint.y = point.y
+                keypoint.id = point.id
 
                 keypoints.append(keypoint)
 
@@ -204,15 +210,33 @@ class ROS2PoseOutputCollector(OutputCollector):
 
             bbox = BoxMsg()
 
-            bbox.xmin = obj.bbox.x
-            bbox.ymin = obj.bbox.y
-            bbox.xmax = obj.bbox.x + obj.bbox.width
-            bbox.ymax = obj.bbox.y + obj.bbox.height
+            bbox.xmin = obj.segm.xmin
+            bbox.ymin = obj.segm.ymin
+            bbox.xmax = obj.segm.xmax
+            bbox.ymax = obj.segm.ymax
 
             boxes.append(bbox)
 
+            mask = MaskMsg()
+
+            if obj.segm.mask is not None:
+                obj_mask = obj.segm.mask.astype(np.uint8)
+
+                mask._data = obj_mask.flatten()
+                mask.dimension = [obj_mask.shape[0], obj_mask.shape[1]]
+
+            classes.append(obj.segm.clsname)
+
+            scores.append(obj.segm.score)
+
         estimation.poses = poses
-        estimation.boxes = boxes
+
+        segmentation.boxes = boxes
+        segmentation.masks = masks
+        segmentation.classes = classes
+        segmentation.scores = scores
+
+        estimation.segmentation = segmentation
 
         pose_msg.estimation = estimation
 

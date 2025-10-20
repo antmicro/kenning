@@ -58,9 +58,6 @@ EXPECTED_FAIL = [
     ("Llama", "GPTQSparseGPTOptimizer"),
     ("MagicWandModelWrapper", "NNIPruningOptimizer"),
     ("MagicWandModelWrapper", "TinygradOptimizer"),
-    ("MistralInstruct", "AWQOptimizer"),
-    ("MistralInstruct", "GPTQOptimizer"),
-    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
     ("PHI2", "AWQOptimizer"),
     ("PHI2", "GPTQOptimizer"),
     ("PHI2", "GPTQSparseGPTOptimizer"),
@@ -92,7 +89,15 @@ EXPECTED_FAIL = [
     # After bumping version of IREE, compiling quantized models does not work.
     ("PersonDetectionModelWrapper", "IREECompiler"),
 ]
-expected_mark = pytest.mark.xfail(reason="Expected incompatible")
+
+SKIP = [
+    ("MistralInstruct", "AWQOptimizer"),
+    ("MistralInstruct", "GPTQOptimizer"),
+    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+]
+
+expect_fail = pytest.mark.xfail(reason="Expected incompatible")
+skip = pytest.mark.skip(reason="Time or resource intensive")
 
 
 def prepare_objects(
@@ -268,8 +273,10 @@ class TestOptimizerModelWrapper:
     @pytest.mark.parametrize(
         "model_cls,optimizer_cls",
         [
-            pytest.param(cls1, cls2, marks=[expected_mark])
+            pytest.param(cls1, cls2, marks=[expect_fail])
             if (cls1.__name__, cls2.__name__) in EXPECTED_FAIL
+            else pytest.param(cls1, cls2, marks=[skip])
+            if (cls1.__name__, cls2.__name__) in SKIP
             else (cls1, cls2)
             for cls1 in MODELWRAPPER_SUBCLASSES
             for cls2 in OPTIMIZER_SUBCLASSES

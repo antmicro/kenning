@@ -14,7 +14,7 @@ optimizers:
 - type: kenning.optimizers.tvm.TVMCompiler
   parameters:
     model_framework: onnx
-    target: cuda -libs=cudnncublas
+    target: "cuda -libs=cudnn,cublas"
     opt_level: 3
     compile_use_vm: false
     output_conversion_function: default

@@ -23,7 +23,7 @@ from kenning.datasets.helpers.detection_and_segmentation import (
 )
 
 
-class RandomizedClassificationDataset(Dataset):
+class RandomizedImageClassificationDataset(Dataset):
     """
     Creates a sample randomized classification dataset and
     stores it in `root` directory.
@@ -148,7 +148,9 @@ class RandomizedClassificationDataset(Dataset):
                 mode = "L"
             else:
                 mode = "RGB"
-            Image.fromarray(img_data, mode).save(img_path)
+            if self.image_memory_layout == "NCHW":
+                img_data = np.transpose(img_data, (1, 2, 0))
+            Image.fromarray(img_data.astype(np.uint8), mode).save(img_path)
 
     def download_dataset_fun(self):
         pass
@@ -160,6 +162,135 @@ class RandomizedClassificationDataset(Dataset):
             if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
+        return [np.array(result)]
+
+    def prepare_output_samples(self, samples: List[Any]) -> List[np.ndarray]:
+        return [np.array(samples)]
+
+    def evaluate(self, predictions, truth):
+        return Measurements()
+
+    def calibration_dataset_generator(
+        self, percentage: float = 0.25, seed: int = 12345
+    ):
+        for _ in range(int(self.samplescount * percentage)):
+            yield [np.random.randint(0, 255, size=self.inputdims)]
+
+
+class RandomizedClassificationDataset(Dataset):
+    """
+    Creates a sample randomized classification dataset and
+    stores it in `root` directory.
+
+    It is a mock dataset with randomized inputs and outputs.
+
+    It can be used only for speed and utilization metrics, no quality metrics.
+    """
+
+    arguments_structure = {
+        "samplescount": {
+            "argparse_name": "--num-samples",
+            "description": "Number of samples to process",
+            "type": int,
+            "default": 100,
+        },
+        "numclasses": {
+            "argparse_name": "--num-classes",
+            "description": "Number of classes in inputs",
+            "type": int,
+            "default": 3,
+        },
+        "inputdims": {
+            "argparse_name": "--input-dims",
+            "description": "Dimensionality of the inputs",
+            "type": list[int],
+            "default": [224, 224, 3],
+        },
+    }
+
+    def __init__(
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        force_download_dataset: bool = False,
+        samplescount: int = 100,
+        numclasses: int = 3,
+        integer_classes: bool = False,
+        inputdims: List = [224, 224, 3],
+        dtype: Type = np.float32,
+        seed: int = 1234,
+        **kwargs: Any,
+    ):
+        """
+        Creates randomized dataset.
+
+        Parameters
+        ----------
+        root : Path
+            Directory for the randomized dataset - no data will be store there.
+        batch_size : int
+            The size of batches of data delivered during inference.
+        download_dataset : bool
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again.
+        force_download_dataset : bool
+            Forces dataset download.
+        samplescount : int
+            The number of samples in the dataset.
+        numclasses : int
+            The number of classes in the dataset.
+        integer_classes : bool
+            Indicates if classes should be represented by single integer
+            instead of one-hot encoding.
+        inputdims : List
+            The dimensionality of the inputs.
+        dtype : Type
+            Type of the data.
+        seed : int
+            Seed used for data generation.
+        **kwargs : Any
+            Optional keyword arguments.
+        """
+        self.samplescount = samplescount
+        self.inputdims = inputdims
+        self.numclasses = numclasses
+        self.integer_classes = integer_classes
+        self.dtype = dtype
+        self.classnames = self.get_class_names()
+        self.seed = seed
+
+        super().__init__(
+            root,
+            batch_size,
+            force_download_dataset,
+            download_dataset,
+            dataset_percentage=1,
+        )
+
+    def get_class_names(self):
+        return [str(i) for i in range(self.numclasses)]
+
+    def get_input_mean_std(self):
+        return (0.0, 1.0)
+
+    def prepare(self):
+        np.random.seed(self.seed)
+
+        self.dataX = [i for i in range(self.samplescount)]
+        self.dataY = [j % self.numclasses for j in range(self.samplescount)]
+        random.shuffle(self.dataY)
+        if not self.integer_classes:
+            self.dataY = [np.eye(self.numclasses)[y] for y in self.dataY]
+
+    def download_dataset_fun(self):
+        pass
+
+    def prepare_input_samples(self, samples: List[Any]) -> List[np.ndarray]:
+        result = []
+        for _ in samples:
+            random_sample = np.random.randn(*self.inputdims).astype(self.dtype)
+            result.append(random_sample)
         return [np.array(result)]
 
     def prepare_output_samples(self, samples: List[Any]) -> List[np.ndarray]:
@@ -440,7 +571,7 @@ class RandomizedTextDataset(Dataset):
         return Measurements()
 
 
-class RandomizedAnomalyDetectionDataset(RandomizedClassificationDataset):
+class RandomizedAnomalyDetectionDataset(RandomizedImageClassificationDataset):
     """
     Randomized dataset for Anomaly Detection, implementing classification
     dataset with adjustable window size and number of features per timestamp.

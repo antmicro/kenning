@@ -27,6 +27,7 @@ from kenning.datasets.random_dataset import (
     RandomizedAnomalyDetectionDataset,
     RandomizedClassificationDataset,
     RandomizedDetectionSegmentationDataset,
+    RandomizedImageClassificationDataset,
     RandomizedTextDataset,
 )
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
@@ -342,7 +343,7 @@ def get_dataset_random_mock(
         if modelwrapper_cls is PyTorchPetDatasetMobileNetV2:
             kwargs["image_memory_layout"] = "NCHW"
 
-        return RandomizedClassificationDataset(
+        return RandomizedImageClassificationDataset(
             get_tmp_path(),
             samplescount=37 * 5,
             numclasses=37,
@@ -350,7 +351,7 @@ def get_dataset_random_mock(
             **kwargs,
         )
     if dataset_cls is ImageNetDataset:
-        return RandomizedClassificationDataset(
+        return RandomizedImageClassificationDataset(
             get_tmp_path(),
             samplescount=8 * 5,
             numclasses=8,
@@ -376,7 +377,7 @@ def get_dataset_random_mock(
             inputdims=inputdims,
         )
     if dataset_cls is VisualWakeWordsDataset:
-        return RandomizedClassificationDataset(
+        return RandomizedImageClassificationDataset(
             get_tmp_path(),
             samplescount=10,
             numclasses=2,

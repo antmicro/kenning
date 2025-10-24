@@ -1,0 +1,36 @@
+- type: kenning.dataproviders.camera_dataprovider.CameraDataProvider
+  parameters:
+    video_file_path: /dev/video0
+    input_memory_layout: NCHW
+    input_width: 660
+    input_height: 660
+  outputs:
+    frame: cam_frame
+- type: kenning.runners.modelruntime_runner.ModelRuntimeRunner
+  parameters:
+    model_wrapper:
+      type: kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+      parameters:
+        model_path: kenning:///models/instance_segmentation/yolact.onnx
+        top_k: 100
+        score_threshold: 0.2
+    runtime:
+      type: kenning.runtimes.onnx.ONNXRuntime
+      parameters:
+        save_model_path: kenning:///models/instance_segmentation/yolact.onnx
+        execution_providers: [CUDAExecutionProvider]
+  inputs:
+    input: cam_frame
+  outputs:
+    segmentation_output: predictions
+- type: kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer
+  parameters:
+    viewer_width: 550
+    viewer_height: 550
+    input_memory_layout: NCHW
+    input_color_format: BGR
+  inputs:
+    frame: cam_frame
+    detection_data: predictions
+
+

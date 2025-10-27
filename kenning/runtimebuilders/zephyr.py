@@ -188,15 +188,26 @@ class WestRun:
     def _prepare_venv(self):
         venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
 
-        cmd = [
+        pip_upgrade = [
+            str(self._venv_dir / "bin/pip"),
+            "install",
+            "--upgrade",
+            "pip",
+            "setuptools",
+        ]
+        install_requirements = [
             str(self._venv_dir / "bin/pip"),
             "install",
             "-r",
             str(self._zephyr_base / "scripts/requirements.txt"),
         ]
-
         try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+            subprocess.run(
+                pip_upgrade, **self._subprocess_cfg
+            ).check_returncode()
+            subprocess.run(
+                install_requirements, **self._subprocess_cfg
+            ).check_returncode()
         except subprocess.CalledProcessError:
             msg = "Setting up virtual environment for west failed."
             raise KenningRuntimeBuilderError(msg)

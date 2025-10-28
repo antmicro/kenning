@@ -109,3 +109,26 @@ hifive_unmatched/fu740/s7:
   default_optimizer:
     - TFLiteCompiler
     - TVMCompiler
+
+nvidia_rtx_4090:
+  display_name: NVIDIA RTX 4090
+  ram_size_kb: 25153536 # 24564MiB (src:nvidia-smi) * 1024kiB/MiB
+  default_platform: CUDAPlatform
+  compute_capability: sm_89
+  opt_level: 3
+  contextname: cuda
+  use_tvm_vm: False
+  conversion_func: default
+  target_host: null
+  compilation_flags:
+  - "-keys=cuda,gpu"
+  - "-libs=cudnn,cublas"
+  - "-arch=native"
+  - "-max_num_threads=1024"
+  - "-max_threads_per_block=1024"
+  - "-registers_per_block=65536"
+  - "-shared_memory_per_block=49152"
+  - "-thread_warp_size=32"
+  default_optimizer:
+    - TVMCompiler
+    - IREECompiler

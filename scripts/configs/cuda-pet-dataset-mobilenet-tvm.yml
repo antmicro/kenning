@@ -1,0 +1,24 @@
+platform:
+  type: CUDAPlatform
+  parameters:
+    name: nvidia_rtx_4090
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: ./build/PetDataset
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+optimizers:
+  - type: kenning.optimizers.tvm.TVMCompiler
+    parameters:
+      model_framework: keras
+      compiled_model_path: ./build/compiled-model.tar
+runtime:
+  type: kenning.runtimes.tvm.TVMRuntime
+  parameters:
+    save_model_path: ./build/compiled-model.tar
+report:
+  parameter:
+    measurements: ./build/pet-dataset-tvm-cuda.json

@@ -853,24 +853,39 @@ class TVMCompiler(Optimizer):
         self.save_io_specification(input_model_path, io_spec)
 
     def read_platform(self, platform: Platform):
-        if type(platform).__name__ not in [
-            "BareMetalPlatform",
-            "ZephyrPlatform",
-        ]:
-            return None
         target_attrs = (
             " ".join(platform.compilation_flags)
-            if platform.compilation_flags is not None
+            if getattr(platform, "compilation_flags", None) is not None
             else ""
         )
-        self.target = "zephyr"
+
+        match type(platform).__name__:
+            case "CUDAPlatform":
+                self.target = "cuda"
+                target_attrs = " ".join(
+                    [
+                        target_attrs,
+                        f"-arch={platform.compute_capability}",
+                    ]
+                )
+
+            case "ZephyrPlatform":
+                self.target = "zephyr"
+                self.target_microtvm_board = platform.name
+                if self.zephyr_header_template is None:
+                    self.zephyr_header_template = ResourceURI(
+                        "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
+                    )
+
+            case _:
+                KLogger.warning(
+                    f"Unsupported platform: {type(platform).__name__}"
+                )
+                return None
         self.target_attrs = target_attrs
-        self.target_microtvm_board = platform.name
-        if self.zephyr_header_template is None:
-            self.zephyr_header_template = ResourceURI(
-                "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
-            )
-        KLogger.info(f"Set TVMCompiler target to zephyr, {platform.name}")
+        KLogger.info(
+            f"Set TVMCompiler target to {self.target}, {platform.name}"
+        )
 
     def get_framework_and_version(self):
         return ("tvm", tvm.__version__)

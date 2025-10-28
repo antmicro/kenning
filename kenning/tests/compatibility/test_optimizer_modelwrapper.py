@@ -53,6 +53,12 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 )
 
 EXPECTED_FAIL = [
+    # Skipping because these tests will fail if there is no dataset provided
+    ("Dinov2ONNX", "NNIPruningOptimizer"),
+    ("Dinov2ONNX", "ONNXCompiler"),
+    ("Dinov2ONNX", "TFLiteCompiler"),
+    ("Dinov2ONNX", "TVMCompiler"),
+    ("Dinov2ONNX", "TinygradOptimizer"),
     ("Llama", "AWQOptimizer"),
     ("Llama", "GPTQOptimizer"),
     ("Llama", "GPTQSparseGPTOptimizer"),

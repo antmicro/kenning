@@ -149,6 +149,8 @@ class TestModelWrapper:
         Tests model initialization with specified dataset.
         """
         dataset_cls = model_cls.default_dataset
+        if dataset_cls is None:
+            pytest.xfail("default dataset was not defined")
         dataset = get_dataset_random_mock(dataset_cls, model_cls)
         _ = create_model(model_cls, dataset)
 

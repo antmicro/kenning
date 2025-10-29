@@ -23,6 +23,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     Optimizer,
 )
+from kenning.core.platform import Platform
 from kenning.optimizers.onnx import kerasconversion, tfliteconversion
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -89,7 +90,7 @@ class IREECompiler(Optimizer):
         "backend": {
             "argparse_name": "--backend",
             "description": "Name of the backend that will run the compiled module",  # noqa: E501
-            "required": True,
+            "required": False,
             "enum": list(backend_convert.keys()),
         },
         "compiler_args": {
@@ -239,3 +240,37 @@ class IREECompiler(Optimizer):
 
     def get_framework_and_version(self):
         return "iree", version.VERSION
+
+    def read_platform(self, platform: Platform):
+        super().read_platform(platform)
+        match type(platform).__name__:
+            case "CUDAPlatform":
+                self.backend = "cuda"
+                self.converted_backend = "cuda"
+                if platform.compute_capability in [
+                    "ada",
+                    "hopper",
+                    "rtx4090",
+                ] or (
+                    platform.compute_capability.startswith("sm_")
+                    and int(platform.compute_capability.removeprefix("sm_"))
+                    > 86
+                ):
+                    KLogger.warning(
+                        f"Platform '{platform.compute_capability}'"
+                        " is not supported by this compiler - check"
+                        " https://github.com/iree-org/iree/issues/21122."
+                        " Use 'sm_86' instead."
+                    )
+                self.parsed_compiler_args.extend(
+                    [
+                        "--iree-hal-target-device=cuda",
+                        f"--iree-cuda-target={platform.compute_capability}",
+                    ]
+                )
+            case "BareMetalPlatform":
+                KLogger.info("BareMetalPlatform support still in development.")
+            case _:
+                KLogger.warning(
+                    f"Unsupported platform: {type(platform).__name__}."
+                )

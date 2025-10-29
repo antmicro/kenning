@@ -16,9 +16,11 @@ from kenning.core.exceptions import (
     InputNotPreparedError,
     ModelNotPreparedError,
 )
+from kenning.core.platform import Platform
 from kenning.core.runtime import (
     Runtime,
 )
+from kenning.platforms.cuda import CUDAPlatform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -42,7 +44,7 @@ class IREERuntime(Runtime):
             "argparse_name": "--driver",
             "description": "Name of the runtime target",
             "enum": ireert.HalDriver.query(),
-            "required": True,
+            "required": False,
         },
         "llext_binary_path": {
             "argparse_name": "--llext-binary-path",
@@ -157,3 +159,8 @@ class IREERuntime(Runtime):
             for out in self.output:
                 results.append(out.to_host())
         return results
+
+    def read_platform(self, platform: Platform):
+        super().read_platform(platform)
+        if isinstance(platform, CUDAPlatform):
+            self.driver = "cuda"

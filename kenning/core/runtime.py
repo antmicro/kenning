@@ -404,7 +404,7 @@ class Runtime(ArgumentsHandler, ABC):
         from another source (i.e. from existing file). If it can not be
         found in this path, io_specification is not loaded.
 
-        When no specification file is found, the function returns True as some
+        When no specification file is found, the function returns False as some
         Runtimes may not need io_specification to run the inference.
 
         Parameters
@@ -677,3 +677,22 @@ class Runtime(ArgumentsHandler, ABC):
             if too_big:
                 return CompatibilityStatus.FAILED_TOO_BIG
         return CompatibilityStatus.SUCCESS
+
+    def read_platform(self, platform: Platform):
+        """
+        Reads Platform data to configure runtime.
+
+        Platform-based entities come with lots of information on hardware
+        architecture that can be used by the Runtime class.
+
+        By default no data is read.
+
+        It is important to take into account that different
+        Platform-based classes come with a different sets of attributes.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        """
+        pass

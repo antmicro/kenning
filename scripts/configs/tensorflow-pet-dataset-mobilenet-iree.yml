@@ -11,7 +11,7 @@ dataset:
 optimizers:
 - type: IREECompiler
   parameters:
-    compiled_model_path: ./build/compiled-model.vmbf
+    compiled_model_path: ./build/compiled_model.vmbf
     backend: vulkan
     model_framework: keras
 runtime:

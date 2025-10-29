@@ -160,6 +160,9 @@ class PipelineRunner(object):
         if self.model_wrapper:
             self.model_wrapper.read_platform(self.platform)
 
+        if self.runtime:
+            self.runtime.read_platform(self.platform)
+
         if self.runtime_builder:
             self.runtime_builder.read_platform(self.platform)
 

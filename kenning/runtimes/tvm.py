@@ -17,9 +17,11 @@ from kenning.core.exceptions import (
     InputNotPreparedError,
     ModelNotPreparedError,
 )
+from kenning.core.platform import Platform
 from kenning.core.runtime import (
     Runtime,
 )
+from kenning.platforms.cuda import CUDAPlatform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -192,3 +194,9 @@ class TVMRuntime(Runtime):
             for i in range(self.model.get_num_outputs()):
                 results.append(self.model.get_output(i).asnumpy())
         return results
+
+    def read_platform(self, platform: Platform):
+        super().read_platform(platform)
+        if isinstance(platform, CUDAPlatform):
+            self.contextname = platform.contextname
+            self.use_tvm_vm = platform.use_tvm_vm

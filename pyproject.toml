@@ -82,6 +82,9 @@ object_detection = [
     "pandas>=1.2.1",
     "pycocotools",
 ]
+pose_estimation = [
+    "rtmlib==0.0.13"
+]
 speech_to_text = [
     "librosa",
     "pydub",
@@ -213,7 +216,7 @@ executorch = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

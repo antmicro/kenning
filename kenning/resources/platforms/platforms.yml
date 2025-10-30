@@ -132,3 +132,25 @@ nvidia_rtx_4090:
   default_optimizer:
     - TVMCompiler
     - IREECompiler
+
+jetson_thor_devkit:
+  display_name: NVIDIA Jetson Thor
+  ram_size_kb: 134217728 # 128GB (src:nvidia) * 1024^2 kb/GB
+  default_platform: CUDAPlatform
+  compute_capability: sm_110
+  opt_level: 3
+  contextname: cuda
+  use_tvm_vm: False
+  conversion_func: default
+  target_host: aarch64
+  compilation_flags:
+    - "-keys=cuda,gpu"
+    - "-libs=cudnn,cublas"
+    - "-arch=native"
+    - "-max_num_threads=1024"
+    - "-max_threads_per_block=1024"
+    - "-registers_per_block=65536"
+    - "-shared_memory_per_block=49152"
+    - "-thread_warp_size=32"
+  default_optimizer:
+    - TVMCompiler

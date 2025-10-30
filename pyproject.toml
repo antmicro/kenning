@@ -327,5 +327,5 @@ nd = "nd"
 
 [tool.uv]
 override-dependencies = [
-    "numpy>=1.23.5,<2.0.0",  # Enforce that numpy version for all packages.
+    "numpy>=1.23.2,<2.0.0",  # Enforce that numpy version for all packages.
 ]

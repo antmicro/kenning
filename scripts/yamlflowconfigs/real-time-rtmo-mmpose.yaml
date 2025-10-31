@@ -1,0 +1,31 @@
+- type: kenning.dataproviders.camera_dataprovider.CameraDataProvider
+  parameters:
+    video_file_path: /dev/video0
+    input_memory_layout: NCHW
+    input_width: 608
+    input_height: 608
+  outputs:
+    frame: cam_frame
+- type: kenning.runners.modelruntime_runner.ModelRuntimeRunner
+  parameters:
+    model_wrapper:
+      type: kenning.modelwrappers.pose_estimation.mmpose_rtmo_onnx.MMPoseRTMOONNX
+      parameters:
+        model_path: ./rtmpose_onnx/mmpose_rtmo.onnx
+    runtime:
+      type: kenning.runtimes.onnx.ONNXRuntime
+      parameters:
+        save_model_path: ./rtmpose_onnx/mmpose_rtmo.onnx
+        execution_providers: [CUDAExecutionProvider]
+  inputs:
+    processed_input: cam_frame
+  outputs:
+    pose_output: pose_output
+- type: kenning.outputcollectors.pose_visualizer.PoseVisualizer
+  parameters:
+    output_width: 608
+    output_height: 608
+  inputs:
+    frame: cam_frame
+    pose_data: pose_output
+

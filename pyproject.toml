@@ -198,7 +198,7 @@ onnx2tf = [
     "onnx2tf==1.17.5",
     "onnx>=1.14.0,<=1.17.0",
     "onnxruntime==1.18.1",
-    "onnx-simplifier==0.4.33",
+    "onnxsim==0.4.33",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
     "tensorflow==2.15.0",

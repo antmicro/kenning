@@ -1532,7 +1532,7 @@ class ConfusionMatrixPlot(Plot):
             color[..., 3] = np.log2(99 * value + 1) / np.log2(100)
             return color
 
-        # Cal[culate colors for confusion matrix
+        # Calculate colors for confusion matrix
         colors = np.zeros(confusion_matrix.shape + (4,))
         for i in range(confusion_matrix.shape[0]):
             for j in range(confusion_matrix.shape[1]):

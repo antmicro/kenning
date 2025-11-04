@@ -6,10 +6,9 @@ model_wrapper:
 dataset:
   type: VideoDataset
   parameters:
-    video_file_path: /dev/video0
+    dataset_root: /dev/video0
     input_memory_layout: NCHW
-    dataset_root: .
     download_dataset: false
-    input_width: 256
-    input_height: 192
+    input_width: 640
+    input_height: 640
     split_fraction_test: 1

@@ -11,11 +11,11 @@
     model_wrapper:
       type: kenning.modelwrappers.pose_estimation.mmpose_onnx.MMPoseONNX
       parameters:
-        model_path: ./rtmpose_onnx/mmpose_simcc.onnx
+        model_path: kenning:///models/pose_estimation/mmpose_simcc.onnx
     runtime:
       type: kenning.runtimes.onnx.ONNXRuntime
       parameters:
-        save_model_path: ./rtmpose_onnx/mmpose_simcc.onnx
+        save_model_path: kenning:///models/pose_estimation/mmpose_simcc.onnx
         execution_providers: [CUDAExecutionProvider]
   inputs:
     processed_input: cam_frame

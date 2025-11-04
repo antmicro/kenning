@@ -446,8 +446,8 @@ class SystemStatsCollector(Thread):
         self.running = True
         tegrastatsoutputfd = None
         try:
-            tegrastats = which("tegrastats")
-            time.sleep(1)
+            tegrastats = None
+            # time.sleep(1)
             if tegrastats is not None:
                 tegrastatsoutput = tempfile.NamedTemporaryFile()
                 tegrastatsoutputfd = open(tegrastatsoutput.name, "w")

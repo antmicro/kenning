@@ -1763,6 +1763,28 @@ class ConfusionMatrixPlot(Plot):
             output_formats,
         )
 
+    @staticmethod
+    def _restore_bokeh_format_types(
+        colors: np.ndarray,
+    ) -> List[Tuple[int, int, int, float]]:
+        """
+        Restore correct types to match bokeh format.
+
+        Parameters
+        ----------
+        colors : np.ndarray
+            Array of colors in bokeh format, but encoded as floats.
+
+        Returns
+        -------
+        List[Tuple[int, int, int, float]]
+            List of colors in bokeh format and correct type.
+        """
+        return [
+            (int(color[0]), int(color[1]), int(color[2]), color[3])
+            for color in colors
+        ]
+
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
@@ -1808,6 +1830,9 @@ class ConfusionMatrixPlot(Plot):
         ]
         # Preprocess data
         confusion_matrix_colors = np.rot90(colors, k=-1).reshape((-1, 4))
+        confusion_matrix_colors = self._restore_bokeh_format_types(
+            confusion_matrix_colors
+        )
         coords = np.array(
             list(itertools.product(self.class_names, self.class_names)),
             dtype=str,

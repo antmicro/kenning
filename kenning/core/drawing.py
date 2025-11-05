@@ -1807,7 +1807,7 @@ class ConfusionMatrixPlot(Plot):
             for row in self.confusion_matrix_colors
         ]
         # Preprocess data
-        confusion_matrix_colors = np.rot90(colors).reshape((-1, 4))
+        confusion_matrix_colors = np.rot90(colors, k=-1).reshape((-1, 4))
         coords = np.array(
             list(itertools.product(self.class_names, self.class_names)),
             dtype=str,

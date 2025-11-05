@@ -62,6 +62,7 @@ def _prepare_pip_params(session: nox.Session, device: str):
         "iree",
         "tinygrad",
         "onnxruntime",
+        "pose_estimation",
         "test",
         "real_time_visualization",
         "pipeline_manager",

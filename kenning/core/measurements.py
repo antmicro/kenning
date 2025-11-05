@@ -446,12 +446,10 @@ class SystemStatsCollector(Thread):
         self.running = True
         tegrastatsoutputfd = None
         try:
-            tegrastats = None
-            # time.sleep(1)
+            tegrastats = which("tegrastats")
             if tegrastats is not None:
                 tegrastatsoutput = tempfile.NamedTemporaryFile()
                 tegrastatsoutputfd = open(tegrastatsoutput.name, "w")
-                tegrastatsstart = time.perf_counter()
                 tegrastatsproc = subprocess.Popen(
                     f"{tegrastats} --interval {self.step * 1000}".split(" "),
                     stdout=tegrastatsoutputfd,
@@ -511,13 +509,11 @@ class SystemStatsCollector(Thread):
                     self.runningcondition.wait(timeout=self.step)
             if tegrastats:
                 tegrastatsproc.terminate()
-                tegrastatsend = time.perf_counter()
                 tegrastatsoutputfd.close()
                 with open(tegrastatsoutput.name, "r") as tegrastatsoutputfd:
                     readings = tegrastatsoutputfd.read().split("\n")
                 tegrastatsoutputfd = None
                 ramusages = []
-                gpuutilization = []
                 vdd_gpu_soc = []
                 vdd_cpu_cv = []
                 vin_sys_5v0 = []
@@ -535,9 +531,6 @@ class SystemStatsCollector(Thread):
                         totram = float(match.group(2))
                         ramusages.append(int(currram / totram * 100))
                     match = re.match(r".*GR3D_FREQ (\d+)%", entry)
-                    if match:
-                        gpuutilization.append(int(match.group(1)))
-                    match = re.match(r".*VDD_GPU_SOC (\d+)mW/(\d+)mW", entry)
                     if match:
                         vdd_gpu_soc.append(int(match.group(1)))
                     match = re.match(r".*VDD_CPU_CV (\d+)mW/(\d+)mW", entry)
@@ -569,15 +562,8 @@ class SystemStatsCollector(Thread):
                     match = re.match(r".*SYS5V (\d+)mW/(\d+)mW", entry)
                     if match:
                         sys5vpower.append(int(match.group(1)))
-                timestamps = np.linspace(
-                    tegrastatsstart,
-                    tegrastatsend,
-                    num=len(readings) - 1,
-                    endpoint=True,
-                ).tolist()
+
                 self.measurements += {
-                    f"{self.prefix}_gpu_utilization": gpuutilization,
-                    f"{self.prefix}_gpu_mem_utilization": ramusages,
                     f"{self.prefix}_power_vdd_gpu_soc": vdd_gpu_soc,
                     f"{self.prefix}_power_vdd_cpu_cv": vdd_cpu_cv,
                     f"{self.prefix}_power_vin_sys_5v0": vin_sys_5v0,
@@ -588,7 +574,6 @@ class SystemStatsCollector(Thread):
                     f"{self.prefix}_power_cv": cvpower,
                     f"{self.prefix}_power_vddrq": vddrqpower,
                     f"{self.prefix}_power_sys5v": sys5vpower,
-                    f"{self.prefix}_gpu_timestamp": timestamps,
                 }
         finally:
             if tegrastatsoutputfd:

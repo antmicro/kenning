@@ -339,7 +339,7 @@ class IncomingEvent(ProtocolEvent, ABC):
         self.flags = Flags()
 
     def get_contents(
-        self
+        self,
     ) -> Tuple[MessageType, bytes, List[TransmissionFlag]]:
         """
         Gets data received in the event (payload, flags and other data).
@@ -1130,6 +1130,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             "description": "Flag to turn on/off error detection and recovery.",
             "type": bool,
             "required": False,
+            "default": False,
         },
     }
 

@@ -55,7 +55,7 @@ mAP values depending on threshold for the least detected recordings
 ```
 {% endif %}
 
-```{list-table} GPU memory usage metrics
+```{list-table} mAP values
 ---
 header-rows: 1
 align: center

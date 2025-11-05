@@ -2232,6 +2232,7 @@ class RecallPrecisionCurvesPlot(Plot):
             css_classes=["plot"],
         )
 
+        precision_fig.toolbar.logo = None
         colors = [
             self.cmap(i) for i in np.linspace(0, 1, len(self.class_names))
         ]
@@ -2375,6 +2376,7 @@ class TruePositiveIoUHistogram(Plot):
             css_classes=["plot"],
         )
 
+        hist_fig.toolbar.logo = None
         hbar = hist_fig.hbar(
             y="y_idx",
             left=0,
@@ -2484,6 +2486,7 @@ class TruePositivesPerIoURangeHistogram(Plot):
             css_classes=["plot"],
         )
 
+        hist_fig.toolbar.logo = None
         hist = np.histogram(self.iou_data, bins=self.x_range)[0]
 
         source = ColumnDataSource(
@@ -2646,6 +2649,7 @@ class RecallPrecisionGradients(Plot):
             width_policy="max",
             css_classes=["plot"],
         )
+        gradient_fig.toolbar.logo = None
         colors = [self.cmap(i) for i in range(self.cmap.N)]
         color_mapper = LinearColorMapper(
             palette=[

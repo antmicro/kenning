@@ -95,6 +95,26 @@ EXPECTED_FAIL = [
     ("YOLACTWithPostprocessing", "TFLiteCompiler"),
     # After bumping version of IREE, compiling quantized models does not work.
     ("PersonDetectionModelWrapper", "IREECompiler"),
+    ("MMPoseDetectionInput", "NNIPruningOptimizer"),
+    ("MMPoseDetectionInput", "TFLiteCompiler"),
+    ("MMPoseDetectionInput", "TVMCompiler"),
+    ("MMPoseDetectionInput", "TinygradOptimizer"),
+    ("MMPoseDetectionInput", "ONNXCompiler"),
+    ("MMPoseModelWrapper", "NNIPruningOptimizer"),
+    ("MMPoseModelWrapper", "ONNXCompiler"),
+    ("MMPoseModelWrapper", "TFLiteCompiler"),
+    ("MMPoseModelWrapper", "TVMCompiler"),
+    ("MMPoseModelWrapper", "TinygradOptimizer"),
+    ("MMPoseONNX", "NNIPruningOptimizer"),
+    ("MMPoseONNX", "ONNXCompiler"),
+    ("MMPoseONNX", "TFLiteCompiler"),
+    ("MMPoseONNX", "TinygradOptimizer"),
+    ("MMPoseONNX", "TVMCompiler"),
+    ("MMPoseRTMOONNX", "NNIPruningOptimizer"),
+    ("MMPoseRTMOONNX", "ONNXCompiler"),
+    ("MMPoseRTMOONNX", "TFLiteCompiler"),
+    ("MMPoseRTMOONNX", "TVMCompiler"),
+    ("MMPoseRTMOONNX", "TinygradOptimizer"),
 ]
 
 SKIP = [

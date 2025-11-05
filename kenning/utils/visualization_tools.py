@@ -41,32 +41,55 @@ class Limbs(IntEnum):
     LFoot = 16
 
 
-FACE_COLOR = (0, 0, 255)
-TORSO_COLOR = (255, 255, 0)
-RIGHT_ARM_COLOR = (255, 0, 0)
-LEFT_ARM_COLOR = (0, 255, 255)
-RIGHT_LEG_COLOR = (0, 255, 0)
-LEFT_LEG_COLOR = (255, 0, 255)
+FACE_COLOR = (1.0, 0.1, 0.2)
+RIGHT_ARM_COLOR = (0.0, 0.5, 1.0)
+LEFT_ARM_COLOR = (0, 1.0, 0)
+RIGHT_LEG_COLOR = (0.19, 0.1, 1.0)
+LEFT_LEG_COLOR = (0.91, 1.0, 0.17)
+
+KEYPOINT_COLORS = {
+    Limbs.Nose: FACE_COLOR,
+    Limbs.LEye: FACE_COLOR,
+    Limbs.REye: FACE_COLOR,
+    Limbs.LEar: FACE_COLOR,
+    Limbs.REar: FACE_COLOR,
+    Limbs.LShoulder: LEFT_ARM_COLOR,
+    Limbs.RShoulder: RIGHT_ARM_COLOR,
+    Limbs.LElbow: LEFT_ARM_COLOR,
+    Limbs.RElbow: RIGHT_ARM_COLOR,
+    Limbs.LHand: LEFT_ARM_COLOR,
+    Limbs.RHand: RIGHT_ARM_COLOR,
+    Limbs.LHip: LEFT_LEG_COLOR,
+    Limbs.RHip: RIGHT_LEG_COLOR,
+    Limbs.LKnee: LEFT_LEG_COLOR,
+    Limbs.RKnee: RIGHT_LEG_COLOR,
+    Limbs.LFoot: LEFT_LEG_COLOR,
+    Limbs.RFoot: RIGHT_LEG_COLOR,
+}
+
 
 POSE_LIMBS = {
-    Limbs.REye: {Limbs.LEye: FACE_COLOR, Limbs.REar: FACE_COLOR},
-    Limbs.LEye: {Limbs.LEar: FACE_COLOR},
-    Limbs.LEar: {Limbs.Nose: FACE_COLOR},
-    Limbs.REar: {Limbs.Nose: FACE_COLOR},
-    Limbs.Nose: {Limbs.RShoulder: TORSO_COLOR, Limbs.LShoulder: TORSO_COLOR},
-    Limbs.RShoulder: {
-        Limbs.LShoulder: TORSO_COLOR,
-        Limbs.RElbow: RIGHT_ARM_COLOR,
-        Limbs.RHip: TORSO_COLOR,
-    },
-    Limbs.RElbow: {
-        Limbs.RHand: RIGHT_ARM_COLOR,
-    },
-    Limbs.LShoulder: {Limbs.LHip: TORSO_COLOR, Limbs.LElbow: LEFT_ARM_COLOR},
-    Limbs.RHip: {Limbs.LHip: TORSO_COLOR, Limbs.RKnee: RIGHT_LEG_COLOR},
-    Limbs.RKnee: {Limbs.RFoot: RIGHT_LEG_COLOR},
-    Limbs.LHip: {Limbs.LKnee: LEFT_LEG_COLOR},
-    Limbs.LKnee: {Limbs.LFoot: LEFT_LEG_COLOR},
+    Limbs.REye: [Limbs.LEye, Limbs.REar],
+    Limbs.LEye: [Limbs.LEar],
+    Limbs.LEar: [Limbs.Nose],
+    Limbs.REar: [Limbs.Nose],
+    Limbs.Nose: [
+        Limbs.RShoulder,
+        Limbs.LShoulder,
+    ],
+    Limbs.RShoulder: [
+        Limbs.LShoulder,
+        Limbs.RElbow,
+        Limbs.RHip,
+    ],
+    Limbs.RElbow: [
+        Limbs.RHand,
+    ],
+    Limbs.LShoulder: [Limbs.LHip, Limbs.LElbow],
+    Limbs.RHip: [Limbs.LHip, Limbs.RKnee],
+    Limbs.RKnee: [Limbs.RFoot],
+    Limbs.LHip: [Limbs.LKnee],
+    Limbs.LKnee: [Limbs.LFoot],
 }
 
 
@@ -122,6 +145,8 @@ def draw_pose(
 
     bbox = pose.segm
 
+    GRADIENT_STEPS = 40
+
     pt1 = (int(bbox.xmin * w), int(bbox.ymin * h))
     pt2 = (int(bbox.xmax * w), int(bbox.ymax * h))
 
@@ -132,6 +157,8 @@ def draw_pose(
         color=bbox_color,
         thickness=bbox_thickness,
     )
+
+    w, h = (pt2[0] - pt1[0]), (pt2[1] - pt1[1])
 
     points = pose.keypoints
 
@@ -149,20 +176,35 @@ def draw_pose(
 
         limbs = POSE_LIMBS[limb1]
 
-        for limb2 in limbs.keys():
+        for limb2 in limbs:
             if limb2 in points_mapped.keys():
-                p1 = points_mapped[limb1]
-                p2 = points_mapped[limb2]
+                p1 = np.array(points_mapped[limb1]).astype(np.float32)
+                p2 = np.array(points_mapped[limb2]).astype(np.float32)
 
-                color = limbs[limb2]
+                color1 = np.array(KEYPOINT_COLORS[limb1]).astype(np.float32)
+                color2 = np.array(KEYPOINT_COLORS[limb2]).astype(np.float32)
 
-                out_img = cv2.line(
-                    img=out_img,
-                    pt1=p1,
-                    pt2=p2,
-                    color=color,
-                    thickness=line_thickness,
-                )
+                dp = (p2 - p1) / GRADIENT_STEPS
+                dcolor = (color2 - color1) / GRADIENT_STEPS
+
+                p2 = p1 + dp
+
+                for i in range(GRADIENT_STEPS):
+                    out_img = cv2.line(
+                        img=out_img,
+                        pt1=p1.astype(np.uint32),
+                        pt2=p2.astype(np.uint32),
+                        color=(
+                            float(color1[0]),
+                            float(color1[1]),
+                            float(color1[2]),
+                        ),
+                        thickness=line_thickness,
+                    )
+
+                    p1 += dp
+                    p2 += dp
+                    color1 += dcolor
 
     for point in points:
         out_img = cv2.circle(
@@ -170,7 +212,7 @@ def draw_pose(
             center=(int(point.x * w) + pt1[0], int(point.y * h) + pt1[1]),
             radius=keypoint_size,
             thickness=-1,
-            color=keypoint_color,
+            color=KEYPOINT_COLORS[point.id],
         )
 
     return out_img

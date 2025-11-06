@@ -2133,7 +2133,7 @@ class RecallPrecisionCurvesPlot(Plot):
         class_names: List[str],
         title: Optional[str] = None,
         width: int = DEFAULT_PLOT_SIZE,
-        height: int = DEFAULT_PLOT_SIZE,
+        height: int = int(1.5 * DEFAULT_PLOT_SIZE),
         cmap: Optional[Any] = None,
     ):
         """

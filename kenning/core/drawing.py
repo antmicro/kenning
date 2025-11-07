@@ -2223,10 +2223,9 @@ class RecallPrecisionCurvesPlot(Plot):
             x_axis_label="recall",
             y_axis_label="precision",
             output_backend="webgl",
-            max_width=self.width,
             max_height=self.height,
             match_aspect=True,
-            sizing_mode="scale_both",
+            sizing_mode="scale_width",
             height_policy="fit",
             width_policy="max",
             css_classes=["plot"],
@@ -2250,7 +2249,7 @@ class RecallPrecisionCurvesPlot(Plot):
                 )
             )
 
-        legend_ncol = 6
+        legend_ncol = 15
         for i in range((len(line_renderers) + legend_ncol - 1) // legend_ncol):
             labels = self.class_names[i * legend_ncol : (i + 1) * legend_ncol]
             renderers = line_renderers[i * legend_ncol : (i + 1) * legend_ncol]
@@ -2367,10 +2366,9 @@ class TruePositiveIoUHistogram(Plot):
             x_axis_label="IoU precision",
             y_axis_label="classes",
             output_backend="webgl",
-            max_width=self.width,
             max_height=self.height,
             match_aspect=True,
-            sizing_mode="scale_both",
+            sizing_mode="scale_width",
             height_policy="fit",
             width_policy="max",
             css_classes=["plot"],
@@ -2641,10 +2639,9 @@ class RecallPrecisionGradients(Plot):
             x_axis_label="recall",
             y_axis_label="classes",
             output_backend="webgl",
-            max_width=self.width,
             max_height=self.height,
             match_aspect=True,
-            sizing_mode="scale_both",
+            sizing_mode="scale_width",
             height_policy="fit",
             width_policy="max",
             css_classes=["plot"],

@@ -202,6 +202,7 @@ class Dataset(ArgumentsHandler, ABC):
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
         dataset_percentage: float = 1,
+        shuffle_data: bool = True,
     ):
         """
         Initializes dataset object.
@@ -234,6 +235,8 @@ class Dataset(ArgumentsHandler, ABC):
             Default seed used for dataset split.
         dataset_percentage : float
             Use given percentage of the dataset.
+        shuffle_data : bool
+            Shuffle dataset data when loading.
         """
         assert batch_size > 0
         assert (
@@ -258,6 +261,7 @@ class Dataset(ArgumentsHandler, ABC):
             if external_calibration_dataset is None
             else Path(external_calibration_dataset)
         )
+        self.shuffle_data = shuffle_data
         self.split_fraction_test = split_fraction_test
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
@@ -605,7 +609,8 @@ class Dataset(ArgumentsHandler, ABC):
 
         indices = list(range(len(self.dataX)))
         np.random.seed(seed)
-        np.random.shuffle(indices)
+        if self.shuffle_data:
+            np.random.shuffle(indices)
 
         if not val_fraction:
             # All data is for testing
@@ -628,7 +633,7 @@ class Dataset(ArgumentsHandler, ABC):
         else:
             assert test_fraction < 1.0
 
-        if stratify:
+        if stratify and self.shuffle_data:
             stratify_arg = self.dataY
         else:
             stratify_arg = None
@@ -646,7 +651,7 @@ class Dataset(ArgumentsHandler, ABC):
             indices,
             test_size=test_fraction,
             random_state=seed,
-            shuffle=True,
+            shuffle=self.shuffle_data,
             stratify=stratify_arg,
         )
 
@@ -660,7 +665,7 @@ class Dataset(ArgumentsHandler, ABC):
             ret += (dataItrain, dataItest)
 
         if val_fraction is not None and val_fraction != 0:
-            if stratify:
+            if stratify and self.shuffle_data:
                 stratify_arg = self.dataYtrain
             else:
                 stratify_arg = None
@@ -677,7 +682,7 @@ class Dataset(ArgumentsHandler, ABC):
                 dataItrain,
                 test_size=val_fraction / (1 - test_fraction),
                 random_state=seed,
-                shuffle=True,
+                shuffle=self.shuffle_data,
                 stratify=stratify_arg,
             )
             ret = (

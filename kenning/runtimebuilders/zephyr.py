@@ -186,7 +186,8 @@ class WestRun:
 
     @_ensure_zephyr_base
     def _prepare_venv(self):
-        venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
+        if not self._venv_dir.exists():
+            venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
 
         pip_upgrade = [
             str(self._venv_dir / "bin/pip"),

@@ -77,8 +77,8 @@ class _KLogger(logging.Logger, metaclass=Singleton):
     """
 
     FORMAT = (
-        "[%(asctime)-15s {package} %(filename)s:%(lineno)s] [%(levelname)s] "
-        "%(message)s"
+        "[%(asctime)-15s.%(msecs)04d {package} %(filename)s:%(lineno)s] "
+        "[%(levelname)s] %(message)s"
     )
 
     custom_log_backends = {}

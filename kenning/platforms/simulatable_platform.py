@@ -105,7 +105,7 @@ class SimulatablePlatform(Platform, ABC):
 
     platform_defaults = dict(
         Platform.platform_defaults,
-        runtime_log_init_msg="Inference server started",
+        runtime_init_log_msg="Inference server started",
         runtime_init_timeout=30,
         resc_dependencies=[],
         post_start_commands=[],
@@ -192,7 +192,7 @@ class SimulatablePlatform(Platform, ABC):
         else:
             self._init_hardware()
 
-        if self.runtime_log_init_msg is not None:
+        if self.runtime_init_log_msg is not None:
             self._wait_for_runtime_init()
 
     def deinit(self, measurements: Measurements):
@@ -380,7 +380,7 @@ class SimulatablePlatform(Platform, ABC):
         )
 
     def _wait_for_runtime_init(self):
-        if self.runtime_log_init_msg is not None and (
+        if self.runtime_init_log_msg is not None and (
             self.zephyr_console_enabled and self.simulated
         ):
             KLogger.info("Waiting for runtime init")
@@ -393,7 +393,7 @@ class SimulatablePlatform(Platform, ABC):
                 initialized = False
                 while runtime_log_idx < len(self.runtime_logs):
                     if (
-                        self.runtime_log_init_msg
+                        self.runtime_init_log_msg
                         in self.runtime_logs[runtime_log_idx]
                     ):
                         initialized = True
@@ -402,7 +402,7 @@ class SimulatablePlatform(Platform, ABC):
 
                 while renode_log_idx < len(self.renode_logs):
                     if (
-                        self.runtime_log_init_msg
+                        self.runtime_init_log_msg
                         in self.renode_logs[renode_log_idx]
                     ):
                         initialized = True

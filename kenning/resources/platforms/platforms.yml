@@ -85,7 +85,7 @@ rv32-springbok:
   - gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule
   post_start_commands:
   - sysbus.vec_controlblock WriteDoubleWord 0xc 0
-  runtime_log_init_msg: Runtime started
+  runtime_init_log_msg: Runtime started
   default_platform: BareMetalPlatform
   default_optimizer:
     - IREECompiler

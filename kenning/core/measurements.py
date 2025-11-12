@@ -469,6 +469,9 @@ class SystemStatsCollector(Thread):
                         if gpu and "GPU" in gpu:
                             gpumemutilization = float(gpu["RAM"])
                             gpuutilization = float(gpu["GPU"])
+                            cpupower = float(gpu["Power VDD_CPU_SOC_MSS"])
+                            gpupower = float(gpu["Power VDD_GPU"])
+
                             self.measurements += {
                                 f"{self.prefix}_gpu_utilization": [
                                     gpuutilization
@@ -480,6 +483,28 @@ class SystemStatsCollector(Thread):
                                     time.perf_counter()
                                 ],
                             }
+
+                        if gpu and "Power VDD_CPU_SOC_MSS" in gpu:
+                            cpupower = float(gpu["Power VDD_CPU_SOC_MSS"])
+
+                            self.measurements += {
+                                f"{self.prefix}_power_cpu": [cpupower]
+                            }
+
+                        if gpu and "Power VDD_GPU" in gpu:
+                            gpupower = float(gpu["Power VDD_GPU"])
+
+                            self.measurements += {
+                                f"{self.prefix}_power_gpu": [gpupower]
+                            }
+
+                        if gpu and "Power VIN_SYS_5V0" in gpu:
+                            sys5vpower = float(gpu["Power VIN_SYS_5V0"])
+
+                            self.measurements += {
+                                f"{self.prefix}_power_sys5v": [sys5vpower]
+                            }
+
                 elif self.nvidia_smi is not None:
                     gpu = self.nvidia_smi.DeviceQuery(
                         "memory.free, memory.total, utilization.gpu"
@@ -568,8 +593,8 @@ class SystemStatsCollector(Thread):
                     f"{self.prefix}_power_vdd_cpu_cv": vdd_cpu_cv,
                     f"{self.prefix}_power_vin_sys_5v0": vin_sys_5v0,
                     f"{self.prefix}_power_vddq_vdd2_1v8ao": vddq_vdd2_1v8ao,
-                    f"{self.prefix}_power_cpu": cpupower,
-                    f"{self.prefix}_power_gpu": gpupower,
+                    # f"{self.prefix}_power_cpu": cpupower,
+                    # f"{self.prefix}_power_gpu": gpupower,
                     f"{self.prefix}_power_soc": socpower,
                     f"{self.prefix}_power_cv": cvpower,
                     f"{self.prefix}_power_vddrq": vddrqpower,

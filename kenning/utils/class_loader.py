@@ -34,6 +34,7 @@ from kenning.core.automl import AutoML
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
+from kenning.core.inferenceloop import InferenceLoop
 from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.optimizer import Optimizer
@@ -61,6 +62,7 @@ ONNX_CONVERSIONS = "onnxconversions"
 OUTPUT_COLLECTORS = "outputcollectors"
 PLATFORMS = "platforms"
 RUNTIME_BUILDERS = "runtimebuilders"
+INFERENCE_LOOPS = "inferenceloops"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
 AUTOML = "automl"
@@ -82,6 +84,7 @@ class ConfigKey(str, Enum):
     protocol = RUNTIME_PROTOCOLS
     model_wrapper = MODEL_WRAPPERS
     runtime_builder = RUNTIME_BUILDERS
+    inference_loop = INFERENCE_LOOPS
     dataconverter = DATA_CONVERTERS
     automl = AUTOML
     report = REPORT
@@ -108,6 +111,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         OUTPUT_COLLECTORS: ("kenning.outputcollectors", OutputCollector),
         PLATFORMS: ("kenning.platforms", Platform),
         RUNTIME_BUILDERS: ("kenning.runtimebuilders", RuntimeBuilder),
+        INFERENCE_LOOPS: ("kenning.inferenceloops", InferenceLoop),
         RUNTIME_PROTOCOLS: ("kenning.protocols", Protocol),
         RUNTIMES: ("kenning.runtimes", Runtime),
         AUTOML: ("kenning.automl", AutoML),
@@ -342,6 +346,18 @@ def objs_from_json(
         ]
     else:
         objs[ConfigKey.optimizers] = []
+
+    if ConfigKey.inference_loop in keys:
+        objs[ConfigKey.inference_loop] = obj_from_json(
+            json_cfg,
+            ConfigKey.inference_loop,
+            dataset=objs.get(ConfigKey.dataset),
+            dataconverter=objs.get(ConfigKey.dataconverter),
+            model_wrapper=objs.get(ConfigKey.model_wrapper),
+            platform=objs.get(ConfigKey.platform),
+            protocol=objs.get(ConfigKey.protocol),
+            runtime=objs.get(ConfigKey.runtime),
+        )
 
     return objs
 

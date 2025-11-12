@@ -11,21 +11,18 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from tqdm import tqdm
-
 from kenning.cli.command_template import OPTIMIZE, TEST, CommandTemplate
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
     KenningOptimizerError,
-    ModelTooLargeError,
     NotSupportedError,
 )
+from kenning.core.inferenceloop import InferenceLoop
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
-    tagmeasurements,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
@@ -40,7 +37,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
 from kenning.platforms.local import LocalPlatform
 from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.class_loader import ConfigKey, objs_from_json
-from kenning.utils.logger import KLogger, LoggerProgressBar
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -59,6 +56,7 @@ class PipelineRunner(object):
         model_wrapper: Optional[ModelWrapper] = None,
         runtime: Optional[Runtime] = None,
         runtime_builder: Optional[RuntimeBuilder] = None,
+        inference_loop: Optional[InferenceLoop] = None,
         configuration_path: Optional[Path] = None,
         report: Optional[Report] = None,
     ):
@@ -83,6 +81,8 @@ class PipelineRunner(object):
             Runtime object that runs the inference.
         runtime_builder : Optional[RuntimeBuilder]
             RuntimeBuilder object that builds the runtime.
+        inference_loop: Optional[InferenceLoop]
+            InferenceLoop object that handles inference
         configuration_path : Optional[Path]
             Path to the file containing configuration.
         report: Optional[Report]
@@ -101,6 +101,7 @@ class PipelineRunner(object):
         self.model_wrapper = model_wrapper
         self.runtime = runtime
         self.runtime_builder = runtime_builder
+        self.inference_loop = inference_loop
         self.should_cancel = False
         self.configuration_path = configuration_path
 
@@ -169,6 +170,12 @@ class PipelineRunner(object):
         for optim in optimizers:
             optim.read_platform(self.platform)
 
+        if self.inference_loop is not None:
+            if self.protocol is not None:
+                self.inference_loop._protocol = self.protocol
+            if self.dataconverter is not None:
+                self.inference_loop._dataconverter = self.dataconverter
+
     @classmethod
     def from_json_cfg(
         cls,
@@ -187,6 +194,7 @@ class PipelineRunner(object):
             ConfigKey.model_wrapper,
             ConfigKey.dataconverter,
             ConfigKey.runtime_builder,
+            ConfigKey.inference_loop,
             *([ConfigKey.report] if include_measurements else []),
             *([ConfigKey.runtime] if not skip_runtime else []),
             *([ConfigKey.optimizers] if not skip_optimizers else []),
@@ -231,6 +239,7 @@ class PipelineRunner(object):
             "model_wrapper",
             "runtime",
             "runtime_builder",
+            "inference_loop",
         ]:
             obj = getattr(self, obj_name)
             if obj is None:
@@ -457,7 +466,7 @@ class PipelineRunner(object):
                     # Handle LLEXT upload
                     self._handle_runtime_upload()
 
-                    self._inference_loop(
+                    self._run_inference_loop(
                         measurements, model_path, remote=protocol_required
                     )
                 except Exception:
@@ -734,7 +743,44 @@ class PipelineRunner(object):
         KLogger.info(f"Compiled model path: {model_path}")
         return model_path
 
-    def _inference_loop(
+    def _get_inference_loop(
+        self, model_path: Optional[str] = None, remote: bool = False
+    ):
+        if self.inference_loop:
+            return self.inference_loop
+
+        generic_params = {
+            "dataset": self.dataset,
+            "dataconverter": self.dataconverter,
+            "model_wrapper": self.model_wrapper,
+            "platform": self.platform,
+            "protocol": self.protocol,
+            "runtime": self.runtime,
+        }
+
+        if remote:
+            if hasattr(self.platform, "sensors") and self.platform.sensors:
+                from kenning.inferenceloops.sensor_realtime import (
+                    SensorRealtimeInferenceLoop,
+                )
+
+                return SensorRealtimeInferenceLoop(**generic_params)
+            else:
+                from kenning.inferenceloops.remote_sequential import (
+                    RemoteSequentialInferenceLoop,
+                )
+
+                return RemoteSequentialInferenceLoop(
+                    **generic_params, model_path=model_path
+                )
+        else:
+            from kenning.inferenceloops.local_sequential import (
+                LocalSequentialInferenceLoop,
+            )
+
+            return LocalSequentialInferenceLoop(**generic_params)
+
+    def _run_inference_loop(
         self,
         measurements: Measurements,
         model_path: Path,
@@ -754,210 +800,12 @@ class PipelineRunner(object):
         """
         KLogger.info("Starting inference loop")
 
-        try:
-            if remote:
-                self._remote_inference_prepare(model_path)
-            else:
-                self._local_inference_prepare()
-
-            use_platform_sensor = (
-                getattr(self.platform, "sensor", None) is not None
-            )
-
-            # prepare iterator for inference
-            iterable = (
-                range(self.platform.number_of_batches)
-                if use_platform_sensor
-                else self.dataset.iter_test()
-            )
-
-            with LoggerProgressBar() as logger_progress_bar:
-                for sample in tqdm(iterable, **logger_progress_bar.kwargs):
-                    if self.should_cancel:
-                        break
-
-                    if use_platform_sensor:
-                        preds = self._sensor_inference_step()
-                        y = None
-                    else:
-                        X, y = sample
-
-                        prepX = tagmeasurements("preprocessing")(
-                            self.dataconverter.to_next_block
-                        )(X)
-
-                        if remote:
-                            preds = self._remote_inference_step(prepX)
-                            measurements += self.protocol.download_statistics(
-                                final=False
-                            )
-                        else:
-                            preds = self._local_inference_step(prepX)
-
-                    posty = tagmeasurements("postprocessing")(
-                        self.dataconverter.to_previous_block
-                    )(preds)
-
-                    measurements += self.dataset._evaluate(posty, y)
-
-                    self.platform.inference_step_callback()
-
-        except KeyboardInterrupt:
-            KLogger.info("Stopping inference...")
-        else:
-            if remote:
-                measurements += self.protocol.download_statistics(final=True)
-        finally:
-            if remote:
-                self._remote_inference_cleanup()
-            else:
-                self._local_inference_cleanup()
-
-    def _remote_inference_prepare(self, model_path: Path):
-        """
-        Uploads model to the remote platform.
-
-        Parameters
-        ----------
-        model_path : Path
-            Path to the model.
-
-        Raises
-        ------
-        FileNotFoundError
-            Raised when IO specification is not found.
-        """
-        compiled_model_path = None
-
-        if self.runtime is not None:
-            spec_path = self.runtime.get_io_spec_path(model_path)
-            if not spec_path.exists():
-                KLogger.error("No Input/Output specification found")
-                raise FileNotFoundError("IO specification not found")
-            if (ram_kb := getattr(self.platform, "ram_size_kb", None)) and (
-                (model_kb := model_path.stat().st_size // 1024) > ram_kb
-            ):
-                KLogger.error(
-                    f"Model ({model_kb}KB) does not fit "
-                    f"into board's RAM ({ram_kb}KB)"
-                )
-                raise ModelTooLargeError(
-                    f"Model too large ({model_kb}KB > {ram_kb}KB)"
-                )
-
-            check_request(
-                self.protocol.upload_io_specification(spec_path),
-                "upload io spec",
-            )
-
-            compiled_model_path = (
-                self.runtime.preprocess_model_to_upload(model_path)
-                if model_path is not None
-                else None
-            )
-
-        check_request(
-            self.protocol.upload_model(compiled_model_path), "upload model"
+        inference_loop = self._get_inference_loop(
+            model_path=model_path,
+            remote=remote,
         )
 
-    def _remote_inference_cleanup(self):
-        """
-        Cleanups remote inference.
-        """
-        self.protocol.disconnect()
-
-    def _remote_inference_step(self, X: any) -> any:
-        """
-        Performs inference step on remote platform.
-
-        Parameters
-        ----------
-        X : any
-            Inference input data.
-
-        Returns
-        -------
-        any
-            Inference output data.
-        """
-        if self.model_wrapper is not None:
-            prepX = self.model_wrapper.convert_input_to_bytes(X)
-        else:
-            prepX = X
-        check_request(self.protocol.upload_input(prepX), "send input")
-        check_request(
-            self.protocol.request_processing(self.platform.get_time),
-            "inference",
-        )
-        _, preds = check_request(
-            self.protocol.download_output(), "receive output"
-        )
-        KLogger.debug("Received output")
-        if self.model_wrapper is not None:
-            preds = self.model_wrapper.convert_output_from_bytes(preds)
-
-        return preds
-
-    def _local_inference_prepare(self):
-        """
-        Starts local inference sessions.
-        """
-        if self.runtime is not None:
-            self.runtime.inference_session_start()
-            assert (
-                self.runtime.prepare_local()
-            ), "Cannot prepare local environment"
-
-    def _local_inference_cleanup(self):
-        """
-        Stops local inference sessions.
-        """
-        if self.runtime is not None:
-            self.runtime.inference_session_end()
-
-    def _local_inference_step(self, X: any) -> any:
-        """
-        Performs inference step on local platform.
-
-        Parameters
-        ----------
-        X : any
-            Inference input data.
-
-        Returns
-        -------
-        any
-            Inference output data.
-        """
-        succeed = self.runtime.load_input(X)
-        if not succeed:
-            return None
-        self.runtime._run()
-        preds = self.runtime.extract_output()
-
-        return preds
-
-    def _sensor_inference_step(self) -> any:
-        """
-        Performs inference step using data read from sensor.
-
-        Returns
-        -------
-        any
-            Inference output data.
-        """
-        check_request(
-            self.protocol.request_processing(self.platform.get_time),
-            "inference",
-        )
-        _, preds = check_request(
-            self.protocol.download_output(), "receive output"
-        )
-        KLogger.debug("Received output")
-        if self.model_wrapper is not None:
-            preds = self.model_wrapper.convert_output_from_bytes(preds)
-
-        return preds
+        measurements += inference_loop.run()
 
     @staticmethod
     def assert_io_formats(

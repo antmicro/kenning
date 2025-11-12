@@ -36,6 +36,18 @@ class ZephyrPlatform(BareMetalPlatform):
             "nullable": True,
             "default": None,
         },
+        "sensors": {
+            "description": "REPL paths to sensors",
+            "type": list[str],
+            "nullable": True,
+            "default": None,
+        },
+        "sensors_frequency": {
+            "description": "Frequency of sensors data",
+            "type": float,
+            "nullable": True,
+            "default": None,
+        },
     }
 
     def __init__(
@@ -63,6 +75,8 @@ class ZephyrPlatform(BareMetalPlatform):
         llext_binary_path: Optional[PathOrURI] = None,
         sensor: Optional[str] = None,
         number_of_batches: int = 16,
+        sensors: Optional[list[str]] = None,
+        sensors_frequency: Optional[float] = None,
     ):
         """
         Constructs Zephyr platform.
@@ -119,9 +133,16 @@ class ZephyrPlatform(BareMetalPlatform):
             Name of the sensor.
         number_of_batches : int
             Number of batches available.
+        sensors : Optional[list[str]]
+            List of sensors used for feeding data
+        sensors_frequency: Optional[float]
+            Sensor data feeding frequency
         """
         self.zephyr_build_path = zephyr_build_path
         self.llext_binary_path = llext_binary_path
+
+        self.sensors = sensors
+        self.sensors_frequency = sensors_frequency
 
         super().__init__(
             name=name,

@@ -18,6 +18,7 @@ from kenning.core.exceptions import (
     VisualEditorGraphParserError,
 )
 from kenning.core.helpers.utils import is_list_of_dicts
+from kenning.core.inferenceloop import InferenceLoop
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.pipeline_manager.core import (
@@ -134,6 +135,7 @@ class PipelineHandler(BaseDataflowHandler):
             "model_wrapper",
             "runtime",
             "runtime_builder",
+            "inference_loop",
             "platform",
             "protocol",
         ]
@@ -230,6 +232,7 @@ class PipelineHandler(BaseDataflowHandler):
             "kenning.platforms",
             "kenning.protocols",
             "kenning.runtimebuilders",
+            "kenning.inferenceloops",
             "kenning.runtimes",
             "kenning.optimizers",
         ]
@@ -246,6 +249,7 @@ class PipelineHandler(BaseDataflowHandler):
         }
         base_type_names[ModelWrapper] = "model_wrapper"
         base_type_names[RuntimeBuilder] = "runtime_builder"
+        base_type_names[InferenceLoop] = "inference_loop"
         for base_module, base_type in base_classes:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
@@ -324,6 +328,10 @@ class PipelineHandler(BaseDataflowHandler):
                 "outputs": [],
             },
             "runtime_builder": {
+                "inputs": [],
+                "outputs": [],
+            },
+            "inference_loop": {
                 "inputs": [],
                 "outputs": [],
             },
@@ -412,6 +420,7 @@ class PipelineGraphCreator(GraphCreator):
             "model_wrapper",
             "runtime",
             "runtime_builder",
+            "inference_loop",
             "dataset",
             "platform",
             "protocol",

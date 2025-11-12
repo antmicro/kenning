@@ -221,6 +221,26 @@ class SimulatablePlatform(Platform, ABC):
         else:
             return super().get_time()
 
+    def renode_run_for(self, seconds):
+        from pyrenode3.wrappers import Emulation  # isort: skip
+        from Antmicro.Renode.Time import TimeInterval
+
+        emu = Emulation()
+
+        emu.RunFor(TimeInterval.FromMicroseconds(int(seconds * 1e6)))
+
+    def renode_pause(self):
+        from pyrenode3.wrappers import Emulation
+
+        emu = Emulation()
+        emu.PauseAll()
+
+    def renode_resume(self):
+        from pyrenode3.wrappers import Emulation
+
+        emu = Emulation()
+        emu.StartAll()
+
     def setup_runtime_log_reader(self):
         """
         Setups runtime logs reader.

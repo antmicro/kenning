@@ -221,7 +221,10 @@ def get_all_subclasses(
         for b in class_def.bases:
             if not hasattr(b, "id"):
                 continue
+
             if b.id == cls.__name__:
+                found_subclass = True
+            elif b.id in [x.__name__ for x in cls.__subclasses__()]:
                 found_subclass = True
             elif b.id in subclasses or (
                 b.id in classes_defs and collect_subclasses(classes_defs[b.id])

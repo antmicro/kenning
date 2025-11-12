@@ -7,13 +7,9 @@ Module containing decorators for benchmark data gathering.
 """
 
 import json
-import re
-import subprocess
-import tempfile
 import time
 from functools import wraps
 from pathlib import Path
-from shutil import which
 from threading import Condition, Thread
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
@@ -444,82 +440,23 @@ class SystemStatsCollector(Thread):
     def run(self):
         self.measurements = Measurements()
         self.running = True
-        tegrastatsoutputfd = None
-        try:
-            tegrastats = which("tegrastats")
-            if tegrastats is not None:
-                tegrastatsoutput = tempfile.NamedTemporaryFile()
-                tegrastatsoutputfd = open(tegrastatsoutput.name, "w")
-                tegrastatsproc = subprocess.Popen(
-                    f"{tegrastats} --interval {self.step * 1000}".split(" "),
-                    stdout=tegrastatsoutputfd,
-                )
-            while self.running:
-                cpus = psutil.cpu_percent(interval=0, percpu=True)
-                mem = psutil.virtual_memory()
-                self.measurements += {
-                    f"{self.prefix}_cpus_percent": [cpus],
-                    f"{self.prefix}_mem_percent": [mem.percent],
-                    f"{self.prefix}_timestamp": [time.perf_counter()],
-                }
 
-                if jtop is not None:
-                    with jtop() as jetson:
-                        gpu = jetson.stats
-                        if gpu and "GPU" in gpu:
-                            gpumemutilization = float(gpu["RAM"])
-                            gpuutilization = float(gpu["GPU"])
-                            cpupower = float(gpu["Power VDD_CPU_SOC_MSS"])
-                            gpupower = float(gpu["Power VDD_GPU"])
+        while self.running:
+            cpus = psutil.cpu_percent(interval=0, percpu=True)
+            mem = psutil.virtual_memory()
+            self.measurements += {
+                f"{self.prefix}_cpus_percent": [cpus],
+                f"{self.prefix}_mem_percent": [mem.percent],
+                f"{self.prefix}_timestamp": [time.perf_counter()],
+            }
 
-                            self.measurements += {
-                                f"{self.prefix}_gpu_utilization": [
-                                    gpuutilization
-                                ],
-                                f"{self.prefix}_gpu_mem_utilization": [
-                                    gpumemutilization
-                                ],
-                                f"{self.prefix}_gpu_timestamp": [
-                                    time.perf_counter()
-                                ],
-                            }
+            if jtop is not None:
+                with jtop() as jetson:
+                    gpu = jetson.stats
+                    if gpu and "GPU" in gpu:
+                        gpumemutilization = float(gpu["RAM"])
+                        gpuutilization = float(gpu["GPU"])
 
-                        if gpu and "Power VDD_CPU_SOC_MSS" in gpu:
-                            cpupower = float(gpu["Power VDD_CPU_SOC_MSS"])
-
-                            self.measurements += {
-                                f"{self.prefix}_power_cpu": [cpupower]
-                            }
-
-                        if gpu and "Power VDD_GPU" in gpu:
-                            gpupower = float(gpu["Power VDD_GPU"])
-
-                            self.measurements += {
-                                f"{self.prefix}_power_gpu": [gpupower]
-                            }
-
-                        if gpu and "Power VIN_SYS_5V0" in gpu:
-                            sys5vpower = float(gpu["Power VIN_SYS_5V0"])
-
-                            self.measurements += {
-                                f"{self.prefix}_power_sys5v": [sys5vpower]
-                            }
-
-                elif self.nvidia_smi is not None:
-                    gpu = self.nvidia_smi.DeviceQuery(
-                        "memory.free, memory.total, utilization.gpu"
-                    )
-                    if gpu and "gpu" in gpu:
-                        memtot = float(
-                            gpu["gpu"][0]["fb_memory_usage"]["total"]
-                        )
-                        memfree = float(
-                            gpu["gpu"][0]["fb_memory_usage"]["free"]
-                        )
-                        gpumemutilization = (memtot - memfree) / memtot * 100.0
-                        gpuutilization = float(
-                            gpu["gpu"][0]["utilization"]["gpu_util"]
-                        )
                         self.measurements += {
                             f"{self.prefix}_gpu_utilization": [gpuutilization],
                             f"{self.prefix}_gpu_mem_utilization": [
@@ -530,79 +467,64 @@ class SystemStatsCollector(Thread):
                             ],
                         }
 
-                with self.runningcondition:
-                    self.runningcondition.wait(timeout=self.step)
-            if tegrastats:
-                tegrastatsproc.terminate()
-                tegrastatsoutputfd.close()
-                with open(tegrastatsoutput.name, "r") as tegrastatsoutputfd:
-                    readings = tegrastatsoutputfd.read().split("\n")
-                tegrastatsoutputfd = None
-                ramusages = []
-                vdd_gpu_soc = []
-                vdd_cpu_cv = []
-                vin_sys_5v0 = []
-                vddq_vdd2_1v8ao = []
-                cpupower = []
-                gpupower = []
-                socpower = []
-                cvpower = []
-                vddrqpower = []
-                sys5vpower = []
-                for entry in readings:
-                    match = re.match(r".*RAM (\d+)/(\d+)MB", entry)
-                    if match:
-                        currram = float(match.group(1))
-                        totram = float(match.group(2))
-                        ramusages.append(int(currram / totram * 100))
-                    match = re.match(r".*GR3D_FREQ (\d+)%", entry)
-                    if match:
-                        vdd_gpu_soc.append(int(match.group(1)))
-                    match = re.match(r".*VDD_CPU_CV (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        vdd_cpu_cv.append(int(match.group(1)))
-                    match = re.match(r".*VIN_SYS_5V0 (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        vin_sys_5v0.append(int(match.group(1)))
-                    match = re.match(
-                        r".*VDDQ_VDD2_1V8AO (\d+)mW/(\d+)mW", entry
-                    )
-                    if match:
-                        vddq_vdd2_1v8ao.append(int(match.group(1)))
-                    match = re.match(r".*CPU (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        cpupower.append(int(match.group(1)))
-                    match = re.match(r".*GPU (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        gpupower.append(int(match.group(1)))
-                    match = re.match(r".*SOC (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        socpower.append(int(match.group(1)))
-                    match = re.match(r".*CV (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        cvpower.append(int(match.group(1)))
-                    match = re.match(r".*VDDRQ (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        vddrqpower.append(int(match.group(1)))
-                    match = re.match(r".*SYS5V (\d+)mW/(\d+)mW", entry)
-                    if match:
-                        sys5vpower.append(int(match.group(1)))
+                    # collect power information from each lines:
 
-                self.measurements += {
-                    f"{self.prefix}_power_vdd_gpu_soc": vdd_gpu_soc,
-                    f"{self.prefix}_power_vdd_cpu_cv": vdd_cpu_cv,
-                    f"{self.prefix}_power_vin_sys_5v0": vin_sys_5v0,
-                    f"{self.prefix}_power_vddq_vdd2_1v8ao": vddq_vdd2_1v8ao,
-                    # f"{self.prefix}_power_cpu": cpupower,
-                    # f"{self.prefix}_power_gpu": gpupower,
-                    f"{self.prefix}_power_soc": socpower,
-                    f"{self.prefix}_power_cv": cvpower,
-                    f"{self.prefix}_power_vddrq": vddrqpower,
-                    f"{self.prefix}_power_sys5v": sys5vpower,
-                }
-        finally:
-            if tegrastatsoutputfd:
-                tegrastatsoutputfd.close()
+                    if hasattr(jetson, "power"):
+                        power = jetson.power
+
+                        if "rail" in power:
+                            rails = power["rail"]
+
+                            for name, stats in rails.items():
+                                voltage = float(stats["volt"])
+                                current = float(stats["curr"])
+                                power = float(stats["power"])
+
+                                name = name.lower()
+
+                                self.measurements += {
+                                    f"{self.prefix}_{name}_voltage": [voltage],
+                                    f"{self.prefix}_{name}_current": [current],
+                                    f"{self.prefix}_{name}_power": [power],
+                                }
+
+                    # collect frequency information from each engine:
+
+                    if hasattr(jetson, "engine"):
+                        engines = jetson.engine
+
+                        for group in engines.keys():
+                            for name, engine in engines[group].items():
+                                frequency = float(engine["cur"])
+                                name = name.lower()
+
+                                self.measurements += {
+                                    f"{self.prefix}_{name}_frequency": [
+                                        frequency
+                                    ],
+                                }
+
+            elif self.nvidia_smi is not None:
+                gpu = self.nvidia_smi.DeviceQuery(
+                    "memory.free, memory.total, utilization.gpu"
+                )
+                if gpu and "gpu" in gpu:
+                    memtot = float(gpu["gpu"][0]["fb_memory_usage"]["total"])
+                    memfree = float(gpu["gpu"][0]["fb_memory_usage"]["free"])
+                    gpumemutilization = (memtot - memfree) / memtot * 100.0
+                    gpuutilization = float(
+                        gpu["gpu"][0]["utilization"]["gpu_util"]
+                    )
+                    self.measurements += {
+                        f"{self.prefix}_gpu_utilization": [gpuutilization],
+                        f"{self.prefix}_gpu_mem_utilization": [
+                            gpumemutilization
+                        ],
+                        f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+                    }
+
+            with self.runningcondition:
+                self.runningcondition.wait(timeout=self.step)
 
     def stop(self):
         self.running = False

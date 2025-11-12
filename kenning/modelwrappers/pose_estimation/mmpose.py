@@ -212,7 +212,7 @@ class MMPoseModelWrapper(ModelWrapper):
         x = X[0][0] * 255
 
         if x.shape[0] == 3:
-            x = np.transpose(X, (1, 2, 0))
+            x = np.transpose(x, (1, 2, 0))
 
         self._last_image = np.ascontiguousarray(x)
 

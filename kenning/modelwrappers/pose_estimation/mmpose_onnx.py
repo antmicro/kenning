@@ -368,9 +368,8 @@ class MMPoseDetectionInput(MMPoseONNX):
 
         frame = X.frame
 
-        KLogger.debug(f"Frame shape: {frame.shape}")
-
-        frame = np.transpose(frame, (1, 2, 0))
+        if frame.shape[0] == 3:
+            frame = np.transpose(frame, (1, 2, 0))
 
         w, h, _ = frame.shape
 
@@ -403,11 +402,7 @@ class MMPoseDetectionInput(MMPoseONNX):
                 )
             )
 
-            KLogger.debug(f"Cropped {x},{y} size: {cw}, {ch}")
-
             X = frame[y:ch, x:cw]
-
-            KLogger.debug(f"Cropped: {X.shape}")
 
             X = cv2.resize(X, self.input_size)
 

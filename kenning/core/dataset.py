@@ -393,17 +393,28 @@ class Dataset(ArgumentsHandler, ABC):
         indices = split[4]
         return DatasetIterator(self, indices)
 
-    def iter_test(self) -> "DatasetIterator":
+    def iter_test(self, shuffle: bool = True) -> "DatasetIterator":
         """
         Iterates over test data obtained from split.
+
+        Parameters
+        ----------
+        shuffle : bool
+            Shuffle samples
 
         Returns
         -------
         DatasetIterator
             Iterator over data samples.
         """
-        split = self.train_test_split_representations(append_index=True)
-        indices = split[5]
+        if shuffle:
+            split = self.train_test_split_representations(append_index=True)
+            indices = split[5]
+        else:
+            indices = range(
+                len(self.dataX)
+            )  # TODO: add proper val and test fractions
+
         return DatasetIterator(self, indices)
 
     def iter_val(self) -> "DatasetIterator":

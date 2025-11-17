@@ -20,6 +20,7 @@ from kenning.core.exceptions import (
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.modelwrappers.frameworks.pytorch import Tensor
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 # PyTorch-specific type hints.
@@ -109,6 +110,15 @@ class ExecuTorchOptimizer(Optimizer):
             "type": float,
             "default": 0.05,
         },
+        "backends": {
+            "argparse_name": "--backends",
+            "description": (
+                "What ExecuTorch backends the model will be optimized for."
+                " Available: XNNPACK, CoreML"
+            ),
+            "type": List[str],
+            "default": [],
+        },
     }
 
     def __init__(
@@ -120,6 +130,7 @@ class ExecuTorchOptimizer(Optimizer):
         model_framework: Literal["torch"] = "torch",
         quantize: bool = False,
         dataset_percentage: float = 0.05,
+        backends: List[str] = [],
     ):
         super().__init__(
             dataset=dataset,
@@ -130,6 +141,7 @@ class ExecuTorchOptimizer(Optimizer):
         self.model_framework = model_framework
         self.quantize = quantize
         self.dataset_percentage = dataset_percentage
+        self.backends = backends
 
     def _extract_shapes_from_io_specification(
         self,
@@ -231,11 +243,27 @@ class ExecuTorchOptimizer(Optimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ) -> None:
-        from executorch.backends.xnnpack.partition.xnnpack_partitioner import (
-            XnnpackPartitioner,
-        )
         from executorch.exir import to_edge_transform_and_lower
         from torch.export import export
+
+        partitioners = []
+        for backend in self.backends:
+            if "XNNPACK" == backend:
+                import executorch.backends.xnnpack.partition as xnnpart
+
+                partitioners.append(
+                    xnnpart.xnnpack_partitioner.XnnpackPartitioner()
+                )
+            elif "CoreML" == backend:
+                from executorch.backends.apple.coreml.partition import (
+                    CoreMLPartitioner,
+                )
+
+                partitioners.append(CoreMLPartitioner())
+            else:
+                KLogger.warning(
+                    f"Attempted to use unsupported backend: {backend}"
+                )
 
         if not input_model_path.exists():
             resolved_path = input_model_path.resolve()
@@ -268,7 +296,7 @@ class ExecuTorchOptimizer(Optimizer):
             exported_program = self._apply_quantization(io_spec=io_spec)
 
         executorch_program = to_edge_transform_and_lower(
-            exported_program, partitioner=[XnnpackPartitioner()]
+            exported_program, partitioner=partitioners
         ).to_executorch()
 
         with open(self.compiled_model_path, "wb") as f:

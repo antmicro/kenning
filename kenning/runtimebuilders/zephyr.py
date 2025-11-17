@@ -307,6 +307,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         "tflite",
         "tvm",
         "ai8x_c",
+        "executorch",
+        "iree_vmvx",
+        "iree_embedded_elf",
     ]
 
     def __init__(

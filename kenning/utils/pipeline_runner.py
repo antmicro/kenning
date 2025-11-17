@@ -1001,7 +1001,7 @@ class PipelineRunner(object):
                 continue
 
             output_formats_str = ", ".join(previous_block.get_output_formats())
-            input_formats_str = ", ".join(previous_block.get_output_formats())
+            input_formats_str = ", ".join(next_block.get_input_formats())
             raise ValueError(
                 f"No matching formats between two objects: {previous_block} "
                 f"and {next_block}\n"

@@ -75,8 +75,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         learning_rate: Optional[float] = None,
         num_epochs: Optional[int] = None,
         logdir: Optional[Path] = None,
+        export_dict: bool = True,
     ):
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
         self.class_count = class_count
         if hasattr(dataset, "numclasses"):
             self.numclasses = dataset.numclasses

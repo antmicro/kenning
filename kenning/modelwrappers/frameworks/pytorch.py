@@ -31,9 +31,14 @@ class PyTorchWrapper(ModelWrapper, ABC):
     Base model wrapper for PyTorch models.
     """
 
-    # Whether model should be saved as exported dict with parameters
-    # or as pickled object
-    DEFAULT_SAVE_MODEL_EXPORT_DICT = True
+    arguments_structure = {
+        "export_dict": {
+            "argparse_name": "--export-dict",
+            "description": "If enabled, only the model state dictionary will be saved, not the whole model.",  # noqa: E501
+            "type": bool,
+            "default": True,
+        },
+    }
 
     def __init__(
         self,
@@ -41,8 +46,10 @@ class PyTorchWrapper(ModelWrapper, ABC):
         dataset: Dataset,
         from_file: bool = True,
         model_name: Optional[str] = None,
+        export_dict: bool = True,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
+        self.export_dict = export_dict
         self._device = None
 
     @property
@@ -133,7 +140,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
         self.prepare_model()
         if export_dict is None:
-            export_dict = self.DEFAULT_SAVE_MODEL_EXPORT_DICT
+            export_dict = self.export_dict
         if export_dict:
             torch.save(self.model.state_dict(), model_path)
         else:

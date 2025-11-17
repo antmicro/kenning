@@ -60,8 +60,6 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
     <https://arxiv.org/pdf/1804.03599.pdf>
     """
 
-    DEFAULT_SAVE_MODEL_EXPORT_DICT = False
-
     default_dataset = AnomalyDetectionDataset
     arguments_structure = {
         "encoder_neuron_list": {
@@ -188,6 +186,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         learning_rate: Optional[float] = None,
         num_epochs: Optional[int] = None,
         evaluate: bool = True,
+        export_dict: bool = False,
     ):
         """
         Creates the model wrapper with VAE.
@@ -231,8 +230,13 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             Number of epochs to train for.
         evaluate : bool
             True if the model should be evaluated each epoch.
+        export_dict: bool
+            If true, by default only state dictionary will be save when calling
+            'save_model' method.
         """
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
 
         self.encoder_neuron_list = encoder_neuron_list
         self.decoder_neuron_list = decoder_neuron_list

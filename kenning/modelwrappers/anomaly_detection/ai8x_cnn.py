@@ -99,6 +99,7 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
         qat_weight_bits: int = 8,
         qat_outlier_removal_z_score: float = 8.0,
         ai8x_training_path: Optional[Path] = None,
+        export_dict: bool = True,
     ):
         super().__init__(
             model_path=model_path,
@@ -123,6 +124,7 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
             num_epochs=num_epochs,
             evaluate=evaluate,
             logdir=logdir,
+            export_dict=export_dict,
         )
 
         self.quantize_activation = quantize_activation
@@ -144,6 +146,7 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
             raise FileNotFoundError(f"{ai8x_training_path} not found")
 
         self.ai8x_training_path = ai8x_training_path
+        self.export_dict = export_dict
 
     @staticmethod
     def _setup_device(platform: Platform, ai8x_training_path: Path):
@@ -229,7 +232,7 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
             else self.model.to_pure_torch()
         )
         if export_dict is None:
-            export_dict = self.DEFAULT_SAVE_MODEL_EXPORT_DICT
+            export_dict = self.export_dict
         if export_dict:
             torch.save(model.state_dict(), model_path)
         else:

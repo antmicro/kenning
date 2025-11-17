@@ -30,8 +30,6 @@ class PyTorchAnomalyDetectionCNN(PyTorchWrapper, AutoPyTorchModel):
     It is compatible with AutoML flow.
     """
 
-    DEFAULT_SAVE_MODEL_EXPORT_DICT = False
-
     default_dataset = AnomalyDetectionDataset
     arguments_structure = {
         "filters": {
@@ -184,8 +182,11 @@ class PyTorchAnomalyDetectionCNN(PyTorchWrapper, AutoPyTorchModel):
         num_epochs: Optional[int] = None,
         evaluate: bool = True,
         logdir: Optional[Path] = None,
+        export_dict: bool = False,
     ):
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
 
         self.filters = filters
         self.kernel_size = kernel_size

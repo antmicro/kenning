@@ -73,8 +73,11 @@ class PyTorchMagicWandModelWrapper(PyTorchWrapper):
         learning_rate: Optional[float] = None,
         num_epochs: Optional[int] = None,
         logdir: Optional[Path] = None,
+        export_dict: bool = False,
     ):
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs

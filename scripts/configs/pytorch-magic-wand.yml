@@ -1,0 +1,27 @@
+
+model_wrapper:
+  type: PyTorchMagicWandModelWrapper
+  parameters:
+    model_path: build/magic_wand.pth
+    model_name: torch-native
+    learning_rate: 0.01
+    num_epochs: 30
+    logdir: build/logs
+    batch_size: 32
+    export_dict: False
+
+dataset:
+  type: MagicWandDataset
+  parameters:
+    dataset_root: ./build/MagicWandDataset
+
+optimizers:
+  - type: ExecuTorchOptimizer
+    parameters:
+      compiled_model_path: ./build/optimized_magicwand.pte
+      quantize: false
+
+runtime:
+  type: ExecuTorchRuntime
+  parameters:
+    save_model_path: build/optimized_magicwand.pte

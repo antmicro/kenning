@@ -15,6 +15,7 @@ optimizers:
     parameters:
       compiled_model_path: ./build/optimized_mobilenetv2.pte
       quantize: true
+      backends: ["XNNPACK"]
 
 runtime:
   type: ExecuTorchRuntime

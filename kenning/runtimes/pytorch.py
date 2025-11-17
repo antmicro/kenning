@@ -183,3 +183,6 @@ class PyTorchRuntime(Runtime):
                 results.append(output)
 
         return results
+
+    def get_input_formats(self) -> List[str]:
+        return ["torch"]

@@ -18,7 +18,7 @@ from tqdm import tqdm
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
-from kenning.utils.logger import LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 DataLoader = TypeVar("torch.utils.data.DataLoader")
@@ -289,7 +289,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
                 if metric > best_metric:
                     self.save_model(self.model_path)
                     best_metric = metric
-
+        KLogger.info(f"Model training finished, best score: {best_metric}")
         self.save_model(
             self.model_path.with_stem(f"{self.model_path.stem}_final"),
         )

@@ -94,6 +94,31 @@ This example requires a CUDA-enabled GPU for proper execution, along with follow
 :::
 """  # noqa: E501
 
+ros_info_admonition = """
+:::{info}
+This example requires a ROS 2 humble framework for proper execution.
+
+You can use our ready to use container with ROS 2 aleardy installed.
+Pull the latest Docker container with prepared ROS 2 environment, container.
+
+```bash test-skip
+docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
+```
+
+Then, run a Docker container with:
+
+```bash test-skip
+docker run -it  \
+    -v $(pwd):$(pwd) \
+    -w $(pwd) \
+    --gpus='all,"capabilities=compute,utility,graphics,display"' \
+    ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo \
+    /bin/bash
+```
+
+:::
+"""
+
 extlinks = {"issue": (dev + "issues/%s", "#")}
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -213,6 +238,7 @@ myst_substitutions = {
     "json_flow_runner_script": "`kenning.scenarios.json_flow_runner`",
     "optimization_runner_script": "`kenning.scenarios.optimization_runner`",
     "uses_gpu": gpu_info_admonition,
+    "uses_ros2": ros_info_admonition,
 }
 
 linkcheck_anchors_ignore_for_url = ("https:\/\/github\.com.*",)

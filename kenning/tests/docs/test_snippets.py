@@ -118,7 +118,8 @@ def find_string_in_file(filename: Path, text: str):
 def get_all_snippets(
     markdown_pattern: str,
     uses_gpu_flag: str = "{{uses_gpu}}",
-) -> Generator[Tuple[str, str, Snippet, bool], None, None]:
+    uses_ros_flag: str = "{{uses_ros2}}",
+) -> Generator[Tuple[str, str, Snippet, bool, bool], None, None]:
     """
     Finds all executable snippets from gallery of examples
     and dumps named JSON snippets to files.
@@ -140,10 +141,13 @@ def get_all_snippets(
         Found snippet.
     bool :
         Flag whether this snippet uses GPU or not
+    bool :
+        Flag whether this snippet uses ROS or not
     """
     for markdown in glob(markdown_pattern):
         markdown = Path(markdown)
         uses_gpu = find_string_in_file(filename=markdown, text=uses_gpu_flag)
+        uses_ros = find_string_in_file(filename=markdown, text=uses_ros_flag)
 
         python_snippet = None
         last_snippet_name = None
@@ -168,7 +172,13 @@ def get_all_snippets(
                 if last_snippet_name:
                     snippet.meta["depends"].append(last_snippet_name)
                 last_snippet_name = name
-                yield markdown.with_suffix("").name, name, snippet, uses_gpu
+                yield (
+                    markdown.with_suffix("").name,
+                    name,
+                    snippet,
+                    uses_gpu,
+                    uses_ros,
+                )
             if snippet.lang not in EXECUTABLE_TYPES + ("python",):
                 continue
 
@@ -202,6 +212,7 @@ def get_all_snippets(
                         last_snippet_name,
                         line_snippet,
                         uses_gpu,
+                        uses_ros,
                     )
             # Python snippet -- combine and yield at the end of function
             elif snippet.lang == "python":
@@ -213,7 +224,7 @@ def get_all_snippets(
 
         # Yield combined python snippets
         if python_snippet:
-            yield markdown.stem, name, python_snippet, uses_gpu
+            yield markdown.stem, name, python_snippet, uses_gpu, uses_ros
 
 
 def execute_script_and_wait(
@@ -515,11 +526,16 @@ class TestDocsSnippets:
                     ),
                     pytest.mark.snippets,
                 ]
-                + ([pytest.mark.gpu] if uses_gpu else []),
+                + ([pytest.mark.gpu] if uses_gpu else [])
+                + ([pytest.mark.ros] if uses_ros else []),
             )
-            for markdown, snippet_name, snippet, uses_gpu in get_all_snippets(
-                str(pytest.input_file_pattern)
-            )
+            for (
+                markdown,
+                snippet_name,
+                snippet,
+                uses_gpu,
+                uses_ros,
+            ) in get_all_snippets(str(pytest.input_file_pattern))
         ],
     )
     def test_snippet(

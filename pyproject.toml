@@ -289,6 +289,7 @@ markers = [
     "serial",
     "snippets",      # marks tests extracted from Kenning documentation
     "gpu",           # marks tests requiring GPU for running
+    "ros",           # marks tests requiring ROS for running
     "automl",        # marks tests for AutoML flow
     "compat_matrix", # marks tests for creating compatibility matrices
 ]

@@ -21,11 +21,8 @@ For this example you need:
 This is the minimal set of steps to use ROS 2 runtime and run demo application of Instance
 segmentation.
 
-Pull the latest Docker container with prepared ROS 2 environment, container.
+{{uses_ros2}}
 
-```bash bash test-skip
-docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
-```
 
 ## Downloading the demo
 
@@ -48,15 +45,6 @@ repo sync -j`nproc`
 
 ## Starting the Docker environment
 
-Then, run a Docker container under the **kenning-ros2-demo** directory with:
-```bash test-skip
-docker run -it  \
-    -v $(pwd):$(pwd) \
-    -w $(pwd) \
-    --gpus='all,"capabilities=compute,utility,graphics,display"' \
-    ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo \
-    /bin/bash
-```
 
 Install necessary GPU driver for example:
 ```bash

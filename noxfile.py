@@ -216,7 +216,7 @@ def run_pytest(session: nox.Session, device):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("specification", ["cpu", "gpu", "all"])
+@nox.parametrize("specification", ["cpu", "gpu", "ros", "all"])
 def run_gallery_tests(session: nox.Session, specification):
     """
     Install Kenning with minimal dependencies and run gallery tests.
@@ -236,6 +236,8 @@ def run_gallery_tests(session: nox.Session, specification):
         marks = "(snippets) and (not gpu)"
     elif specification == "gpu":
         marks = "(snippets) and (gpu)"
+    elif specification == "ros":
+        marks = "(snippets) and (gpu) and (ros)"
     elif specification == "all":
         marks = "snippets"
 

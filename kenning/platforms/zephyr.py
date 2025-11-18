@@ -26,7 +26,7 @@ class ZephyrPlatform(BareMetalPlatform):
     arguments_structure = {
         "zephyr_build_path": {
             "description": "Path to Zephyr build directory",
-            "type": ResourceURI,
+            "type": Path,
             "nullable": True,
             "default": None,
         },
@@ -71,7 +71,7 @@ class ZephyrPlatform(BareMetalPlatform):
         uart_log_baudrate: int = None,
         auto_flash: bool = False,
         openocd_path: Path = "openocd",
-        zephyr_build_path: Optional[PathOrURI] = None,
+        zephyr_build_path: Optional[Path] = None,
         llext_binary_path: Optional[PathOrURI] = None,
         sensor: Optional[str] = None,
         number_of_batches: int = 16,
@@ -125,7 +125,7 @@ class ZephyrPlatform(BareMetalPlatform):
             If disabled, the hardware is assumed to be flashed.
         openocd_path : Path
             Path to the OpenOCD.
-        zephyr_build_path : Optional[PathOrURI]
+        zephyr_build_path : Optional[Path]
             Path to Zephyr build directory.
         llext_binary_path : Optional[PathOrURI]
             Path to runtime binary.

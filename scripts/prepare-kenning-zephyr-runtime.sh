@@ -18,7 +18,7 @@ west init -l .
 west update
 west zephyr-export
 pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
-west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
+west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
 ./scripts/prepare_modules.sh
 source ./scripts/prepare_renode.sh
 

@@ -55,7 +55,7 @@ docs = [
 ]
 tensorflow = [
     "kenning[onnx2tf]",
-    "tf_keras",
+    "tf_keras==2.15.0",
     "tensorflow_addons; python_version<'3.12'",
     "tensorflow_model_optimization",
     "tensorflow==2.15.0",

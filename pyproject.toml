@@ -65,6 +65,7 @@ torch = [
     "onnx2torch",
     "torch",
     "torchvision>=0.15.0",
+    "onnxscript",
 ]
 mxnet = [
     "gluoncv>=0.10.2",
@@ -216,7 +217,7 @@ executorch = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

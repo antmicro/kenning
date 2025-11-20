@@ -16,6 +16,9 @@ from kenning.report.markdown_components.comp_classification_report import (
 from kenning.report.markdown_components.comp_detection_report import (
     comparison_detection_report,
 )
+from kenning.report.markdown_components.comp_llm_performance_report import (
+    comparison_llm_performance_report,
+)
 from kenning.report.markdown_components.comp_performance_report import (
     comparison_performance_report,
 )
@@ -33,6 +36,9 @@ from kenning.report.markdown_components.general import (
     generate_html_report,
     get_plot_wildcard_path,
 )
+from kenning.report.markdown_components.llm_performance_report import (
+    llm_performance_report,
+)
 from kenning.report.markdown_components.performance_report import (
     performance_report,
 )
@@ -47,6 +53,7 @@ __all__ = [
     "automl_report",
     "classification_report",
     "detection_report",
+    "llm_performance_report",
     "performance_report",
     "renode_stats_report",
     "text_summarization_report",
@@ -54,6 +61,7 @@ __all__ = [
     "get_plot_wildcard_path",
     "comparison_classification_report",
     "comparison_detection_report",
+    "comparison_llm_performance_report",
     "comparison_performance_report",
     "comparison_renode_stats_report",
     "comparison_text_summarization_report",

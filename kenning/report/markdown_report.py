@@ -23,12 +23,14 @@ from kenning.report.markdown_components import (
     classification_report,
     comparison_classification_report,
     comparison_detection_report,
+    comparison_llm_performance_report,
     comparison_performance_report,
     comparison_renode_stats_report,
     comparison_text_summarization_report,
     create_report_from_measurements,
     detection_report,
     generate_html_report,
+    llm_performance_report,
     performance_report,
     renode_stats_report,
     text_summarization_report,
@@ -261,6 +263,7 @@ class MarkdownReport(Report):
             rep.DETECTION: detection_report,
             rep.RENODE: renode_stats_report,
             rep.TEXT_SUMMARIZATION: text_summarization_report,
+            rep.LLM_PERFORMANCE: llm_performance_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,
@@ -268,6 +271,7 @@ class MarkdownReport(Report):
             rep.DETECTION: comparison_detection_report,
             rep.RENODE: comparison_renode_stats_report,
             rep.TEXT_SUMMARIZATION: comparison_text_summarization_report,
+            rep.LLM_PERFORMANCE: comparison_llm_performance_report,
         }
 
         header_data = {

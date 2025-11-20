@@ -31,6 +31,7 @@ class ReportTypes(str, Enum):
     DETECTION = "detection"
     TEXT_SUMMARIZATION = "text_summarization"
     RENODE = "renode_stats"
+    LLM_PERFORMANCE = "llm_performance"
 
 
 class Report(ArgumentsHandler, ABC):
@@ -189,6 +190,9 @@ class Report(ArgumentsHandler, ABC):
         )
         _append_type_if(
             ReportTypes.RENODE, lambda data: "opcode_counters" in data
+        )
+        _append_type_if(
+            ReportTypes.LLM_PERFORMANCE, lambda data: "tokens" in data
         )
 
         if len(report_types) == 0:

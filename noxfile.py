@@ -256,3 +256,28 @@ def run_gallery_tests(session: nox.Session, specification):
         f"--report-log={report_path}",
         f"--test-docs-log-dir={test_docs_log_dir}",
     )
+
+
+@nox.session(python=PYTHON_VERSIONS)
+def test_generate_platforms(session: nox.Session):
+    """
+    Install Kenning with all dependencies and run pytest.
+    """
+    session.install(".[test,pipeline_manager]")
+    session.install(".[tvm,tensorflow,reports,renode]")
+
+    name = _fix_name(session.name)
+
+    report_path = Path("platform-tests-reports") / f"{name}.json"
+
+    # get generated platforms file path
+    platforms = os.getenv("PLATFORMS_PATH")
+
+    session.run(
+        "pytest",
+        "kenning/tests/scenarios/test_generate_platforms.py",
+        "--generated-platforms-path",
+        platforms,
+        "--timeout=720",
+        f"--report-log={report_path}",
+    )

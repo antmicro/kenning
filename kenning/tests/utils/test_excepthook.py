@@ -29,6 +29,8 @@ IGNORED_MODULES = {
     "list_boards",
     # ai8x tools
     "ai8x",
+    # Python.NET modules
+    "System",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

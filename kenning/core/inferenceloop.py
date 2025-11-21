@@ -162,6 +162,20 @@ class RealtimeInferenceLoop(InferenceLoop):
     Generic implementation of a realtime inference loop.
     """
 
+    def __init__(
+        self,
+        dataset,
+        dataconverter,
+        model_wrapper,
+        platform=None,
+        protocol=None,
+        runtime=None,
+    ):
+        super().__init__(
+            dataset, dataconverter, model_wrapper, platform, protocol, runtime
+        )
+        self._stop_event = threading.Event()
+
     def _prepare(self):
         ...
 
@@ -169,18 +183,14 @@ class RealtimeInferenceLoop(InferenceLoop):
         self._protocol.disconnect()
 
     def _run_loop(self, measurements):
-        self._platform.renode_pause()
-
-        stop_event = threading.Event()
-
         feed_thread = threading.Thread(
             target=self._feed_data,
-            args=(stop_event, measurements),
+            args=(measurements,),
             daemon=True,
         )
         collect_thread = threading.Thread(
             target=self._collect_results,
-            args=(stop_event, measurements),
+            args=(measurements,),
             daemon=True,
         )
 
@@ -194,23 +204,19 @@ class RealtimeInferenceLoop(InferenceLoop):
         except KeyboardInterrupt:
             KLogger.info("Received keyboard interrupt")
         finally:
-            stop_event.set()
+            self._stop_event.set()
             KLogger.info("Stopping inference...")
             collect_thread.join()
             feed_thread.join()
 
-    def _feed_data(
-        self, stop_event: threading.Event, measurements: Measurements
-    ):
+    def _feed_data(self, measurements: Measurements):
         """
         Reads data from the dataset and passes them to the runtime.
         Called in a separate thread.
         """
         ...
 
-    def _collect_results(
-        self, stop_event: threading.Event, measurements: Measurements
-    ):
+    def _collect_results(self, measurements: Measurements):
         """
         Collects results from the runtime and stores them in measurements.
         Called in a separate thread.
@@ -237,10 +243,12 @@ class RealtimeInferenceLoop(InferenceLoop):
                 ]
             }
 
+            self._platform.inference_step_callback()
+
         self._protocol.listen(
             message_type=MessageType.OUTPUT,
             transmission_callback=handle_result,
         )
 
-        stop_event.wait()
+        self._stop_event.wait()
         self._protocol.kill_event(MessageType.OUTPUT)

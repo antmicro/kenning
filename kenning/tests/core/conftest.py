@@ -30,6 +30,7 @@ from kenning.datasets.random_dataset import (
     RandomizedImageClassificationDataset,
     RandomizedTextDataset,
 )
+from kenning.datasets.tabular_dataset import TabularDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.modelwrappers.classification.pytorch_pet_dataset import (
     PyTorchPetDatasetMobileNetV2,
@@ -417,6 +418,14 @@ def get_dataset_random_mock(
             num_features=18,
             window_size=5,
         )
+    if dataset_cls is TabularDataset:
+        dataset = RandomizedClassificationDataset(
+            get_tmp_path(),
+            samplescount=4 * 10,
+            numclasses=4,
+            inputdims=(128, 1),
+        )
+        return dataset
     raise NotImplementedError
 
 

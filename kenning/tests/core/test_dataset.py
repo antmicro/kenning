@@ -29,6 +29,8 @@ def dataset(request):
     dataset_cls = request.param
 
     path = path_reduced = get_reduced_dataset_path(dataset_cls)
+
+    kwargs = {}
     if not path.exists():
         path = get_dataset_download_path(dataset_cls)
     if not path.exists() and "Random" not in dataset_cls.__name__:
@@ -36,9 +38,17 @@ def dataset(request):
             f"Dataset {dataset_cls.__name__} not found in any of {path} and "
             f"{path_reduced} directories"
         )
+    if "Tabular" in dataset_cls.__name__:
+        kwargs["dataset_path"] = "asdfg"
+        kwargs["colsX"] = ["x1", "x2"]
+        kwargs["colY"] = "y"
 
     try:
-        dataset = dataset_cls(path, download_dataset=False)
+        dataset = dataset_cls(
+            path,
+            download_dataset=False,
+            **kwargs,
+        )
         assert len(dataset.dataX) > 0
     except CannotDownloadDatasetError:
         pytest.xfail("Cannot download dataset.")
@@ -72,6 +82,12 @@ class TestDataset:
         """
         Tests throwing exception when there is no folder with data.
         """
+        kwargs = {}
+        if "Tabular" in dataset_cls.__name__:
+            kwargs["dataset_path"] = "asdfg"
+            kwargs["colsX"] = ["x1", "x2"]
+            kwargs["colY"] = "y"
+
         dataset_download_dir = get_dataset_download_path(dataset_cls)
         dataset_download_dir = dataset_download_dir.with_name(
             dataset_download_dir.name + "_none"
@@ -80,7 +96,11 @@ class TestDataset:
             shutil.rmtree(str(dataset_download_dir), ignore_errors=True)
 
         try:
-            dataset = dataset_cls(dataset_download_dir, download_dataset=False)
+            dataset = dataset_cls(
+                dataset_download_dir,
+                download_dataset=False,
+                **kwargs,
+            )
             dataset.prepare()
             if "Random" not in dataset_cls.__name__:
                 pytest.fail("No exception thrown")
@@ -377,11 +397,15 @@ class TestDataset:
         """
         Tests if dataset checksum is properly calculated.
         """
+        kwargs = {}
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
-        for name in NOT_DOWNLOADED_DATASETS:
-            if name in dataset_cls.__name__:
-                pytest.xfail(f"{name} dataset does not have files downloaded")
+        elif "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "Tabular" in dataset_cls.__name__:
+            kwargs["dataset_path"] = "asdfg"
+            kwargs["colsX"] = ["x1", "x2"]
+            kwargs["colY"] = "y"
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -396,6 +420,7 @@ class TestDataset:
             root=dataset_path,
             download_dataset=True,
             force_download_dataset=False,
+            **kwargs,
         )
 
         new_file = Path(dataset.root / "some_new_file.txt")
@@ -459,11 +484,15 @@ class TestDataset:
         """
         Tests if download is skipped when dataset files are already downloaded.
         """
+        kwargs = {}
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
-        for name in NOT_DOWNLOADED_DATASETS:
-            if name in dataset_cls.__name__:
-                pytest.xfail(f"{name} dataset does not have files downloaded")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "Tabular" in dataset_cls.__name__:
+            kwargs["dataset_path"] = "asdfg"
+            kwargs["colsX"] = ["x1", "x2"]
+            kwargs["colY"] = "y"
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -479,7 +508,10 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: True
 
         dataset_cls(
-            dataset_path, download_dataset=True, force_download_dataset=False
+            dataset_path,
+            download_dataset=True,
+            force_download_dataset=False,
+            **kwargs,
         )
 
         assert mock_download_dataset_fun.num_calls == 0
@@ -510,11 +542,15 @@ class TestDataset:
         """
         Tests if dataset is downloaded when dataset checksum is invalid.
         """
+        kwargs = {}
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
-        for name in NOT_DOWNLOADED_DATASETS:
-            if name in dataset_cls.__name__:
-                pytest.xfail(f"{name} dataset does not have files downloaded")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "Tabular" in dataset_cls.__name__:
+            kwargs["dataset_path"] = "asdfg"
+            kwargs["colsX"] = ["x1", "x2"]
+            kwargs["colY"] = "y"
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -530,7 +566,10 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: False
 
         dataset_cls(
-            dataset_path, download_dataset=True, force_download_dataset=False
+            dataset_path,
+            download_dataset=True,
+            force_download_dataset=False,
+            **kwargs,
         )
 
         assert mock_download_dataset_fun.num_calls == 1
@@ -561,11 +600,15 @@ class TestDataset:
         """
         Tests if dataset is downloaded when dataset checksum is invalid.
         """
+        kwargs = {}
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
-        for name in NOT_DOWNLOADED_DATASETS:
-            if name in dataset_cls.__name__:
-                pytest.xfail(f"{name} dataset does not have files downloaded")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "Tabular" in dataset_cls.__name__:
+            kwargs["dataset_path"] = "asdfg"
+            kwargs["colsX"] = ["x1", "x2"]
+            kwargs["colY"] = "y"
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -581,7 +624,10 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: False
 
         dataset_cls(
-            dataset_path, download_dataset=True, force_download_dataset=True
+            dataset_path,
+            download_dataset=True,
+            force_download_dataset=True,
+            **kwargs,
         )
 
         assert mock_download_dataset_fun.num_calls == 1
@@ -590,7 +636,10 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: True
 
         dataset_cls(
-            dataset_path, download_dataset=True, force_download_dataset=True
+            dataset_path,
+            download_dataset=True,
+            force_download_dataset=True,
+            **kwargs,
         )
 
         assert mock_download_dataset_fun.num_calls == 1

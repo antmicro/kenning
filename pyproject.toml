@@ -42,6 +42,7 @@ dependencies = [
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
     "kenning[onnx2tf]",
+    "polars",
 ]
 
 [project.optional-dependencies]

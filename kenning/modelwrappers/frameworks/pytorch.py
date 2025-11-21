@@ -65,7 +65,8 @@ class PyTorchWrapper(ModelWrapper, ABC):
         weights : OrderedDict
             Dictionary used to load model weights.
         """
-        self.model.load_state_dict(copy.deepcopy(weights))
+        if weights:
+            self.model.load_state_dict(copy.deepcopy(weights))
         self.model.eval()
 
     def create_model_structure(self):
@@ -78,9 +79,12 @@ class PyTorchWrapper(ModelWrapper, ABC):
     def load_model(self, model_path: PathOrURI):
         import torch
 
-        input_data = torch.load(
-            self.model_path, map_location=self.device, weights_only=False
-        )
+        try:
+            input_data = torch.load(
+                self.model_path, map_location=self.device, weights_only=False
+            )
+        except FileNotFoundError:
+            input_data = OrderedDict()
 
         # If the file contains only the weights
         # we have to recreate the model's structure
@@ -269,13 +273,11 @@ class PyTorchWrapper(ModelWrapper, ABC):
                     true = np.concatenate((true, labels.cpu().numpy()))
                     metric = metric_func(true, predicted)
                     bar.set_description(
-                        f"valid epoch: {epoch:3d} {metric_func.__name__}: "
+                        f"valid epoch: {epoch:3d} {str(metric_func)}: "
                         f"{metric:.3f}"
                     )
 
-                writer.add_scalar(
-                    f"{metric_func.__name__}/valid", metric, epoch
-                )
+                writer.add_scalar(f"{str(metric_func)}/valid", metric, epoch)
 
                 if metric > best_metric:
                     self.save_model(self.model_path)

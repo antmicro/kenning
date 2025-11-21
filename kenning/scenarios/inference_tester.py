@@ -167,15 +167,16 @@ class InferenceTester(CommandTemplate):
                 type=int,
                 default=-1,
             )
+
+        if include_measurements:
+            flag_group.add_argument(
+                "--report-cls",
+                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
+                default="StubReport",
+            ).completer = ClassPathCompleter(REPORT)
+
         # 'test' specific arguments
         if not types or TEST in types:
-            if include_measurements:
-                flag_group.add_argument(
-                    "--report-cls",
-                    help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
-                    default="StubReport",
-                ).completer = ClassPathCompleter(REPORT)
-
             other_group.add_argument(
                 "--evaluate-unoptimized",
                 help="Test model before optimization and append measurements",

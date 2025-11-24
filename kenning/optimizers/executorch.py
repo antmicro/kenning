@@ -54,8 +54,8 @@ class ExecuTorchOptimizer(Optimizer):
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "torch",
-            "enum": inputtypes,
+            "default": "any",
+            "enum": list(inputtypes.keys()) + ["any"],
         },
         "quantize": {
             "argparse_name": "--quantize",
@@ -103,6 +103,7 @@ class ExecuTorchOptimizer(Optimizer):
             model_wrapper=model_wrapper,
         )
         self.model_framework = model_framework
+        self.set_input_type(model_framework)
         self.quantize = quantize
         self.dataset_percentage = dataset_percentage
         self.backends = backends

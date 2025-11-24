@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from kenning.cli.command_template import OPTIMIZE, TEST, CommandTemplate
+from kenning.converters import converter_registry
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -841,34 +842,25 @@ class PipelineRunner(object):
         ValueError :
             Raised if blocks are incompatible.
         """
-        chain = [model_wrapper] + optimizers + [runtime]
+        chain = [model_wrapper] + optimizers
         chain = [block for block in chain if block is not None]
 
         for previous_block, next_block in zip(chain, chain[1:]):
-            check_model_type = getattr(next_block, "consult_model_type", None)
-            if callable(check_model_type):
-                check_model_type(previous_block)
-                continue
-            elif set(next_block.get_input_formats()) & set(
-                previous_block.get_output_formats()
+            input_format = previous_block.get_framework()
+            output_format = next_block.get_framework()
+            if not converter_registry.find_all_paths(
+                input_format, output_format
             ):
-                continue
-
-            if next_block == runtime:
-                KLogger.warning(
-                    f"Runtime {next_block} has no matching format with the "
-                    f"previous block: {previous_block}\nModel may not run "
-                    "correctly"
+                raise ValueError(
+                    f"No available conversion path for {input_format} "
+                    f"and {output_format}."
                 )
-                continue
 
-            output_formats_str = ", ".join(previous_block.get_output_formats())
-            input_formats_str = ", ".join(next_block.get_input_formats())
-            raise ValueError(
-                f"No matching formats between two objects: {previous_block} "
-                f"and {next_block}\n"
-                f"Output block supported formats: {output_formats_str}\n"
-                f"Input block supported formats: {input_formats_str}"
+        if chain[-1] == runtime:
+            KLogger.warning(
+                f"Runtime {runtime} has no matching format with the "
+                f"previous block: {chain[-1]}\nModel may not run "
+                "correctly"
             )
 
     def _guess_model_framework(self, convert_to_onnx: bool) -> Optional[str]:

@@ -92,7 +92,7 @@ class ConverterRegistry(metaclass=Singleton):
 
             self._graph.setdefault(dst, [])
 
-    def _find_all_paths(
+    def find_all_paths(
         self, src_format: str, dst_format: str
     ) -> List[List[str]]:
         """
@@ -163,7 +163,7 @@ class ConverterRegistry(metaclass=Singleton):
         ConversionError
             If no conversion path exists or all paths fail.
         """
-        all_paths = self._find_all_paths(src_format, dst_format)
+        all_paths = self.find_all_paths(src_format, dst_format)
 
         if not all_paths:
             raise ConversionError(

@@ -109,8 +109,13 @@ class MMPoseONNX(ModelWrapper):
     def run_inference(self, X: List[np.ndarray]) -> List[Any]:
         raise NotSupportedError
 
-    def get_framework_and_version(self):
-        return ("onnx", onnx.__version__)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "onnx"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return str(onnx.__version__)
 
     @classmethod
     def get_output_formats(cls) -> List[str]:

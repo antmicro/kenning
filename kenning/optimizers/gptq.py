@@ -8,7 +8,7 @@ Wrapper for AutoGPTQ quantizer.
 https://github.com/PanQiWei/AutoGPTQ
 """
 
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -109,7 +109,12 @@ class GPTQOptimizer(Optimizer):
 
         self.save_io_specification(input_model_path)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
+    @classmethod
+    def get_framework(cls) -> str:
+        return "safetensors"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         import auto_gptq
 
-        return ("auto_gptq", auto_gptq.__version__)
+        return auto_gptq.__version__

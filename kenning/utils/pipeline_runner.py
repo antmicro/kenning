@@ -272,7 +272,10 @@ class PipelineRunner(object):
                 dict(
                     zip(
                         ("compiler_framework", "compiler_version"),
-                        optimizer.get_framework_and_version(),
+                        (
+                            optimizer.get_framework(),
+                            optimizer.get_framework_version(),
+                        ),
                     )
                 )
                 for optimizer in self.optimizers
@@ -287,7 +290,8 @@ class PipelineRunner(object):
             }
 
         if self.model_wrapper:
-            framework, version = self.model_wrapper.get_framework_and_version()
+            framework = self.model_wrapper.get_framework()
+            version = self.model_wrapper.get_framework_version()
             MeasurementsCollector.measurements += {
                 "model_framework": framework,
                 "model_version": version,

@@ -7,7 +7,7 @@ Wrapper for GPTQ + sparseGPT optimizer that is compliant with
 sparsity_aware_kernel.
 """
 
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -99,5 +99,10 @@ class GPTQSparseGPTOptimizer(Optimizer):
 
         self.save_io_specification(input_model_path)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return ("kenning", "0.0.2")
+    @classmethod
+    def get_framework(cls) -> str:
+        return "kenning"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return "0.0.2"

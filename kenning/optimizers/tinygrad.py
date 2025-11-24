@@ -152,5 +152,10 @@ class TinygradOptimizer(Optimizer):
             create_tar(self.model_path, tmpdirname)
         self.save_io_specification(input_model_path, io_spec)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return ("tinygrad", importlib.metadata.version("tinygrad"))
+    @classmethod
+    def get_framework(cls) -> str:
+        return "tinygrad"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return importlib.metadata.version("tinygrad")

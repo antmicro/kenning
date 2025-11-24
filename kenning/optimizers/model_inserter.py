@@ -128,10 +128,15 @@ class ModelInserter(Optimizer):
     def set_input_type(self, inputtype: str):
         self.inputtype = inputtype
 
-    def get_framework_and_version(self):
+    @classmethod
+    def get_framework(cls) -> str:
+        return "kenning"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         import kenning
 
         if hasattr(kenning, "__version__"):
-            return ("kenning", kenning.__version__)
+            return kenning.__version__
         else:
-            return ("kenning", "dev")
+            return "dev"

@@ -8,7 +8,7 @@ Wrapper for AutoAWQ quantizer.
 https://github.com/casper-hansen/AutoAWQ
 """
 
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional
 
 from awq import AutoAWQForCausalLM
 from awq import __version__ as awq_version
@@ -144,5 +144,10 @@ class AWQOptimizer(Optimizer):
         io_spec["quantization_config"] = model.quant_config.to_dict()
         self.save_io_specification(input_model_path, io_spec)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return ("awq", awq_version)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "safetensors"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return awq_version

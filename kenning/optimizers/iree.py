@@ -12,7 +12,6 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 import onnx
 from iree.compiler import tools as ireecmp
-from iree.compiler import version
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
@@ -225,8 +224,15 @@ class IREECompiler(Optimizer):
             f.write(compiled_buffer)
         self.save_io_specification(self.compiled_model_path, io_spec)
 
-    def get_framework_and_version(self):
-        return "iree", version.VERSION
+    @classmethod
+    def get_framework(cls):
+        return "iree"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        from iree.compiler import version
+
+        return version.VERSION
 
     def read_platform(self, platform: Platform):
         super().read_platform(platform)

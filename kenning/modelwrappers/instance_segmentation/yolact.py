@@ -256,8 +256,13 @@ class YOLACTWrapper(ModelWrapper, ABC):
         X = (X * 255.0 - MEANS) / STD
         return [X[None, [2, 1, 0], ...].astype(np.float32)]
 
-    def get_framework_and_version(self):
-        return ("onnx", onnx.__version__)
+    @classmethod
+    def get_framework(cls):
+        return "onnx"
+
+    @classmethod
+    def get_framework_version(cls):
+        return onnx.__version__
 
     @classmethod
     def get_output_formats(cls):

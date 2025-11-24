@@ -136,11 +136,36 @@ class TestOptimizer:
             for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
         ],
     )
-    def test_get_framework_and_version(
+    def test_get_framework(self, opt_cls: Type[Optimizer], inputtype: str):
+        """
+        Tests `get_framework` method.
+        """
+        with prepare_objects(opt_cls, inputtype) as (optimizer, _):
+            assert optimizer.get_framework() is not None
+
+    @pytest.mark.parametrize(
+        "opt_cls,inputtype",
+        [
+            pytest.param(
+                opt_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_initializer[{opt_cls.__name__},{inputtype}]"
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestOptimizer_{opt_cls.__name__}"
+                    ),
+                ],
+            )
+            for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
+        ],
+    )
+    def test_get_framework_version(
         self, opt_cls: Type[Optimizer], inputtype: str
     ):
         """
-        Tests `get_framework_and_version` method.
+        Tests `get_framework_version` method.
         """
         with prepare_objects(opt_cls, inputtype) as (optimizer, _):
-            assert optimizer.get_framework_and_version() is not None
+            assert optimizer.get_framework_version() is not None

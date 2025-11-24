@@ -105,5 +105,10 @@ class ONNXCompiler(Optimizer):
 
         self.save_io_specification(input_model_path, io_spec)
 
-    def get_framework_and_version(self):
-        return ("onnx", onnx.__version__)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "onnx"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return onnx.__version__

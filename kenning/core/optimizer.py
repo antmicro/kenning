@@ -10,7 +10,7 @@ import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import Dict, List, Literal, Optional, Type, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -203,15 +203,29 @@ class Optimizer(ArgumentsHandler, ABC):
         """
         ...
 
+    @classmethod
     @abstractmethod
-    def get_framework_and_version(self) -> Tuple[str, str]:
+    def get_framework(cls) -> str:
         """
-        Returns name of the framework and its version in a form of a tuple.
+        Returns name of the framework.
 
         Returns
         -------
-        Tuple[str, str]
-            Framework name and version.
+        str
+            Framework name.
+        """
+        ...
+
+    @classmethod
+    @abstractmethod
+    def get_framework_version(cls) -> str:
+        """
+        Returns version of the framework.
+
+        Returns
+        -------
+        str
+            Framework version.
         """
         ...
 

@@ -222,5 +222,10 @@ class TensorFlowOptimizer(Optimizer, ABC):
             return zip_model_path.stat().st_size / 1024
         return super().get_optimized_model_size()
 
-    def get_framework_and_version(self):
-        return ("tensorflow", tf.__version__)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "keras"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tf.__version__

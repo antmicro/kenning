@@ -284,3 +284,11 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
     @classmethod
     def get_output_formats(cls):
         return ["ai8x"]
+
+    @classmethod
+    def get_framework(cls) -> str:
+        return "ai8x"
+
+    @classmethod
+    def get_framework_version(cls):
+        return "1.0"

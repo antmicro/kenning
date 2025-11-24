@@ -58,8 +58,13 @@ class StubEmlearnModel(ModelWrapper):
     def run_inference(self, X):
         raise NotImplementedError
 
-    def get_framework_and_version(self):
-        return "emlearn", "dummy"
+    @classmethod
+    def get_framework(cls) -> str:
+        return "emlearn"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return "dummy"
 
     @classmethod
     def get_output_formats(cls):

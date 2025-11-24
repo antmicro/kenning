@@ -575,3 +575,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
             )
 
         return flags
+    
+    @classmethod
+    def get_framework(cls) -> str:
+        return "tflite"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tf.__version__

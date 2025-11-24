@@ -7,7 +7,7 @@ Provides base methods for using LLMs in Kenning.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from jinja2 import Template
 from transformers import __version__ as transformers_version
@@ -260,8 +260,13 @@ class LLM(ModelWrapper, ABC):
     def save_to_onnx(self):
         raise NotSupportedError
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return "transformers", transformers_version
+    @classmethod
+    def get_framework(cls) -> str:
+        return "safetensors"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return transformers_version
 
     @classmethod
     def get_output_formats(cls):

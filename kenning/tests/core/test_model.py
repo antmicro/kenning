@@ -378,11 +378,35 @@ class TestModelWrapper:
         ],
         indirect=True,
     )
-    def test_get_framework_and_version(self, model: Type[ModelWrapper]):
+    def test_get_framework(self, model: Type[ModelWrapper]):
         """
-        Tests the `train_model` method.
+        Tests the `get_framework` method.
         """
-        assert model.get_framework_and_version() is not None
+        assert model.get_framework() is not None
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
+    def test_get_framework_version(self, model: Type[ModelWrapper]):
+        """
+        Tests the `get_framework_version` method.
+        """
+        assert model.get_framework_version() is not None
 
     def test_substitutive_method_of_loading_tf_model(self):
         """

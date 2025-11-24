@@ -154,10 +154,15 @@ class MMPoseModelWrapper(ModelWrapper):
 
         return [keypoints, scores]
 
-    def get_framework_and_version(self):
+    @classmethod
+    def get_framework(cls) -> str:
+        return "onnx"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         import onnx
 
-        return ("onnx", onnx.__version__)
+        return str(onnx.__version__)
 
     @classmethod
     def get_output_formats(cls) -> List[str]:

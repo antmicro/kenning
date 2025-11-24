@@ -808,5 +808,10 @@ class NNIPruningOptimizer(Optimizer):
         )
         self.mode = mode
 
-    def get_framework_and_version(self):
-        return ("torch", torch.__version__)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "torch"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return torch.__version__

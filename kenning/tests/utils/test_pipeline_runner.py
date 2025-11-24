@@ -43,10 +43,8 @@ def model_mock():
     mock.get_output_formats.return_value = ["format1", "format2"]
     mock.save_io_specification.return_value = True
     mock.test_inference.return_value = True
-    mock.get_framework_and_version.return_value = (
-        "framework_1",
-        "0.0.1",
-    )
+    mock.get_framework.return_value = "framework_1"
+    mock.get_framework_version.return_value = "0.0.1"
     return mock
 
 
@@ -98,10 +96,8 @@ def dataconverter_mock():
 @pytest.fixture
 def optimizer_mock():
     mock = Mock(spec=Optimizer)
-    mock.get_framework_and_version.return_value = (
-        "framework_1",
-        "0.0.1",
-    )
+    mock.get_framework.return_value = "framework_1"
+    mock.get_framework_version.return_value = "0.0.1"
     mock.get_optimized_model_size.side_effect = OptimizedModelSizeError()
     return mock
 

@@ -47,8 +47,13 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
     def get_output_formats(cls):
         return ["darknet"]
 
-    def get_framework_and_version(self):
-        return ("darknet", "alexeyab")
+    @classmethod
+    def get_framework(cls) -> str:
+        return "darknet"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return "alexeyab"
 
     def save_to_onnx(self, model_path):
         raise NotSupportedError

@@ -8,7 +8,7 @@ Contains Tensorflow Lite model for the person detection.
 Trained on VisualWakeWords dataset.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 import cv2
 import numpy as np
@@ -163,8 +163,13 @@ class PersonDetectionModelWrapper(ModelWrapper):
     def get_output_formats(cls) -> List[str]:
         return ["tflite"]
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return ("tensorflow", tf.__version__)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "tflite"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tf.__version__
 
     def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
         data = bytes()

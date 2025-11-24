@@ -147,10 +147,15 @@ class PyTorchWrapper(ModelWrapper, ABC):
         ]
         return y
 
-    def get_framework_and_version(self):
+    @classmethod
+    def get_framework(cls) -> str:
+        return "torch"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         import torch
 
-        return ("torch", torch.__version__)
+        return torch.__version__
 
     @classmethod
     def get_output_formats(cls):

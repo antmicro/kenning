@@ -20,11 +20,17 @@ def create_mocks(mocker, module_name, core_cls):
             static_io_spec_getter = cls.parse_io_specification_from_json
         except AttributeError:
             static_io_spec_getter = None
+        framework_name = None
+        if hasattr(cls, "get_framework"):
+            framework_name = cls.get_framework()
         mock = mocker.patch(cls_name)
         mock.__name__ = cls.__name__
         mocker.patch(f"{cls_name}.from_json", return_value=mock)
         if static_io_spec_getter is not None:
             mock.parse_io_specification_from_json = static_io_spec_getter
+        if framework_name is not None:
+            mock.return_value.get_framework.return_value = framework_name
+            mock.get_framework.return_value = framework_name
 
 
 @pytest.fixture(scope="function")

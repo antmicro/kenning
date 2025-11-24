@@ -179,3 +179,11 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         self.save_model(optimized_model)
 
         self.save_io_specification(input_model_path, io_spec)
+
+    @classmethod
+    def get_framework(cls) -> str:
+        return "keras"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tf.__version__

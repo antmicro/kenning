@@ -99,10 +99,15 @@ class TensorFlowWrapper(ModelWrapper, ABC):
             y = [y]
         return y
 
-    def get_framework_and_version(self):
+    @classmethod
+    def get_framework(cls) -> str:
+        return "keras"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         import tensorflow as tf
 
-        return ("tensorflow", tf.__version__)
+        return tf.__version__
 
     @classmethod
     def get_output_formats(cls):

@@ -618,3 +618,10 @@ class TVMCompiler(Optimizer):
             )
 
         return flags
+    @classmethod
+    def get_framework(cls) -> str:
+        return "tvm"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tvm.__version__

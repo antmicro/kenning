@@ -390,8 +390,13 @@ class ONNXYOLOV4(YOLOWrapper):
             ],
         }
 
-    def get_framework_and_version(self):
-        return ("onnx", str(onnx.__version__))
+    @classmethod
+    def get_framework(cls) -> str:
+        return "onnx"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return str(onnx.__version__)
 
     @classmethod
     def get_output_formats(cls):

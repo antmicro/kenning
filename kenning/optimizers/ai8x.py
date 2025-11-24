@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional
 
 import numpy as np
 
@@ -391,8 +391,13 @@ class Ai8xCompiler(Optimizer):
             model_wrapper=model_wrapper,
         )
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return ("ai8x", 1.0)
+    @classmethod
+    def get_framework(cls) -> str:
+        return "ai8x"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return "1.0"
 
     def read_platform(self, platform: Platform):
         device = getattr(platform, "ai8x_device", None)

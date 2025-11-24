@@ -9,7 +9,7 @@ Provides a wrapper for deep learning models.
 import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Type
 from urllib.request import HTTPError
 
 import numpy as np
@@ -402,15 +402,29 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         ...
 
+    @classmethod
     @abstractmethod
-    def get_framework_and_version(self) -> Tuple[str, str]:
+    def get_framework(cls) -> str:
         """
-        Returns name of the framework and its version in a form of a tuple.
+        Returns name of the framework.
 
         Returns
         -------
-        Tuple[str, str]
-            Framework name and version.
+        str
+            Framework name.
+        """
+        ...
+
+    @classmethod
+    @abstractmethod
+    def get_framework_version(cls) -> str:
+        """
+        Returns the framework version.
+
+        Returns
+        -------
+        str
+            Framework version.
         """
         ...
 

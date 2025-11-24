@@ -63,8 +63,13 @@ class OptimizerMock(Optimizer):
     ):
         shutil.copy(input_model_path, self.compiled_model_path)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
-        return "none", "0"
+    @classmethod
+    def get_framework(cls) -> str:
+        return "none"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return "0"
 
     def to_json(self) -> Dict[str, Any]:
         ret = super().to_json()

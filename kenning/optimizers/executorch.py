@@ -9,7 +9,7 @@ Module implementing the ExecuTorch compiler.
 import itertools
 import warnings
 from math import ceil
-from typing import Dict, Generator, List, Literal, Optional, Tuple, TypeVar
+from typing import Dict, Generator, List, Literal, Optional, TypeVar
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
@@ -281,10 +281,15 @@ class ExecuTorchOptimizer(Optimizer):
 
         self.save_io_specification(self.compiled_model_path, io_spec)
 
-    def get_framework_and_version(self) -> Tuple[str, str]:
+    @classmethod
+    def get_framework(cls) -> str:
+        return "executorch"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
         from executorch.version import __version__
 
-        return ("executorch", __version__)
+        return __version__
 
     @staticmethod
     def _sample_generator(

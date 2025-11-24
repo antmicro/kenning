@@ -137,20 +137,13 @@ class ExecuTorchRuntime(Runtime):
                 f"conversion. It has {tensor.dim()} dimensions."
             )
 
-    def _load_pte_method(
-        self, method_name: str = "forward"
-    ) -> Optional[object]:
+    def _load_pte_method(self) -> Optional[object]:
         """
         Load an executable method from PTE binary.
 
         The function loads a method performing some operation
         (usually, inference) from the PTE binary file.
         The PTE binary is the ExecuTorch format for storing the models.
-
-        Parameters
-        ----------
-        method_name : str, optional
-            Name of a method, by default "forward".
 
         Returns
         -------
@@ -162,6 +155,8 @@ class ExecuTorchRuntime(Runtime):
         ------
         ModelNotLoadedError
             Raised if a PTE lacks the desired method.
+        IOSpecificationNotFoundError
+            Raised if model IO specification file could not be found.
         """
         from executorch.runtime import Verification
 
@@ -169,6 +164,19 @@ class ExecuTorchRuntime(Runtime):
             self.model_path,
             verification=Verification.Minimal,
         )
+        # We are using entry method name retrieved from iospec
+        if hasattr(self, "entry_function_name"):
+            method_name = (
+                self.entry_function_name
+                if self.entry_function_name
+                else "forward"
+            )
+        else:
+            method_name = "forward"
+            KLogger.warning(
+                "IO specification not loaded, using default method name:"
+                f" {method_name}."
+            )
         self.model = program.load_method(method_name)
         if self.model is None:
             raise ModelNotLoadedError(

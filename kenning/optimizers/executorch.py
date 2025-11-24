@@ -168,6 +168,7 @@ class ExecuTorchOptimizer(Optimizer):
 
         dynamic_shapes = {}
         input_specs = io_specification.get("input", [])
+        method_name = io_specification.get("entry_func", "forward")
 
         # Get the argument names from input_specs.
         arg_names = [
@@ -194,7 +195,7 @@ class ExecuTorchOptimizer(Optimizer):
 
         model_forward = getattr(self, "model", None)
         if model_forward is not None:
-            sig = inspect.signature(model_forward.forward)
+            sig = inspect.signature(getattr(model_forward, method_name))
             expected_arg_names = [k for k in sig.parameters if k != "self"]
             # Re-map `dynamic_shapes` keys to match `expected_arg_names`.
             if len(expected_arg_names) == len(dynamic_shapes):
@@ -277,6 +278,8 @@ class ExecuTorchOptimizer(Optimizer):
             raise IOSpecificationNotFoundError(
                 "IO specification is required for compilation."
             )
+
+        io_spec["entry_func"] = "forward"
 
         # Load a model from a file.
         self.model = self.inputtypes[self.model_framework](

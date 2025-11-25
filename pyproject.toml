@@ -65,7 +65,6 @@ torch = [
     "onnx2torch",
     "torch",
     "torchvision>=0.15.0",
-    "onnxscript",
 ]
 mxnet = [
     "gluoncv>=0.10.2",

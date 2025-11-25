@@ -465,7 +465,8 @@ class TVMCompiler(Optimizer):
             "argparse_name": "--module-name",
             "description": "The name of a module, `tvmgen_{MODULE_NAME}` will be used as prefix for generated functions",  # noqa: E501
             "type": str,
-            "default": "default",
+            "nullable": True,
+            "default": None,
         },
     }
 
@@ -491,7 +492,7 @@ class TVMCompiler(Optimizer):
         use_int8_precision: bool = False,
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
-        module_name: str | None = None,
+        module_name: Optional[str] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -551,7 +552,7 @@ class TVMCompiler(Optimizer):
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
             used for calibrating the model.
-        module_name : str | None
+        module_name : Optional[str]
            The name of a module, `tvmgen_{module_name}` will be used as prefix
            for generated functions and entrypoint function will be names
            as `TVM{ModuleName}SystemLibEntryPoint`.
@@ -714,9 +715,7 @@ class TVMCompiler(Optimizer):
                     target=self.target_obj,
                     target_host=self.target_host_obj,
                     params=params,
-                    mod_name=self.module_name
-                    if self.module_name
-                    else "default",
+                    mod_name=self.module_name if self.module_name else "",
                 )
 
             if self.target_microtvm_board:

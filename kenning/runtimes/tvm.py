@@ -170,7 +170,20 @@ class TVMRuntime(Runtime):
             else:
                 self.model_path
             self.module = tvm.runtime.load_module(str(self.model_path))
-            self.func = self.module.get_function("default")
+
+            if hasattr(self, "entry_function_name"):
+                entry_func_name = (
+                    self.entry_function_name
+                    if self.entry_function_name
+                    else ""
+                )
+            else:
+                entry_func_name = ""
+                KLogger.warning(
+                    "IO specification not loaded, using default entry"
+                    f" function name: {entry_func_name}"
+                )
+            self.func = self.module.get_function(entry_func_name)
             self.model = graph_executor.GraphModule(self.func(ctx))
         KLogger.info("Model loading ended successfully")
         return True

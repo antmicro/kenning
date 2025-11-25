@@ -774,6 +774,10 @@ class TVMCompiler(Optimizer):
                         [m.title() for m in mod_name.split("_")]
                     )
 
+                    # For compatibility with Kenning Zephyr Runtime we need an
+                    # option to preserve default function names, which is done
+                    # with an empty string or a None value passes as
+                    # 'module_name' parameter.
                     to_replace = [
                         ("{{TVMGEN_FUNCTIONS}}", template_tvmgen_functions),
                         (
@@ -841,6 +845,9 @@ class TVMCompiler(Optimizer):
             self, input_model_path, inputshapes, dtypes
         )
         self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
+        io_spec["entry_func"] = (
+            self.module_name if type(self.module_name) is str else ""
+        )
         self.compile_model(mod, params, self.compiled_model_path, io_spec)
         if self.use_fp16_precision or self.use_int8_precision:
             output_dtype = "float16" if self.use_fp16_precision else "int8"

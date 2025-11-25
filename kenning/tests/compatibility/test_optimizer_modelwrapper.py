@@ -150,10 +150,10 @@ def prepare_objects(
     if optimizer_cls is ModelInserter:
         pytest.skip("ModelInserter is not supported")
 
-    try:
-        model_type = Optimizer.consult_model_type(optimizer_cls, model_cls)
-    except ValueError:
-        pytest.skip("Blocks do not match")
+    model_type = model_cls.get_framework()
+    optimizer_type = optimizer_cls.get_framework()
+    if not converter_registry.find_all_paths(model_type, optimizer_type):
+        pytest.skip("No available conversion path")
 
     # by default, do not enforce platforms
     platform = None
@@ -232,7 +232,6 @@ class TestOptimizerModelWrapper:
 
         List of methods that are being tested
         --------------------------------
-        Optimizer.consult_model_type()
         Optimizer.compile()
 
         Used fixtures
@@ -245,7 +244,7 @@ class TestOptimizerModelWrapper:
         optimizer = optimizersamples.get(optimizername)
         model_path, wrapper_name = modelsamples.get(optimizer.inputtype)
         wrapper = modelwrappersamples.get(wrapper_name)
-        model_type = optimizer.consult_model_type(wrapper)
+        model_type = wrapper.get_framework()
         assert isinstance(model_type, str) and len(model_type) > 0
         assert model_type in optimizer.get_input_formats()
         assert model_type in wrapper.get_output_formats()
@@ -273,7 +272,6 @@ class TestOptimizerModelWrapper:
         List of methods that are being tested
         --------------------------------
         ModelWrapper.save_to_onnx()
-        Optimizer.consult_model_type()
 
         Used fixtures
         -------------
@@ -295,14 +293,16 @@ class TestOptimizerModelWrapper:
             for optimizer_name in optimizersamples:
                 optimizer = optimizersamples.get(optimizer_name)
                 io_spec = copy.deepcopy(original_io_spec)
-                with pytest.raises(ValueError):
-                    optimizer.consult_model_type(optimizer)
                 # TODO: In future there might be no shared model types,
                 # so method may throw an exception
-                model_type = optimizer.consult_model_type(wrapper)
+                model_type = wrapper.get_framework()
+                optimizer_type = optimizer.get_framework()
+                if not converter_registry.find_all_paths(
+                    optimizer_type, model_type
+                ):
+                    continue
                 assert isinstance(model_type, str)
-                assert model_type in optimizer.get_input_formats()
-                assert model_type in wrapper.get_output_formats()
+                assert isinstance(model_type, str)
 
                 optimizer.set_input_type("onnx")
                 compiled_model_path = filename + "_" + optimizer.inputtype

@@ -181,7 +181,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
         pipeline_runner = PipelineRunner(
             dataset=dataset,
             dataconverter=dataconverter,
-            optimizers=[compiler_tvm],
+            optimizers=[compiler_tflite, compiler_tvm],
             runtime=runtime,
             model_wrapper=model,
         )

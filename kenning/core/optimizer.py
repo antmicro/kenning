@@ -10,7 +10,7 @@ import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Type, Union
+from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -165,10 +165,6 @@ class Optimizer(ArgumentsHandler, ABC):
         inputtype : str
             Path to be set.
         """
-        assert inputtype in (self.inputtypes + ["any"]), (
-            f"Unsupported input type {inputtype}, only "
-            f"{', '.join(self.inputtypes)} are supported"
-        )
         self.inputtype = inputtype
 
     @abstractmethod
@@ -252,64 +248,6 @@ class Optimizer(ArgumentsHandler, ABC):
             List of possible output formats.
         """
         return cls.outputtypes
-
-    def consult_model_type(
-        self,
-        previous_block: Union[
-            "ModelWrapper",
-            "Optimizer",
-            Type["ModelWrapper"],
-            Type["Optimizer"],
-        ],
-        force_onnx: bool = False,
-    ) -> str:
-        """
-        Finds output format of the previous block in the chain
-        matching with an input format of the current block.
-
-        Parameters
-        ----------
-        previous_block : Union["ModelWrapper", "Optimizer", Type["ModelWrapper"], Type["Optimizer"]]
-            Previous block in the optimization chain.
-        force_onnx : bool
-            Forces ONNX format.
-
-        Returns
-        -------
-        str
-            Matching format.
-
-        Raises
-        ------
-        ValueError
-            Raised if there is no matching format.
-        """  # noqa: E501
-        possible_outputs = previous_block.get_output_formats()
-
-        if force_onnx:
-            KLogger.warning("Forcing ONNX conversion")
-            if (
-                "onnx" in self.get_input_formats()
-                and "onnx" in possible_outputs
-            ):
-                return "onnx"
-            else:
-                raise ValueError(
-                    '"onnx" format is not supported by at least one block\n'
-                    f"Input block supported formats: {', '.join(possible_outputs)}\n"  # noqa: E501
-                    f"Output block supported formats: {', '.join(self.get_input_formats())}"  # noqa: E501
-                )
-
-        for input in self.get_input_formats():
-            if input in possible_outputs:
-                return input
-
-        raise ValueError(
-            f"No matching formats between two object: {self} and "
-            f"{previous_block}\n"
-            f"Input block supported formats: {', '.join(possible_outputs)}\n"
-            f"Output block supported formats: {', '.join(self.get_input_formats())}"  # noqa: E501
-        )
 
     @staticmethod
     def get_spec_path(model_path: PathOrURI) -> PathOrURI:

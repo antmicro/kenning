@@ -18,6 +18,7 @@ except ImportError:
         "tinygrad with onnx frontend enabled."
     )
 
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
@@ -56,20 +57,17 @@ def prepare_objects(
     if ModelInserter in (optimizer_cls1, optimizer_cls2):
         pytest.skip("ModelInserter is not supported")
 
-    try:
-        model_type_between = Optimizer.consult_model_type(
-            optimizer_cls2, optimizer_cls1
-        )
-    except ValueError:
-        pytest.skip("Blocks do not match")
+    optimizer_type1 = optimizer_cls1.get_framework()
+    optimizer_type2 = optimizer_cls2.get_framework()
+    if not converter_registry.find_all_paths(optimizer_type1, optimizer_type2):
+        pytest.skip("No available conversion path")
 
-    model_type_input = optimizer_cls1.inputtypes[0]
-    dataset, model, _ = DatasetModelRegistry.get(model_type_input)
+    dataset, model, _ = DatasetModelRegistry.get(optimizer_type1)
 
     optimizers = []
     for cls, model_type in [
-        (optimizer_cls1, model_type_input),
-        (optimizer_cls2, model_type_between),
+        (optimizer_cls1, optimizer_type1),
+        (optimizer_cls2, optimizer_type2),
     ]:
         optimizer = cls(
             model.dataset,

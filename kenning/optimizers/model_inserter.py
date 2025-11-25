@@ -8,7 +8,7 @@ in specified format to an existing flow.
 """
 
 import shutil
-from typing import Dict, List, Literal, Optional, Type, Union
+from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -85,45 +85,6 @@ class ModelInserter(Optimizer):
 
         shutil.copy(self.input_model_path, self.compiled_model_path)
         self.save_io_specification(self.input_model_path, None)
-
-    def consult_model_type(
-        self,
-        previous_block: Union[
-            "ModelWrapper",
-            "Optimizer",
-            Type["ModelWrapper"],
-            Type["Optimizer"],
-        ],
-        force_onnx: bool = False,
-    ) -> str:
-        """
-        Returns the first type supported by the previous block.
-
-        Override of the original consult_model_type, simplifying
-        the consulting process due to class nature.
-
-        Parameters
-        ----------
-        previous_block : Union["ModelWrapper", "Optimizer", Type["ModelWrapper"], Type["Optimizer"]]
-            Previous block in the optimization chain.
-        force_onnx : bool
-            Forces ONNX format.
-
-        Returns
-        -------
-        str
-            Matching format.
-
-        Raises
-        ------
-        ValueError:
-            Raised when ONNX is not supported for conversion
-        """  # noqa: E501
-        possible_outputs = previous_block.get_output_formats()
-
-        if force_onnx and self.model_framework != "onnx":
-            raise ValueError('"onnx" format is not supported by ModelInserter')
-        return possible_outputs[0]
 
     def set_input_type(self, inputtype: str):
         self.inputtype = inputtype

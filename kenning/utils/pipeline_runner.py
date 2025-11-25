@@ -7,7 +7,6 @@ Provides runner for optimization flows.
 """
 
 import argparse
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -638,21 +637,10 @@ class PipelineRunner(object):
         while optimizer_idx < len(self.optimizers):
             next_block = self.optimizers[optimizer_idx]
 
-            model_type = next_block.consult_model_type(
-                prev_block,
-                force_onnx=(
-                    convert_to_onnx is not None
-                    and isinstance(prev_block, ModelWrapper)
-                ),
-            )
-
-            if (
-                model_type == "onnx"
-                and isinstance(prev_block, ModelWrapper)
-                and not convert_to_onnx
-            ):
-                model_path = Path(tempfile.NamedTemporaryFile().name)
-                prev_block.save_to_onnx(model_path)
+            if convert_to_onnx:
+                model_type = "onnx"
+            else:
+                model_type = prev_block.get_framework()
 
             prev_block.save_io_specification(model_path)
 
@@ -718,18 +706,20 @@ class PipelineRunner(object):
                     f"Processing block: {type(next_block).__name__} on client"
                 )
 
-                next_block.set_input_type(model_type)
+                # Type will be determined from model file extension
+                if prev_block != self.model_wrapper:
+                    next_block.set_input_type(model_type)
                 next_block.init()
                 if run_compatibility_checks:
                     runtime = self.runtime
                     if optimizer_idx == (len(self.optimizers) - 1):
                         runtime = None
                     elif runtime is None:
-                        model_framework = self._guess_model_framework(
+                        final_model_framework = self._guess_model_framework(
                             convert_to_onnx
                         )
                         runtime = get_default_runtime(
-                            model_framework, model_path
+                            final_model_framework, model_path
                         )
                     success_check = next_block.run_compatibility_checks(
                         self.platform, runtime, model_path

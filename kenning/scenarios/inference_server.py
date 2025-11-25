@@ -324,6 +324,10 @@ class InferenceServer(object):
             def get_output_formats(cls):
                 return prev_block_cfg["model_type"]
 
+            @classmethod
+            def get_framework(cls):
+                return prev_block_cfg["model_type"]
+
             def save_io_specification(self, model_path: Path):
                 with open(Optimizer.get_spec_path(model_path), "w") as spec_f:
                     spec_f.write(json.dumps(prev_block_cfg["io_spec"]))
@@ -384,7 +388,7 @@ class InferenceServer(object):
             for optimizer in self.optimizers:
                 KLogger.info(f"Processing block: {type(optimizer).__name__}")
 
-                model_type = optimizer.consult_model_type(prev_block)
+                model_type = prev_block.get_framework()
 
                 prev_block.save_io_specification(model_path)
                 optimizer.set_input_type(model_type)

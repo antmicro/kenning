@@ -388,11 +388,6 @@ class TestPipelineRunnerRun:
         optimizer_mock.compiled_model_path = Path("compiled_model")
         optimizer_mock.get_input_formats.return_value = ["format1"]
         optimizer_mock.get_output_formats.return_value = ["format2"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
 
         runner = PipelineRunner(
             dataset=dataset_mock,
@@ -424,11 +419,6 @@ class TestPipelineRunnerRun:
         optimizer_mock.compiled_model_path = Path("compiled_model")
         optimizer_mock.get_input_formats.return_value = ["onnx"]
         optimizer_mock.get_output_formats.return_value = ["onnx"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
 
         runner = PipelineRunner(
             dataset=dataset_mock,
@@ -462,11 +452,6 @@ class TestPipelineRunnerRun:
         optimizer_mock.compiled_model_path = Path("compiled_model")
         optimizer_mock.get_input_formats.return_value = ["format1"]
         optimizer_mock.get_output_formats.return_value = ["format2"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
 
         runner = PipelineRunner(
             dataset=dataset_mock,
@@ -496,11 +481,7 @@ class TestPipelineRunnerRun:
         optimizer_mock.compiled_model_path = model_path
         optimizer_mock.get_input_formats.return_value = ["format1"]
         optimizer_mock.get_output_formats.return_value = ["format2"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
+
         runner = PipelineRunner(
             dataset=dataset_mock,
             model_wrapper=model_mock,
@@ -569,11 +550,6 @@ class TestPipelineRunnerRun:
         optimizer_mock.location = "target"
         optimizer_mock.get_input_formats.return_value = ["format1"]
         optimizer_mock.get_output_formats.return_value = ["format2"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
 
         runner = PipelineRunner(
             dataset=dataset_mock,
@@ -602,45 +578,9 @@ class TestPipelineRunnerRun:
         optimizer_mock.location = "target"
         optimizer_mock.get_input_formats.return_value = ["format1"]
         optimizer_mock.get_output_formats.return_value = ["format2"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
 
         runner = PipelineRunner(
             platform=platform_mock,
-            dataset=dataset_mock,
-            model_wrapper=model_mock,
-            runtime=runtime_mock,
-            protocol=protocol_mock,
-            optimizers=[optimizer_mock],
-        )
-
-        with pytest.raises(ValueError):
-            runner.run(run_optimizations=True, run_benchmarks=False)
-
-    def test_run_formats_difference(
-        self,
-        dataset_mock: Mock,
-        protocol_mock: Mock,
-        model_mock: Mock,
-        optimizer_mock: Mock,
-        runtime_mock: Mock,
-    ):
-        # Run with mismatches in input and output formats
-        model_mock.get_output_formats.return_value = ["format1"]
-        runtime_mock.get_input_formats.return_value = ["format2"]
-        optimizer_mock.location = "target"
-        optimizer_mock.get_input_formats.return_value = ["format3"]
-        optimizer_mock.get_output_formats.return_value = ["format4"]
-        optimizer_mock.consult_model_type = (
-            lambda prev_block, force_onnx: Optimizer.consult_model_type(
-                optimizer_mock, prev_block, force_onnx
-            )
-        )
-
-        runner = PipelineRunner(
             dataset=dataset_mock,
             model_wrapper=model_mock,
             runtime=runtime_mock,

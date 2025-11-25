@@ -47,6 +47,11 @@ class TabularDataset(Dataset):
             "nullable": True,
             "default": None,
         },
+        "shuffle_data": {
+            "argparse_name": "--shuffle-data",
+            "type": bool,
+            "default": True,
+        },
     }
 
     def __init__(
@@ -64,6 +69,7 @@ class TabularDataset(Dataset):
         split_fraction_val=None,
         split_seed=1234,
         dataset_percentage=1,
+        shuffle_data=True,
     ):
         self.colsX = colsX
         self.colY = colY
@@ -80,6 +86,7 @@ class TabularDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            shuffle_data,
         )
 
     def _get_csv_path(self):

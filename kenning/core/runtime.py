@@ -380,6 +380,7 @@ class Runtime(ArgumentsHandler, ABC):
             if k
             not in ["input", "output", "processed_input", "processed_output"]
         }
+        self.entry_function_name = io_spec.get("entry_func", None)
 
         # Check if model input specification contains only one possible shape
         if any(

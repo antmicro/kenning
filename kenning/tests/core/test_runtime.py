@@ -225,6 +225,7 @@ class TestRuntime:
         Tests the `prepare_model` method.
         """
         with prepare_objects(runtime_cls, inputtype) as (runtime, _, _):
+            assert runtime.prepare_io_specification(None) is True
             assert runtime.prepare_model(None) is True
             assert runtime.prepare_model(b"") is True
 

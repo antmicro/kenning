@@ -25,9 +25,13 @@ except ImportError:
         "tinygrad with onnx frontend enabled."
     )
 
+from itertools import product
+
+from kenning.converters import converter_registry
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.core.platform import Platform
+from kenning.modelwrappers.llm.llm import LLM
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 from kenning.optimizers.gptq import GPTQOptimizer
 from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
@@ -52,17 +56,52 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
     "kenning.optimizers", Optimizer, raise_exception=True
 )
 
+LLM_OPTIMIZERS = [
+    optimizer
+    for optimizer in OPTIMIZER_SUBCLASSES
+    if getattr(optimizer, "inputtypes", {}).keys() == {"safetensors-native"}
+]
+
+LLM_MODELWRAPPERS = get_all_subclasses(
+    "kenning.modelwrappers.llm", LLM, raise_exception=True
+)
+
+NON_LLM_MODELWRAPPERS = set(MODELWRAPPER_SUBCLASSES) - set(LLM_MODELWRAPPERS)
+NON_LLM_OPTIMIZERS = set(OPTIMIZER_SUBCLASSES) - set(LLM_OPTIMIZERS)
+
 EXPECTED_FAIL = [
     # Skipping because these tests will fail if there is no dataset provided
+    ("Ai8xAnomalyDetectionCnn", "ExecuTorchOptimizer"),
+    ("Dinov2ONNX", "Ai8xCompiler"),
+    ("Dinov2ONNX", "ExecuTorchOptimizer"),
+    ("Dinov2ONNX", "IREECompiler"),
     ("Dinov2ONNX", "NNIPruningOptimizer"),
     ("Dinov2ONNX", "ONNXCompiler"),
+    ("Dinov2ONNX", "TensorFlowClusteringOptimizer"),
+    ("Dinov2ONNX", "TensorFlowPruningOptimizer"),
     ("Dinov2ONNX", "TFLiteCompiler"),
     ("Dinov2ONNX", "TVMCompiler"),
     ("Dinov2ONNX", "TinygradOptimizer"),
     ("Llama", "AWQOptimizer"),
     ("Llama", "GPTQOptimizer"),
     ("Llama", "GPTQSparseGPTOptimizer"),
+    ("MMPoseDetectionInput", "Ai8xCompiler"),
+    ("MMPoseDetectionInput", "ExecuTorchOptimizer"),
+    ("MMPoseDetectionInput", "IREECompiler"),
+    ("MMPoseDetectionInput", "TensorFlowClusteringOptimizer"),
+    ("MMPoseDetectionInput", "TensorFlowPruningOptimizer"),
+    ("MMPoseONNX", "Ai8xCompiler"),
+    ("MMPoseONNX", "ExecuTorchOptimizer"),
+    ("MMPoseONNX", "IREECompiler"),
+    ("MMPoseONNX", "TensorFlowClusteringOptimizer"),
+    ("MMPoseONNX", "TensorFlowPruningOptimizer"),
+    ("MMPoseRTMOONNX", "Ai8xCompiler"),
+    ("MMPoseRTMOONNX", "ExecuTorchOptimizer"),
+    ("MMPoseRTMOONNX", "IREECompiler"),
+    ("MMPoseRTMOONNX", "TensorFlowClusteringOptimizer"),
+    ("MMPoseRTMOONNX", "TensorFlowPruningOptimizer"),
     ("MagicWandModelWrapper", "NNIPruningOptimizer"),
+    ("MagicWandModelWrapper", "ExecuTorchOptimizer"),
     ("MagicWandModelWrapper", "TinygradOptimizer"),
     ("PHI2", "AWQOptimizer"),
     ("PHI2", "GPTQOptimizer"),
@@ -75,6 +114,7 @@ EXPECTED_FAIL = [
     ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
     ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
     ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
+    ("PyTorchCOCOMaskRCNN", "TinygradOptimizer"),
     ("PyTorchPetDatasetMobileNetV2", "Ai8xCompiler"),
     ("TFLiteCompiler", "MagicWandModelWrapper"),
     ("TFLiteCompiler", "TensorFlowPetDatasetMobileNetV2"),
@@ -100,6 +140,7 @@ EXPECTED_FAIL = [
     ("MMPoseDetectionInput", "TVMCompiler"),
     ("MMPoseDetectionInput", "TinygradOptimizer"),
     ("MMPoseDetectionInput", "ONNXCompiler"),
+    ("MMPoseModelWrapper", "IREECompiler"),
     ("MMPoseModelWrapper", "NNIPruningOptimizer"),
     ("MMPoseModelWrapper", "ONNXCompiler"),
     ("MMPoseModelWrapper", "TFLiteCompiler"),
@@ -117,6 +158,7 @@ EXPECTED_FAIL = [
     ("MMPoseRTMOONNX", "TinygradOptimizer"),
     ("PyTorchGenericClassification", "Ai8xCompiler"),
     ("PyTorchGenericClassification", "ExecuTorchOptimizer"),
+    ("PyTorchGenericClassification", "IREECompiler"),
     ("PyTorchGenericClassification", "NNIPruningOptimizer"),
     ("PyTorchGenericClassification", "ONNXCompiler"),
     ("PyTorchGenericClassification", "TFLiteCompiler"),
@@ -124,6 +166,7 @@ EXPECTED_FAIL = [
     ("PyTorchGenericClassification", "TinygradOptimizer"),
     ("PyTorchGenericAutoencoderClassification", "Ai8xCompiler"),
     ("PyTorchGenericAutoencoderClassification", "ExecuTorchOptimizer"),
+    ("PyTorchGenericAutoencoderClassification", "IREECompiler"),
     ("PyTorchGenericAutoencoderClassification", "NNIPruningOptimizer"),
     ("PyTorchGenericAutoencoderClassification", "ONNXCompiler"),
     ("PyTorchGenericAutoencoderClassification", "TFLiteCompiler"),
@@ -131,13 +174,52 @@ EXPECTED_FAIL = [
     ("PyTorchGenericAutoencoderClassification", "TinygradOptimizer"),
     ("PyTorchMagicWandModelWrapper", "NNIPruningOptimizer"),
     ("PyTorchMagicWandModelWrapper", "Ai8xCompiler"),
+    # All possible conversions fail.
+    ("MMPoseModelWrapper", "Ai8xCompiler"),
+    ("MMPoseModelWrapper", "ExecuTorchOptimizer"),
+    ("MagicWandModelWrapper", "Ai8xCompiler"),
+    ("ONNXYOLOV4", "Ai8xCompiler"),
+    ("PersonDetectionModelWrapper", "Ai8xCompiler"),
+    ("PersonDetectionModelWrapper", "ExecuTorchOptimizer"),
+    ("PersonDetectionModelWrapper", "TFLiteCompiler"),
+    ("PersonDetectionModelWrapper", "NNIPruningOptimizer"),
+    ("PyTorchCOCOMaskRCNN", "IREECompiler"),
+    ("TensorFlowImageNet", "Ai8xCompiler"),
+    ("TensorFlowImageNet", "ExecuTorchOptimizer"),
+    ("TensorFlowPetDatasetMobileNetV2", "Ai8xCompiler"),
+    ("ONNXYOLOV4", "ExecuTorchOptimizer"),
+    ("TensorFlowPetDatasetMobileNetV2", "ExecuTorchOptimizer"),
+    ("YOLACT", "Ai8xCompiler"),
+    ("YOLACT", "ExecuTorchOptimizer"),
+    ("YOLACTWithPostprocessing", "Ai8xCompiler"),
+    ("YOLACTWithPostprocessing", "ExecuTorchOptimizer"),
+    ("YOLACTWithPostprocessing", "IREECompiler"),
+    ("TinygradImageNet", "Ai8xCompiler"),
+    ("TinygradImageNet", "ExecuTorchOptimizer"),
+    ("TinygradImageNet", "IREECompiler"),
+    ("TinygradImageNet", "NNIPruningOptimizer"),
+    ("TinygradImageNet", "ONNXCompiler"),
+    ("TinygradImageNet", "TFLiteCompiler"),
+    ("TinygradImageNet", "TVMCompiler"),
 ]
 
-SKIP = [
-    ("MistralInstruct", "AWQOptimizer"),
-    ("MistralInstruct", "GPTQOptimizer"),
-    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
-]
+SKIP = (
+    [
+        ("MistralInstruct", "AWQOptimizer"),
+        ("MistralInstruct", "GPTQOptimizer"),
+        ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+    ]
+    # Skip LLM specific optimizers for non-LLMs.
+    + [
+        (model.__name__, optimizer.__name__)
+        for model, optimizer in product(NON_LLM_MODELWRAPPERS, LLM_OPTIMIZERS)
+    ]
+    # Skip non-LLM specific optimizers for LLMs.
+    + [
+        (model.__name__, optimizer.__name__)
+        for model, optimizer in product(LLM_MODELWRAPPERS, NON_LLM_OPTIMIZERS)
+    ]
+)
 
 expect_fail = pytest.mark.xfail(reason="Expected incompatible")
 skip = pytest.mark.skip(reason="Time or resource intensive")
@@ -153,7 +235,7 @@ def prepare_objects(
     model_type = model_cls.get_framework()
     optimizer_type = optimizer_cls.get_framework()
     if not converter_registry.find_all_paths(model_type, optimizer_type):
-        pytest.skip("No available conversion path")
+        pytest.xfail("No available conversion path")
 
     # by default, do not enforce platforms
     platform = None

@@ -39,14 +39,50 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 
 
 EXPECTED_FAIL = [
+    ("ONNXCompiler", "Ai8xCompiler"),
+    ("TFLiteCompiler", "Ai8xCompiler"),
+    ("TFLiteCompiler", "NNIPruningOptimizer"),
+    ("TensorFlowClusteringOptimizer", "Ai8xCompiler"),
+    ("TensorFlowClusteringOptimizer", "ExecuTorchOptimizer"),
+    ("TensorFlowClusteringOptimizer", "NNIPruningOptimizer"),
+    ("TensorFlowPruningOptimizer", "Ai8xCompiler"),
+    ("TensorFlowPruningOptimizer", "ExecuTorchOptimizer"),
+    ("TensorFlowPruningOptimizer", "NNIPruningOptimizer"),
     ("NNIPruningOptimizer", "Ai8xCompiler"),
     ("NNIPruningOptimizer", "ExecuTorchOptimizer"),
-    ("NNIPruningOptimizer", "NNIPruningOptimizer"),
+    ("NNIPruningOptimizer", "IREECompiler"),
     ("NNIPruningOptimizer", "ONNXCompiler"),
     ("NNIPruningOptimizer", "TVMCompiler"),
+    ("NNIPruningOptimizer", "TFLiteCompiler"),
+    ("NNIPruningOptimizer", "TensorFlowClusteringOptimizer"),
+    ("NNIPruningOptimizer", "TensorFlowPruningOptimizer"),
+    ("NNIPruningOptimizer", "TinygradOptimizer"),
     ("ONNXCompiler", "NNIPruningOptimizer"),
+    ("ExecuTorchOptimizer", "ExecuTorchOptimizer"),
+    ("ExecuTorchOptimizer", "Ai8xCompiler"),
+    ("ExecuTorchOptimizer", "IREECompiler"),
+    ("ExecuTorchOptimizer", "NNIPruningOptimizer"),
+    ("ExecuTorchOptimizer", "ONNXCompiler"),
+    ("ExecuTorchOptimizer", "TFLiteCompiler"),
+    ("ExecuTorchOptimizer", "TVMCompiler"),
+    ("ExecuTorchOptimizer", "TinygradOptimizer"),
 ]
+
+SKIP = [
+    ("Ai8xCompiler", "Ai8xCompiler"),
+    ("TVMCompiler", "TVMCompiler"),
+    ("ExecuTorchOptimizer", "ExecuTorchOptimizer"),
+    ("IREECompiler", "IREECompiler"),
+    ("NNIPruningOptimizer", "NNIPruningOptimizer"),
+    ("TinygradOptimizer", "TinygradOptimizer"),
+]
+
+for optimizer in OPTIMIZER_SUBCLASSES:
+    SKIP.append(("IREECompiler", optimizer.__name__))
+    SKIP.append(("TinygradOptimizer", optimizer.__name__))
+
 expected_mark = pytest.mark.xfail(reason="Expected incompatible")
+skip = pytest.mark.skip(reason="No conversion available")
 
 
 def prepare_objects(
@@ -89,6 +125,8 @@ class TestOptimizersCompatibility:
         [
             pytest.param(cls1, cls2, marks=[expected_mark])
             if (cls1.__name__, cls2.__name__) in EXPECTED_FAIL
+            else pytest.param(cls1, cls2, marks=[skip])
+            if (cls1.__name__, cls2.__name__) in SKIP
             else (cls1, cls2)
             for cls1 in OPTIMIZER_SUBCLASSES
             for cls2 in OPTIMIZER_SUBCLASSES

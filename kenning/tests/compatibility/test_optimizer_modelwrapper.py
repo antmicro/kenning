@@ -59,7 +59,7 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 LLM_OPTIMIZERS = [
     optimizer
     for optimizer in OPTIMIZER_SUBCLASSES
-    if getattr(optimizer, "inputtypes", []) == ["safetensors-native"]
+    if getattr(optimizer, "inputtypes", []) == {"safetensors-native"}
 ]
 
 LLM_MODELWRAPPERS = get_all_subclasses(

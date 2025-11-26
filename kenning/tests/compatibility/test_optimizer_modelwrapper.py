@@ -129,6 +129,7 @@ EXPECTED_FAIL = [
     ("PyTorchGenericAutoencoderClassification", "TFLiteCompiler"),
     ("PyTorchGenericAutoencoderClassification", "TVMCompiler"),
     ("PyTorchGenericAutoencoderClassification", "TinygradOptimizer"),
+    ("PyTorchMagicWandModelWrapper", "NNIPruningOptimizer"),
 ]
 
 SKIP = [

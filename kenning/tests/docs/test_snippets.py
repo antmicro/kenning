@@ -289,7 +289,9 @@ def execute_script_and_wait(
         raise
 
 
-def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
+def get_working_directory(
+    markdown: str, tmpfolder: Path, use_system_site_packages: bool = False
+) -> Path:
     """
     Returns path to the virtual environment.
 
@@ -301,6 +303,8 @@ def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
         Name of the markdown file.
     tmpfolder : Path
         Path to the temporary folder.
+    use_system_site_packages : bool
+        Whether the pytest venv should use system site packages.
 
     Returns
     -------
@@ -317,7 +321,12 @@ def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
 
         venv_path = working_dir_path / "venv"
         if not venv_path.exists():
-            venv.create(venv_path, with_pip=True, upgrade_deps=True)
+            venv.create(
+                venv_path,
+                with_pip=True,
+                upgrade_deps=True,
+                system_site_packages=use_system_site_packages,
+            )
         kenning_path = working_dir_path / "kenning"
         if not kenning_path.exists():
             patch_file = "temp.patch"
@@ -509,7 +518,7 @@ class TestDocsSnippets:
                 create_script(
                     snippet,
                     get_working_directory(
-                        markdown, pytest.test_directory / "tmp"
+                        markdown, pytest.test_directory / "tmp", uses_ros
                     ),
                 ),
                 snippet,

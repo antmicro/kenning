@@ -115,6 +115,13 @@ EXPECTED_FAIL = [
     ("MMPoseRTMOONNX", "TFLiteCompiler"),
     ("MMPoseRTMOONNX", "TVMCompiler"),
     ("MMPoseRTMOONNX", "TinygradOptimizer"),
+    ("PyTorchGenericClassification", "Ai8xCompiler"),
+    ("PyTorchGenericClassification", "ExecuTorchOptimizer"),
+    ("PyTorchGenericClassification", "NNIPruningOptimizer"),
+    ("PyTorchGenericClassification", "ONNXCompiler"),
+    ("PyTorchGenericClassification", "TFLiteCompiler"),
+    ("PyTorchGenericClassification", "TVMCompiler"),
+    ("PyTorchGenericClassification", "TinygradOptimizer"),
 ]
 
 SKIP = [

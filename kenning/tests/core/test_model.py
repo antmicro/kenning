@@ -15,6 +15,9 @@ from kenning.core.model import ModelWrapper
 from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
     Ai8xAnomalyDetectionCNN,
 )
+from kenning.modelwrappers.classification.pytorch_generic import (
+    PyTorchGenericClassification,
+)
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.tests.core.conftest import (
     copy_model_to_tmp,
@@ -181,6 +184,8 @@ class TestModelWrapper:
         """
         if isinstance(model, Ai8xAnomalyDetectionCNN):
             pytest.xfail("Ai8xAnomalyDetectionCNN requires ai8x-training")
+        if isinstance(model, PyTorchGenericClassification):
+            pytest.xfail("PyTorchGenericClassification requires model source")
         model.prepare_model()
 
     @pytest.mark.parametrize(

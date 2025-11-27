@@ -38,7 +38,7 @@ def dataset(request):
             f"Dataset {dataset_cls.__name__} not found in any of {path} and "
             f"{path_reduced} directories"
         )
-    if "Tabular" in dataset_cls.__name__:
+    if "TabularDataset" in dataset_cls.__name__:
         kwargs["dataset_path"] = "asdfg"
         kwargs["colsX"] = ["x1", "x2"]
         kwargs["colY"] = "y"
@@ -83,7 +83,7 @@ class TestDataset:
         Tests throwing exception when there is no folder with data.
         """
         kwargs = {}
-        if "Tabular" in dataset_cls.__name__:
+        if "TabularDataset" in dataset_cls.__name__:
             kwargs["dataset_path"] = "asdfg"
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"
@@ -402,7 +402,9 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         elif "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
-        elif "Tabular" in dataset_cls.__name__:
+        if "VideoDataset" in dataset_cls.__name__:
+            pytest.skip("Video dataset does not have any files")
+        elif "TabularDataset" in dataset_cls.__name__:
             kwargs["dataset_path"] = "asdfg"
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"
@@ -489,7 +491,9 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
-        elif "Tabular" in dataset_cls.__name__:
+        if "VideoDataset" in dataset_cls.__name__:
+            pytest.skip("Video dataset does not have any files")
+        elif "TabularDataset" in dataset_cls.__name__:
             kwargs["dataset_path"] = "asdfg"
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"
@@ -547,7 +551,9 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
-        elif "Tabular" in dataset_cls.__name__:
+        if "VideoDataset" in dataset_cls.__name__:
+            pytest.skip("Video dataset does not have any files")
+        elif "TabularDataset" in dataset_cls.__name__:
             kwargs["dataset_path"] = "asdfg"
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"
@@ -605,7 +611,9 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
-        elif "Tabular" in dataset_cls.__name__:
+        if "VideoDataset" in dataset_cls.__name__:
+            pytest.skip("Video dataset does not have any files")
+        elif "TabularDataset" in dataset_cls.__name__:
             kwargs["dataset_path"] = "asdfg"
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"

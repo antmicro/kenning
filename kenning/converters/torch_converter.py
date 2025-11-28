@@ -35,9 +35,20 @@ class TorchConverter(ModelConverter):
 
     source_format: str = "torch"
 
-    def to_torch(self) -> "torch.nn.Module":
+    def to_torch(
+        self,
+        model: Optional["torch.nn.Module"] = None,
+        **kwargs,
+    ) -> "torch.nn.Module":
         """
         Loads PyTorch model.
+
+        Parameters
+        ----------
+        model : Optional["torch.nn.Module"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -51,11 +62,13 @@ class TorchConverter(ModelConverter):
         """
         import torch
 
-        model = torch.load(
-            self.source_model_path,
-            weights_only=False,
-            map_location=torch.device(_DEFAULT_DEVICE),
-        )
+        if not model:
+            model = torch.load(
+                self.source_model_path,
+                weights_only=False,
+                map_location=torch.device(_DEFAULT_DEVICE),
+            )
+
         if isinstance(model, Dict):
             raise ModelNotLoadedError(
                 f"The provided file ({str(self.source_model_path)}) contains "
@@ -67,7 +80,11 @@ class TorchConverter(ModelConverter):
         return model
 
     def to_onnx(
-        self, input_spec: List[Dict], output_names: List
+        self,
+        input_spec: List[Dict],
+        output_names: List,
+        model: Optional["torch.nn.Module"] = None,
+        **kwargs,
     ) -> "onnx.ModelProto":
         """
         Converts Torch model to ONNX.
@@ -78,6 +95,10 @@ class TorchConverter(ModelConverter):
             Dictionary representing inputs.
         output_names: List
             Names of outputs to include in the final model.
+        model : Optional["torch.nn.Module"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -92,11 +113,12 @@ class TorchConverter(ModelConverter):
         import onnx
         import torch
 
-        model = torch.load(
-            str(self.source_model_path),
-            map_location=_DEFAULT_DEVICE,
-            weights_only=False,
-        )
+        if not model:
+            model = torch.load(
+                str(self.source_model_path),
+                map_location=_DEFAULT_DEVICE,
+                weights_only=False,
+            )
 
         if not isinstance(model, torch.nn.Module):
             raise CompilationError(
@@ -130,6 +152,8 @@ class TorchConverter(ModelConverter):
         ai8x_model_path: Path,
         ai8x_tools: "Ai8xTools",
         device_id: int,
+        model: Optional["torch.nn.Module"] = None,
+        **kwargs,
     ) -> None:
         """
         Converts torch model into ai8x-compatible model.
@@ -142,6 +166,10 @@ class TorchConverter(ModelConverter):
             Ai8X tools wrapper.
         device_id : int
             Ai8X device ID.
+        model : Optional["torch.nn.Module"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Raises
         ------
@@ -205,8 +233,9 @@ class TorchConverter(ModelConverter):
     def to_tvm(
         self,
         input_shapes: Dict,
-        dtypes: Dict,
         conversion_func: Optional[str],
+        model: Optional["torch.nn.Module"] = None,
+        **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
         """
         Converts Torch file to TVM format.
@@ -215,10 +244,12 @@ class TorchConverter(ModelConverter):
         ----------
         input_shapes: Dict
             Mapping from input name to input shape.
-        dtypes: Dict
-            Mapping from input name to input dtype.
         conversion_func: Optional[str]
             Model-specific selector of output conversion functions.
+        model : Optional["torch.nn.Module"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -300,9 +331,9 @@ class TorchConverter(ModelConverter):
                 )
             return loaded_model
 
-        wrapped_model = TraceWrapper(model_func(self.source_model_path))
+        model = model if model else model_func(self.source_model_path)
+        wrapped_model = TraceWrapper(model)
         wrapped_model.eval()
-
         shape = input_shapes[list(input_shapes.keys())[0]]
         sample_input = torch.Tensor(
             np.random.uniform(0.0, 250.0, (mul(shape))),

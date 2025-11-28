@@ -6,7 +6,7 @@
 Enables loading of Keras models and conversion to other formats.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union, Optional
 
 from kenning.core.converter import ModelConverter
 from kenning.utils.logger import KLogger
@@ -25,30 +25,53 @@ class KerasConverter(ModelConverter):
 
     source_format: str = "keras"
 
-    def to_keras(self) -> "tf.keras.Model":
+    def to_keras(
+        self,
+        model: Optional["tf.keras.Model"] = None,
+        **kwargs,
+    ) -> "tf.keras.Model":
         """
         Loads Keras model.
+
+        Parameters
+        ----------
+        model : Optional["tf.keras.Model"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
         tf.keras.Model
-            Keras model.
         """
-        import tensorflow as tf
+        if not model:
+            import tensorflow as tf
 
-        model = tf.keras.models.load_model(
-            str(self.source_model_path), compile=False
-        )
+            model = tf.keras.models.load_model(
+                str(self.source_model_path), compile=False
+            )
         return model
 
-    def to_tflite(self) -> "tf.lite.TFLiteConverter":
+    def to_tflite(
+        self,
+        model: Optional["tf.keras.Model"] = None,
+        **kwargs: Dict,
+    ) -> "tf.lite.TFLiteConverter":
         """
         Converts Keras model to TFLiteConverter.
+
+        Parameters
+        ----------
+        model : Optional["tf.keras.Model"]
+            Optional model object.
+        **kwargs: Dict
+            Keyword arguments passed between conversions.
 
         Returns
         -------
         tf.lite.TFLiteConverter
             TFLite converter for model.
+
         """
         import tensorflow as tf
 
@@ -63,17 +86,25 @@ class KerasConverter(ModelConverter):
         return converter
 
     def to_onnx(
-        self, input_spec: List[Dict], output_names: List = ["output"]
+        self,
+        input_spec: Optional[List[Dict]] = None,
+        output_names: List = ["output"],
+        model: Optional["tf.keras.Model"] = None,
+        **kwargs,
     ) -> "onnx.ModelProto":
         """
         Converts Keras model to ONNX format.
 
         Parameters
         ----------
-        input_spec: List[Dict]
+        input_spec: Optional[List[Dict]]
             List of dictionaries representing inputs.
         output_names: List
             Names of outputs to include in the final model.
+        model : Optional["tf.keras.Model"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -83,28 +114,36 @@ class KerasConverter(ModelConverter):
         import tensorflow as tf
         import tf2onnx
 
-        model = tf.keras.models.load_model(
-            str(self.source_model_path), compile=False
-        )
+        if not model:
+            model = tf.keras.models.load_model(
+                str(self.source_model_path), compile=False
+            )
 
         model.output_names = [
             o["name"] if isinstance(o, dict) else o for o in output_names
         ]
 
-        input_spec = [
-            tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])
-            for spec in input_spec
-        ]
-        modelproto, _ = tf2onnx.convert.from_keras(
-            model, input_signature=input_spec
-        )
+        signature = None
+        if input_spec:
+            signature = [
+                tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])
+                for spec in input_spec
+            ]
+
+        if signature:
+            modelproto, _ = tf2onnx.convert.from_keras(
+                model, input_signature=signature
+            )
+        else:
+            modelproto, _ = tf2onnx.convert.from_keras(model)
 
         return modelproto
 
     def to_tvm(
         self,
         input_shapes: Dict,
-        dtypes: Dict,
+        model: Optional["tf.keras.Model"] = None,
+        **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
         """
         Converts Keras model to TVM format.
@@ -113,8 +152,10 @@ class KerasConverter(ModelConverter):
         ----------
         input_shapes: Dict
             Mapping from input name to input shape.
-        dtypes: Dict
-            Mapping from input name to input dtype.
+        model : Optional["tf.keras.Model"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -127,9 +168,10 @@ class KerasConverter(ModelConverter):
         import tvm.relay as relay
 
         tf.keras.backend.clear_session()
-        model = tf.keras.models.load_model(
-            str(self.source_model_path), compile=False
-        )
+        if not model:
+            model = tf.keras.models.load_model(
+                str(self.source_model_path), compile=False
+            )
         KLogger.info(model.summary())
 
         mod, params = relay.frontend.from_keras(

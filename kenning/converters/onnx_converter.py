@@ -28,6 +28,8 @@ class OnnxConverter(ModelConverter):
         self,
         input_spec: Optional[List[Dict]] = None,
         output_names: List = ["output"],
+        model: Optional["onnx.ModelProto"] = None,
+        **kwargs,
     ) -> "onnx.ModelProto":
         """
         Loads ONNX model.
@@ -38,6 +40,10 @@ class OnnxConverter(ModelConverter):
             Input specification.
         output_names: List
             Names of the outputs.
+        model : Optional["onnx.ModelProto"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -47,12 +53,24 @@ class OnnxConverter(ModelConverter):
         """
         import onnx
 
-        onnx_model = onnx.load_model(str(self.source_model_path))
-        return onnx_model
+        if not model:
+            model = onnx.load_model(str(self.source_model_path))
+        return model
 
-    def to_torch(self) -> "torch.nn.Module":
+    def to_torch(
+        self,
+        model: Optional["onnx.ModelProto"] = None,
+        **kwargs,
+    ) -> "torch.nn.Module":
         """
         Converts ONNX model to PyTorch.
+
+        Parameters
+        ----------
+        model : Optional["onnx.ModelProto"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -63,12 +81,23 @@ class OnnxConverter(ModelConverter):
         import onnx
         from onnx2torch import convert
 
-        onnx_model = onnx.load(str(self.source_model_path))
-        return convert(onnx_model)
+        if not model:
+            model = onnx.load(str(self.source_model_path))
 
-    def to_tflite(self) -> "tf.lite.TFLiteConverter":
+    def to_tflite(
+        self,
+        model: Optional["onnx.ModelProto"] = None,
+        **kwargs,
+    ) -> "tf.lite.TFLiteConverter":
         """
         Converts ONNX file to TFLite format.
+
+        Parameters
+        ----------
+        model : Optional["onnx.ModelProto"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -84,14 +113,20 @@ class OnnxConverter(ModelConverter):
         RuntimeError
             If export or converter initialization fails.
         """
+        import tempfile
         from datetime import datetime
 
         import onnx
         import onnx2tf
         import tensorflow as tf
 
-        onnx_model = onnx.load(str(self.source_model_path))
-        input_names = [input.name for input in onnx_model.graph.input]
+        if model:
+            model_path = tempfile.NamedTemporaryFile(suffix=".onnx").name
+            onnx.save(model, model_path)
+        else:
+            model_path = self.source_model_path
+
+        input_names = [input.name for input in model.graph.input]
 
         # Use multiple options to prevent dynamic shape and symbolic
         #  tensor issues
@@ -104,7 +139,7 @@ class OnnxConverter(ModelConverter):
         # - batch_size: fix dynamic batch to static batch size of 1
         try:
             model = onnx2tf.convert(
-                str(self.source_model_path),
+                str(model_path),
                 keep_nwc_or_nhwc_or_ndhwc_input_names=input_names,
                 keep_shape_absolutely_input_names=input_names,
                 disable_strict_mode=True,
@@ -116,7 +151,7 @@ class OnnxConverter(ModelConverter):
             # issues
             if "symbolic inputs/outputs do not implement `__len__`" in str(e):
                 model = onnx2tf.convert(
-                    str(self.source_model_path),
+                    str(model_path),
                     disable_strict_mode=True,
                     batch_size=1,
                 )
@@ -135,6 +170,8 @@ class OnnxConverter(ModelConverter):
         self,
         input_shapes: Dict,
         dtypes: Dict,
+        model: Optional["onnx.ModelProto"],
+        **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
         """
         Converts ONNX model to TVM format.
@@ -145,6 +182,10 @@ class OnnxConverter(ModelConverter):
             Mapping from input name to input shape.
         dtypes: Dict
             Mapping from input name to input dtype.
+        model : Optional["onnx.ModelProto"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
 
         Returns
         -------
@@ -165,12 +206,13 @@ class OnnxConverter(ModelConverter):
             dtype = list(dtypes.values())[0]
         except IndexError:
             raise IndexError("No dtype in the input specification")
+        if not model:
+            model = onnx.load(self.source_model_path)
 
-        onnxmodel = onnx.load(self.source_model_path)
         input_shapes = {
             k: [_v if _v > 0 else 1 for _v in v]
             for k, v in input_shapes.items()
         }
         return relay.frontend.from_onnx(
-            onnxmodel, shape=input_shapes, freeze_params=True, dtype=dtype
+            model, shape=input_shapes, freeze_params=True, dtype=dtype
         )

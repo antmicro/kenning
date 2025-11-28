@@ -7,12 +7,14 @@ Enables loading of Ai8x model and conversion to other formats.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from kenning.core.converter import ModelConverter
 from kenning.utils.class_loader import append_to_sys_path
 
 if TYPE_CHECKING:
+    import torch
+
     from kenning.optimizers.ai8x import Ai8xTools
 
 _DEFAULT_DEVICE = "cpu"
@@ -29,6 +31,8 @@ class Ai8xConverter(ModelConverter):
         self,
         ai8x_model_path: Path,
         ai8x_tools: "Ai8xTools",
+        model: Optional["torch.nn.Module"] = None,
+        **kwargs,
     ) -> None:
         """
         Loads Ai8x compatible PyTorch model.
@@ -39,15 +43,20 @@ class Ai8xConverter(ModelConverter):
             Path where ai8x-compatible model will be saved.
         ai8x_tools : Ai8xTools
             Ai8X tools wrapper.
+        model : Optional["torch.nn.Module"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
         """
         import torch
 
-        with append_to_sys_path([ai8x_tools.ai8x_training_path]):
-            model = torch.load(
-                self.source_model_path,
-                weights_only=False,
-                map_location=torch.device(_DEFAULT_DEVICE),
-            )
+        if not model:
+            with append_to_sys_path([ai8x_tools.ai8x_training_path]):
+                model = torch.load(
+                    self.source_model_path,
+                    weights_only=False,
+                    map_location=torch.device(_DEFAULT_DEVICE),
+                )
 
         if isinstance(model, torch.nn.Module):
             torch.save(

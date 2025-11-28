@@ -13,11 +13,7 @@ from typing import Dict, List, Literal, Optional
 import tvm
 import tvm.relay as relay
 
-from kenning.converters.darknet_converter import DarknetConverter
-from kenning.converters.keras_converter import KerasConverter
-from kenning.converters.onnx_converter import OnnxConverter
-from kenning.converters.tflite_converter import TFLiteConverter
-from kenning.converters.torch_converter import TorchConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -42,11 +38,11 @@ class TVMCompiler(Optimizer):
     """
 
     inputtypes = {
-        "keras": KerasConverter,
-        "onnx": OnnxConverter,
-        "darknet": DarknetConverter,
-        "torch": TorchConverter,
-        "tflite": TFLiteConverter,
+        "keras": ...,
+        "onnx": ...,
+        "darknet": ...,
+        "torch": ...,
+        "tflite": ...,
     }
 
     outputtypes = ["tvm"]
@@ -533,18 +529,16 @@ class TVMCompiler(Optimizer):
 
         input_type = self.get_input_type(input_model_path)
 
-        converter = self.inputtypes[input_type](input_model_path)
+        conversion_kwargs = {
+            "input_shapes": inputshapes,
+            "dtypes": dtypes,
+            "conversion_func": self.conversion_func,
+            "libdarknet_path": self.libdarknet_path,
+        }
 
-        if input_type == "torch":
-            mod, params = converter.to_tvm(
-                inputshapes, dtypes, conversion_func=self.conversion_func
-            )
-        elif input_type == "darknet":
-            mod, params = converter.to_tvm(
-                inputshapes, dtypes, libdarknet_path=self.libdarknet_path
-            )
-        else:
-            mod, params = converter.to_tvm(inputshapes, dtypes)
+        mod, params = converter_registry.convert(
+            input_model_path, input_type, "tvm", **conversion_kwargs
+        )
 
         self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         io_spec["entry_func"] = (

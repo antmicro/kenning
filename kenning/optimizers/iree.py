@@ -14,8 +14,7 @@ import onnx
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 
-from kenning.converters.keras_converter import KerasConverter
-from kenning.converters.tflite_converter import TFLiteConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -74,9 +73,8 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = {
-        "keras": KerasConverter,
-        "tensorflow": KerasConverter,
-        "tflite": TFLiteConverter,
+        "keras": ...,
+        "tflite": ...,
     }
 
     outputtypes = ["iree"]
@@ -109,7 +107,7 @@ class IREECompiler(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         backend: str = "vmvx",
-        model_framework: str = "keras",
+        model_framework: str = "any",
         compiler_args: Optional[List[str]] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
@@ -154,8 +152,6 @@ class IREECompiler(Optimizer):
         else:
             self.parsed_compiler_args = []
 
-        self.set_input_type(model_framework)
-
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(
@@ -187,13 +183,17 @@ class IREECompiler(Optimizer):
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
 
+        conversion_kwargs = {
+            "input_spec": input_spec,
+            "output_names": output_names,
+        }
+
         # To compile a model with IREE compiler, we first convert it to ONNX
         # (that's because IREE TensorFlow workflow, as of version 3.6.0 is
         # highly unstable, so trying to compile directly does not work).
-        converter = self.inputtypes[input_type](
-            input_model_path,
+        onnx_model = converter_registry.convert(
+            input_model_path, input_type, "onnx", **conversion_kwargs
         )
-        onnx_model = converter.to_onnx(input_spec, output_names)
 
         intermediate_onnx_model_path = self.compiled_model_path.with_suffix(
             ".tmp.onnx"

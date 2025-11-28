@@ -11,7 +11,7 @@ import warnings
 from math import ceil
 from typing import Dict, Generator, List, Literal, Optional, Tuple, TypeVar
 
-from kenning.converters.torch_converter import TorchConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     IOSpecificationMissingEntryError,
@@ -34,9 +34,7 @@ warnings.filterwarnings("ignore", message=".*on an already erased node.*")
 class ExecuTorchOptimizer(Optimizer):
     """Class implementing ExecuTorch compiler."""
 
-    inputtypes = {
-        "torch": TorchConverter,
-    }
+    inputtypes = {"torch": ...}
 
     outputtypes = ["executorch"]
 
@@ -56,7 +54,7 @@ class ExecuTorchOptimizer(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "torch",
-            "enum": ["torch"],
+            "enum": list(inputtypes.keys()),
         },
         "quantize": {
             "argparse_name": "--quantize",
@@ -107,6 +105,7 @@ class ExecuTorchOptimizer(Optimizer):
         self.quantize = quantize
         self.dataset_percentage = dataset_percentage
         self.backends = backends
+        self.set_input_type(model_framework)
 
     def _extract_shapes_from_io_specification(
         self,
@@ -246,8 +245,9 @@ class ExecuTorchOptimizer(Optimizer):
 
         io_spec["entry_func"] = "forward"
 
-        converter = self.inputtypes[self.model_framework](input_model_path)
-        self.model = converter.to_torch().cpu()
+        self.model = converter_registry.convert(
+            input_model_path, self.model_framework, "torch"
+        )
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)
         dynamic_shapes = self._extract_shapes_from_io_specification(

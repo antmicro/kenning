@@ -14,8 +14,7 @@ from typing import Dict, List, Literal, Optional
 import numpy as np
 import tensorflow as tf
 
-from kenning.converters.keras_converter import KerasConverter
-from kenning.converters.onnx_converter import OnnxConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -35,9 +34,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
     outputtypes = ["tflite"]
 
     inputtypes = {
-        "keras": KerasConverter,
-        "tensorflow": KerasConverter,
-        "onnx": OnnxConverter,
+        "keras": ...,
+        "onnx": ...,
     }
 
     arguments_structure = {
@@ -416,52 +414,92 @@ class TFLiteCompiler(TensorFlowOptimizer):
         else:
             input_type = self.get_input_type(input_model_path)
 
-            converter = self.inputtypes[input_type](
-                input_model_path
-            ).to_tflite()
+            try:
+                from copy import deepcopy
 
-        if self.target in ["int8", "edgetpu"]:
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            if self.inferenceinputtype in [
-                "int8",
-                "uint8",
-            ] and self.inferenceinputtype in ["int8", "uint8"]:
-                converter.target_spec.supported_ops = [
-                    tf.lite.OpsSet.TFLITE_BUILTINS_INT8
-                ]
-        elif self.target == "float16":
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            converter.target_spec.supported_types = [tf.float16]
-        else:
-            converter.target_spec.supported_ops = [
-                tf.lite.OpsSet.TFLITE_BUILTINS
-            ]
-        if self.use_tf_select_ops:
-            converter.target_spec.supported_ops.append(
-                tf.lite.OpsSet.SELECT_TF_OPS
+                io_spec = deepcopy(io_spec)
+
+                io_spec["input"] = (
+                    io_spec["processed_input"]
+                    if "processed_input" in io_spec
+                    else io_spec["input"]
+                )
+
+            except (TypeError, KeyError):
+                raise IOSpecificationNotFoundError(
+                    "No input/output specification found"
+                )
+
+            conversion_kwargs = {"io_spec": io_spec}
+            converter = converter_registry.convert(
+                input_model_path, input_type, "tflite"
             )
-        converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)
-        converter.inference_output_type = tf.as_dtype(self.inferenceoutputtype)
+            try:
+                import tflite
 
-        if self.dataset is not None and self.target != "default":
+                is_model = isinstance(converter, tflite.Model)
 
-            def generator():
-                for entry in self.dataset.calibration_dataset_generator(
-                    self.dataset_percentage
-                ):
-                    entry = self.model_wrapper.preprocess_input(entry)
+            except AttributeError:
+                import tflite.Model
 
-                    yield [
-                        np.array(entry, dtype=np.float32).reshape(
-                            io_spec.get("processed_input", io_spec["input"])[
-                                0
-                            ]["shape"]
-                        )
+                is_model = isinstance(converter, tflite.Model.Model)
+
+        if not is_model:
+            # TODO: Those operations should be moved to tflite_converter
+            #  as to leave this class as TFLite Model representation
+            if self.target in ["int8", "edgetpu"]:
+                converter.optimizations = [tf.lite.Optimize.DEFAULT]
+                if self.inferenceinputtype in [
+                    "int8",
+                    "uint8",
+                ] and self.inferenceinputtype in ["int8", "uint8"]:
+                    converter.target_spec.supported_ops = [
+                        tf.lite.OpsSet.TFLITE_BUILTINS_INT8
                     ]
+            elif self.target == "float16":
+                converter.optimizations = [tf.lite.Optimize.DEFAULT]
+                converter.target_spec.supported_types = [tf.float16]
+            else:
+                converter.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS
+                ]
+            if self.use_tf_select_ops:
+                converter.target_spec.supported_ops.append(
+                    tf.lite.OpsSet.SELECT_TF_OPS
+                )
+            converter.inference_input_type = tf.as_dtype(
+                self.inferenceinputtype
+            )
+            converter.inference_output_type = tf.as_dtype(
+                self.inferenceoutputtype
+            )
 
-            converter.representative_dataset = generator
+            if self.dataset is not None and self.target != "default":
 
-        tflite_model = converter.convert()
+                def generator():
+                    for entry in self.dataset.calibration_dataset_generator(
+                        self.dataset_percentage
+                    ):
+                        entry = self.model_wrapper.preprocess_input(entry)
+
+                        yield [
+                            np.array(entry, dtype=np.float32).reshape(
+                                io_spec.get(
+                                    "processed_input", io_spec["input"]
+                                )[0]["shape"]
+                            )
+                        ]
+
+                converter.representative_dataset = generator
+
+            tflite_model = converter.convert()
+        else:
+            try:
+                # FlatBuffers v2
+                tflite_model = converter._tab.Bytes
+            except AttributeError:
+                # FlatBuffers v1
+                tflite_model = converter._tab.buf
 
         self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.compiled_model_path, "wb") as f:

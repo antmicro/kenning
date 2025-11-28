@@ -10,10 +10,7 @@ from typing import Dict, List, Literal, Optional
 
 import onnx
 
-from kenning.converters.keras_converter import KerasConverter
-from kenning.converters.onnx_converter import OnnxConverter
-from kenning.converters.tflite_converter import TFLiteConverter
-from kenning.converters.torch_converter import TorchConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     IOSpecificationNotFoundError,
@@ -31,10 +28,10 @@ class ONNXCompiler(Optimizer):
     """
 
     inputtypes = {
-        "keras": KerasConverter,
-        "torch": TorchConverter,
-        "tflite": TFLiteConverter,
-        "onnx": OnnxConverter,
+        "keras": ...,
+        "torch": ...,
+        "tflite": ...,
+        "onnx": ...,
     }
 
     outputtypes = ["onnx"]
@@ -111,11 +108,13 @@ class ONNXCompiler(Optimizer):
             output_names = None
 
         input_type = self.get_input_type(input_model_path)
-
-        converter = self.inputtypes[input_type](
-            input_model_path,
+        conversion_kwargs = {
+            "input_spec": io_spec["input"],
+            "output_names": output_names,
+        }
+        model = converter_registry.convert(
+            input_model_path, input_type, "onnx", **conversion_kwargs
         )
-        model = converter.to_onnx(io_spec["input"], output_names)
 
         onnx.save(model, self.compiled_model_path)
 

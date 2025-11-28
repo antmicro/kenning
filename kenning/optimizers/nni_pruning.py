@@ -30,8 +30,7 @@ from nni.compression.pytorch.speedup.compress_modules import (
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from tqdm import tqdm
 
-from kenning.converters.onnx_converter import OnnxConverter
-from kenning.converters.torch_converter import TorchConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -154,7 +153,7 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = {"torch": TorchConverter, "onnx": OnnxConverter}
+    inputtypes = {"torch": ..., "onnx": ...}
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,
@@ -386,8 +385,9 @@ class NNIPruningOptimizer(Optimizer):
     ):
         input_type = self.get_input_type(input_model_path)
 
-        converter = self.inputtypes[input_type](input_model_path)
-        model = converter.to_torch().to(self.device)
+        model = converter_registry.convert(
+            input_model_path, input_type, "torch"
+        ).to(self.device)
 
         params_before = self.get_number_of_parameters(model)
 

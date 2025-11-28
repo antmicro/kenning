@@ -16,8 +16,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 
-from kenning.converters.ai8x_converter import Ai8xConverter
-from kenning.converters.torch_converter import TorchConverter
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     KenningOptimizerError,
@@ -310,8 +309,8 @@ class Ai8xCompiler(Optimizer):
     outputtypes = ["ai8x_c"]
 
     inputtypes = {
-        "ai8x": Ai8xConverter,
-        "torch": TorchConverter,
+        "ai8x": ...,
+        "torch": ...,
     }
 
     SUPPORTED_DEVICE_IDS = [84, 85, 87]
@@ -487,23 +486,15 @@ class Ai8xCompiler(Optimizer):
             # convert model
             converted_model_path = tmp_dir / f"{input_model_path.stem}_c.pth"
 
-            converter = self.inputtypes[self.inputtype](tmp_input_model_path)
-            if self.inputtype == "torch":
-                converter.to_ai8x(
-                    converted_model_path,
-                    self.ai8x_tools,
-                    self.device_id,
-                )
-            elif self.inputtype == "ai8x":
-                converter.to_ai8x(
-                    converted_model_path,
-                    self.ai8x_tools,
-                )
-            else:
-                converter.to_ai8x(
-                    converted_model_path,
-                )
-
+            conversion_kwargs = {
+                "ai8x_model_path": converted_model_path,
+                "ai8x_tools": self.ai8x_tools,
+                "device_id": self.device_id,
+            }
+            input_type = self.get_input_type(input_model_path)
+            converter_registry.convert(
+                input_model_path, input_type, "ai8x", **conversion_kwargs
+            )
             config_file = (
                 self.config_file
                 if self.config_file is not None

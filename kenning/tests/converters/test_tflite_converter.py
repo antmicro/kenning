@@ -31,7 +31,7 @@ def test_to_tvm(dummy_tflite_model):
 def test_to_onnx(dummy_tflite_model):
     conv = TFLiteConverter(source_model_path=dummy_tflite_model["path"])
 
-    model = conv.to_onnx([], [])
+    model = conv.to_onnx()
 
     from onnx import ModelProto
 

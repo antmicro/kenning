@@ -13,9 +13,9 @@ def dummy_onnx_model():
     }
 
 
-def test_to_onnx(dummy_onnx_model):
-    conv = OnnxConverter(source_model_path=dummy_onnx_model["path"])
-    model = conv.to_onnx([], [])
+def test_to_onnx(dummy_onnx_path):
+    conv = OnnxConverter(source_model_path=dummy_onnx_path)
+    model = conv.to_onnx()
     assert isinstance(model, ModelProto)
     assert model is not None
     assert len(model.graph.node) > 0

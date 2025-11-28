@@ -26,20 +26,12 @@ class OnnxConverter(ModelConverter):
 
     def to_onnx(
         self,
-        input_spec: Optional[List[Dict]] = None,
-        output_names: List = ["output"],
-        model: Optional["onnx.ModelProto"] = None,
+        model: Optional["onnx.ModelProto"] = None,  # noqa: F821
         **kwargs,
     ) -> "onnx.ModelProto":
         """
         Loads ONNX model.
 
-        Parameters
-        ----------
-        input_spec: Optional[List[Dict]]
-            Input specification.
-        output_names: List
-            Names of the outputs.
         model : Optional["onnx.ModelProto"]
             Optional model object.
         **kwargs:

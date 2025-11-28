@@ -235,7 +235,7 @@ def run_gallery_tests(session: nox.Session, specification):
     if specification == "cpu":
         marks = "(snippets) and (not gpu)"
     elif specification == "gpu":
-        marks = "(snippets) and (gpu)"
+        marks = "(snippets) and (gpu) and (not ros)"
     elif specification == "ros":
         marks = "(snippets) and (gpu) and (ros)"
     elif specification == "all":

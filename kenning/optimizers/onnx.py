@@ -30,6 +30,7 @@ class ONNXCompiler(Optimizer):
         "torch",
         "tflite",
         "onnx",
+        "any",
     ]
 
     outputtypes = ["onnx"]

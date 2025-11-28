@@ -45,6 +45,7 @@ class TVMCompiler(Optimizer):
         "darknet",
         "torch",
         "tflite",
+        "any",
     ]
 
     outputtypes = ["tvm"]
@@ -618,6 +619,7 @@ class TVMCompiler(Optimizer):
             )
 
         return flags
+
     @classmethod
     def get_framework(cls) -> str:
         return "tvm"

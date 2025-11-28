@@ -153,7 +153,7 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = ["torch", "onnx"]
+    inputtypes = ["torch", "onnx", "any"]
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,

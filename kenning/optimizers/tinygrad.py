@@ -57,6 +57,7 @@ class TinygradOptimizer(Optimizer):
     inputtypes = [
         "onnx",
         "safetensors",
+        "any",
     ]
 
     outputtypes = ["tinygrad"]

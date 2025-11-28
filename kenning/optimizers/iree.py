@@ -74,6 +74,7 @@ class IREECompiler(Optimizer):
     inputtypes = [
         "keras",
         "tflite",
+        "any",
     ]
 
     outputtypes = ["iree"]

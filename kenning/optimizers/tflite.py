@@ -39,6 +39,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
     inputtypes = [
         "keras",
         "onnx",
+        "any",
     ]
 
     arguments_structure = {

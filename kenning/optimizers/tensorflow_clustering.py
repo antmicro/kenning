@@ -25,14 +25,14 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
 
     outputtypes = ["keras"]
 
-    inputtypes = ["keras"]
+    inputtypes = ["keras", "any"]
 
     arguments_structure = {
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "keras",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes,
         },
         "cluster_dense": {
             "description": "Clusterize only dense layers",

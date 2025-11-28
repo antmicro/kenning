@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore", message=".*on an already erased node.*")
 class ExecuTorchOptimizer(Optimizer):
     """Class implementing ExecuTorch compiler."""
 
-    inputtypes = ["torch"]
+    inputtypes = ["torch", "tflite", "any"]
 
     outputtypes = ["executorch"]
 
@@ -55,7 +55,7 @@ class ExecuTorchOptimizer(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes,
         },
         "quantize": {
             "argparse_name": "--quantize",

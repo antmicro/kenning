@@ -26,6 +26,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
 
     inputtypes = [
         "keras",
+        "any",
     ]
 
     outputtypes = ["keras"]

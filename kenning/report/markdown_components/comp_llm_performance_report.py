@@ -55,6 +55,13 @@ def comparison_llm_performance_report(
     str
         Content of the report in MyST format.
     """
+    report_variables = {
+        "report_name": measurementsdata[0]["report_name"],
+        "report_name_simple": measurementsdata[0]["report_name_simple"],
+    }
+    names = [data["model_name"] for data in measurementsdata]
+    report_variables["model_names"] = names
+
     values = {}
     for measurement in measurementsdata:
         tokens_per_second = [
@@ -65,10 +72,22 @@ def comparison_llm_performance_report(
         ]
         values[measurement["model_name"]] = [np.mean(tokens_per_second)]
 
-    report_variables = {
-        "report_name": measurementsdata[0]["report_name"],
-        "report_name_simple": measurementsdata[0]["report_name_simple"],
-    }
+        report_variables[measurement["model_name"]] = {}
+        report_variables[measurement["model_name"]][
+            "tokens_per_second_mean"
+        ] = np.mean(tokens_per_second)
+        report_variables[measurement["model_name"]][
+            "tokens_per_second_std"
+        ] = np.std(tokens_per_second)
+        report_variables[measurement["model_name"]][
+            "tokens_per_second_median"
+        ] = np.median(tokens_per_second)
+        report_variables[measurement["model_name"]][
+            "tokens_per_second_min"
+        ] = np.min(tokens_per_second)
+        report_variables[measurement["model_name"]][
+            "tokens_per_second_max"
+        ] = np.max(tokens_per_second)
 
     Barplot(
         title="Tokens per second" if draw_titles else None,

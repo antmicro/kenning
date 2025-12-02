@@ -6,6 +6,9 @@
 A package that contains useful modules used for markdown report generation.
 """
 
+from kenning.report.markdown_components.anomaly_detection_report import (
+    anomaly_detection_report,
+)
 from kenning.report.markdown_components.automl_report import automl_report
 from kenning.report.markdown_components.classification_report import (
     classification_report,
@@ -66,4 +69,5 @@ __all__ = [
     "comparison_renode_stats_report",
     "comparison_text_summarization_report",
     "generate_html_report",
+    "anomaly_detection_report",
 ]

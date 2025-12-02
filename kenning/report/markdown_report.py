@@ -19,6 +19,7 @@ from matplotlib.colors import to_hex
 from kenning.cli.command_template import AUTOML
 from kenning.core.metrics import Metric
 from kenning.report.markdown_components import (
+    anomaly_detection_report,
     automl_report,
     classification_report,
     comparison_classification_report,
@@ -264,6 +265,7 @@ class MarkdownReport(Report):
             rep.RENODE: renode_stats_report,
             rep.TEXT_SUMMARIZATION: text_summarization_report,
             rep.LLM_PERFORMANCE: llm_performance_report,
+            rep.ANOMALY: anomaly_detection_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,

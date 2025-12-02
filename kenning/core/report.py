@@ -32,6 +32,7 @@ class ReportTypes(str, Enum):
     TEXT_SUMMARIZATION = "text_summarization"
     RENODE = "renode_stats"
     LLM_PERFORMANCE = "llm_performance"
+    ANOMALY = "anomaly"
 
 
 class Report(ArgumentsHandler, ABC):
@@ -174,6 +175,10 @@ class Report(ArgumentsHandler, ABC):
             lambda data: "eval_confusion_matrix" in data,
         )
         _append_type_if(
+            ReportTypes.ANOMALY,
+            lambda data: "metrics_per_threshold" in data,
+        )
+        _append_type_if(
             ReportTypes.DETECTION,
             lambda data: any(
                 nested_data.startswith("eval_gtcount") for nested_data in data
@@ -189,7 +194,8 @@ class Report(ArgumentsHandler, ABC):
             or "protocol_inference_step" in data,
         )
         _append_type_if(
-            ReportTypes.RENODE, lambda data: "opcode_counters" in data
+            ReportTypes.RENODE,
+            lambda data: "opcode_counters" in data and data["opcode_counters"],
         )
         _append_type_if(
             ReportTypes.LLM_PERFORMANCE, lambda data: "tokens" in data

@@ -6,7 +6,7 @@
 Enables loading of Keras models and conversion to other formats.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
 from kenning.utils.logger import KLogger
@@ -87,8 +87,7 @@ class KerasConverter(ModelConverter):
 
     def to_onnx(
         self,
-        input_spec: Optional[List[Dict]] = None,
-        output_names: List = ["output"],
+        io_spec: Dict[str, List[Dict]],
         model: Optional["tf.keras.Model"] = None,
         **kwargs,
     ) -> "onnx.ModelProto":
@@ -97,10 +96,8 @@ class KerasConverter(ModelConverter):
 
         Parameters
         ----------
-        input_spec: Optional[List[Dict]]
-            List of dictionaries representing inputs.
-        output_names: List
-            Names of outputs to include in the final model.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["tf.keras.Model"]
             Optional model object.
         **kwargs:
@@ -119,15 +116,19 @@ class KerasConverter(ModelConverter):
                 str(self.source_model_path), compile=False
             )
 
-        model.output_names = [
-            o["name"] if isinstance(o, dict) else o for o in output_names
-        ]
+        try:
+            output_names = [spec["name"] for spec in io_spec["output"]]
+            model.output_names = [
+                o["name"] if isinstance(o, dict) else o for o in output_names
+            ]
+        except KeyError:
+            output_names = None
 
         signature = None
-        if input_spec:
+        if io_spec["input"]:
             signature = [
                 tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])
-                for spec in input_spec
+                for spec in io_spec["input"]
             ]
 
         if signature:
@@ -141,7 +142,7 @@ class KerasConverter(ModelConverter):
 
     def to_tvm(
         self,
-        input_shapes: Dict,
+        io_spec: Dict[str, List[Dict]],
         model: Optional["tf.keras.Model"] = None,
         **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
@@ -150,8 +151,8 @@ class KerasConverter(ModelConverter):
 
         Parameters
         ----------
-        input_shapes: Dict
-            Mapping from input name to input shape.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["tf.keras.Model"]
             Optional model object.
         **kwargs:
@@ -163,9 +164,22 @@ class KerasConverter(ModelConverter):
             The relay module.
         params: Union[Dict, str]
             Parameters dictionary to be used by relay module.
+
+        Raises
+        ------
+        ValueError
+            Raised if no shapes provided in the input specification.
+        IOSpecificationNotFoundError
+            Raised if input specification is not provided.
         """
         import tensorflow as tf
         import tvm.relay as relay
+
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
 
         tf.keras.backend.clear_session()
         if not model:

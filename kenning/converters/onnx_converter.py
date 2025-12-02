@@ -26,12 +26,14 @@ class OnnxConverter(ModelConverter):
 
     def to_onnx(
         self,
-        model: Optional["onnx.ModelProto"] = None,  # noqa: F821
+        model: Optional["onnx.ModelProto"] = None,
         **kwargs,
     ) -> "onnx.ModelProto":
         """
         Loads ONNX model.
 
+        Parameters
+        ----------
         model : Optional["onnx.ModelProto"]
             Optional model object.
         **kwargs:
@@ -75,6 +77,7 @@ class OnnxConverter(ModelConverter):
 
         if not model:
             model = onnx.load(str(self.source_model_path))
+        return convert(model)
 
     def to_tflite(
         self,
@@ -160,8 +163,7 @@ class OnnxConverter(ModelConverter):
 
     def to_tvm(
         self,
-        input_shapes: Dict,
-        dtypes: Dict,
+        io_spec: Dict[str, List[Dict]],
         model: Optional["onnx.ModelProto"],
         **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
@@ -170,10 +172,8 @@ class OnnxConverter(ModelConverter):
 
         Parameters
         ----------
-        input_shapes: Dict
-            Mapping from input name to input shape.
-        dtypes: Dict
-            Mapping from input name to input dtype.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["onnx.ModelProto"]
             Optional model object.
         **kwargs:
@@ -190,10 +190,19 @@ class OnnxConverter(ModelConverter):
         ------
         IndexError
             Raised when no dtype was provided in the IO specification.
+        IOSpecificationNotFoundError
+            Raised if input specification is not provided.
         """
         import onnx
         import tvm.relay as relay
 
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
+
+        dtypes = {spec["name"]: spec["dtype"] for spec in io_spec["input"]}
         try:
             dtype = list(dtypes.values())[0]
         except IndexError:
@@ -201,10 +210,6 @@ class OnnxConverter(ModelConverter):
         if not model:
             model = onnx.load(self.source_model_path)
 
-        input_shapes = {
-            k: [_v if _v > 0 else 1 for _v in v]
-            for k, v in input_shapes.items()
-        }
         return relay.frontend.from_onnx(
             model, shape=input_shapes, freeze_params=True, dtype=dtype
         )

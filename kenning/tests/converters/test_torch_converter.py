@@ -43,11 +43,14 @@ def test_to_torch_raises_on_state_dict(tmp_path):
 def test_to_onnx(dummy_torch_model):
     conv = TorchConverter(source_model_path=dummy_torch_model["path"])
 
-    output_names = [
-        spec["name"] for spec in dummy_torch_model["io_spec"]["output"]
-    ]
+    io_spec = dummy_torch_model["io_spec"]
+    io_spec["input"] = (
+        io_spec["processed_input"]
+        if "processed_input" in io_spec
+        else io_spec["input"]
+    )
     model = conv.to_onnx(
-        dummy_torch_model["io_spec"]["processed_input"], output_names
+        io_spec=io_spec,
     )
 
     assert model is not None
@@ -61,10 +64,15 @@ def test_to_onnx_raises_on_invalid_model(tmp_path, dummy_torch_model):
 
     conv = TorchConverter(source_model_path=path)
 
+    io_spec = dummy_torch_model["io_spec"]
+    io_spec["input"] = (
+        io_spec["processed_input"]
+        if "processed_input" in io_spec
+        else io_spec["input"]
+    )
     with pytest.raises(CompilationError):
         _ = conv.to_onnx(
-            dummy_torch_model["io_spec"]["processed_input"],
-            dummy_torch_model["io_spec"]["output"],
+            io_spec=io_spec,
         )
 
 
@@ -123,13 +131,16 @@ def test_to_ai8x_rejects_non_sequential(dummy_torch_model):
 
 def test_to_tvm(dummy_torch_model):
     conv = TorchConverter(source_model_path=dummy_torch_model["path"])
-    dummy_input_shape = tuple(
-        dummy_torch_model["io_spec"]["processed_input"][0]["shape"]
+
+    io_spec = dummy_torch_model["io_spec"]
+    io_spec["input"] = (
+        io_spec["processed_input"]
+        if "processed_input" in io_spec
+        else io_spec["input"]
     )
-    dummy_input_type = "float32"
+
     mod, params = conv.to_tvm(
-        input_shapes={"input": dummy_input_shape},
-        dtypes={"input": dummy_input_type},
+        io_spec=io_spec,
         conversion_func=None,
     )
 

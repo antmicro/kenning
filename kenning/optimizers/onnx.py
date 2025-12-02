@@ -102,15 +102,9 @@ class ONNXCompiler(Optimizer):
                 "No input/output specification found"
             )
 
-        try:
-            output_names = [spec["name"] for spec in io_spec["output"]]
-        except KeyError:
-            output_names = None
-
         input_type = self.get_input_type(input_model_path)
         conversion_kwargs = {
-            "input_spec": io_spec["input"],
-            "output_names": output_names,
+            "io_spec": io_spec,
         }
         model = converter_registry.convert(
             input_model_path, input_type, "onnx", **conversion_kwargs

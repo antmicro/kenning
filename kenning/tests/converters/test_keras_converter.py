@@ -36,9 +36,15 @@ def test_to_tflite(dummy_keras_model):
 def test_to_onnx(dummy_keras_model):
     conv = KerasConverter(source_model_path=dummy_keras_model["path"])
 
+    io_spec = dummy_keras_model["io_spec"]
+    io_spec["input"] = (
+        io_spec["processed_input"]
+        if "processed_input" in io_spec
+        else io_spec["input"]
+    )
+
     model = conv.to_onnx(
-        dummy_keras_model["io_spec"]["processed_input"],
-        dummy_keras_model["io_spec"]["output"],
+        io_spec=io_spec,
     )
 
     from onnx import ModelProto
@@ -55,15 +61,11 @@ def test_to_tvm(dummy_keras_model):
     dummy_mod = "FAKE_MOD"
     dummy_params = {"w": "FAKE_PARAMS"}
 
-    dummy_input_shape = (1, 1)
-    dummy_input_type = "float32"
-
     with patch(
         "tvm.relay.frontend.from_keras", return_value=(dummy_mod, dummy_params)
     ) as mock_from_keras:
         mod, params = conv.to_tvm(
-            input_shapes={"input": dummy_input_shape},
-            dtypes={"input": dummy_input_type},
+            io_spec=dummy_keras_model["io_spec"],
         )
 
         assert mod == dummy_mod

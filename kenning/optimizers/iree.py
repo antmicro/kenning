@@ -170,23 +170,22 @@ class IREECompiler(Optimizer):
             self.compiler_input_type = "tosa"
 
         try:
-            input_spec = (
+            from copy import deepcopy
+
+            io_spec_processed = deepcopy(io_spec)
+
+            io_spec_processed["input"] = (
                 io_spec["processed_input"]
                 if "processed_input" in io_spec
                 else io_spec["input"]
             )
-        except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError("No output names found")
 
-        try:
-            output_names = [spec["name"] for spec in io_spec["output"]]
         except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError("No input specification found")
+            raise IOSpecificationNotFoundError(
+                "No input/output specification found"
+            )
 
-        conversion_kwargs = {
-            "input_spec": input_spec,
-            "output_names": output_names,
-        }
+        conversion_kwargs = {"io_spec": io_spec_processed}
 
         # To compile a model with IREE compiler, we first convert it to ONNX
         # (that's because IREE TensorFlow workflow, as of version 3.6.0 is

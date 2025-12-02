@@ -81,8 +81,7 @@ class TorchConverter(ModelConverter):
 
     def to_onnx(
         self,
-        input_spec: List[Dict],
-        output_names: List,
+        io_spec: Dict[str, List[Dict]],
         model: Optional["torch.nn.Module"] = None,
         **kwargs,
     ) -> "onnx.ModelProto":
@@ -91,10 +90,8 @@ class TorchConverter(ModelConverter):
 
         Parameters
         ----------
-        input_spec: List[Dict]
-            Dictionary representing inputs.
-        output_names: List
-            Names of outputs to include in the final model.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["torch.nn.Module"]
             Optional model object.
         **kwargs:
@@ -130,8 +127,13 @@ class TorchConverter(ModelConverter):
 
         sample_input = tuple(
             torch.randn(spec["shape"], device=_DEFAULT_DEVICE)
-            for spec in input_spec
+            for spec in io_spec["input"]
         )
+
+        try:
+            output_names = [spec["name"] for spec in io_spec["output"]]
+        except KeyError:
+            output_names = None
 
         import io
 
@@ -141,7 +143,7 @@ class TorchConverter(ModelConverter):
             sample_input,
             mem_buffer,
             opset_version=11,
-            input_names=[spec["name"] for spec in input_spec],
+            input_names=[spec["name"] for spec in io_spec["input"]],
             output_names=output_names,
         )
         onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
@@ -232,7 +234,7 @@ class TorchConverter(ModelConverter):
 
     def to_tvm(
         self,
-        input_shapes: Dict,
+        io_spec: Dict[str, List[Dict]],
         conversion_func: Optional[str],
         model: Optional["torch.nn.Module"] = None,
         **kwargs,
@@ -242,8 +244,8 @@ class TorchConverter(ModelConverter):
 
         Parameters
         ----------
-        input_shapes: Dict
-            Mapping from input name to input shape.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         conversion_func: Optional[str]
             Model-specific selector of output conversion functions.
         model : Optional["torch.nn.Module"]
@@ -257,6 +259,13 @@ class TorchConverter(ModelConverter):
             The relay module.
         params: Union[Dict, str]
             Parameters dictionary to be used by relay module.
+
+        Raises
+        ------
+        ValueError
+            Raised if no shapes provided in the input specification.
+        IOSpecificationNotFoundError
+            Raised if input specification is not provided.
         """
         import numpy as np
         import torch
@@ -334,6 +343,13 @@ class TorchConverter(ModelConverter):
         model = model if model else model_func(self.source_model_path)
         wrapped_model = TraceWrapper(model)
         wrapped_model.eval()
+
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
+
         shape = input_shapes[list(input_shapes.keys())[0]]
         sample_input = torch.Tensor(
             np.random.uniform(0.0, 250.0, (mul(shape))),

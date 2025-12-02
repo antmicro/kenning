@@ -242,11 +242,30 @@ class ExecuTorchOptimizer(Optimizer):
             raise IOSpecificationNotFoundError(
                 "IO specification is required for compilation."
             )
-
         io_spec["entry_func"] = "forward"
+        try:
+            from copy import deepcopy
 
+            io_spec_processed = deepcopy(io_spec)
+
+            io_spec_processed["input"] = (
+                io_spec["processed_input"]
+                if "processed_input" in io_spec
+                else io_spec["input"]
+            )
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError("No input specification found")
+
+        conversion_kwargs = {
+            "io_spec": io_spec_processed,
+        }
+
+        input_type = self.get_input_type(input_model_path)
         self.model = converter_registry.convert(
-            input_model_path, self.model_framework, "torch"
+            input_model_path,
+            input_type,
+            "torch",
+            **conversion_kwargs,
         )
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)

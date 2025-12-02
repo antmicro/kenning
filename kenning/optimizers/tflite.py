@@ -380,10 +380,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 "No input/ouput specification found"
             )
 
-        from copy import deepcopy
-
-        io_spec = deepcopy(io_spec)
-
         if self.quantization_aware_training:
             assert self.inputtype == "keras"
             if input_model_path.suffix in (".h5", ".hdf5"):
@@ -417,9 +413,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             try:
                 from copy import deepcopy
 
-                io_spec = deepcopy(io_spec)
+                io_spec_processed = deepcopy(io_spec)
 
-                io_spec["input"] = (
+                io_spec_processed["input"] = (
                     io_spec["processed_input"]
                     if "processed_input" in io_spec
                     else io_spec["input"]
@@ -429,10 +425,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 raise IOSpecificationNotFoundError(
                     "No input/output specification found"
                 )
-
-            conversion_kwargs = {"io_spec": io_spec}
+            conversion_kwargs = {"io_spec": io_spec_processed}
             converter = converter_registry.convert(
-                input_model_path, input_type, "tflite"
+                input_model_path, input_type, "tflite", **conversion_kwargs
             )
             try:
                 import tflite

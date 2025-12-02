@@ -6,16 +6,16 @@
 Enables loading TFLite models and conversion to other formats.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
     import onnx
-    import tvm
-    import tflite
     import tensorflow as tf
+    import tflite
+    import tvm
 
 
 class TFLiteConverter(ModelConverter):
@@ -62,8 +62,7 @@ class TFLiteConverter(ModelConverter):
 
     def to_tvm(
         self,
-        input_shapes: Dict,
-        dtypes: Dict,
+        io_spec: Dict[str, List[Dict]],
         model: Optional["tf.lite.TFLiteConverter"] = None,
         **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
@@ -72,10 +71,8 @@ class TFLiteConverter(ModelConverter):
 
         Parameters
         ----------
-        input_shapes: Dict
-            Mapping from input name to input shape.
-        dtypes: Dict
-            Mapping from input name to input dtype.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["tf.lite.TFLiteConverter"]
             Optional model object.
         **kwargs:
@@ -87,11 +84,25 @@ class TFLiteConverter(ModelConverter):
             The relay module.
         params: Union[Dict, str]
             Parameters dictionary to be used by relay module.
+
+        Raises
+        ------
+        ValueError
+            Raised if no shapes provided in the input specification.
+        IOSpecificationNotFoundError
+            Raised if input specification is not provided.
         """
         import tvm.relay as relay
 
         if model is None:
             model = self.to_tflite(**kwargs)
+
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
+        dtypes = {spec["name"]: spec["dtype"] for spec in io_spec["input"]}
 
         return relay.frontend.from_tflite(
             model,
@@ -101,8 +112,6 @@ class TFLiteConverter(ModelConverter):
 
     def to_onnx(
         self,
-        input_spec: List[Dict],
-        output_names: List,
         model: Optional["tf.lite.TFLiteConverter"] = None,
         **kwargs,
     ) -> "onnx.ModelProto":
@@ -142,4 +151,3 @@ class TFLiteConverter(ModelConverter):
             return converted_model
         except ValueError as e:
             raise ConversionError(e)
-

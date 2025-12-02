@@ -7,19 +7,14 @@ from kenning.tests.core.conftest import DatasetModelRegistry
 @pytest.fixture
 def dummy_tflite_model():
     _, model, _ = DatasetModelRegistry.get("tflite")
-    return {
-        "path": model.get_path(),
-    }
+    return {"path": model.get_path(), "io_spec": model.get_io_specification()}
 
 
 def test_to_tvm(dummy_tflite_model):
     conv = TFLiteConverter(source_model_path=dummy_tflite_model["path"])
-    dummy_input_shape = (1, 1)
-    dummy_input_type = "float32"
 
     mod, params = conv.to_tvm(
-        input_shapes={"input": dummy_input_shape},
-        dtypes={"input": dummy_input_type},
+        io_spec=dummy_tflite_model["io_spec"],
     )
 
     import tvm

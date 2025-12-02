@@ -513,7 +513,11 @@ class TVMCompiler(Optimizer):
             io_spec = self.load_io_specification(input_model_path)
 
         try:
-            input_spec = (
+            from copy import deepcopy
+
+            io_spec_processed = deepcopy(io_spec)
+
+            io_spec_processed["input"] = (
                 io_spec["processed_input"]
                 if "processed_input" in io_spec
                 else io_spec["input"]
@@ -521,17 +525,10 @@ class TVMCompiler(Optimizer):
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
 
-        inputshapes = {spec["name"]: spec["shape"] for spec in input_spec}
-        dtypes = {spec["name"]: spec["dtype"] for spec in input_spec}
-
-        if not inputshapes:
-            raise ValueError("No shapes in the input specification")
-
         input_type = self.get_input_type(input_model_path)
 
         conversion_kwargs = {
-            "input_shapes": inputshapes,
-            "dtypes": dtypes,
+            "io_spec": io_spec_processed,
             "conversion_func": self.conversion_func,
             "libdarknet_path": self.libdarknet_path,
         }

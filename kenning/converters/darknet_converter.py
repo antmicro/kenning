@@ -7,10 +7,12 @@ Enables loading of Darknet model and conversion to other formats.
 """
 
 
-from typing import Any, TYPE_CHECKING, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
-from kenning.core.exceptions import ConversionError
+from kenning.core.exceptions import (
+    ConversionError,
+)
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
@@ -82,9 +84,7 @@ class DarknetConverter(ModelConverter):
 
     def to_tvm(
         self,
-        input_shapes: Dict,
-        dtypes: Dict,
-        libdarknet_path: Optional[str],
+        io_spec: Dict[str, List[Dict]],
         model: Optional[Any] = None,
         **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
@@ -93,10 +93,8 @@ class DarknetConverter(ModelConverter):
 
         Parameters
         ----------
-        input_shapes: Dict
-            Mapping from input name to input shape.
-        dtypes: Dict
-            Mapping from input name to input dtype.
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
         model : Optional["Any"]
             Optional model object.
         **kwargs:
@@ -115,9 +113,18 @@ class DarknetConverter(ModelConverter):
             Raised when libdarknet shared library cannot be loaded.
         IndexError
             Raised when no dtype is provided in the IO specification.
+        IOSpecificationNotFoundError
+            Raised if input specification is not provided.
         """
         import tvm.relay as relay
 
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
+
+        dtypes = {spec["name"]: spec["dtype"] for spec in io_spec["input"]}
         try:
             dtype = next(iter(dtypes.values()))
         except StopIteration:

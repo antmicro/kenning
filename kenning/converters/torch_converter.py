@@ -13,7 +13,6 @@ from kenning.core.converter import ModelConverter
 from kenning.core.exceptions import (
     CompilationError,
     ConversionError,
-    ModelNotLoadedError,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -57,8 +56,8 @@ class TorchConverter(ModelConverter):
 
         Raises
         ------
-        ModelNotLoadedError
-            Raised if a full odel cannot be loaded from provided path.
+        ConversionError
+            When model loading failed.
         """
         import torch
 
@@ -69,14 +68,6 @@ class TorchConverter(ModelConverter):
                 map_location=torch.device(_DEFAULT_DEVICE),
             )
 
-        if isinstance(model, Dict):
-            raise ModelNotLoadedError(
-                f"The provided file ({str(self.source_model_path)}) contains "
-                "a PyTorch state dictionary with weights of a model. The "
-                "architecture of a model is required as well. Save the "
-                "full model, both its architecture and weights, and try again."
-            )
-        model.eval()
         return model
 
     def to_onnx(

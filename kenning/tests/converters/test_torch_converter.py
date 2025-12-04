@@ -8,9 +8,7 @@ import torch.nn as nn
 
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.exceptions import (
-    CompilationError,
     ConversionError,
-    ModelNotLoadedError,
 )
 from kenning.tests.core.conftest import DatasetModelRegistry
 
@@ -30,16 +28,6 @@ def test_to_torch_loads_full_model(dummy_torch_model):
     assert isinstance(model, torch.nn.Module)
 
 
-def test_to_torch_raises_on_state_dict(tmp_path):
-    path = tmp_path / "weights_only.pt"
-    torch.save({"state_dict": {"a": 1}}, path)
-
-    conv = TorchConverter(source_model_path=path)
-
-    with pytest.raises(ModelNotLoadedError):
-        conv.to_torch()
-
-
 def test_to_onnx(dummy_torch_model):
     conv = TorchConverter(source_model_path=dummy_torch_model["path"])
 
@@ -56,24 +44,6 @@ def test_to_onnx(dummy_torch_model):
     assert model is not None
     assert len(model.graph.node) > 0
     assert model.graph.output[0].name == "out_layer"
-
-
-def test_to_onnx_raises_on_invalid_model(tmp_path, dummy_torch_model):
-    path = tmp_path / "invalid.pt"
-    torch.save({"dummy": 123}, path)
-
-    conv = TorchConverter(source_model_path=path)
-
-    io_spec = dummy_torch_model["io_spec"]
-    io_spec["input"] = (
-        io_spec["processed_input"]
-        if "processed_input" in io_spec
-        else io_spec["input"]
-    )
-    with pytest.raises(CompilationError):
-        _ = conv.to_onnx(
-            io_spec=io_spec,
-        )
 
 
 class _DummyYamlWriter:

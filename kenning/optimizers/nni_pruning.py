@@ -34,6 +34,7 @@ from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
+    IOSpecificationNotFoundError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
@@ -385,18 +386,37 @@ class NNIPruningOptimizer(Optimizer):
     ):
         input_type = self.get_input_type(input_model_path)
 
+        if not io_spec:
+            io_spec = self.load_io_specification(input_model_path)
+        self.io_spec = io_spec
+
+        try:
+            from copy import deepcopy
+
+            io_spec_processed = deepcopy(io_spec)
+
+            io_spec_processed["input"] = (
+                io_spec["processed_input"]
+                if "processed_input" in io_spec
+                else io_spec["input"]
+            )
+
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError(
+                "No input/output specification found"
+            )
+
+        conversion_kwargs = {
+            "io_spec": io_spec_processed,
+        }
         model = converter_registry.convert(
-            input_model_path, input_type, "torch"
+            input_model_path, input_type, "torch", **conversion_kwargs
         ).to(self.device)
 
         params_before = self.get_number_of_parameters(model)
 
         if self.exclude_last_layer:
             self.add_exclude_to_config(model)
-
-        if not io_spec:
-            io_spec = self.load_io_specification(input_model_path)
-        self.io_spec = io_spec
 
         if len(self.io_spec.get("processed_input", self.io_spec["input"])) > 1:
             raise ValueError("Multi-output models are not supported")

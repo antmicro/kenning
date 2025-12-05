@@ -17,6 +17,7 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.onnx import check_io_spec
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -89,9 +90,18 @@ class ONNXCompiler(Optimizer):
         io_spec = check_io_spec(io_spec)
 
         input_type = self.get_input_type(input_model_path)
+        model_cls = None
+        try:
+            self.model_wrapper.create_model_structure()
+            model_cls = self.model_wrapper.model
+        except AttributeError:
+            KLogger.warning("Problems with deriving model architecture.")
+
         conversion_kwargs = {
             "io_spec": io_spec,
+            "model_cls": model_cls,
         }
+
         model = converter_registry.convert(
             input_model_path, input_type, "onnx", **conversion_kwargs
         )

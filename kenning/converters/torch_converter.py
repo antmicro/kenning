@@ -57,7 +57,8 @@ class TorchConverter(ModelConverter):
         Raises
         ------
         ConversionError
-            When model loading failed.
+            Raiased if model file is a state_dict, and no
+            architecture was specified.
         """
         import torch
 

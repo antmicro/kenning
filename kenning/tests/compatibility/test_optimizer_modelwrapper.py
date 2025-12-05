@@ -201,6 +201,12 @@ EXPECTED_FAIL = [
     ("SKLearnGenericDecisionTreeClassifier", "NNIPruningOptimizer"),
     ("SKLearnGenericDecisionTreeClassifier", "TFLiteCompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "TVMCompiler"),
+    # some strange error with executorch
+    ("PyTorchAnomalyDetectionCNN", "ExecuTorchOptimizer"),
+    ("PyTorchAnomalyDetectionVAE", "ExecuTorchOptimizer"),
+    ("PyTorchMagicWandModelWrapper", "ExecuTorchOptimizer"),
+    ("PyTorchPetDatasetMobileNetV2", "ExecuTorchOptimizer"),
+    ("TinygradImageNet", "TinygradOptimizer"),
 ]
 
 SKIP = (

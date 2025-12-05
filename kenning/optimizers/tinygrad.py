@@ -27,9 +27,12 @@ except ImportError:
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import IOSpecificationNotFoundError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import (
     PathOrURI,
     ResourceManager,
@@ -83,6 +86,7 @@ class TinygradOptimizer(Optimizer):
         self.input_spec = None
         self.model_wrapper = model_wrapper
         self.model_framework = model_framework
+        self.set_input_type(model_framework)
 
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
@@ -117,9 +121,56 @@ class TinygradOptimizer(Optimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
+        import onnx
+
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
+        try:
+            from copy import deepcopy
+
+            io_spec = deepcopy(io_spec)
+
+            io_spec["input"] = (
+                io_spec["processed_input"]
+                if "processed_input" in io_spec
+                else io_spec["input"]
+            )
+
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError(
+                "No input/output specification found"
+            )
+
+        input_type = self.get_input_type(input_model_path)
+
+        model_cls = None
+        try:
+            self.model_wrapper.create_model_structure()
+            model_cls = self.model_wrapper.model
+        except AttributeError:
+            KLogger.warning("Problems with deriving model architecture.")
+
+        conversion_kwargs = {
+            "io_spec": io_spec,
+            "model_cls": model_cls,
+        }
+
+        model = converter_registry.convert(
+            input_model_path, input_type, "tinygrad", **conversion_kwargs
+        )
+        onnx_path = self.compiled_model_path.with_suffix(".onnx")
+        onnx.save(model, onnx_path)
+
+        input_model_path = onnx_path
+
+        for spec, input in zip(io_spec["input"], model.graph.input):
+            spec["name"] = input.name
+
+        for spec, output in zip(io_spec["output"], model.graph.output):
+            spec["name"] = output.name
+
+        self.save_io_specification(input_model_path, io_spec)
         (
             model_module_path,
             modelcls_name,

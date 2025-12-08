@@ -33,6 +33,7 @@ class ReportTypes(str, Enum):
     RENODE = "renode_stats"
     LLM_PERFORMANCE = "llm_performance"
     ANOMALY = "anomaly"
+    ZEPHYR_TRACES = "zephyr_traces"
 
 
 class Report(ArgumentsHandler, ABC):

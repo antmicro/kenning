@@ -51,6 +51,9 @@ from kenning.report.markdown_components.renode_stats_report import (
 from kenning.report.markdown_components.text_summarization_report import (
     text_summarization_report,
 )
+from kenning.report.markdown_components.zephyr_traces_report import (
+    zephyr_traces_report,
+)
 
 __all__ = [
     "automl_report",
@@ -70,4 +73,5 @@ __all__ = [
     "comparison_text_summarization_report",
     "generate_html_report",
     "anomaly_detection_report",
+    "zephyr_traces_report",
 ]

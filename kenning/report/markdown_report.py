@@ -35,6 +35,7 @@ from kenning.report.markdown_components import (
     performance_report,
     renode_stats_report,
     text_summarization_report,
+    zephyr_traces_report,
 )
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
@@ -145,6 +146,40 @@ class MarkdownReport(Report):
             "default": Metric.ACC.name.lower(),
             "overridable": True,
         },
+        "compiled_model_path": {
+            "description": "Path to the model used for generating the report, "
+            "for the purpose of processing Zephyr traces.",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
+        "zephyr_trace_file_ctf": {
+            "description": "Path to a CTF file with Zephyr traces. Traces"
+            "be converted to TEF format and included in the report.",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
+        "zephyr_trace_file_tef": {
+            "description": "Path to a TEF file with Zephyr traces.",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
+        "zephyr_base": {
+            "description": "Path to Zephyr repository (used for the trace"
+            "conversion triggered by 'zephyr_trace_file_ctf')",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
+        "zephyr_build_path": {
+            "description": "Path to the evaluation app  build directory (used"
+            "for the trace conversion triggered by 'zephyr_trace_file_ctf')",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
     }
 
     def __init__(
@@ -165,6 +200,11 @@ class MarkdownReport(Report):
         skip_general_information: bool = False,
         automl_stats: Optional[Path] = None,
         main_quality_metric: str = Metric.ACC.name.lower(),
+        compiled_model_path: Optional[Path] = None,
+        zephyr_trace_file_ctf: Optional[Path] = None,
+        zephyr_trace_file_tef: Optional[Path] = None,
+        zephyr_build_path: Optional[Path] = None,
+        zephyr_base: Optional[Path] = None,
     ):
         super().__init__(measurements, report_name, report_types, automl_stats)
 
@@ -179,6 +219,11 @@ class MarkdownReport(Report):
         self.smaller_header = smaller_header
         self.save_summary = save_summary
         self.skip_general_information = skip_general_information
+        self.compiled_model_path = compiled_model_path
+        self.zephyr_trace_file_ctf = zephyr_trace_file_ctf
+        self.zephyr_trace_file_tef = zephyr_trace_file_tef
+        self.zephyr_base = zephyr_base
+        self.zephyr_build_path = zephyr_build_path
 
         KLogger.debug(f"Report measurements: {self.measurements}")
 
@@ -266,6 +311,7 @@ class MarkdownReport(Report):
             rep.TEXT_SUMMARIZATION: text_summarization_report,
             rep.LLM_PERFORMANCE: llm_performance_report,
             rep.ANOMALY: anomaly_detection_report,
+            rep.ZEPHYR_TRACES: zephyr_traces_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,
@@ -351,17 +397,25 @@ class MarkdownReport(Report):
                         cmap=self.cmap,
                         colors=self.colors,
                         draw_titles=draw_titles,
+                        measurements_path=Path(self.measurements[i]),
+                        compiled_model_path=self.compiled_model_path,
+                        zephyr_trace_file_ctf=self.zephyr_trace_file_ctf,
+                        zephyr_trace_file_tef=self.zephyr_trace_file_tef,
+                        zephyr_build_path=self.zephyr_build_path,
+                        zephyr_base=self.zephyr_base,
+                        cfg=self.cfg_name,
                     )
-                    for metric_name, metric in metrics.items():
-                        models_metrics[model_data["model_name"]][
-                            "metrics"
-                        ].append(
-                            {
-                                "type": _type,
-                                "name": metric_name,
-                                "value": metric,
-                            }
-                        )
+                    if metrics:
+                        for metric_name, metric in metrics.items():
+                            models_metrics[model_data["model_name"]][
+                                "metrics"
+                            ].append(
+                                {
+                                    "type": _type,
+                                    "name": metric_name,
+                                    "value": metric,
+                                }
+                            )
                     if not self.comparison_only:
                         content += additional_content
 

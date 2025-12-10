@@ -15,6 +15,7 @@ import numpy as np
 import tensorflow as tf
 
 from kenning.converters.keras_converter import KerasConverter
+from kenning.converters.onnx_converter import OnnxConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -61,55 +62,6 @@ def update_h5_file(h5_filepath: PathOrURI) -> None:
 
             model_configuration = fd.attrs.get("training_config")
             assert model_configuration.find('"loss": "mae"') == -1
-def onnxconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
-    """
-    Converts ONNX file to TFLite format.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-
-    Returns
-    -------
-    tf.lite.TFLiteConverter
-        TFLite converter for model
-    """
-    from datetime import datetime
-
-    import onnx
-    import onnx2tf
-
-    onnx_model = onnx.load(str(model_path))
-    input_names = [input.name for input in onnx_model.graph.input]
-
-    # Use multiple options to prevent dynamic shape and symbolic tensor issues
-    # - keep_nwc_or_nhwc_or_ndhwc_input_names: for NHWC input arrangements
-    # - keep_shape_absolutely_input_names: force all shapes to remain static
-    # - disable_strict_mode: skip strict accuracy correction for
-    #   speed/compatibility
-    # - batch_size: fix dynamic batch to static batch size of 1
-    try:
-        model = onnx2tf.convert(
-            str(model_path),
-            keep_nwc_or_nhwc_or_ndhwc_input_names=input_names,
-            keep_shape_absolutely_input_names=input_names,
-            disable_strict_mode=True,
-            batch_size=1,
-        )
-    except (TypeError, ValueError) as e:
-        # Fallback: try simpler conversion without input name preservation
-        # This may lose some shape information but should avoid symbolic issues
-        if "symbolic inputs/outputs do not implement `__len__`" in str(e):
-            model = onnx2tf.convert(
-                str(model_path), disable_strict_mode=True, batch_size=1
-            )
-    converted_path = model_path.with_suffix(
-        f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'
-    )
-    model.export(str(converted_path))
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(converted_path))
-    return converter
 
 
 class TFLiteCompiler(TensorFlowOptimizer):
@@ -120,9 +72,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
     outputtypes = ["tflite"]
 
     inputtypes = {
-        "onnx": onnxconversion,
         "keras": KerasConverter,
         "tensorflow": KerasConverter,
+        "onnx": OnnxConverter,
     }
 
     arguments_structure = {

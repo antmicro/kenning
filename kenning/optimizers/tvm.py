@@ -10,12 +10,12 @@ import json
 import re
 from typing import Dict, List, Literal, Optional
 
-import onnx
 import tvm
 import tvm.relay as relay
 
 from kenning.converters.darknet_converter import DarknetConverter
 from kenning.converters.keras_converter import KerasConverter
+from kenning.converters.onnx_converter import OnnxConverter
 from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
@@ -36,60 +36,14 @@ TVM_FUNC_PATTERN = re.compile(
 )
 
 
-def onnxconversion(
-    compiler: "TVMCompiler",
-    model_path: PathOrURI,
-    input_shapes: Dict,
-    dtypes: Dict,
-) -> Tuple[tvm.IRModule, Union[Dict, str]]:
-    """
-    Converts ONNX file to TVM format.
-
-    Parameters
-    ----------
-    compiler: TVMCompiler
-        Compiler used for conversion
-    model_path: PathOrURI
-        Path to the model to convert
-    input_shapes: Dict
-        Mapping from input name to input shape
-    dtypes: Dict
-        Mapping from input name to input dtype
-
-    Returns
-    -------
-    mod: tvm.IRModule
-        The relay module
-    params: Union[Dict, str]
-        Parameters dictionary to be used by relay module
-
-    Raises
-    ------
-    IndexError
-        Raised when no dtype was provided in the IO specification
-    """
-    try:
-        dtype = list(dtypes.values())[0]
-    except IndexError:
-        raise IndexError("No dtype in the input specification")
-
-    onnxmodel = onnx.load(model_path)
-    input_shapes = {
-        k: [_v if _v > 0 else 1 for _v in v] for k, v in input_shapes.items()
-    }
-    return relay.frontend.from_onnx(
-        onnxmodel, shape=input_shapes, freeze_params=True, dtype=dtype
-    )
-
-
 class TVMCompiler(Optimizer):
     """
     The TVM compiler.
     """
 
     inputtypes = {
-        "onnx": onnxconversion,
         "keras": KerasConverter,
+        "onnx": OnnxConverter,
         "darknet": DarknetConverter,
         "torch": TorchConverter,
         "tflite": TFLiteConverter,

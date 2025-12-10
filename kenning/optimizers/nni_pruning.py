@@ -30,54 +30,19 @@ from nni.compression.pytorch.speedup.compress_modules import (
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from tqdm import tqdm
 
+from kenning.converters.onnx_converter import OnnxConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
 )
 from kenning.core.model import ModelWrapper
-from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
-
-
-def onnxconversion(
-    model_path: PathOrURI, device: torch.device, **kwargs
-) -> torch.nn.Module:
-    """
-    Converts the ONNX model to PyTorch.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    device: torch.device
-        Tells where the model should be loaded
-    **kwargs:
-        Additional arguments
-
-    Returns
-    -------
-    torch.nn.Module
-        Loaded model
-
-    Raises
-    ------
-    CompilationError
-        Raised when loaded model is not of instance torch.nn.Module
-    """
-    conversion = PyTorchONNXConversion()
-    if conversion.onnx_import(None, model_path) != SupportStatus.SUPPORTED:
-        raise CompilationError(
-            "Conversion for provided model to PyTorch" " is not supported"
-        )
-    model = convert(str(model_path))
-    model.to(device)
-    return model
 
 
 class AddOperation(torch.nn.Module):
@@ -189,9 +154,7 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = {
-        "torch": TorchConverter,
-    }
+    inputtypes = {"torch": TorchConverter, "onnx": OnnxConverter}
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,

@@ -24,44 +24,7 @@ from kenning.core.exceptions import (
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-def update_h5_file(h5_filepath: PathOrURI) -> None:
-    """
-    Update an H5 file to be compatible with the newest version of Tensorflow.
-
-    Parameters
-    ----------
-    h5_filepath : PathOrURI
-        Path to the H5 file to be updated.
-    """
-    if not str(h5_filepath).endswith((".h5", ".hdf5")):
-        return
-
-    import h5py
-
-    with h5py.File(str(h5_filepath), mode="r+") as fd:
-        model_configuration = fd.attrs.get("model_config")
-
-        if model_configuration.find('"groups": 1,') != -1:
-            model_configuration = model_configuration.replace(
-                '"groups": 1,', ""
-            )
-            fd.attrs.modify("model_config", model_configuration)
-            fd.flush()
-
-            model_configuration = fd.attrs.get("model_config")
-            assert model_configuration.find('"groups": 1,') == -1
-
-        if model_configuration.find('"loss": "mae"') != -1:
-            model_configuration = model_configuration.replace(
-                '"loss": "mae"', '"loss": "mean_absolute_error"'
-            )
-            fd.attrs.modify("training_config", model_configuration)
-            fd.flush()
-
-            model_configuration = fd.attrs.get("training_config")
-            assert model_configuration.find('"loss": "mae"') == -1
+from kenning.utils.update_h5_file import update_h5_file
 
 
 class TFLiteCompiler(TensorFlowOptimizer):
@@ -425,8 +388,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if self.quantization_aware_training:
             assert self.inputtype == "keras"
-            if str(input_model_path).endswith((".h5", ".hdf5")):
-                update_h5_file(str(input_model_path))
+            if input_model_path.suffix in (".h5", ".hdf5"):
+                input_model_path = update_h5_file(input_model_path)
+
             model = tf.keras.models.load_model(str(input_model_path))
 
             def annotate_model(layer):

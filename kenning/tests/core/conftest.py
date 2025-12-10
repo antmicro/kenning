@@ -291,6 +291,20 @@ class DatasetModelRegistry:
             tvm_compiler.compile(
                 ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
             )
+
+        elif framework == "ai8x":
+            from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
+                Ai8xAnomalyDetectionCNN,
+            )
+
+            model_path = copy_model_to_tmp(
+                ResourceURI(Ai8xAnomalyDetectionCNN.pretrained_model_uri)
+            )
+            dataset = get_dataset_random_mock(AnomalyDetectionDataset)
+            model = Ai8xAnomalyDetectionCNN(
+                model_path, dataset, from_file=True
+            )
+
         elif framework in [
             "safetensors-native",
             "safetensors-awq",

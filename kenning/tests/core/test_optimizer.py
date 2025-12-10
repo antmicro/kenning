@@ -34,6 +34,8 @@ def prepare_objects(
     try:
         dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
         compiled_model_path = get_tmp_path()
+        if opt_cls.__name__ == "Ai8xCompiler":
+            compiled_model_path = compiled_model_path.with_suffix(".bin")
         optimizer = opt_cls(
             dataset,
             compiled_model_path,

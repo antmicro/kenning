@@ -34,6 +34,9 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
     It is compatible with AutoML flow.
     """
 
+    pretrained_model_uri = (
+        "kenning:///models/anomaly_detection/ai8x_cnn_cats.pth"
+    )
     # default_dataset
     arguments_structure = {
         "quantize_activation": {

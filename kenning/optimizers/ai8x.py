@@ -16,6 +16,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 
+from kenning.converters.ai8x_converter import Ai8xConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -301,37 +302,6 @@ class Ai8xTools(object):
         return self._extract_size_from_ai8xize(outp.decode().strip())
 
 
-def ai8x_conversion(
-    input_model_path: Path,
-    output_model_path: Path,
-    *args: Any,
-):
-    """
-    Converts model to ai8x format.
-
-    Parameters
-    ----------
-    input_model_path : Path
-        Path to the input model.
-    output_model_path : Path
-        Path to the output model.
-    *args : Any
-        Ignored args.
-    """
-    import torch
-
-    model = torch.load(input_model_path, weights_only=False)
-
-    if isinstance(model, torch.nn.Module):
-        torch.save(
-            {
-                "epoch": 0,
-                "state_dict": model.state_dict(),
-            },
-            output_model_path,
-        )
-    else:
-        torch.save(model, output_model_path)
 class Ai8xCompiler(Optimizer):
     """
     The ai8x accelerator compiler.
@@ -340,7 +310,7 @@ class Ai8xCompiler(Optimizer):
     outputtypes = ["ai8x_c"]
 
     inputtypes = {
-        "ai8x": ai8x_conversion,
+        "ai8x": Ai8xConverter,
         "torch": TorchConverter,
     }
 
@@ -462,6 +432,15 @@ class Ai8xCompiler(Optimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
+        if self.device_id is None:
+            KLogger.warning("Ai8x device_id not specified. Defaulting to 85.")
+            self.device_id = 85
+
+        if self.device is None:
+            KLogger.warning(
+                "Ai8x device name not specified. Defaulting to MAX78000."
+            )
+            self.device = "MAX78000"
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
@@ -514,6 +493,11 @@ class Ai8xCompiler(Optimizer):
                     converted_model_path,
                     self.ai8x_tools,
                     self.device_id,
+                )
+            elif self.inputtype == "ai8x":
+                converter.to_ai8x(
+                    converted_model_path,
+                    self.ai8x_tools,
                 )
             else:
                 converter.to_ai8x(

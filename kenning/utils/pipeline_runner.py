@@ -391,7 +391,7 @@ class PipelineRunner(object):
             self.platform
         ).__name__ in ("BareMetalPlatform", "ZephyrPlatform"):
             msg = (
-                f"Invalid configucation, {type(self.platform).__name__} "
+                f"Invalid configuration, {type(self.platform).__name__} "
                 "platform cannot run optimization"
             )
             KLogger.error(msg)

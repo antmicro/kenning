@@ -14,6 +14,7 @@ import onnx
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 
+from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -24,7 +25,6 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform
-from kenning.optimizers.onnx import kerasconversion, tfliteconversion
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -75,7 +75,7 @@ class IREECompiler(Optimizer):
     inputtypes = {
         "keras": kerasconversion,
         "tensorflow": kerasconversion,
-        "tflite": tfliteconversion,
+        "tflite": TFLiteConverter,
     }
 
     outputtypes = ["iree"]
@@ -189,9 +189,10 @@ class IREECompiler(Optimizer):
         # To compile a model with IREE compiler, we first convert it to ONNX
         # (that's because IREE TensorFlow workflow, as of version 3.6.0 is
         # highly unstable, so trying to compile directly does not work).
-        onnx_model = self.inputtypes[input_type](
-            input_model_path, input_spec, output_names
+        converter = self.inputtypes[input_type](
+            input_model_path,
         )
+        onnx_model = converter.to_onnx(input_spec, output_names)
 
         intermediate_onnx_model_path = self.compiled_model_path.with_suffix(
             ".tmp.onnx"

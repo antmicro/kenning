@@ -15,6 +15,7 @@ import tvm
 import tvm.relay as relay
 
 from kenning.converters.darknet_converter import DarknetConverter
+from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -115,50 +116,6 @@ def kerasconversion(
     return relay.frontend.from_keras(model, shape=input_shapes, layout="NHWC")
 
 
-def tfliteconversion(
-    compiler: "TVMCompiler",
-    model_path: PathOrURI,
-    input_shapes: Dict,
-    dtypes: Dict,
-) -> Tuple[tvm.IRModule, Union[Dict, str]]:
-    """
-    Converts TFLite file to TVM format.
-
-    Parameters
-    ----------
-    compiler: TVMCompiler
-        Compiler used for conversion
-    model_path: PathOrURI
-        Path to the model to convert
-    input_shapes: Dict
-        Mapping from input name to input shape
-    dtypes: Dict
-        Mapping from input name to input dtype
-
-    Returns
-    -------
-    mod: tvm.IRModule
-        The relay module
-    params: Union[Dict, str]
-        Parameters dictionary to be used by relay module
-    """
-    with open(model_path, "rb") as f:
-        tflite_model_buf = f.read()
-
-    try:
-        import tflite
-
-        tflite_model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
-    except AttributeError:
-        import tflite.Model
-
-        tflite_model = tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
-
-    return relay.frontend.from_tflite(
-        tflite_model, shape_dict=input_shapes, dtype_dict=dtypes
-    )
-
-
 class TVMCompiler(Optimizer):
     """
     The TVM compiler.
@@ -167,9 +124,9 @@ class TVMCompiler(Optimizer):
     inputtypes = {
         "keras": kerasconversion,
         "onnx": onnxconversion,
-        "tflite": tfliteconversion,
         "darknet": DarknetConverter,
         "torch": TorchConverter,
+        "tflite": TFLiteConverter,
     }
 
     outputtypes = ["tvm"]

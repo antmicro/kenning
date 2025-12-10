@@ -10,11 +10,11 @@ from typing import Dict, List, Literal, Optional
 
 import onnx
 
+from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
-    ConversionError,
     IOSpecificationNotFoundError,
 )
 from kenning.core.model import ModelWrapper
@@ -60,40 +60,6 @@ def kerasconversion(
 
     return modelproto
 
-def tfliteconversion(
-    model_path: PathOrURI, input_spec: Dict, output_names: List
-) -> Any:
-    """
-    Converts TFLite model to ONNX.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Dictionary representing inputs
-    output_names: List
-        Names of outputs to include in the final model
-
-    Returns
-    -------
-    Any
-        Loaded ONNX model, a variant of ModelProto
-
-    Raises
-    ------
-    ConversionError
-        Raised when model could not be loaded
-    """
-    import tf2onnx
-
-    try:
-        modelproto, _ = tf2onnx.convert.from_tflite(str(model_path))
-    except ValueError as e:
-        raise ConversionError(e)
-
-    return modelproto
-
 
 def onnxconversion(
     model_path: PathOrURI, input_spec: Dict, output_names: List
@@ -126,9 +92,9 @@ class ONNXCompiler(Optimizer):
 
     inputtypes = {
         "keras": kerasconversion,
-        "tflite": tfliteconversion,
         "onnx": onnxconversion,
         "torch": TorchConverter,
+        "tflite": TFLiteConverter,
     }
 
     outputtypes = ["onnx"]

@@ -8,12 +8,13 @@ Wrapper for TVM deep learning compiler.
 
 import json
 import re
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional
 
 import onnx
 import tvm
 import tvm.relay as relay
 
+from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -112,131 +113,6 @@ def kerasconversion(
     model = tf.keras.models.load_model(str(model_path), compile=False)
     print(model.summary())
     return relay.frontend.from_keras(model, shape=input_shapes, layout="NHWC")
-
-
-def no_conversion(out_dict):
-    """
-    Passes model as is to the compiler.
-    """
-    return out_dict
-
-
-def torchconversion(
-    compiler: "TVMCompiler",
-    model_path: PathOrURI,
-    input_shapes: Dict,
-    dtypes: Dict,
-) -> Tuple[tvm.IRModule, Union[Dict, str]]:
-    """
-    Converts Torch file to TVM format.
-
-    Parameters
-    ----------
-    compiler: TVMCompiler
-        Compiler used for conversion
-    model_path: PathOrURI
-        Path to the model to convert
-    input_shapes: Dict
-        Mapping from input name to input shape
-    dtypes: Dict
-        Mapping from input name to input dtype
-
-    Returns
-    -------
-    mod: tvm.IRModule
-        The relay module
-    params: Union[Dict, str]
-        Parameters dictionary to be used by relay module
-    """
-    import numpy as np
-    import torch
-
-    # This is a model-specific selector of output conversion functions.
-    # It defaults to a no_conversion function that just returns its input
-    # It is easily expandable in case it is needed for other models
-    if compiler.conversion_func == "dict_to_tuple":
-        # For PyTorch Mask R-CNN Model
-        from kenning.modelwrappers.instance_segmentation.pytorch_coco import (
-            dict_to_tuple,
-        )
-
-        wrapper = dict_to_tuple
-    else:  # General case - no conversion is happening
-        wrapper = no_conversion
-
-    def mul(x: tuple) -> int:
-        """
-        Method used to convert shape-representing tuple
-        to a 1-dimensional size to allow the model to be inferred with
-        an 1-dimensional byte array.
-
-        Parameters
-        ----------
-        x : tuple
-            Tuple describing the regular input shape.
-
-        Returns
-        -------
-        int
-            The size of a 1-dimensional input matching the original shape.
-        """
-        ret = 1
-        for i in list(x):
-            ret *= i
-        return ret
-
-    class TraceWrapper(torch.nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            self.model = model
-
-        def forward(self, inp):
-            out = self.model(
-                inp.reshape(input_shapes[list(input_shapes.keys())[0]])
-            )
-            return wrapper(out[0])
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def model_func(model_path: PathOrURI):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        loaded_model = torch.load(
-            str(model_path), map_location=device, weights_only=False
-        )
-        if not isinstance(loaded_model, torch.nn.Module):
-            raise CompilationError(
-                f"TVM compiler expects the input data of type: torch.nn.Module, but got: {type(loaded_model).__name__}"  # noqa: E501
-            )
-        return loaded_model
-
-    model = TraceWrapper(model_func(model_path))
-    model.eval()
-    inp = torch.Tensor(
-        np.random.uniform(
-            0.0, 250.0, (mul(input_shapes[list(input_shapes.keys())[0]]))
-        ),
-    )
-
-    inp = inp.to(device)
-
-    with torch.no_grad():
-        model(inp)
-        model_trace = torch.jit.trace(model, inp)
-        model_trace.eval()
-
-    return relay.frontend.from_pytorch(
-        model_trace,
-        # this is a list of input infos where there is a dict
-        # constructed from {input_name: (n-dim tuple-shape)}
-        # into {input_name: [product_of_the_dimensions]}
-        list(
-            {
-                list(input_shapes.keys())[0]: [
-                    mul(input_shapes[list(input_shapes.keys())[0]])
-                ]
-            }.items()
-        ),
-    )
 
 
 def darknetconversion(
@@ -353,8 +229,8 @@ class TVMCompiler(Optimizer):
         "keras": kerasconversion,
         "onnx": onnxconversion,
         "darknet": darknetconversion,
-        "torch": torchconversion,
         "tflite": tfliteconversion,
+        "torch": TorchConverter,
     }
 
     outputtypes = ["tvm"]
@@ -841,9 +717,15 @@ class TVMCompiler(Optimizer):
 
         input_type = self.get_input_type(input_model_path)
 
-        mod, params = self.inputtypes[input_type](
-            self, input_model_path, inputshapes, dtypes
-        )
+        converter = self.inputtypes[input_type](input_model_path)
+
+        if input_type == "torch":
+            mod, params = converter.to_tvm(
+                inputshapes, dtypes, conversion_func=self.conversion_func
+            )
+        else:
+            mod, params = converter.to_tvm(inputshapes, dtypes)
+
         self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         io_spec["entry_func"] = (
             self.module_name if type(self.module_name) is str else ""

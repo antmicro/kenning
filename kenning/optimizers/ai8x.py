@@ -6,21 +6,19 @@
 Wrapper for ai8x accelerator compiler.
 """
 
-import json
 import os
 import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
-import torch
 
+from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
-    ConversionError,
     KenningOptimizerError,
     OptimizedModelSizeError,
 )
@@ -34,7 +32,6 @@ from kenning.optimizers.ai8x_codegen import (
     generate_model_bin,
     generate_model_source,
 )
-from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -50,7 +47,7 @@ class Ai8xIzerError(KenningOptimizerError):
         self.model_size = model_size
 
 
-class _Ai8xTools(object):
+class Ai8xTools(object):
     """
     Wrapper for ai8x tools.
     """
@@ -335,79 +332,6 @@ def ai8x_conversion(
         )
     else:
         torch.save(model, output_model_path)
-
-
-def torch_conversion(
-    input_model_path: PathOrURI,
-    ai8x_model_path: Path,
-    ai8x_tools: _Ai8xTools,
-    device_id: int,
-):
-    """
-    Converts torch model into ai8x-compatible model.
-
-    Parameters
-    ----------
-    input_model_path : PathOrURI
-        Path to the torch model.
-    ai8x_model_path : Path
-        Path where ai8x-compatible model will be saved.
-    ai8x_tools : _Ai8xTools
-        AI8X tools wrapper.
-    device_id : int
-        AI8X device ID.
-
-    Raises
-    ------
-    ConversionError
-        When model with unsupported layers is passed.
-    """
-    model = torch.load(
-        input_model_path, weights_only=False, map_location=torch.device("cpu")
-    )
-
-    if not isinstance(model, torch.nn.Sequential):
-        raise ConversionError(
-            f"Only Sequential models are supported, got {type(model).__name__}"
-        )
-
-    ai8x_model = fuse_torch_sequential(
-        ai8x_tools.ai8x_training_path, device_id, model
-    )
-
-    torch.save(
-        {
-            "epoch": 0,
-            "state_dict": ai8x_model.state_dict(),
-        },
-        ai8x_model_path,
-    )
-
-    ai8x_model_tmp_path = ai8x_model_path.with_name(
-        ai8x_model_path.name + "_tmp"
-    )
-    torch.save(ai8x_model, ai8x_model_tmp_path)
-
-    io_spec = json.loads(
-        input_model_path.with_suffix(
-            input_model_path.suffix + ".json"
-        ).read_text()
-    )
-
-    yaml_cfg_path = ai8x_model_path.resolve().with_suffix(
-        ai8x_model_path.suffix + ".yaml"
-    )
-
-    ai8x_tools.yamlwriter(
-        ai8x_model_tmp_path,
-        io_spec.get("processed_input", io_spec["input"])[0]["shape"],
-        device_id,
-        yaml_cfg_path,
-    )
-
-    KLogger.info(f"Model YAML configuration saved in {yaml_cfg_path}")
-
-
 class Ai8xCompiler(Optimizer):
     """
     The ai8x accelerator compiler.
@@ -417,7 +341,7 @@ class Ai8xCompiler(Optimizer):
 
     inputtypes = {
         "ai8x": ai8x_conversion,
-        "torch": torch_conversion,
+        "torch": TorchConverter,
     }
 
     SUPPORTED_DEVICE_IDS = [84, 85, 87]
@@ -488,7 +412,7 @@ class Ai8xCompiler(Optimizer):
         self.set_input_type(model_framework)
         self.device = None
         self.device_id = None
-        self.ai8x_tools = _Ai8xTools(ai8x_training_path, ai8x_synthesis_path)
+        self.ai8x_tools = Ai8xTools(ai8x_training_path, ai8x_synthesis_path)
         self.ai8x_model_size = None
 
         super().__init__(
@@ -584,13 +508,17 @@ class Ai8xCompiler(Optimizer):
             # convert model
             converted_model_path = tmp_dir / f"{input_model_path.stem}_c.pth"
 
-            converter = self.inputtypes[self.inputtype]
-            converter(
-                tmp_input_model_path,
-                converted_model_path,
-                self.ai8x_tools,
-                self.device_id,
-            )
+            converter = self.inputtypes[self.inputtype](tmp_input_model_path)
+            if self.inputtype == "torch":
+                converter.to_ai8x(
+                    converted_model_path,
+                    self.ai8x_tools,
+                    self.device_id,
+                )
+            else:
+                converter.to_ai8x(
+                    converted_model_path,
+                )
 
             config_file = (
                 self.config_file

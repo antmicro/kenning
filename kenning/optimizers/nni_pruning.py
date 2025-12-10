@@ -30,6 +30,7 @@ from nni.compression.pytorch.speedup.compress_modules import (
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from tqdm import tqdm
 
+from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -39,47 +40,9 @@ from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import (
     Optimizer,
 )
-from kenning.onnxconverters.onnx2torch import convert
-from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
-
-
-def torchconversion(
-    model_path: PathOrURI, device: torch.device, **kwargs
-) -> torch.nn.Module:
-    """
-    Loads the PyTorch model.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    device: torch.device
-        Tells where the model should be loaded
-    **kwargs:
-        Additional arguments
-
-    Returns
-    -------
-    torch.nn.Module
-        Loaded model
-
-    Raises
-    ------
-    CompilationError
-        Raised when loaded model is not of instance torch.nn.Module
-    """
-    loaded = torch.load(
-        str(model_path), map_location=device, weights_only=False
-    )
-    if not isinstance(loaded, torch.nn.Module):
-        raise CompilationError(
-            f"Expecting model of type:"
-            f" torch.nn.Module, but got {type(loaded).__name__}"
-        )
-    return loaded
 
 
 def onnxconversion(
@@ -226,7 +189,9 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = {"torch": torchconversion, "onnx": onnxconversion}
+    inputtypes = {
+        "torch": TorchConverter,
+    }
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,
@@ -458,7 +423,9 @@ class NNIPruningOptimizer(Optimizer):
     ):
         input_type = self.get_input_type(input_model_path)
 
-        model = self.inputtypes[input_type](input_model_path, self.device)
+        converter = self.inputtypes[input_type](input_model_path)
+        model = converter.to_torch().to(self.device)
+
         params_before = self.get_number_of_parameters(model)
 
         if self.exclude_last_layer:

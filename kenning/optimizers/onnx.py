@@ -6,10 +6,11 @@
 Wrapper for ONNX deep learning compiler.
 """
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import onnx
 
+from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -58,63 +59,6 @@ def kerasconversion(
     )
 
     return modelproto
-
-
-def torchconversion(
-    model_path: PathOrURI, input_spec: Dict, output_names: List
-) -> Any:
-    """
-    Converts Torch model to ONNX.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Dictionary representing inputs
-    output_names: List
-        Names of outputs to include in the final model
-
-    Returns
-    -------
-    Any
-        Loaded ONNX model, a variant of ModelProto
-
-    Raises
-    ------
-    CompilationError
-        Raised if the input type of the model is not torch.nn.Module
-    """
-    import torch
-
-    dev = "cpu"
-    model = torch.load(str(model_path), map_location=dev, weights_only=False)
-
-    if not isinstance(model, torch.nn.Module):
-        raise CompilationError(
-            f"ONNX compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}"  # noqa: E501
-        )
-
-    model.eval()
-
-    input = tuple(
-        torch.randn(spec["shape"], device=dev) for spec in input_spec
-    )
-
-    import io
-
-    mem_buffer = io.BytesIO()
-    torch.onnx.export(
-        model,
-        input,
-        mem_buffer,
-        opset_version=11,
-        input_names=[spec["name"] for spec in input_spec],
-        output_names=output_names,
-    )
-    onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
-    return onnx_model
-
 
 def tfliteconversion(
     model_path: PathOrURI, input_spec: Dict, output_names: List
@@ -182,9 +126,9 @@ class ONNXCompiler(Optimizer):
 
     inputtypes = {
         "keras": kerasconversion,
-        "torch": torchconversion,
         "tflite": tfliteconversion,
         "onnx": onnxconversion,
+        "torch": TorchConverter,
     }
 
     outputtypes = ["onnx"]
@@ -262,9 +206,10 @@ class ONNXCompiler(Optimizer):
 
         input_type = self.get_input_type(input_model_path)
 
-        model = self.inputtypes[input_type](
-            input_model_path, io_spec["input"], output_names
+        converter = self.inputtypes[input_type](
+            input_model_path,
         )
+        model = converter.to_onnx(io_spec["input"], output_names)
 
         onnx.save(model, self.compiled_model_path)
 

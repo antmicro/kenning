@@ -11,11 +11,11 @@ import warnings
 from math import ceil
 from typing import Dict, Generator, List, Literal, Optional, Tuple, TypeVar
 
+from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     IOSpecificationMissingEntryError,
     IOSpecificationNotFoundError,
-    ModelNotLoadedError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
@@ -31,46 +31,11 @@ ExportedProgram = TypeVar("torch.export.ExportedProgram")
 warnings.filterwarnings("ignore", message=".*on an already erased node.*")
 
 
-def load_torch_model(model_path: PathOrURI) -> Module:
-    """
-    Load a PyTorch model.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert.
-
-    Returns
-    -------
-    Module
-        Loaded PyTorch model.
-
-    Raises
-    ------
-    ModelNotLoadedError
-        Raised if a full model cannot be loaded from the provided path.
-    """
-    import torch
-
-    model = torch.load(
-        model_path, weights_only=False, map_location=torch.device("cpu")
-    )
-    if isinstance(model, Dict):
-        raise ModelNotLoadedError(
-            f"The provided file ({str(model_path)}) contains a PyTorch "
-            "state dictionary with weights of a model. The architecture "
-            "of a model is required as well. Save the full model, both its "
-            "architecture and weights, and try again."
-        )
-    model.eval()
-    return model
-
-
 class ExecuTorchOptimizer(Optimizer):
     """Class implementing ExecuTorch compiler."""
 
     inputtypes = {
-        "torch": load_torch_model,
+        "torch": TorchConverter,
     }
 
     outputtypes = ["executorch"]
@@ -281,10 +246,8 @@ class ExecuTorchOptimizer(Optimizer):
 
         io_spec["entry_func"] = "forward"
 
-        # Load a model from a file.
-        self.model = self.inputtypes[self.model_framework](
-            model_path=input_model_path
-        ).cpu()
+        converter = self.inputtypes[self.model_framework](input_model_path)
+        self.model = converter.to_torch().cpu()
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)
         dynamic_shapes = self._extract_shapes_from_io_specification(

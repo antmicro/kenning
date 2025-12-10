@@ -14,11 +14,11 @@ import onnx
 import tvm
 import tvm.relay as relay
 
+from kenning.converters.darknet_converter import DarknetConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
-    ConversionError,
     IOSpecificationNotFoundError,
 )
 from kenning.core.model import ModelWrapper
@@ -115,67 +115,6 @@ def kerasconversion(
     return relay.frontend.from_keras(model, shape=input_shapes, layout="NHWC")
 
 
-def darknetconversion(
-    compiler: "TVMCompiler",
-    model_path: PathOrURI,
-    input_shapes: Dict,
-    dtypes: Dict,
-) -> Tuple[tvm.IRModule, Union[Dict, str]]:
-    """
-    Converts darknet file to TVM format.
-
-    Parameters
-    ----------
-    compiler: TVMCompiler
-        Compiler used for conversion
-    model_path: PathOrURI
-        Path to the model to convert
-    input_shapes: Dict
-        Mapping from input name to input shape
-    dtypes: Dict
-        Mapping from input name to input dtype
-
-    Returns
-    -------
-    mod: tvm.IRModule
-        The relay module
-    params: Union[Dict, str]
-        Parameters dictionary to be used by relay module
-
-    Raises
-    ------
-    ConversionError
-        Raised when libdarknet shared library cannot be loaded.
-    IndexError
-        Raised when no dtype is provided in the IO specification
-    """
-    try:
-        dtype = list(dtypes.values())[0]
-    except IndexError:
-        raise IndexError("No dtype in the input specification")
-
-    from tvm.relay.testing.darknet import __darknetffi__
-
-    if not compiler.libdarknet_path:
-        KLogger.fatal(
-            "The darknet converter requires libdarknet.so library. Provide "
-            "the path to it using --libdarknet-path flag"
-        )
-        raise ConversionError("Provide libdarknet.so library")
-    try:
-        lib = __darknetffi__.dlopen(str(compiler.libdarknet_path))
-    except OSError as e:
-        raise ConversionError(e)
-    net = lib.load_network(
-        str(model_path.with_suffix(".cfg")).encode("utf-8"),
-        str(model_path).encode("utf-8"),
-        0,
-    )
-    return relay.frontend.from_darknet(
-        net, dtype=dtype, shape=input_shapes["input"]
-    )
-
-
 def tfliteconversion(
     compiler: "TVMCompiler",
     model_path: PathOrURI,
@@ -228,8 +167,8 @@ class TVMCompiler(Optimizer):
     inputtypes = {
         "keras": kerasconversion,
         "onnx": onnxconversion,
-        "darknet": darknetconversion,
         "tflite": tfliteconversion,
+        "darknet": DarknetConverter,
         "torch": TorchConverter,
     }
 
@@ -722,6 +661,10 @@ class TVMCompiler(Optimizer):
         if input_type == "torch":
             mod, params = converter.to_tvm(
                 inputshapes, dtypes, conversion_func=self.conversion_func
+            )
+        elif input_type == "darknet":
+            mod, params = converter.to_tvm(
+                inputshapes, dtypes, libdarknet_path=self.libdarknet_path
             )
         else:
             mod, params = converter.to_tvm(inputshapes, dtypes)

@@ -48,7 +48,7 @@ from kenning.core.exceptions import (
 )
 from kenning.utils.logger import KLogger
 
-CONST_NODES = dict()
+CONST_NODES = {}
 
 # Backing up default converters
 _CONVERTER_REGISTRY_BACKUP = copy.deepcopy(_CONVERTER_REGISTRY)
@@ -153,7 +153,7 @@ def extract_value_from_graph(
         value_node, _ = graph.value_as_node_output(value_name)
         if value_node.operation_type == "Constant":
             value = value_node.attributes.get("value", default_value)
-        elif value_node.name in CONST_NODES:
+        elif CONST_NODES and value_node.name in CONST_NODES:
             value = CONST_NODES[value_node.name].value
 
     if value is None:
@@ -747,13 +747,11 @@ def convert(
     torch.fx.graph_module.GraphModule
         Model converted to PyTorch framework
     """
-    global CONST_NODES
-    CONST_NODES = dict()
-
-    converted_model = onnx2torch.convert(onnx_model)
-
-    CONST_NODES = None
-    return converted_model
+    CONST_NODES.clear()
+    try:
+        return onnx2torch.convert(onnx_model)
+    finally:
+        CONST_NODES.clear()
 
 
 def restore_default_converters():

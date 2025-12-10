@@ -10,6 +10,7 @@ from typing import Dict, List, Literal, Optional
 
 import onnx
 
+from kenning.converters.keras_converter import KerasConverter
 from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
@@ -22,43 +23,6 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-def kerasconversion(
-    model_path: PathOrURI, input_spec: Dict, output_names: List
-) -> Any:
-    """
-    Converts Keras model to ONNX.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-    input_spec: Dict
-        Dictionary representing inputs
-    output_names: List
-        Names of outputs to include in the final model
-
-    Returns
-    -------
-    Any
-        Loaded ONNX model, a variant of ModelProto
-    """
-    import tensorflow as tf
-    import tf2onnx
-
-    model = tf.keras.models.load_model(str(model_path), compile=False)
-    model.output_names = ["output"]
-
-    input_spec = [
-        tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])
-        for spec in input_spec
-    ]
-    modelproto, _ = tf2onnx.convert.from_keras(
-        model, input_signature=input_spec
-    )
-
-    return modelproto
 
 
 def onnxconversion(
@@ -91,8 +55,8 @@ class ONNXCompiler(Optimizer):
     """
 
     inputtypes = {
-        "keras": kerasconversion,
         "onnx": onnxconversion,
+        "keras": KerasConverter,
         "torch": TorchConverter,
         "tflite": TFLiteConverter,
     }

@@ -15,6 +15,7 @@ import tvm
 import tvm.relay as relay
 
 from kenning.converters.darknet_converter import DarknetConverter
+from kenning.converters.keras_converter import KerasConverter
 from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.converters.torch_converter import TorchConverter
 from kenning.core.dataset import Dataset
@@ -81,49 +82,14 @@ def onnxconversion(
     )
 
 
-def kerasconversion(
-    compiler: "TVMCompiler",
-    model_path: PathOrURI,
-    input_shapes: Dict,
-    dtypes: Dict,
-) -> Tuple[tvm.IRModule, Union[Dict, str]]:
-    """
-    Converts Keras file to TVM format.
-
-    Parameters
-    ----------
-    compiler: TVMCompiler
-        Compiler used for conversion
-    model_path: PathOrURI
-        Path to the model to convert
-    input_shapes: Dict
-        Mapping from input name to input shape
-    dtypes: Dict
-        Mapping from input name to input dtype
-
-    Returns
-    -------
-    mod: tvm.IRModule
-        The relay module
-    params: Union[Dict, str]
-        Parameters dictionary to be used by relay module
-    """
-    import tensorflow as tf
-
-    tf.keras.backend.clear_session()
-    model = tf.keras.models.load_model(str(model_path), compile=False)
-    print(model.summary())
-    return relay.frontend.from_keras(model, shape=input_shapes, layout="NHWC")
-
-
 class TVMCompiler(Optimizer):
     """
     The TVM compiler.
     """
 
     inputtypes = {
-        "keras": kerasconversion,
         "onnx": onnxconversion,
+        "keras": KerasConverter,
         "darknet": DarknetConverter,
         "torch": TorchConverter,
         "tflite": TFLiteConverter,

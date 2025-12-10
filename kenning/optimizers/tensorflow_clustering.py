@@ -10,29 +10,12 @@ from typing import Dict, List, Literal, Optional
 import tensorflow as tf
 import tensorflow_model_optimization as tfmot
 
+from kenning.converters.keras_converter import KerasConverter
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-
-def kerasconversion(model_path: PathOrURI) -> object:
-    """
-    Loads Keras model.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-
-    Returns
-    -------
-    object
-        Keras model
-    """
-    model = tf.keras.models.load_model(str(model_path), compile=False)
-    return model
 
 
 class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
@@ -42,7 +25,9 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
 
     outputtypes = ["keras"]
 
-    inputtypes = {"keras": kerasconversion}
+    inputtypes = {
+        "keras": KerasConverter,
+    }
 
     arguments_structure = {
         "model_framework": {
@@ -154,7 +139,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     ):
         input_type = self.get_input_type(input_model_path)
 
-        model = self.inputtypes[input_type](input_model_path)
+        converter = self.inputtypes[input_type](input_model_path)
+        model = converter.to_keras()
         for layer in model.layers:
             layer.trainable = True
 

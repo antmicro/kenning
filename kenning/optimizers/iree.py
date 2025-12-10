@@ -14,6 +14,7 @@ import onnx
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 
+from kenning.converters.keras_converter import KerasConverter
 from kenning.converters.tflite_converter import TFLiteConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -73,8 +74,8 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = {
-        "keras": kerasconversion,
-        "tensorflow": kerasconversion,
+        "keras": KerasConverter,
+        "tensorflow": KerasConverter,
         "tflite": TFLiteConverter,
     }
 

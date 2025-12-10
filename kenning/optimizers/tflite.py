@@ -14,6 +14,7 @@ from typing import Dict, List, Literal, Optional
 import numpy as np
 import tensorflow as tf
 
+from kenning.converters.keras_converter import KerasConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
@@ -60,48 +61,6 @@ def update_h5_file(h5_filepath: PathOrURI) -> None:
 
             model_configuration = fd.attrs.get("training_config")
             assert model_configuration.find('"loss": "mae"') == -1
-
-
-def kerasconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
-    """
-    Converts Keras file to TFLite format.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-
-    Returns
-    -------
-    tf.lite.TFLiteConverter
-        TFLite converter for model
-    """
-    if str(model_path).endswith((".h5", ".hdf5")):
-        update_h5_file(model_path)
-
-    model = tf.keras.models.load_model(str(model_path), compile=False)
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    return converter
-
-
-def tensorflowconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
-    """
-    Converts TensorFlow file to TFLite format.
-
-    Parameters
-    ----------
-    model_path: PathOrURI
-        Path to the model to convert
-
-    Returns
-    -------
-    tf.lite.TFLiteConverter
-        TFLite converter for model
-    """
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(model_path))
-    return converter
-
-
 def onnxconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     """
     Converts ONNX file to TFLite format.
@@ -161,9 +120,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
     outputtypes = ["tflite"]
 
     inputtypes = {
-        "keras": kerasconversion,
-        "tensorflow": tensorflowconversion,
         "onnx": onnxconversion,
+        "keras": KerasConverter,
+        "tensorflow": KerasConverter,
     }
 
     arguments_structure = {
@@ -541,7 +500,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
         else:
             input_type = self.get_input_type(input_model_path)
 
-            converter = self.inputtypes[input_type](input_model_path)
+            converter = self.inputtypes[input_type](
+                input_model_path
+            ).to_tflite()
 
         if self.target in ["int8", "edgetpu"]:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]

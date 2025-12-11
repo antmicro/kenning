@@ -154,10 +154,12 @@ TEST_EXAMPLE_INVALID_CFG = {
     },
     "optimizers": [
         {
-            "type": "IREECompiler",
+            "type": "TVMCompiler",
             "parameters": {
-                "compiled_model_path": "build/tflite-magic-wand.vmfb",
-                "backend": "llvm-cpu",
+                "target": "llvm -mcpu=core-avx2",
+                "opt_level": 3,
+                "conv2d_data_layout": "NCHW",
+                "compiled_model_path": "./build/int8_tvm.tar",
             },
         },
         {

@@ -24,8 +24,8 @@ The grey blocks represent the inference results and metrics flow.
 * a [](protocol-api) class - implements the communication protocol between the host and the target,
 * a [](dataconverter-api) class - performs conversion of data between different formats used by surrounding blocks,
 * a [](dataprovider-api) class - implements providing data for inference from such sources as camera, TCP connection, or others,
-* a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying visualizations or sending results via TCP).
-
+* a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying visualizations or sending results via TCP),
+* a [](modelconverter-api) class - converts model from one format to another.
 ### Model processing
 
 The orange blocks and arrows in {numref}`class-flow` represent a model's life cycle:
@@ -161,8 +161,6 @@ Model wrapper examples:
 They can perform the model optimization (operation fusion, quantization) as well.
 Kenning supports executing optimizations also on the target device.
 To do so you can use `location` parameter which specifies where given [](optimizer-api) would be executed (either `'host'` or `'target'`).
-
-All Optimizer objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
 
 Example model optimizers:
 
@@ -455,6 +453,24 @@ The `ResourceURI` class is a [`pathlib.Path`](https://docs.python.org/3/library/
 
 ```{eval-rst}
 .. autoclass:: kenning.utils.resource_manager.ResourceURI
+   :show-inheritance:
+   :members:
+```
+
+(modelconverter-api)=
+## ModelConverter
+
+`kenning.core.converter.ModelConverter` objects allow conversion between deep learning frameworks (e.g. PyTorch, Keras, ONNX, TVM and more).
+They allow alternative paths for optimizations, when [Optimizer](optimizer-api) objects do not support current model format, or when direct optimization fails.
+For conversion to be possible, a converter needs to implement `to_<destination_format>` method.
+
+Example model converters:
+
+* [OnnxConverter](https://github.com/antmicro/kenning/blob/main/kenning/converters/onnx_converter.py) - wraps conversion from ONNX,
+* [KerasConverter](https://github.com/antmicro/kenning/blob/main/kenning/converters/keras_converter.py) - wraps conversion from Keras.
+
+```{eval-rst}
+.. autoclass:: kenning.core.converter.ModelConverter
    :show-inheritance:
    :members:
 ```

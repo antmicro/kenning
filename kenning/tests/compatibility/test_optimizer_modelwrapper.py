@@ -281,9 +281,11 @@ class TestOptimizerModelWrapper:
         optimizersamples - to get optimizers instances.
         modelwrappersamples - to get modelwrappers instances.
         """
+        import copy
+
         for wrapper_name in modelwrappersamples:
             wrapper = modelwrappersamples.get(wrapper_name)
-            io_specs = wrapper.get_io_specification()
+            original_io_spec = wrapper.get_io_specification()
 
             filename = uuid.uuid4().hex
             filepath = tmpfolder / filename
@@ -292,6 +294,7 @@ class TestOptimizerModelWrapper:
 
             for optimizer_name in optimizersamples:
                 optimizer = optimizersamples.get(optimizer_name)
+                io_spec = copy.deepcopy(original_io_spec)
                 with pytest.raises(ValueError):
                     optimizer.consult_model_type(optimizer)
                 # TODO: In future there might be no shared model types,
@@ -306,7 +309,7 @@ class TestOptimizerModelWrapper:
                 compiled_model_path = tmpfolder / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
                 optimizer.init()
-                optimizer.compile(filepath, io_specs)
+                optimizer.compile(filepath, io_spec)
 
                 assert os.path.exists(compiled_model_path)
                 os.remove(compiled_model_path)

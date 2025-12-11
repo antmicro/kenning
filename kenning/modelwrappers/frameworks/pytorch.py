@@ -15,6 +15,7 @@ import numpy as np
 from sklearn import metrics
 from tqdm import tqdm
 
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
@@ -103,35 +104,34 @@ class PyTorchWrapper(ModelWrapper, ABC):
             self.model = input_data
 
     def save_to_onnx(self, model_path: PathOrURI):
+        import tempfile
+        from pathlib import Path
+
+        import onnx
         import torch
 
-        self.get_io_specification()
-        input_spec = self.io_specification[
-            "processed_input"
-            if "processed_input" in self.io_specification
-            else "input"
-        ]
-
         self.prepare_model()
-        x = tuple(
-            torch.randn(
-                [s if s > 0 else s for s in spec["shape"]], device="cpu"
-            )
-            for spec in input_spec
-        )
 
-        torch.onnx.export(
-            self.model.to(device="cpu"),
-            x,
-            model_path,
-            opset_version=11,
-            input_names=[
-                spec["name"] for spec in self.get_io_specification()["input"]
-            ],
-            output_names=[
-                spec["name"] for spec in self.get_io_specification()["output"]
-            ],
+        torch_path = Path(tempfile.NamedTemporaryFile().name)
+        torch.save(self.model, torch_path)
+
+        io_spec = self.get_io_specification()
+
+        from copy import deepcopy
+
+        io_spec = deepcopy(io_spec)
+        io_spec["input"] = (
+            io_spec["processed_input"]
+            if "processed_input" in io_spec
+            else io_spec["input"]
         )
+        conversion_kwargs = {
+            "io_spec": io_spec,
+        }
+        onnx_model = converter_registry.convert(
+            torch_path, "torch", "onnx", **conversion_kwargs
+        )
+        onnx.save(onnx_model, model_path)
 
     def save_model(
         self, model_path: PathOrURI, export_dict: Optional[bool] = None

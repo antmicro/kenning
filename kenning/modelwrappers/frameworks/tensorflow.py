@@ -11,6 +11,7 @@ from typing import List, Optional
 
 import numpy as np
 
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.model import ModelWrapper
@@ -107,22 +108,27 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         return ["onnx", "keras"]
 
     def save_to_onnx(self, model_path: PathOrURI):
-        import tensorflow as tf
-        import tf2onnx
+        import onnx
 
+        self.get_io_specification()
         self.prepare_model()
-        x = tuple(
-            tf.TensorSpec(
-                spec["shape"],
-                spec["dtype"],
-                name=spec["name"],
-            )
-            for spec in self.get_io_specification()["input"]
-        )
 
-        tf2onnx.convert.from_keras(
-            self.model, input_signature=x, output_path=model_path, opset=11
+        from copy import deepcopy
+
+        io_spec = deepcopy(self.io_specification)
+
+        io_spec["input"] = (
+            io_spec["processed_input"]
+            if "processed_input" in io_spec
+            else io_spec["input"]
         )
+        conversion_kwargs = {
+            "io_spec": io_spec,
+        }
+        onnx_model = converter_registry.convert(
+            self.model_path, "keras", "onnx", **conversion_kwargs
+        )
+        onnx.save(onnx_model, model_path)
 
     def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
         return b"".join(inp.tobytes() for inp in inputdata)

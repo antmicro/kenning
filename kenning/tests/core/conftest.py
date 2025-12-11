@@ -13,7 +13,6 @@ from uuid import uuid4
 
 import pytest
 from tensorflow.keras.models import load_model as load_keras_model
-from torch import save as torch_save
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -44,7 +43,10 @@ from kenning.modelwrappers.object_detection.darknet_coco import (
 from kenning.modelwrappers.object_detection.yolov4 import (
     ONNXYOLOV4,
 )
-from kenning.onnxconverters import onnx2torch
+
+# Do not remove onnx2torch import as it redefines some ONNX operations
+# and removing it makes tests fail.
+from kenning.onnxconverters import onnx2torch  # noqa: F401
 from kenning.optimizers.iree import IREECompiler
 from kenning.optimizers.onnx import ONNXCompiler
 from kenning.optimizers.tvm import TVMCompiler
@@ -218,21 +220,15 @@ class DatasetModelRegistry:
             )
 
         elif framework == "torch":
-            import dill
-
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            onnx_model_path = get_tmp_path(suffix=".onnx")
-            model_path = get_tmp_path(suffix=".pth")
-
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-            onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
-            onnx_compiler.init()
-            onnx_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
+            dataset = get_dataset_random_mock(
+                PetDataset, PyTorchPetDatasetMobileNetV2
             )
-
-            torch_model = onnx2torch.convert(onnx_model_path)
-            torch_save(torch_model, model_path, pickle_module=dill)
+            model_path = copy_model_to_tmp(
+                ResourceURI(PyTorchPetDatasetMobileNetV2.pretrained_model_uri)
+            )
+            model = PyTorchPetDatasetMobileNetV2(
+                model_path, dataset, from_file=True
+            )
 
         elif framework == "executorch":
             from kenning.optimizers.executorch import ExecuTorchOptimizer

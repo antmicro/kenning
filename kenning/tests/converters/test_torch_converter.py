@@ -43,7 +43,7 @@ def test_to_onnx(dummy_torch_model):
 
     assert model is not None
     assert len(model.graph.node) > 0
-    assert model.graph.output[0].name == "out_layer"
+    assert model.graph.output[0].name == "548"
 
 
 class _DummyYamlWriter:

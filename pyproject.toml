@@ -155,6 +155,7 @@ reports = [
     "kenning[docs]",
     "Jinja2>=2.11.2",
     "servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis.git",
+    "bs4",
 ]
 uart = [
     "pyserial",

@@ -256,7 +256,7 @@ class ExecuTorchOptimizer(Optimizer):
         self.model = converter_registry.convert(
             input_model_path,
             input_type,
-            "torch",
+            "executorch",
             **conversion_kwargs,
         )
 

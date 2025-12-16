@@ -27,10 +27,10 @@ class ConverterRegistry(metaclass=Singleton):
     Registry for model converters.
 
     Available conversions between formats
-    are stored in graph, which stores
+    are stored in a graph, which stores
     Nodes with supported formats,
     each node points to other nodes
-    describing available posibbilties
+    describing available possibilities
     in formats conversions.
 
     """
@@ -41,6 +41,26 @@ class ConverterRegistry(metaclass=Singleton):
         """
         self._converters: Dict[str, ModelConverter] = {}
         self._graph: Dict[str, List[str]] = {}
+        self._format_aliases: Dict[str, str] = {}
+
+    def add_alias(self, alias: str, canonical_format: str) -> None:
+        """
+        Register an alias for a model format.
+
+        Parameters
+        ----------
+        alias : str
+            The alias name.
+        canonical_format : str
+            The existing format name in the graph.
+        """
+        self._format_aliases[alias] = canonical_format
+
+    def _resolve_format(self, fmt: str) -> str:
+        """
+        Resolve a format name to its canonical form if an alias exists.
+        """
+        return self._format_aliases.get(fmt, fmt)
 
     def register(self, converter_cls: ModelConverter) -> None:
         """
@@ -112,6 +132,9 @@ class ConverterRegistry(metaclass=Singleton):
         List[List[str]]
             List of all valid conversion paths sorted by length.
         """
+        src_format = self._resolve_format(src_format)
+        dst_format = self._resolve_format(dst_format)
+
         if src_format not in self._graph or dst_format not in self._graph:
             return []
 
@@ -144,7 +167,7 @@ class ConverterRegistry(metaclass=Singleton):
 
         Parameters
         ----------
-        model : Union[PathOrURI,Any]
+        model : Union[PathOrURI, Any]
             Path or identifier to the source model or model instance.
         src_format : str
             Source format name.
@@ -163,13 +186,16 @@ class ConverterRegistry(metaclass=Singleton):
         ConversionError
             If no conversion path exists or all paths fail.
         """
+        real_src = self._resolve_format(src_format)
+        real_dst = self._resolve_format(dst_format)
+
         all_paths = self.find_all_paths(src_format, dst_format)
 
         if not all_paths:
             raise ConversionError(
-                f"No conversion path from {src_format} to {dst_format}"
+                f"No conversion path from {src_format} ({real_src}) "
+                f"to {dst_format} ({real_dst})"
             )
-
         last_error = None
 
         current_model = (
@@ -180,7 +206,8 @@ class ConverterRegistry(metaclass=Singleton):
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")
 
-            current_format = src_format
+            current_model = None
+            current_format = real_src
 
             try:
                 for next_format in path:

@@ -177,7 +177,7 @@ class IREECompiler(Optimizer):
         # (that's because IREE TensorFlow workflow, as of version 3.6.0 is
         # highly unstable, so trying to compile directly does not work).
         onnx_model = converter_registry.convert(
-            input_model_path, input_type, "onnx", **conversion_kwargs
+            input_model_path, input_type, "iree", **conversion_kwargs
         )
 
         intermediate_onnx_model_path = self.compiled_model_path.with_suffix(

@@ -10,7 +10,7 @@ Module used for Automl report generation stage.
 from collections import defaultdict
 from importlib.resources import path
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 from matplotlib.colors import to_hex
@@ -31,6 +31,7 @@ def automl_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
+    **kwargs: Any,
 ) -> str:
     """
     Creates summary of AutoML process, containing overview
@@ -52,6 +53,8 @@ def automl_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    **kwargs: Any
+        Additional arguments (not used here).
 
     Returns
     -------

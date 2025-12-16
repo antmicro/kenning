@@ -32,6 +32,7 @@ def detection_report(
     cmap: Optional[Any] = None,
     colors: Optional[List] = None,
     draw_titles: bool = True,
+    **kwargs: Any,
 ) -> str:
     """
     Creates detection quality section of the report.
@@ -57,6 +58,8 @@ def detection_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    **kwargs: Any
+        Additional arguments (not used here).
 
     Returns
     -------

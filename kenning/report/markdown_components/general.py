@@ -74,6 +74,7 @@ def generate_html_report(
     report_path: Path,
     output_folder: Path,
     debug: bool = False,
+    html_title: Optional[str] = None,
     override_conf: Optional[Dict] = None,
 ):
     """
@@ -87,6 +88,8 @@ def generate_html_report(
         Where generated HTML report should be saved
     debug : bool
         Debug mode -- allows to print more information
+    html_title: Optional[str]
+        Page title for the generated HTML report
     override_conf : Optional[Dict]
         Custom configuration of Sphinx app
     """
@@ -108,6 +111,8 @@ def generate_html_report(
             "html_theme_options.pdf_url": [],
             # Warning about using h2 header
             "suppress_warnings": ["myst.header"],
+            # Setting a useful HTML title
+            "html_title": html_title if html_title else "Kenning Report",
         }
         app = None
         try:

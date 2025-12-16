@@ -213,7 +213,9 @@ class Report(ArgumentsHandler, ABC):
 
     @staticmethod
     def deduce_report_name(
-        measurements_data: List[Dict], report_types: List[str]
+        measurements_data: List[Dict],
+        report_types: List[str],
+        cfg_name: Optional[str] = None,
     ) -> str:
         """
         Deduces simple report name based on measurements and its type.
@@ -225,6 +227,9 @@ class Report(ArgumentsHandler, ABC):
             will be generated.
         report_types : List[str]
             List with types of report.
+        cfg_name: Optional[str]
+            Name of the config file used to generate the report. Set to None if
+            no config file was used.
 
         Returns
         -------
@@ -252,6 +257,8 @@ class Report(ArgumentsHandler, ABC):
                 f"{measurements_data[0]['model_name']}"
             )
         report_name = report_name[0].upper() + report_name[1:]
+        if cfg_name is not None:
+            report_name = report_name + f", generated with {cfg_name}"
 
         KLogger.info(f"Report name: {report_name}")
         return report_name

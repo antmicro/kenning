@@ -413,13 +413,20 @@ class MarkdownReport(Report):
                 automl_stats_file=self.automl_stats,
             )
 
+        self.cfg_name = None
+        if "cfg_path" in self.measurementsdata[0]:
+            self.cfg_name = self.measurementsdata[0]["cfg_path"].rsplit(
+                "/", 1
+            )[-1]
+            if len(self.cfg_name) == 0:
+                self.cfg_name = None
+
         if self.report_name is None and len(self.measurementsdata) > 0:
             self.report_name = Report.deduce_report_name(
-                self.measurementsdata, self._report_types
+                self.measurementsdata, self._report_types, self.cfg_name
             )
 
         # Fill missing colors with ones generated from nipy_spectral
-
         self.colors = KENNING_COLORS
 
         if len(self.measurementsdata) > len(self.colors):
@@ -456,5 +463,8 @@ class MarkdownReport(Report):
 
         if self.to_html:
             generate_html_report(
-                self.report_path, self.to_html, KLogger.level == "DEBUG"
+                self.report_path,
+                self.to_html,
+                KLogger.level == "DEBUG",
+                f"{self.cfg_name} - Kenning Report" if self.cfg_name else None,
             )

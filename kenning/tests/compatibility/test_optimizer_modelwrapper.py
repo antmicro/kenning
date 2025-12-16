@@ -255,7 +255,10 @@ def prepare_objects(
         compiled_model_path_suffix = ".bin"
 
     dataset_cls = model_cls.default_dataset
-    dataset = get_dataset_random_mock(dataset_cls, model_cls)
+    try:
+        dataset = get_dataset_random_mock(dataset_cls, model_cls)
+    except NotImplementedError:
+        dataset = None
     model = create_model(model_cls, dataset)
     if platform is not None:
         model.read_platform(platform)

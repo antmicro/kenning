@@ -4,7 +4,7 @@
 
 import os
 from pathlib import Path
-from typing import Type
+from typing import Optional, Type
 from unittest.mock import patch
 
 import pytest
@@ -86,7 +86,7 @@ def ensure_types_native_or_numpy(X):
         )
 
 
-def create_model(model_cls: Type[ModelWrapper], dataset: Dataset):
+def create_model(model_cls: Type[ModelWrapper], dataset: Optional[Dataset]):
     if model_cls.pretrained_model_uri is not None:
         model_path = copy_model_to_tmp(
             ResourceURI(model_cls.pretrained_model_uri)

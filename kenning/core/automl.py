@@ -29,7 +29,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     InvalidArgumentsError,
     InvalidSchemaError,
-    KenningOptimizerError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
@@ -632,8 +631,6 @@ class AutoML(ArgumentsHandler, ABC):
                     )
                     if not is_compatible:
                         return CompatibilityStatus.FAILED_CHECK, None
-                except KenningOptimizerError:
-                    return CompatibilityStatus.FAILED_CHECK, None
                 finally:
                     for opt in self.optimizers:
                         opt.model_wrapper = None

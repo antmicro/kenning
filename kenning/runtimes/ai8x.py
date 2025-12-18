@@ -76,7 +76,11 @@ class Ai8xRuntime(Runtime):
     def extract_output(self) -> List[np.ndarray]:
         ...
 
-    def run_compatibility_checks(self, platform: Platform) -> bool:
+    def run_compatibility_checks(
+        self,
+        platform: Platform,
+        total_app_size: float,
+    ) -> bool:
         if "max78000" in platform.name:
             return True
         if "max78002" in platform.name:

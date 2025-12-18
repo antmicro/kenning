@@ -72,7 +72,9 @@ def protocol_mock():
 
 @pytest.fixture
 def runtime_mock():
-    return Mock(spec=Runtime)
+    mock = Mock(spec=Runtime)
+    mock.get_available_ram.return_value = None
+    return mock
 
 
 @pytest.fixture

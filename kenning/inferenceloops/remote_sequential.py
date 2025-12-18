@@ -57,7 +57,9 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
             if not spec_path.exists():
                 KLogger.error("No Input/Output specification found")
                 raise FileNotFoundError("IO specification not found")
-            if (ram_kb := getattr(self._platform, "ram_size_kb", None)) and (
+            if (
+                ram_kb := self._runtime.get_available_ram(self._platform)
+            ) and (
                 (model_kb := self._model_path.stat().st_size // 1024) > ram_kb
             ):
                 KLogger.error(

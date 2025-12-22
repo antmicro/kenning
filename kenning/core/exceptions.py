@@ -438,3 +438,14 @@ class ConverterAlreadyPresent(ConfigurationError):
     Raised when attempting to register converter which
     is already registered.
     """
+
+
+"""
+Errors connected to report generation.
+"""
+
+
+class KenningReportError(KenningError):
+    """
+    Generic error in the Report module (module generating Kenning reports).
+    """

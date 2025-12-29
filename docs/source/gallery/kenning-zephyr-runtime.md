@@ -38,7 +38,7 @@ Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, a
 source .venv/bin/activate
 ```
 
-Finally, prepare additional modules:
+Finally, prepare additional Zephyr modules:
 
 ```bash
 ./scripts/prepare_modules.sh
@@ -116,8 +116,42 @@ kenning report \
       build/zephyr-stm32-tflite-magic-wand.json \
       build/zephyr-stm32-tvm-magic-wand.json \
     --report-path build/zephyr-stm32-tflite-tvm-comparison.md \
-    --report-types renode_stats performance classification \
     --to-html
 ```
 
 The HTML version of the report should be saved at `build/zephyr-stm32-tflite-tvm-comparison/zephyr-stm32-tflite-tvm-comparison.html`.
+
+## Collecting ML-aware traces using Zephelin and generating a trace report
+
+Kenning is integrated with Zephelin - a tool for ML-aware tracing of Zephyr applications.
+This integration allows for seamless tracing of models tested in Kenning Zephyr Runtime.
+As an example, we will collect traces using GDB during inference of Magic Wand model with microTVM on `stm32f746g_disco`.
+
+First, build Kenning Zephyr Runtime with Zephelin configured for GDB tracing:
+
+```bash
+west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_gdb.conf"
+west build -t board-repl
+```
+
+Second, install Zephelin's Python dependencies and the [GDB debugger](https://www.sourceware.org/gdb/) with support for multiple architectures:
+
+```bash
+pip install -r ../zephelin/requirements.txt
+apt install -y gdb-multiarch
+```
+
+Then run optimization, inference and report generation:
+
+```bash
+kenning optimize test report \
+    --cfg kenning-scenarios/renode-zephyr-zephelin-gdb-tvm-magic-wand.yml \
+    --measurements build/zephelin-zephyr-stm32-tvm-magic-wand.json --verbosity INFO \
+    --report-path build/zephelin-zephyr-stm32-tvm.md \
+    --to-html
+```
+
+:::{note}
+Platform parameter `enable_zephelin` needs to be set to `true` (as you can see inside the `kenning-scenarios/zephelin-renode-zephyr-tvm-magic-wand-inference.yml` file),
+to enable automatic trace collection by Kenning. For manual trace collection, please refer to [Zephelin documentation](https://antmicro.github.io/zephelin/).
+:::

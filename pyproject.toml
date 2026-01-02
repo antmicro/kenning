@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "kenning"
 version = "0.8.0"
 description = "Kenning - a framework for implementing and testing deployment pipelines for deep learning applications on edge devices"
-requires-python = ">= 3.10,<3.12"
+requires-python = ">= 3.10,<3.13"
 authors = [
     {name = "Antmicro Ltd.", email = "contact@antmicro.com"},
 ]
@@ -41,7 +41,6 @@ dependencies = [
     "scipy<1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
-    "kenning[onnx2tf]",
     "polars",
 ]
 

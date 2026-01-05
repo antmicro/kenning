@@ -1,0 +1,23 @@
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: ./build/PetDataset
+    image_memory_layout: NCHW
+model_wrapper:
+  type: TinygradImageNet
+  parameters:
+    model_path: kenning:///models/classification/tinygrad_pet_dataset_resnet50.safetensors
+    model_file: kenning/modelwrappers/frameworks/helpers/tinygrad_pet_dataset_impl.py
+    model_cls: TinyPetModel
+    input_shape: [1, 3, 224, 224]
+    num_classes: 37
+optimizers:
+- type: TinygradOptimizer
+  parameters:
+    compiled_model_path: ./build/compiled_model.tar
+runtime:
+  type: TinygradRuntime
+  parameters:
+    beam_count: 2
+    jit_optimize: true
+    save_model_path: ./build/compiled_model.tar

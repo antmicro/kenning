@@ -146,7 +146,9 @@ class Report(ArgumentsHandler, ABC):
         return str(filepath).replace("/", ".")
 
     @staticmethod
-    def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
+    def deduce_report_types(
+        measurements_data: List[Dict], measurementspath: Path
+    ) -> List[str]:
         """
         Deduces what type of report should be generated
         based on measurements data.
@@ -159,6 +161,8 @@ class Report(ArgumentsHandler, ABC):
         measurements_data : List[Dict]
             List with measurements data from which the
             report will be generated.
+        measurementspath: Path
+            Path to the measurements data file.
 
         Returns
         -------
@@ -200,6 +204,15 @@ class Report(ArgumentsHandler, ABC):
         )
         _append_type_if(
             ReportTypes.LLM_PERFORMANCE, lambda data: "tokens" in data
+        )
+        from kenning.utils.zpl_suffix import ZplSuffix
+
+        _append_type_if(
+            ReportTypes.ZEPHYR_TRACES,
+            lambda data: measurementspath is not None
+            and ZplSuffix.TRACE_JSON._get_path_with_suffix(
+                Path(measurementspath)
+            ).is_file(),
         )
 
         if len(report_types) == 0:
@@ -336,9 +349,10 @@ class Report(ArgumentsHandler, ABC):
                 measurementsdata.append(unoptimized)
             measurementsdata.append(measurements)
 
-        report_types = report_types
         if not report_types:
-            report_types = cls.deduce_report_types(measurementsdata)
+            report_types = cls.deduce_report_types(
+                measurementsdata, measurementspath
+            )
         if report_types is None:
             raise ArgumentError(
                 None,

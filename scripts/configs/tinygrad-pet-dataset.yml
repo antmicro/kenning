@@ -8,7 +8,7 @@ model_wrapper:
   parameters:
     model_path: kenning:///models/classification/tinygrad_pet_dataset_resnet50.safetensors
     model_file: kenning/modelwrappers/frameworks/helpers/tinygrad_pet_dataset_impl.py
-    model_cls: TinyPetModel
+    model_cls: ResNetWithClassifier
     input_shape: [1, 3, 224, 224]
     num_classes: 37
 optimizers:

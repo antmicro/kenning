@@ -10,9 +10,6 @@ import random
 
 import numpy as np
 from PIL import Image
-import torch
-
-import tinygrad.nn as nn
 from tinygrad import Tensor, dtypes
 from tinygrad.engine.jit import TinyJit
 from tinygrad.helpers import CI, fetch, get_child, trange
@@ -25,9 +22,6 @@ from tinygrad.nn.state import (
     torch_load,
 )
 
-
-def make_divisible(v, divisor=8):
-    return int((v + divisor / 2) // divisor * divisor)
 
 def train(
     model,
@@ -127,200 +121,348 @@ def evaluate(
     return (acc, preds) if return_predict else acc
 
 
-class InvertedResidual:
-    def __init__(self, inp, oup, stride, expand_ratio):
-        self.stride = stride
-        hidden_dim = int(round(inp * expand_ratio))
-        self.use_res_connect = self.stride == 1 and inp == oup
+class ComposeTransforms:
+    """Compose multiple transforms into a single callable."""
 
-        layers = []
-        if expand_ratio != 1:
-            layers.append(Conv2d(inp, hidden_dim, kernel_size=1, bias=False))
-            layers.append(BatchNorm2d(hidden_dim))
-            layers.append(Tensor.relu6)
-
-        layers.extend(
-            [
-                Conv2d(
-                    hidden_dim,
-                    hidden_dim,
-                    kernel_size=3,
-                    stride=stride,
-                    padding=1,
-                    groups=hidden_dim,
-                    bias=False,
-                ),
-                BatchNorm2d(hidden_dim),
-                Tensor.relu6,
-                Conv2d(
-                    hidden_dim,
-                    oup,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    bias=False,
-                ),
-                BatchNorm2d(oup),
-            ]
-        )
-        self.conv = layers
+    def __init__(self, trans):
+        self.trans = trans
 
     def __call__(self, x):
-        res = x
-        for layer in self.conv:
-            x = layer(x) if callable(layer) else x
-        return res + x if self.use_res_connect else x
+        for t in self.trans:
+            x = t(x)
+        return x
 
 
-class TinyPetModel:
-    def __init__(self, num_classes=37):
-        self.stats = [
-            [1, 16, 1, 1],
-            [6, 24, 2, 2],
-            [6, 32, 3, 2],
-            [6, 64, 4, 2],
-            [6, 96, 3, 1],
-            [6, 160, 3, 2],
-            [6, 320, 1, 1],
-        ]
+class BasicBlock:
+    """ResNet basic residual block."""
 
-        width_mult = 1.0
-        round_nearest = 8
+    expansion = 1
 
-        input_channel = make_divisible(32 * width_mult, round_nearest)
-        last_channel = make_divisible(
-            1280 * max(1.0, width_mult), round_nearest
+    def __init__(self, in_planes, planes, stride=1, groups=1, base_width=64):
+        assert (
+            groups == 1 and base_width == 64
+        ), "BasicBlock only supports groups=1 and base_width=64"
+
+        self.conv1 = Conv2d(
+            in_planes,
+            planes,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
+        )
+        self.bn1 = BatchNorm(planes)
+        self.conv2 = Conv2d(
+            planes,
+            planes,
+            kernel_size=3,
+            padding=1,
+            bias=False,
+        )
+        self.bn2 = BatchNorm(planes)
+        self.downsample = []
+
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.downsample = [
+                Conv2d(
+                    in_planes,
+                    self.expansion * planes,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
+                BatchNorm(self.expansion * planes),
+            ]
+
+    def __call__(self, x):
+        out = self.bn1(self.conv1(x)).relu()
+        out = self.bn2(self.conv2(out))
+        out = out + x.sequential(self.downsample)
+        return out.relu()
+
+
+class Bottleneck:
+    """ResNet bottleneck block."""
+
+    expansion = 4
+
+    def __init__(
+        self,
+        in_planes,
+        planes,
+        stride=1,
+        stride_in_1x1=False,
+        groups=1,
+        base_width=64,
+    ):
+        width = int(planes * (base_width / 64.0)) * groups
+
+        self.conv1 = Conv2d(
+            in_planes,
+            width,
+            kernel_size=1,
+            stride=stride if stride_in_1x1 else 1,
+            bias=False,
+        )
+        self.bn1 = BatchNorm(width)
+        self.conv2 = Conv2d(
+            width,
+            width,
+            kernel_size=3,
+            padding=1,
+            stride=1 if stride_in_1x1 else stride,
+            groups=groups,
+            bias=False,
+        )
+        self.bn2 = BatchNorm(width)
+        self.conv3 = Conv2d(
+            width,
+            self.expansion * planes,
+            kernel_size=1,
+            bias=False,
+        )
+        self.bn3 = BatchNorm(self.expansion * planes)
+
+        self.downsample = []
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.downsample = [
+                Conv2d(
+                    in_planes,
+                    self.expansion * planes,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
+                BatchNorm(self.expansion * planes),
+            ]
+
+    def __call__(self, x):
+        out = self.bn1(self.conv1(x)).relu()
+        out = self.bn2(self.conv2(out)).relu()
+        out = self.bn3(self.conv3(out))
+        out = out + x.sequential(self.downsample)
+        return out.relu()
+
+
+class ResNet:
+    """ResNet backbone implementation."""
+
+    def __init__(
+        self,
+        num,
+        num_classes=None,
+        groups=1,
+        width_per_group=64,
+        stride_in_1x1=False,
+    ):
+        self.num = num
+        self.block = {
+            18: BasicBlock,
+            34: BasicBlock,
+            50: Bottleneck,
+            101: Bottleneck,
+            152: Bottleneck,
+        }[num]
+
+        self.num_blocks = {
+            18: [2, 2, 2, 2],
+            34: [3, 4, 6, 3],
+            50: [3, 4, 6, 3],
+            101: [3, 4, 23, 3],
+            152: [3, 8, 36, 3],
+        }[num]
+
+        self.in_planes = 64
+        self.groups = groups
+        self.base_width = width_per_group
+
+        self.conv1 = Conv2d(
+            3,
+            64,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
+        )
+        self.bn1 = BatchNorm(64)
+
+        self.layer1 = self._make_layer(
+            self.block,
+            64,
+            self.num_blocks[0],
+            stride=1,
+            stride_in_1x1=stride_in_1x1,
+        )
+        self.layer2 = self._make_layer(
+            self.block,
+            128,
+            self.num_blocks[1],
+            stride=2,
+            stride_in_1x1=stride_in_1x1,
+        )
+        self.layer3 = self._make_layer(
+            self.block,
+            256,
+            self.num_blocks[2],
+            stride=2,
+            stride_in_1x1=stride_in_1x1,
+        )
+        self.layer4 = self._make_layer(
+            self.block,
+            512,
+            self.num_blocks[3],
+            stride=2,
+            stride_in_1x1=stride_in_1x1,
         )
 
-        self.features = [
-            Conv2d(
-                3,
-                input_channel,
-                kernel_size=3,
-                stride=2,
-                padding=1,
-                bias=False,
-            ),
-            BatchNorm2d(input_channel),
-            Tensor.relu6,
-        ]
+        self.fc = (
+            Linear(512 * self.block.expansion, num_classes)
+            if num_classes is not None
+            else None
+        )
 
-        for t, c, n, s in self.stats:
-            output_channel = make_divisible(c * width_mult, round_nearest)
-            for i in range(n):
-                stride = s if i == 0 else 1
-                self.features.append(
-                    InvertedResidual(
-                        input_channel, output_channel, stride, expand_ratio=t
+    def _make_layer(self, block, planes, num_blocks, stride, stride_in_1x1):
+        strides = [stride] + [1] * (num_blocks - 1)
+        layers = []
+        for s in strides:
+            if block == Bottleneck:
+                layers.append(
+                    block(
+                        self.in_planes,
+                        planes,
+                        s,
+                        stride_in_1x1,
+                        self.groups,
+                        self.base_width,
                     )
                 )
-                input_channel = output_channel
-
-        self.features.extend(
-            [
-                Conv2d(input_channel, last_channel, kernel_size=1, bias=False),
-                BatchNorm2d(last_channel),
-                Tensor.relu6,
-            ]
-        )
-
-        self.classifier = Linear(last_channel, num_classes)
+            else:
+                layers.append(
+                    block(
+                        self.in_planes,
+                        planes,
+                        s,
+                        self.groups,
+                        self.base_width,
+                    )
+                )
+            self.in_planes = planes * block.expansion
+        return layers
 
     def forward(self, x):
-        for layer in self.features:
-            x = layer(x)
+        feature_only = self.fc is None
+        features = [] if feature_only else None
 
+        out = self.bn1(self.conv1(x)).relu()
+        out = out.pad([1, 1, 1, 1]).max_pool2d((3, 3), 2)
+
+        for layer in [self.layer1, self.layer2, self.layer3, self.layer4]:
+            out = out.sequential(layer)
+            if feature_only:
+                features.append(out)
+
+        if feature_only:
+            return features
+
+        out = out.mean([2, 3])
+        return self.fc(out.cast(dtypes.float32))
+
+    def __call__(self, x):
+        return self.forward(x)
+
+    def load_from_pretrained(self):
+        """Load pretrained PyTorch ResNet weights."""
+        model_urls = {
+            (18, 1, 64): (
+                "https://download.pytorch.org/models/" "resnet18-5c106cde.pth"
+            ),
+            (34, 1, 64): (
+                "https://download.pytorch.org/models/" "resnet34-333f7ec4.pth"
+            ),
+            (50, 1, 64): (
+                "https://download.pytorch.org/models/" "resnet50-19c8e357.pth"
+            ),
+            (50, 32, 4): (
+                "https://download.pytorch.org/models/"
+                "resnext50_32x4d-7cdf4587.pth"
+            ),
+            (101, 1, 64): (
+                "https://download.pytorch.org/models/" "resnet101-5d3b4d8f.pth"
+            ),
+            (152, 1, 64): (
+                "https://download.pytorch.org/models/" "resnet152-b121ed2d.pth"
+            ),
+        }
+
+        self.url = model_urls[(self.num, self.groups, self.base_width)]
+        for k, dat in torch_load(fetch(self.url)).items():
+            try:
+                obj = get_child(self, k)
+            except AttributeError:
+                if "fc." in k and self.fc is None:
+                    continue
+                raise
+
+            if "fc." in k and obj.shape != dat.shape:
+                continue
+
+            if "bn" not in k and "downsample" not in k:
+                assert obj.shape == dat.shape
+
+            obj.assign(dat.to(obj.device).reshape(obj.shape))
+
+
+class GlobalAvgPool2d:
+    """Global average pooling."""
+
+    def forward(self, x):
         x = x.mean(axis=(2, 3), keepdim=True)
-        x = x.reshape(x.shape[0], -1)
+        return x.reshape(x.shape[0], -1)
 
-        return self.classifier(x)
+    def __call__(self, x):
+        return self.forward(x)
+
+
+class ResNetWithClassifier(ResNet):
+    """ResNet backbone with a multi-layer classifier head."""
+
+    def __init__(
+        self,
+        num=50,
+        num_classes=37,
+        groups=1,
+        width_per_group=64,
+        stride_in_1x1=False,
+    ):
+        super().__init__(
+            num,
+            num_classes=None,
+            groups=groups,
+            width_per_group=width_per_group,
+            stride_in_1x1=stride_in_1x1,
+        )
+
+        self.avgpool = GlobalAvgPool2d()
+        self.finallayer1 = Linear(512 * self.block.expansion, 1024)
+        self.finallayer2 = Linear(1024, 512)
+        self.finallayer3 = Linear(512, 128)
+        self.finaloutput = Linear(128, num_classes)
 
     def __call__(self, x: Tensor) -> Tensor:
         return self.forward(x)
 
-    def _initialize_weights(self):
-        for p in get_parameters(self):
-            if len(p.shape) > 1:
-                # fan_in calculation
-                if len(p.shape) == 2:
-                    fan_in = p.shape[1]
-                else:
-                    fan_in = np.prod(p.shape[1:])
+    def forward(self, x: Tensor) -> Tensor:
+        x = super().forward(x)
+        x = self.avgpool(x[-1])
+        x = self.finallayer1(x)
+        x = x.relu()
+        x = self.finallayer2(x)
+        x = x.relu()
+        x = self.finallayer3(x)
+        x = x.relu()
+        x = self.finaloutput(x)  # Shape becomes (batch_size, num_classes)
 
-                std = float(np.sqrt(2.0 / fan_in))
-
-                p.assign(Tensor.randn(*p.shape) * std)
-
-    def load_from_local_pth(self, path="mobilenet_v2.pth"):
-        print(f"Loading weights from local file: {path}")
-
-        for k, v in torch_load(path).items():
-            try:
-                obj: Tensor = get_child(self, k)
-                obj.assign(v.to(obj.device).reshape(obj.shape))
-            except (AttributeError, IndexError):
-                continue
-
-    def load_from_pretrained(self):
-        url = "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth"
-        data = fetch(url)
-        pt_state = torch.load(data, map_location="cpu")
-
-        if "state_dict" in pt_state:
-            pt_state = pt_state["state_dict"]
-
-        tg_params = get_state_dict(self)
-        for k, _ in tg_params.items():
-            print(k)
-        loaded, skipped = 0, 0
-
-        for k, v in pt_state.items():
-            if not isinstance(v, torch.Tensor):
-                continue
-
-            tg_key = k
-
-            if tg_key.startswith("features."):
-                parts = tg_key.split(".")
-
-                if len(parts) > 2 and parts[2] == "conv":
-                    feature_idx = int(parts[1])
-                    conv_layer_idx = int(parts[3])
-                    
-                    if len(parts) > 3 and parts[4] == "0":
-                        tg_key = tg_key.replace(f"features.{feature_idx}.conv.{conv_layer_idx}.0", 
-                                                f"features.{feature_idx}.conv.{conv_layer_idx}")
-                    print("fixed!")
-
-            if tg_key.startswith("classifier"):
-                continue
-
-            if "num_batches_tracked" in tg_key:
-                skipped += 1
-                continue
-
-            if "running_mean" in tg_key or "running_var" in tg_key:
-                skipped += 1
-                continue
-
-            if tg_key not in tg_params:
-                skipped += 1
-                print(f"Skipped: {tg_key}")
-                continue
-
-            tg_tensor = tg_params[tg_key]
-
-            if tg_tensor.shape != tuple(v.shape):
-                skipped += 1
-                print(f"Shape mismatch: {tg_key}")
-                continue
-
-            tg_tensor.assign(Tensor(v.numpy()).to(tg_tensor.device))
-            loaded += 1
-            print(f"Loaded: {tg_key}")
-
-        print(f"[pretrained] loaded {loaded}, skipped {skipped}")
-
+        return x
 
 def fetch_pet_dataset(img_dir, anno_path):
     """Load image paths and labels from the Pet Dataset."""
@@ -336,24 +478,6 @@ def fetch_pet_dataset(img_dir, anno_path):
                 labels.append(int(class_id) - 1)
     return np.array(images), np.array(labels)
 
-class ComposeTransforms:
-    def __init__(self, trans):
-        self.trans = trans
-
-    def __call__(self, x):
-        for t in self.trans:
-            x = t(x)
-        return x
-
-def random_resized_crop(img, size=224, scale=(0.9, 1.0)):
-    w, h = img.size
-    s = random.uniform(*scale)
-    new_w, new_h = int(w * s), int(h * s)
-    left = random.randint(0, w - new_w)
-    top = random.randint(0, h - new_h)
-    img = img.crop((left, top, left + new_w, top + new_h))
-    return img.resize((size, size))
-
 
 def random_hflip(img, p=0.5):
     """Randomly horizontally flip an image."""
@@ -363,10 +487,11 @@ def random_hflip(img, p=0.5):
 
 
 def color_jitter(img, b=0.05, c=0.05):
+    """Apply brightness and contrast jitter."""
     img = np.asarray(img).astype(np.float32)
-    img = img * (1 + random.uniform(-b, b))      # brightness
-    mean = img.mean(axis=(0,1), keepdims=True)
-    img = (img - mean) * (1 + random.uniform(-c, c)) + mean  # contrast
+    img *= 1 + random.uniform(-b, b)
+    mean = img.mean(axis=(0, 1), keepdims=True)
+    img = (img - mean) * (1 + random.uniform(-c, c)) + mean
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
 
 
@@ -374,7 +499,6 @@ if __name__ == "__main__":
     Tensor.default_device = "CUDA"
     mean = np.array([0.485, 0.456, 0.406], dtype="float32")
     std = np.array([0.229, 0.224, 0.225], dtype="float32")
-
     mean = mean.reshape(1, 1, 1, 3)
     std = std.reshape(1, 1, 1, 3)
     transform = ComposeTransforms(
@@ -382,10 +506,7 @@ if __name__ == "__main__":
             lambda x: [
                 color_jitter(
                     random_hflip(
-                        random_resized_crop(
-                            Image.open(xx).convert("RGB").resize((256, 256)),
-                            size=224
-                        )
+                        Image.open(xx).convert("RGB").resize((224, 224)),
                     )
                 )
                 for xx in x
@@ -408,7 +529,6 @@ if __name__ == "__main__":
             lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
         ]
     )
-
     img_dir = "build/PetDataset/images"
     X_train, Y_train = fetch_pet_dataset(
         img_dir,
@@ -419,48 +539,28 @@ if __name__ == "__main__":
         "build/PetDataset/annotations/test.txt",
     )
 
-    classes = 37
-    model = TinyPetModel(num_classes=classes)
-
-    model._initialize_weights()
+    model = ResNetWithClassifier(num=50, num_classes=37)
     model.load_from_pretrained()
+    from tinygrad import Context, GlobalCounters, TinyJit
+    optimizer = optim.Adam(get_parameters(model), lr=0.0001)
+    for _ in range(50):
+        losses, accs = train(
+            model,
+            X_train,
+            Y_train,
+            optimizer,
+            steps=100,
+            transform=transform,
+        )
 
-    lr = 0.001
-    optimizer = optim.Adam(get_parameters(model), lr=lr)
-    TARGET_ACC = 0.95
-    MAX_EPOCHS = 50
+        train_acc = float(np.mean(accs[-10:]))
+        print(f"Epoch {epoch}: train acc = {train_acc:.3f}")
 
-    epoch = 0
-    train_acc = 0.0
-
-    try:
-        while train_acc < TARGET_ACC and epoch < MAX_EPOCHS:
-            losses, accs = train(
-                model,
-                X_train,
-                Y_train,
-                optimizer,
-                steps=100,
-                transform=transform
-            )
-
-            train_acc = float(np.mean(accs[-10:]))
-            print(f"Epoch {epoch}: train acc = {train_acc:.3f}")
-
-            test_acc = evaluate(
-                model,
-                X_test,
-                Y_test,
-                num_classes=classes,
-                transform=test_transform
-            )
-
-            optimizer.lr /= 1.4
-            epoch += 1
-    except KeyboardInterrupt:
-        print("\nTraining interrupted by user!")
-    finally:
-        state_dict = get_state_dict(model)
-        safe_save(state_dict, "model.safetensors")
-        print("Saved to model.safetensors")
-
+        test_acc = evaluate(
+            model,
+            X_test,
+            Y_test,
+            num_classes=classes,
+            transform=test_transform,
+        )
+        print(f"Epoch {epoch}: test acc = {test_acc:.3f}")

@@ -278,12 +278,6 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "type": Path,
             "default": Path(".west-venv"),
         },
-        "zephyr_base": {
-            "description": "Path to the Zephyr base",
-            "type": Path,
-            "default": None,
-            "nullable": True,
-        },
         "extra_targets": {
             "description": "Extra targets to be built",
             "type": list[str],
@@ -323,7 +317,6 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         application_dir: Path = Path("app"),
         build_dir: Path = Path("build"),
         venv_dir: Path = Path(".west-venv"),
-        zephyr_base: Optional[Path] = None,
         extra_targets: List[str] = [],
         extra_build_args: List[str] = [],
         use_llext: bool = False,
@@ -349,8 +342,6 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             Path to the project's build directory.
         venv_dir : Path
             Virtual environment for West
-        zephyr_base : Optional[Path]
-            Path to the Zephyr base.
         extra_targets : List[str]
             Extra targets to be built.
         extra_build_args : List[str]
@@ -389,18 +380,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.extra_targets = extra_targets
         self.extra_build_args = extra_build_args
         self.use_llext = use_llext
+        self.use_zephelin = False
 
-        self._westrun = WestRun(self.workspace, zephyr_base, self.venv_dir)
-
-        if not self._westrun.has_zephyr_base():
-            self._westrun.init()
-
-        if run_west_update:
-            self._westrun.update()
-            KLogger.info(f"Updated Zephyr workspace in '{self.workspace}'")
-
-            self._prepare_modules()
-            KLogger.info("Prepared modules")
+        self.run_west_update = run_west_update
 
     def build(self) -> Optional[Path]:
         output_files = {}
@@ -432,6 +414,18 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             extra_conf_file = (
                 f"{extra_conf_file};{board_specific_conf.resolve()}"
             )
+
+        # attach zpl.conf from kenning zepyhr runtime
+        if self.use_zephelin:
+            zpl_conf_file = self.workspace / "zpl.conf"
+
+            KLogger.info(f"Adding Zephelin config {zpl_conf_file}")
+            extra_conf_file = f"{extra_conf_file};{zpl_conf_file.resolve()}"
+
+            zpl_gdb_conf = self.workspace / "app" / "zpl_gdb.conf"
+
+            KLogger.info(f"Adding Zephelin gdb config {zpl_gdb_conf}")
+            extra_conf_file = f"{extra_conf_file};{zpl_gdb_conf.resolve()}"
 
         extra_build_args = [
             f"-DMODULE_EXT_ROOT={self.workspace}",
@@ -515,12 +509,34 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def read_platform(self, platform: Platform):
         if type(platform).__name__ == "ZephyrPlatform":
             platform.zephyr_build_path = self.output_path
+            self.use_zephelin = platform.enable_zephelin_gdb
+
+            if self.use_zephelin:
+                self.allowed_frameworks = ["tflite", "tvm"]
+
             KLogger.info(
                 "Set platform Zephyr build path to "
                 f"{platform.zephyr_build_path}"
             )
             self.board = platform.name
-            KLogger.info(f"Set runtime builder board to {self.board}")
+            KLogger.info(
+                f"Set runtime builder \
+                         board to {self.board}"
+            )
+            self._westrun = WestRun(
+                self.workspace, platform.zephyr_base, self.venv_dir
+            )
+
+            if not self._westrun.has_zephyr_base():
+                self._westrun.init()
+
+            if self.run_west_update:
+                self._westrun.update()
+                KLogger.info(f"Updated Zephyr workspace in '{self.workspace}'")
+
+                self._prepare_modules()
+                KLogger.info("Prepared modules")
+
         else:
             KLogger.warning(
                 f"Provided platform {type(platform).__name__}\

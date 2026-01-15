@@ -19,6 +19,14 @@ from kenning.utils.singleton import Singleton
 class ConverterRegistry(metaclass=Singleton):
     """
     Registry for model converters.
+
+    Available conversions between formats
+    are stored in graph, which stores
+    Nodes with supported formats,
+    each node points to other nodes
+    describing available posibbilties
+    in formats conversions.
+
     """
 
     def __init__(self) -> None:
@@ -30,7 +38,7 @@ class ConverterRegistry(metaclass=Singleton):
 
     def register(self, converter_cls: ModelConverter) -> None:
         """
-        Register a converter class and extract supported conversions.
+        Registers a converter class and extract supported conversions.
 
 
         Parameters
@@ -39,6 +47,21 @@ class ConverterRegistry(metaclass=Singleton):
             Converter class defining `source_format` and `to_*` methods.
         """
         src = converter_cls.source_format
+
+        if src is None:
+            KLogger.error(
+                f"Source format for converter \
+                          {converter_cls.__name__} is not defined."
+            )
+            return
+
+        if src in self._converters.keys():
+            KLogger.warning(
+                f"Converter for format {src} is \
+                            aleardy presents in converter registry."
+            )
+            return
+
         self._converters[src] = converter_cls
         self._graph.setdefault(src, [])
 
@@ -152,6 +175,11 @@ class ConverterRegistry(metaclass=Singleton):
 
                     current_model = method(model=current_model, **kwargs)
                     current_format = next_format
+
+                KLogger.info(
+                    f"Successfully converted model at \
+                             {source_path} using {' -> '.join(path)}"
+                )
 
                 return current_model
 

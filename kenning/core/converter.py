@@ -17,8 +17,8 @@ if TYPE_CHECKING:
     import tensorflow as tf
     import tflite
     import torch
-    import tvm
 
+    import tvm
     from kenning.optimizers.ai8x import Ai8xTools
 
 
@@ -66,7 +66,7 @@ class ModelConverter(ABC):
         **kwargs:
             Keyword arguments passed between conversions.
         """
-        pass
+        ...
 
     def to_torch(
         self,
@@ -89,7 +89,7 @@ class ModelConverter(ABC):
         torch.nn.Module
             Torch Model.
         """
-        pass
+        ...
 
     def to_onnx(
         self, model: Optional[Any] = None, **kwargs
@@ -110,7 +110,7 @@ class ModelConverter(ABC):
         onnx.ModelProto
             Loaded ONNX model.
         """
-        pass
+        ...
 
     def to_tflite(
         self,
@@ -133,7 +133,7 @@ class ModelConverter(ABC):
         Union[tf.lite.TFLiteConverter, tflite.Model.Model]
             Either a TFLite model, or a TFLiteConverer object.
         """
-        pass
+        ...
 
     def to_tvm(
         self,
@@ -161,7 +161,7 @@ class ModelConverter(ABC):
         params: Union[Dict, str]
             Parameters dictionary to be used by relay module.
         """
-        pass
+        ...
 
     def to_keras(
         self,
@@ -183,4 +183,4 @@ class ModelConverter(ABC):
         -------
         tf.keras.Model
         """
-        pass
+        ...

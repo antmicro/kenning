@@ -71,7 +71,6 @@ class KerasConverter(ModelConverter):
         -------
         tf.lite.TFLiteConverter
             TFLite converter for model.
-
         """
         import tensorflow as tf
 
@@ -79,8 +78,12 @@ class KerasConverter(ModelConverter):
             updated_path = update_h5_file(self.source_model_path)
             self.source_model_path = updated_path
 
-        model = tf.keras.models.load_model(
-            str(self.source_model_path), compile=False
+        model = (
+            model
+            if model is not None
+            else tf.keras.models.load_model(
+                str(self.source_model_path), compile=False
+            )
         )
         converter = tf.lite.TFLiteConverter.from_keras_model(model)
         return converter
@@ -96,7 +99,7 @@ class KerasConverter(ModelConverter):
 
         Parameters
         ----------
-        io_spec: Dict[str, List[Dict]]
+        io_spec : Dict[str, List[Dict]]
             Input and output specification.
         model : Optional["tf.keras.Model"]
             Optional model object.
@@ -131,12 +134,11 @@ class KerasConverter(ModelConverter):
                 for spec in io_spec["input"]
             ]
 
+        from_keras_kwargs = {}
+
         if signature:
-            modelproto, _ = tf2onnx.convert.from_keras(
-                model, input_signature=signature
-            )
-        else:
-            modelproto, _ = tf2onnx.convert.from_keras(model)
+            from_keras_kwargs["input_signature"] = signature
+        modelproto, _ = tf2onnx.convert.from_keras(model, **from_keras_kwargs)
 
         return modelproto
 

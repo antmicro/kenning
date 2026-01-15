@@ -135,6 +135,11 @@ class TorchConverter(ModelConverter):
         except KeyError:
             output_names = None
 
+        try:
+            input_names = [spec["name"] for spec in io_spec["input"]]
+        except KeyError:
+            input_names = None
+
         import io
 
         mem_buffer = io.BytesIO()
@@ -143,7 +148,7 @@ class TorchConverter(ModelConverter):
             sample_input,
             mem_buffer,
             opset_version=11,
-            input_names=[spec["name"] for spec in io_spec["input"]],
+            input_names=input_names,
             output_names=output_names,
         )
         onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())

@@ -27,6 +27,7 @@ from kenning.cli.command_template import (
 from kenning.utils.class_info import generate_class_info, get_class_description
 from kenning.utils.class_loader import (
     AUTOML,
+    CONVERTERS,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
     DATASETS,
@@ -204,6 +205,7 @@ class ListClassesRunner(CommandTemplate):
         RUNTIMES,
         AUTOML,
         REPORT,
+        CONVERTERS,
     ]
 
     @staticmethod

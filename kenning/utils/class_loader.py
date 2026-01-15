@@ -31,6 +31,7 @@ from typing import (
 
 from kenning.cli.parser import ParserHelpException
 from kenning.core.automl import AutoML
+from kenning.core.converter import ModelConverter
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
@@ -67,6 +68,7 @@ RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
 AUTOML = "automl"
 REPORT = "report"
+CONVERTERS = "converters"
 
 
 class ConfigKey(str, Enum):
@@ -116,6 +118,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         RUNTIMES: ("kenning.runtimes", Runtime),
         AUTOML: ("kenning.automl", AutoML),
         REPORT: ("kenning.report", Report),
+        CONVERTERS: ("kenning.converters", ModelConverter),
     }
 
 

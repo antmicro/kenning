@@ -7,6 +7,7 @@ Wrapper for TensorFlow Lite deep learning compiler.
 """
 
 import subprocess
+from copy import deepcopy
 from pathlib import Path
 from shutil import which
 from typing import Dict, List, Literal, Optional
@@ -22,6 +23,7 @@ from kenning.core.exceptions import (
 )
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 from kenning.utils.update_h5_file import update_h5_file
 
@@ -410,21 +412,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         else:
             input_type = self.get_input_type(input_model_path)
 
-            try:
-                from copy import deepcopy
+            io_spec_processed = check_io_spec(io_spec)
 
-                io_spec_processed = deepcopy(io_spec)
-
-                io_spec_processed["input"] = (
-                    io_spec["processed_input"]
-                    if "processed_input" in io_spec
-                    else io_spec["input"]
-                )
-
-            except (TypeError, KeyError):
-                raise IOSpecificationNotFoundError(
-                    "No input/output specification found"
-                )
             conversion_kwargs = {
                 "io_spec": io_spec_processed,
                 "target": self.target,

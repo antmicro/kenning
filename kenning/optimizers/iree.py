@@ -18,7 +18,6 @@ from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
-    IOSpecificationNotFoundError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
@@ -26,6 +25,7 @@ from kenning.core.optimizer import (
 )
 from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -169,21 +169,7 @@ class IREECompiler(Optimizer):
         elif input_type == "tflite":
             self.compiler_input_type = "tosa"
 
-        try:
-            from copy import deepcopy
-
-            io_spec_processed = deepcopy(io_spec)
-
-            io_spec_processed["input"] = (
-                io_spec["processed_input"]
-                if "processed_input" in io_spec
-                else io_spec["input"]
-            )
-
-        except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError(
-                "No input/output specification found"
-            )
+        io_spec_processed = check_io_spec(io_spec)
 
         conversion_kwargs = {"io_spec": io_spec_processed}
 

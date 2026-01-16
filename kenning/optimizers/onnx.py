@@ -12,13 +12,11 @@ import onnx
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import (
-    IOSpecificationNotFoundError,
-)
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     Optimizer,
 )
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -86,21 +84,7 @@ class ONNXCompiler(Optimizer):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
-        try:
-            from copy import deepcopy
-
-            io_spec = deepcopy(io_spec)
-
-            io_spec["input"] = (
-                io_spec["processed_input"]
-                if "processed_input" in io_spec
-                else io_spec["input"]
-            )
-
-        except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError(
-                "No input/output specification found"
-            )
+        io_spec = check_io_spec(io_spec)
 
         input_type = self.get_input_type(input_model_path)
         conversion_kwargs = {

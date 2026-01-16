@@ -21,6 +21,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.modelwrappers.frameworks.pytorch import Tensor
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 # PyTorch-specific type hints.
@@ -243,18 +244,8 @@ class ExecuTorchOptimizer(Optimizer):
                 "IO specification is required for compilation."
             )
         io_spec["entry_func"] = "forward"
-        try:
-            from copy import deepcopy
 
-            io_spec_processed = deepcopy(io_spec)
-
-            io_spec_processed["input"] = (
-                io_spec["processed_input"]
-                if "processed_input" in io_spec
-                else io_spec["input"]
-            )
-        except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError("No input specification found")
+        io_spec_processed = check_io_spec(io_spec)
 
         conversion_kwargs = {
             "io_spec": io_spec_processed,

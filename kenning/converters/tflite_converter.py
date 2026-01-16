@@ -54,11 +54,52 @@ class TFLiteConverter(ModelConverter):
         try:
             import tflite
 
-            return tflite.Model.GetRootAsModel(tflite_model_buf, 0)
+            model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
         except AttributeError:
             import tflite.Model
 
-            return tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
+            model = tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
+
+        try:
+            import tflite
+
+            is_model = isinstance(model, tflite.Model)
+
+        except AttributeError:
+            import tflite.Model
+
+            is_model = isinstance(model, tflite.Model.Model)
+
+        if not is_model:
+            target = kwargs.get("targets", "default")
+            inferenceinputtype = kwargs.get("inferenceinputtype", "float32")
+            inferenceoutputtype = kwargs.get("inferenceoutputtype", "float32")
+            use_tf_select_ops = kwargs.get("use_tf_select_ops", False)
+
+            if target in ["int8", "edgetpu"]:
+                model.optimizations = [tf.lite.Optimize.DEFAULT]
+                if inferenceinputtype in [
+                    "int8",
+                    "uint8",
+                ] and inferenceinputtype in ["int8", "uint8"]:
+                    model.target_spec.supported_ops = [
+                        tf.lite.OpsSet.TFLITE_BUILTINS_INT8
+                    ]
+            elif target == "float16":
+                model.optimizations = [tf.lite.Optimize.DEFAULT]
+                model.target_spec.supported_types = [tf.float16]
+            else:
+                model.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS
+                ]
+            if use_tf_select_ops:
+                model.target_spec.supported_ops.append(
+                    tf.lite.OpsSet.SELECT_TF_OPS
+                )
+            model.inference_input_type = tf.as_dtype(inferenceinputtype)
+            model.inference_output_type = tf.as_dtype(inferenceoutputtype)
+
+        return model
 
     def to_tvm(
         self,

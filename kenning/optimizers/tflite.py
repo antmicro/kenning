@@ -425,7 +425,13 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 raise IOSpecificationNotFoundError(
                     "No input/output specification found"
                 )
-            conversion_kwargs = {"io_spec": io_spec_processed}
+            conversion_kwargs = {
+                "io_spec": io_spec_processed,
+                "target": self.target,
+                "inferenceinputtype": self.inferenceinputtype,
+                "inferenceoutputtype": self.inferenceoutputtype,
+                "use_tf_select_ops": self.use_tf_select_ops,
+            }
             converter = converter_registry.convert(
                 input_model_path, input_type, "tflite", **conversion_kwargs
             )
@@ -440,35 +446,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 is_model = isinstance(converter, tflite.Model.Model)
 
         if not is_model:
-            # TODO: Those operations should be moved to tflite_converter
-            #  as to leave this class as TFLite Model representation
-            if self.target in ["int8", "edgetpu"]:
-                converter.optimizations = [tf.lite.Optimize.DEFAULT]
-                if self.inferenceinputtype in [
-                    "int8",
-                    "uint8",
-                ] and self.inferenceinputtype in ["int8", "uint8"]:
-                    converter.target_spec.supported_ops = [
-                        tf.lite.OpsSet.TFLITE_BUILTINS_INT8
-                    ]
-            elif self.target == "float16":
-                converter.optimizations = [tf.lite.Optimize.DEFAULT]
-                converter.target_spec.supported_types = [tf.float16]
-            else:
-                converter.target_spec.supported_ops = [
-                    tf.lite.OpsSet.TFLITE_BUILTINS
-                ]
-            if self.use_tf_select_ops:
-                converter.target_spec.supported_ops.append(
-                    tf.lite.OpsSet.SELECT_TF_OPS
-                )
-            converter.inference_input_type = tf.as_dtype(
-                self.inferenceinputtype
-            )
-            converter.inference_output_type = tf.as_dtype(
-                self.inferenceoutputtype
-            )
-
             if self.dataset is not None and self.target != "default":
 
                 def generator():

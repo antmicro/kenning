@@ -7,10 +7,12 @@ Provides functionality for model converter registration
 and alternative conversion path resolution.
 """
 
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Union
 
 from kenning.core.converter import ModelConverter
 from kenning.core.exceptions import ConversionError
+from kenning.core.model import ResourceURI
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 from kenning.utils.singleton import Singleton
@@ -122,7 +124,7 @@ class ConverterRegistry(metaclass=Singleton):
 
     def convert(
         self,
-        source_path: PathOrURI,
+        model: Union[PathOrURI, Any],
         src_format: str,
         dst_format: str,
         **kwargs: Dict,
@@ -132,8 +134,8 @@ class ConverterRegistry(metaclass=Singleton):
 
         Parameters
         ----------
-        source_path : PathOrURI
-            Path or identifier to the source model.
+        model : Union[PathOrURI,Any]
+            Path or identifier to the source model or model instance.
         src_format : str
             Source format name.
         dst_format : str
@@ -160,10 +162,14 @@ class ConverterRegistry(metaclass=Singleton):
 
         last_error = None
 
+        current_model = (
+            model if not isinstance(model, (Path, ResourceURI)) else None
+        )
+        source_path = model if current_model is None else None
+
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")
 
-            current_model = None
             current_format = src_format
 
             try:
@@ -178,7 +184,7 @@ class ConverterRegistry(metaclass=Singleton):
 
                 KLogger.info(
                     f"Successfully converted model at \
-                             {source_path} using {' -> '.join(path)}"
+                             {model} using {' -> '.join(path)}"
                 )
 
                 return current_model

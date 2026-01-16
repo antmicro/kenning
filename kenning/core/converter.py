@@ -17,8 +17,8 @@ if TYPE_CHECKING:
     import tensorflow as tf
     import tflite
     import torch
-
     import tvm
+
     from kenning.optimizers.ai8x import Ai8xTools
 
 

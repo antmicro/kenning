@@ -20,6 +20,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.utils.logger import KLogger, LoggerProgressBar
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 DataLoader = TypeVar("torch.utils.data.DataLoader")
@@ -104,32 +105,18 @@ class PyTorchWrapper(ModelWrapper, ABC):
             self.model = input_data
 
     def save_to_onnx(self, model_path: PathOrURI):
-        import tempfile
-        from pathlib import Path
-
         import onnx
-        import torch
 
         self.prepare_model()
 
-        torch_path = Path(tempfile.NamedTemporaryFile().name)
-        torch.save(self.model, torch_path)
-
         io_spec = self.get_io_specification()
 
-        from copy import deepcopy
-
-        io_spec = deepcopy(io_spec)
-        io_spec["input"] = (
-            io_spec["processed_input"]
-            if "processed_input" in io_spec
-            else io_spec["input"]
-        )
+        io_spec = check_io_spec(io_spec)
         conversion_kwargs = {
             "io_spec": io_spec,
         }
         onnx_model = converter_registry.convert(
-            torch_path, "torch", "onnx", **conversion_kwargs
+            self.model, "torch", "onnx", **conversion_kwargs
         )
         onnx.save(onnx_model, model_path)
 

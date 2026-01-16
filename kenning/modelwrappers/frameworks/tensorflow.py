@@ -16,6 +16,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.model import ModelWrapper
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -113,15 +114,8 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.get_io_specification()
         self.prepare_model()
 
-        from copy import deepcopy
-
-        io_spec = deepcopy(self.io_specification)
-
-        io_spec["input"] = (
-            io_spec["processed_input"]
-            if "processed_input" in io_spec
-            else io_spec["input"]
-        )
+        io_spec = self.get_io_specification()
+        io_spec = check_io_spec(io_spec)
         conversion_kwargs = {
             "io_spec": io_spec,
         }

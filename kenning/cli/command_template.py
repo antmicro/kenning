@@ -30,6 +30,7 @@ SEARCH = "search"
 COMPLETION = "completion"
 AUTOML = "automl"
 ROS = "ros"
+DOWNLOAD_RESOURCES = "download-resources"
 GENERATE_PLATFORMS = "generate-platforms"
 AVAILABLE_PLATFORMS = "available-platforms"
 HELP = {

@@ -17,6 +17,7 @@ from kenning.cli.command_template import (
     AVAILABLE_PLATFORMS,
     CACHE,
     COMPLETION,
+    DOWNLOAD_RESOURCES,
     FINE_TUNE,
     FLOW,
     GENERATE_PLATFORMS,
@@ -40,6 +41,7 @@ from kenning.scenarios import (
     available_platforms,
     class_info,
     configure_autocompletion,
+    download_resources,
     fuzzy_search_class,
     generate_platforms,
     inference_server,
@@ -105,6 +107,7 @@ BASIC_COMMANDS = (
     SEARCH,
     COMPLETION,
     GENERATE_PLATFORMS,
+    DOWNLOAD_RESOURCES,
 )
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (
@@ -136,6 +139,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     GENERATE_PLATFORMS: generate_platforms.GeneratePlatformsCommand,
     AVAILABLE_PLATFORMS: available_platforms.AvailablePlatformsCommand,
     ROS: ros2.ROS2Initializer,
+    DOWNLOAD_RESOURCES: download_resources.DownloadResources,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

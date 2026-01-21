@@ -200,6 +200,35 @@ class ResourceManager(metaclass=Singleton):
                 "some resources may not be compatible with current one"
             )
 
+    def check_for_uri(self, uri: str) -> str | Path | None:
+        """
+        A function that whether a input uri string is a
+        valid supported URI string.
+
+        Parameters
+        ----------
+        uri : str
+            Resource URI.
+
+        Returns
+        -------
+        str | Path | None
+            A validated URI path or None when URI
+            is invalid.
+        """
+        if not isinstance(uri, str):
+            return None
+
+        uri = uri.strip()
+
+        parsed_uri = urlparse(uri)
+
+        try:
+            resolved_uri = self._resolve_uri(parsed_uri)
+            return resolved_uri
+        except ValueError:
+            return None
+
     def get_resource(
         self, uri: str, output_path: Optional[Path] = None
     ) -> Path:

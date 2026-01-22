@@ -109,7 +109,14 @@ class ZephyrPlatform(BareMetalPlatform):
             "default": None,
         },
         "enable_zephelin_gdb": {
-            "description": "Enable automatic collection of Zephelin traces",
+            "description": "Enable automatic collection of Zephelin traces"
+            "using GDB debugger.",
+            "type": bool,
+            "default": False,
+        },
+        "enable_zephelin": {
+            "description": "Enable automatic collection of Zephelin traces"
+            "through the Protocol.",
             "type": bool,
             "default": False,
         },
@@ -145,6 +152,7 @@ class ZephyrPlatform(BareMetalPlatform):
         runtime_init_log_msg: Optional[str] = None,
         runtime_init_timeout: Optional[int] = None,
         enable_zephelin_gdb: bool = False,
+        enable_zephelin: bool = False,
         gdb_port: int = 3333,
         gdb_binary_name: str = "gdb",
         zpl_use_debug_server: Optional[bool] = None,
@@ -197,6 +205,8 @@ class ZephyrPlatform(BareMetalPlatform):
         runtime_init_timeout : Optional[int]
             Timeout in seconds for runtime initialization.
         enable_zephelin_gdb : bool
+            Enable automatic collection of Zephelin traces through GDB.
+        enable_zephelin : bool
             Enable automatic collection of Zephelin traces.
         gdb_port : int
             Port number for collecting traces from GDB server.
@@ -237,6 +247,12 @@ class ZephyrPlatform(BareMetalPlatform):
         self.zephyr_build_path = zephyr_build_path
         self.llext_binary_path = llext_binary_path
         self.enable_zephelin_gdb = enable_zephelin_gdb
+        self.enable_zephelin = enable_zephelin
+        if enable_zephelin and enable_zephelin_gdb:
+            KLogger.error(
+                "Parameters `enable_zephelin` and `enable_zephelin_gdb` are"
+                " mutually exclusive."
+            )
         self.gdb_binary_name = gdb_binary_name
 
         self.zephyr_base = zephyr_base
@@ -276,9 +292,48 @@ class ZephyrPlatform(BareMetalPlatform):
             number_of_batches=number_of_batches,
         )
 
+    def post_init(self):
+        super().post_init()
+        # We remove old trace data, from the previous inference.
+        ctf_file_path = Path(
+            ZplSuffix.CTF._get_path_with_suffix(Path(self.measurements_path))
+        )
+        if ctf_file_path.is_file():
+            ctf_file_path.unlink()
+        tef_file_path = Path(
+            ZplSuffix.TRACE_JSON._get_path_with_suffix(
+                Path(self.measurements_path)
+            )
+        )
+        if tef_file_path.is_file():
+            tef_file_path.unlink()
+        if self.protocol is not None and self.enable_zephelin:
+
+            def dump(bytes):
+                with open(ctf_file_path, "ab") as ctf_file:
+                    ctf_file.write(bytes)
+
+            self.protocol.listen_to_trace_data(dump)
+
     def deinit(self, measurements: Measurements):
         if self.enable_zephelin_gdb:
             self._deinit_tracing()
+        if self.enable_zephelin:
+            _prepare_traces(
+                self.last_optimizer,
+                str(
+                    ZplSuffix.CTF._get_path_with_suffix(
+                        Path(self.measurements_path)
+                    )
+                ),
+                str(
+                    ZplSuffix.TRACE_JSON._get_path_with_suffix(
+                        Path(self.measurements_path)
+                    )
+                ),
+                self.zephyr_build_path,
+                self.zephyr_base,
+            )
         super().deinit(measurements)
 
     def _deinit_tracing(self):
@@ -293,11 +348,13 @@ class ZephyrPlatform(BareMetalPlatform):
             return None
 
         prepare_input_path = str(
-            ZplSuffix.CTF._get_path_with_suffix(self.measurements_path)
+            ZplSuffix.CTF._get_path_with_suffix(Path(self.measurements_path))
         )
 
         prepare_output_path = str(
-            ZplSuffix.TRACE_JSON._get_path_with_suffix(self.measurements_path)
+            ZplSuffix.TRACE_JSON._get_path_with_suffix(
+                Path(self.measurements_path)
+            )
         )
 
         self.cmd = [

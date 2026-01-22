@@ -80,10 +80,18 @@ class Platform(ArgumentsHandler, ABC):
         # Parameters to be set by `PipelineRunner`
         self.last_optimizer = None
         self.measurements_path = None
+        self.protocol = None
 
     def init(self):
         """
         Initializes the platform.
+        """
+        ...
+
+    def post_init(self):
+        """
+        Called after the platform has been successfully setup, for cleanup or
+        any other additional actions, that may be required by the platform.
         """
         ...
 

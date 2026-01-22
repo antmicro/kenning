@@ -110,7 +110,7 @@ To run the full flow, use this command:
 
 ```bash
 kenning automl optimize test report \
-  --cfg ./kenning-zephyr-runtime/kenning-scenarios/renode-zephyr-auto-tflite-automl-vae-max32690.yml \
+  --cfg ./kenning-zephyr-runtime/kenning-scenarios/renode-auto-tflite-automl-vae-max32690.yml \
   --report-path ./workspace/automl-report/report.md \
   --allow-failures --to-html --ver INFO \
   --skip-general-information

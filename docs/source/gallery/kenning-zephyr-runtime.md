@@ -12,6 +12,7 @@ Start with installing dependencies:
 * `curl`
 * `west`
 * `CMake`
+* `python` with `uv` or `pip`
 
 On Debian-based Linux distributions, the above-listed dependencies can be installed as follows:
 
@@ -20,7 +21,7 @@ apt update
 
 apt install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
   g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make ninja-build \
-  python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
+  python3-dev python3-setuptools python3-tk python3-wheel python3-venv \
   mono-complete wget xxd xz-utils patch
 ```
 
@@ -31,11 +32,16 @@ git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
 ```
 
-Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, and prepare a Python's virtual environment with:
+Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, and install Python dependencies with:
 
 ```bash
-./scripts/prepare_zephyr_env.sh
-source .venv/bin/activate
+pip install west
+west init -l .
+west update
+west zephyr-export
+pip install --upgrade pip setuptools
+pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 ```
 
 Finally, prepare additional Zephyr modules:
@@ -47,10 +53,9 @@ Finally, prepare additional Zephyr modules:
 ## Installing Kenning with Renode support
 
 Evaluating models using Kenning Zephyr Runtime requires [Kenning](https://github.com/antmicro/kenning) with Renode support.
-Use `pip` to install it:
+Use `pip` or `uv` to install it:
 
 ```bash
-pip install --upgrade pip
 pip install "kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git"
 ```
 
@@ -77,7 +82,7 @@ The built binary can be found in `build/zephyr/zephyr.elf`.
 To evaluate the Magic Wand model using built runtime, run:
 ```bash
 kenning optimize test \
-    --cfg kenning-scenarios/renode-zephyr-tflite-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tflite/renode-auto-stm32f746g.yml \
     --measurements build/zephyr-stm32-tflite-magic-wand.json --verbosity INFO \
     --verbosity INFO
 ```
@@ -99,7 +104,7 @@ west build -t board-repl
 And now, as previously, run evaluation using Kenning:
 ```bash
 kenning optimize test \
-    --cfg kenning-scenarios/renode-zephyr-tvm-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tvm/renode-auto-stm32f746g.yml \
     --measurements build/zephyr-stm32-tvm-magic-wand.json --verbosity INFO \
     --verbosity INFO
 ```
@@ -145,7 +150,7 @@ Then run optimization, inference and report generation:
 
 ```bash
 kenning optimize test report \
-    --cfg kenning-scenarios/renode-zephyr-zephelin-gdb-tvm-magic-wand.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tvm/renode-zephelin-gdb-stm32f746g.yml \
     --measurements build/zephelin-zephyr-stm32-tvm-magic-wand.json --verbosity INFO \
     --report-path build/zephelin-zephyr-stm32-tvm.md \
     --to-html

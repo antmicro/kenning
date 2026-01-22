@@ -152,7 +152,7 @@ The scenario contents are as follows:
 First, compile the model using `kenning optimize`:
 
 ```bash
-kenning optimize --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml
+kenning optimize --cfg ./kenning-scenarios/vae-inference/tflite-max32690.yml
 ```
 
 This scenario will create a `./workspace/vae_cats.tflite` file with an optimized model.
@@ -174,13 +174,8 @@ west build -t board-repl
 Once the model and evaluation app are ready, you can simulate the board in Renode with:
 
 ```bash
-kenning test --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml --measurements workspace/vae-tflite-renode.json --verbosity INFO
+kenning test --cfg ./kenning-scenarios/vae-inference/tflite-max32690.yml --measurements workspace/vae-tflite-renode.json --verbosity INFO
 ```
-
-:::{note}
-The only difference between `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml` and `./kenning-scenarios/zephyr-tflite-vae-inference-max32690-renode.yml` is which runtime and protocol is commented out.
-Other parts are the same.
-:::
 
 The produced `workspace/vae-tflite.json` is a file with raw measurements regarding the model's performance and predictions.
 
@@ -242,11 +237,11 @@ shutdown command invoked
 
 Once `./build/zephyr/zephyr.hex` is successfully written to the device, the model can be tested directly on hardware platform.
 
-In order to do so, set `simulated` to `false` in the `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml` file.
+In order to do so, set `simulated` to `false` in the `./kenning-scenarios/vae-inference/tflite-max32690.yml` file.
 Finally, use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
 
 ```bash test-skip
-kenning test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml \
+kenning test report --cfg ./kenning-scenarios/vae-inference/tflite-max32690.yml \
     --measurements workspace/vae-tflite-hw.json \
     --report-path reports/vae-tflite-hw/report.md --to-html \
     --verbosity INFO
@@ -280,7 +275,7 @@ west build -t board-repl
 Then, run:
 
 ```bash
-kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
+kenning test report --cfg ./kenning-scenarios/vae-inference/tvm-max32690.yml \
     --measurements workspace/vae-tvm-renode.json \
     --report-path reports/vae-tvm-renode/report.md --to-html \
     --verbosity INFO
@@ -304,7 +299,7 @@ To test the model on hardware, set `simulated` in the scenario to `false` and th
 Run tests on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
 
 ```bash test-skip
-kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
+kenning test report --cfg ./kenning-scenarios/vae-inference/tvm-max32690.yml \
     --measurements workspace/vae-tvm-hw.json \
     --report-path reports/vae-tvm-hw/report.md --to-html \
     --verbosity INFO

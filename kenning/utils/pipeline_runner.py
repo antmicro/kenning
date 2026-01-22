@@ -424,9 +424,10 @@ class PipelineRunner(object):
 
             self.platform.last_optimizer = self.optimizers[-1]
 
+        if self.protocol:
+            self.platform.protocol = self.protocol
         # handle runtime builder
         self._handle_runtime_builder(model_framework, model_path)
-
         # deduce runtime if not specified
         if (
             run_benchmarks
@@ -448,7 +449,6 @@ class PipelineRunner(object):
                 measurements = None
                 # handle platform init
                 self._handle_platform_init()
-
                 measurements = Measurements()
 
                 try:
@@ -459,6 +459,7 @@ class PipelineRunner(object):
                         check_request(
                             self.protocol.initialize_client(), "prepare client"
                         )
+
                         try:
                             self.protocol.listen_to_server_logs()
                         except NotSupportedError:
@@ -466,6 +467,8 @@ class PipelineRunner(object):
                                 "Server logs not available for this protocol:"
                                 f" {type(self.protocol)}."
                             )
+                    # Notify the platform of a successful setup
+                    self.platform.post_init()
 
                     # Handle LLEXT upload
                     self._handle_runtime_upload()

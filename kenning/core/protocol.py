@@ -550,6 +550,19 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
+    def listen_to_trace_data(self, tracedump_callback: Callable[bytes, None]):
+        """
+        Starts continuously receiving batches of trace data from server. Calls
+        a callback function with each received batch.
+
+        Parameters
+        ----------
+        tracedump_callback: Callable[bytes, None]
+            Function, that will be called for each received batch of data.
+        """
+        ...
+
+    @abstractmethod
     def disconnect(self):
         """
         Ends connection with the other side.

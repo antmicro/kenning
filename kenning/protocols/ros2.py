@@ -400,6 +400,9 @@ class ROS2Protocol(Protocol):
             "ROS2 protocol does not support upload runtime."
         )
 
+    def listen_to_trace_data(self, tracedump_callback: Callable[bytes, None]):
+        raise NotSupportedError("ROS2 protocol does not support tracing.")
+
     def start_sending_logs(self):
         raise NotSupportedError("ROS2 protocol does not support sending logs.")
 

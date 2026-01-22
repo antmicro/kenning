@@ -568,6 +568,18 @@ class BytesBasedProtocol(Protocol, ABC):
         KLogger.debug("Receiving logs from the server...")
         self.listen(MessageType.LOGS, parse_logs)
 
+    def listen_to_trace_data(self, tracedump_callback: Callable[bytes, None]):
+        KLogger.debug("Listening for trace data from server...")
+
+        def callback(
+            message_type: MessageType,
+            payload: bytes,
+            flags: List[TransmissionFlag],
+        ):
+            tracedump_callback(payload)
+
+        self.listen(MessageType.TRACE_DATA, callback)
+
     def start_sending_logs(self):
         def send_log(message: str):
             if "MessageType.LOGS" not in message:

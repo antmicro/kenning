@@ -85,11 +85,12 @@ class MessageType(Enum):
     OUTPUT = 5
     STATS = 6
     IO_SPEC = 7
-    OPTIMIZERS = 8
-    OPTIMIZE_MODEL = 9
-    RUNTIME = 10
-    UNOPTIMIZED_MODEL = 11
-    LOGS = 12
+    TRACE_DATA = 8
+    OPTIMIZERS = 9
+    OPTIMIZE_MODEL = 10
+    RUNTIME = 11
+    UNOPTIMIZED_MODEL = 12
+    LOGS = 13
 
     def __int__(self):
         return self.value

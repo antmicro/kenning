@@ -11,7 +11,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from kenning.core.converter import ModelConverter
-from kenning.core.exceptions import ConversionError
+from kenning.core.exceptions import (
+    ConversionError,
+    ConverterAlreadyPresent,
+    ConverterFormatNotSupported,
+)
 from kenning.core.model import ResourceURI
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -47,22 +51,28 @@ class ConverterRegistry(metaclass=Singleton):
         ----------
         converter_cls : ModelConverter
             Converter class defining `source_format` and `to_*` methods.
+
+        Raises
+        ------
+        ConverterFormatNotSupported
+            Raised when trying to use unsupported conversion format.
+        ConverterAlreadyPresent
+            Raised when trying to register converter which is already
+            registered.
         """
         src = converter_cls.source_format
 
         if src is None:
-            KLogger.error(
+            raise ConverterFormatNotSupported(
                 f"Source format for converter \
                           {converter_cls.__name__} is not defined."
             )
-            return
 
         if src in self._converters.keys():
-            KLogger.warning(
+            raise ConverterAlreadyPresent(
                 f"Converter for format {src} is \
-                            aleardy presents in converter registry."
+                            already present in converter registry."
             )
-            return
 
         self._converters[src] = converter_cls
         self._graph.setdefault(src, [])

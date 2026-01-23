@@ -418,3 +418,22 @@ class InputNotPreparedError(KenningRuntimeError):
 
 class ModelNotLoadedError(KenningRuntimeError):
     """Exception raised if a model could not be loaded."""
+
+
+"""
+Errors related to kenning.converters module.
+"""
+
+
+class ConverterFormatNotSupported(NotSupportedError):
+    """
+    Raised when attempting to converts model using
+    not defined converter.
+    """
+
+
+class ConverterAlreadyPresent(ConfigurationError):
+    """
+    Raised when attempting to register converter which
+    is already registered.
+    """

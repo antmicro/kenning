@@ -359,6 +359,8 @@ class PipelineRunner(object):
         if output is None:
             output = self.output
 
+        self.platform.measurements_path = output
+
         if not (run_optimizations or run_benchmarks):
             raise ValueError(
                 "If both optimizations and benchmarks are skipped, pipeline "
@@ -419,6 +421,8 @@ class PipelineRunner(object):
             )
             if final_io_spec is not None:
                 self.model_wrapper.io_specification = final_io_spec
+
+            self.platform.last_optimizer = self.optimizers[-1]
 
         # handle runtime builder
         self._handle_runtime_builder(model_framework, model_path)

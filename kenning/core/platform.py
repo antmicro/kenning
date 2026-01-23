@@ -77,6 +77,9 @@ class Platform(ArgumentsHandler, ABC):
             with path(platforms, "platforms.yml") as platforms_path:
                 self.platforms_definitions = [platforms_path]
         self.read_data_from_platforms_yaml()
+        # Parameters to be set by `PipelineRunner`
+        self.last_optimizer = None
+        self.measurements_path = None
 
     def init(self):
         """

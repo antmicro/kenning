@@ -381,6 +381,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.extra_build_args = extra_build_args
         self.use_llext = use_llext
         self.use_zephelin = False
+        self.use_zephelin_uart = False
 
         self.run_west_update = run_west_update
 
@@ -415,17 +416,26 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
                 f"{extra_conf_file};{board_specific_conf.resolve()}"
             )
 
-        # attach zpl.conf from kenning zepyhr runtime
-        if self.use_zephelin:
+        if self.use_zephelin or self.use_zephelin_uart:
+            # attach zpl.conf from kenning zepyhr runtime
             zpl_conf_file = self.workspace / "zpl.conf"
 
             KLogger.info(f"Adding Zephelin config {zpl_conf_file}")
             extra_conf_file = f"{extra_conf_file};{zpl_conf_file.resolve()}"
 
+        if self.use_zephelin:
             zpl_gdb_conf = self.workspace / "app" / "zpl_gdb.conf"
 
             KLogger.info(f"Adding Zephelin gdb config {zpl_gdb_conf}")
             extra_conf_file = f"{extra_conf_file};{zpl_gdb_conf.resolve()}"
+
+        if self.use_zephelin_uart:
+            zpl_uart_conf_file = self.workspace / "app" / "zpl_uart.conf"
+
+            KLogger.info(f"Adding Zephelin uart config {zpl_uart_conf_file}")
+            extra_conf_file = (
+                f"{extra_conf_file};{zpl_uart_conf_file.resolve()}"
+            )
 
         extra_build_args = [
             f"-DMODULE_EXT_ROOT={self.workspace}",
@@ -510,6 +520,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         if type(platform).__name__ == "ZephyrPlatform":
             platform.zephyr_build_path = self.output_path
             self.use_zephelin = platform.enable_zephelin_gdb
+            self.use_zephelin_uart = platform.enable_zephelin
 
             if self.use_zephelin:
                 self.allowed_frameworks = ["tflite", "tvm"]

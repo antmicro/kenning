@@ -26,6 +26,7 @@ from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
 from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.zpl_suffix import ZplSuffix
 
 TVM_FUNC_PATTERN = re.compile(
     r"TVM_DLL[\s\n\t]+int32_t[\s\n\t]*(tvmgen_[a-zA-Z0-9_]*)\([^\(\)]*\)"
@@ -412,6 +413,11 @@ class TVMCompiler(Optimizer):
                 graph_json = json.dumps(
                     json.loads(graph_json), separators=(",", ":")
                 )
+                with open(
+                    self.compiled_model_path.with_suffix(".graph.json"), "w"
+                ) as graph_f:
+                    graph_f.write(graph_json)
+
                 graph_json = graph_json.encode()
 
                 params = tvm.runtime.params.save_param_dict(lib.get_params())
@@ -576,3 +582,27 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ("tvm", tvm.__version__)
+
+    def zpl_prepare_cmd_flags(self):
+        flags = super().zpl_prepare_cmd_flags()
+        if getattr(self, "compiled_model_path", None) is not None:
+            flags.extend(
+                [
+                    "--tvm-model-paths",
+                    str(
+                        ZplSuffix.TVM_GRAPH_JSON._get_path_with_suffix(
+                            self.compiled_model_path
+                        )
+                    ),
+                ]
+            )
+
+        if self.module_name is not None:
+            flags.extend(
+                [
+                    "--tvm-model-op-remove-prefix",
+                    f"tvmgen_{self.module_name}_",
+                ]
+            )
+
+        return flags

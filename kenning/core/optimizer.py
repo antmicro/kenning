@@ -483,3 +483,14 @@ class Optimizer(ArgumentsHandler, ABC):
             True by default.
         """
         return True
+
+    def zpl_prepare_cmd_flags(self) -> List[str]:
+        """
+        Provides optimizer specific flags for Zephelin prepare command.
+
+        Returns
+        -------
+        List[str]
+            List of flags specific for current optimizer.
+        """
+        return []

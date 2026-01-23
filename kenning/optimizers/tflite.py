@@ -26,6 +26,7 @@ from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 from kenning.utils.update_h5_file import update_h5_file
+from kenning.utils.zpl_suffix import ZplSuffix
 
 
 class TFLiteCompiler(TensorFlowOptimizer):
@@ -558,3 +559,19 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
             return returncode
         return 0
+
+    def zpl_prepare_cmd_flags(self):
+        flags = super().zpl_prepare_cmd_flags()
+        if getattr(self, "compiled_model_path", None) is not None:
+            flags.extend(
+                [
+                    "--tflm-model-paths",
+                    str(
+                        ZplSuffix.TFLITE._get_path_with_suffix(
+                            self.compiled_model_path
+                        )
+                    ),
+                ]
+            )
+
+        return flags

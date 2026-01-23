@@ -96,6 +96,8 @@ class BareMetalPlatform(SimulatablePlatform):
         profiler_interval_step: float = 10.0,
         runtime_init_log_msg: Optional[str] = None,
         runtime_init_timeout: Optional[int] = None,
+        gdb_port: int = 3333,
+        enable_zephelin_gdb: bool = False,
         uart_port: Optional[Path] = None,
         uart_baudrate: int = None,
         uart_log_port: Optional[Path] = None,
@@ -139,6 +141,10 @@ class BareMetalPlatform(SimulatablePlatform):
             inference.
         runtime_init_timeout : Optional[int]
             Timeout in seconds for runtime initialization.
+        gdb_port : int
+            Port number for collecting traces from GDB server.
+        enable_zephelin_gdb : bool
+            If true, run GDB server.
         uart_port : Optional[Path]
             Path to the UART used for communication.
         uart_baudrate : int
@@ -191,6 +197,8 @@ class BareMetalPlatform(SimulatablePlatform):
             profiler_interval_step=profiler_interval_step,
             runtime_init_log_msg=runtime_init_log_msg,
             runtime_init_timeout=runtime_init_timeout,
+            gdb_port=gdb_port,
+            enable_zephelin_gdb=enable_zephelin_gdb,
         )
 
         if self.simulated:
@@ -265,6 +273,7 @@ class BareMetalPlatform(SimulatablePlatform):
         )
 
     def _init_hardware(self):
+        super()._init_hardware()
         if self.auto_flash:
             if self.openocd_path is None or not hasattr(
                 self, "openocd_flash_cmd"

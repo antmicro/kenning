@@ -101,6 +101,11 @@ class SimulatablePlatform(Platform, ABC):
             "type": int,
             "default": 30,
         },
+        "gdb_port": {
+            "description": "Port number for collecting traces from GDB server",
+            "type": int,
+            "default": 3333,
+        },
     }
 
     platform_defaults = dict(
@@ -126,6 +131,8 @@ class SimulatablePlatform(Platform, ABC):
         profiler_interval_step: float = 10.0,
         runtime_init_log_msg: Optional[str] = None,
         runtime_init_timeout: Optional[int] = None,
+        gdb_port: int = 3333,
+        enable_zephelin_gdb: bool = False,
     ):
         """
         Constructs simulatable platform.
@@ -161,6 +168,10 @@ class SimulatablePlatform(Platform, ABC):
             inference.
         runtime_init_timeout : Optional[int]
             Timeout in seconds for runtime initialization.
+        gdb_port : int
+            Port number for collecting traces from GDB server.
+        enable_zephelin_gdb : bool
+            If true, run GDB server.
         """
         self.simulated = simulated
         self.runtime_binary_path = runtime_binary_path
@@ -173,6 +184,8 @@ class SimulatablePlatform(Platform, ABC):
         self.profiler_interval_step = profiler_interval_step
         self.runtime_init_log_msg = runtime_init_log_msg
         self.runtime_init_timeout = runtime_init_timeout
+        self.gdb_port = gdb_port
+        self.enable_zephelin_gdb = enable_zephelin_gdb
 
         self.machine = None
         self.opcode_counters = None
@@ -326,6 +339,10 @@ class SimulatablePlatform(Platform, ABC):
         self.renode_log_file = open(self.log_file_path, "r")
 
         self._prepare_renode_platform()
+
+        if self.enable_zephelin_gdb:
+            KLogger.info(f"Starting GDB server on port: {self.gdb_port}")
+            self.machine.StartGdbServer(self.gdb_port)
 
         if not self.disable_profiler:
             self._setup_profiler()

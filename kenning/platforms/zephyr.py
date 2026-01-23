@@ -7,13 +7,73 @@ Provides a wrapper for Zephyr platform.
 """
 
 import re
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 
 from kenning.core.exceptions import TargetPlatformCommunicationError
+from kenning.core.measurements import Measurements
+from kenning.core.optimizer import Optimizer
 from kenning.platforms.bare_metal import BareMetalPlatform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.zpl_suffix import ZplSuffix
+
+
+def _prepare_traces(
+    last_optimizer: Optimizer,
+    prepare_input_path: Path,
+    prepare_output_path: Path,
+    zephyr_build_path: Optional[Path],
+    zephyr_base: Optional[Path],
+):
+    """
+    Constructs and executes trace preparation command.
+
+    Parameters
+    ----------
+    last_optimizer : Optimizer
+        The last optimizer from the optimization pipeline.
+    prepare_input_path : Path
+        Input path in prepare command.
+    prepare_output_path : Path
+        Output path in prepare command.
+    zephyr_build_path : Optional[Path]
+        Path to Zephyr build directory.
+    zephyr_base : Optional[Path]
+    """
+    prepare_cmd = [
+        "west",
+        "zpl-prepare-trace",
+    ]
+
+    if zephyr_build_path:
+        prepare_cmd.extend(["--build-dir", str(zephyr_build_path)])
+
+    if zephyr_base:
+        prepare_cmd.extend(["--zephyr-base", str(zephyr_base)])
+
+    prepare_cmd.extend(last_optimizer.zpl_prepare_cmd_flags())
+
+    prepare_cmd.extend(
+        [
+            "-o",
+            prepare_output_path,
+            prepare_input_path,
+        ]
+    )
+
+    KLogger.info("Traces conversion started.")
+
+    try:
+        subprocess.run(prepare_cmd).check_returncode()
+    except subprocess.CalledProcessError as e:
+        msg = f"West command: '{' '.join(prepare_cmd)}' failed"
+        if e.stderr is not None:
+            msg += f" with a message:\n\n{e.stderr.decode()}"
+        KLogger.error(msg)
+    else:
+        KLogger.info("Traces conversion completed.")
 
 
 class ZephyrPlatform(BareMetalPlatform):
@@ -48,6 +108,25 @@ class ZephyrPlatform(BareMetalPlatform):
             "nullable": True,
             "default": None,
         },
+        "enable_zephelin_gdb": {
+            "description": "Enable automatic collection of Zephelin traces",
+            "type": bool,
+            "default": False,
+        },
+        "zpl_use_debug_server": {
+            "description": "Optionally force debug server to be switched"
+            " on or off. When None, debug server is on when simulated=true"
+            " and off otherwise",
+            "type": bool,
+            "nullable": True,
+            "default": None,
+        },
+        "zephyr_base": {
+            "description": "Path to Zephyr base directory",
+            "type": Path,
+            "nullable": True,
+            "default": None,
+        },
     }
 
     def __init__(
@@ -65,6 +144,11 @@ class ZephyrPlatform(BareMetalPlatform):
         profiler_interval_step: float = 10.0,
         runtime_init_log_msg: Optional[str] = None,
         runtime_init_timeout: Optional[int] = None,
+        enable_zephelin_gdb: bool = False,
+        gdb_port: int = 3333,
+        gdb_binary_name: str = "gdb",
+        zpl_use_debug_server: Optional[bool] = None,
+        zephyr_base: Optional[Path] = None,
         uart_port: Optional[Path] = None,
         uart_baudrate: int = None,
         uart_log_port: Optional[Path] = None,
@@ -112,6 +196,18 @@ class ZephyrPlatform(BareMetalPlatform):
             inference.
         runtime_init_timeout : Optional[int]
             Timeout in seconds for runtime initialization.
+        enable_zephelin_gdb : bool
+            Enable automatic collection of Zephelin traces.
+        gdb_port : int
+            Port number for collecting traces from GDB server.
+        gdb_binary_name : str
+            Name of system gdb binary.
+        zpl_use_debug_server: Optional[bool]
+            Optionally force debug server to be switched
+            on or off. When None, debug server is on when simulated=true
+            and off otherwise.
+        zephyr_base : Optional[Path]
+            Path to Zephyr Base directory.
         uart_port : Optional[Path]
             Path to the UART used for communication.
         uart_baudrate : int
@@ -140,6 +236,16 @@ class ZephyrPlatform(BareMetalPlatform):
         """
         self.zephyr_build_path = zephyr_build_path
         self.llext_binary_path = llext_binary_path
+        self.enable_zephelin_gdb = enable_zephelin_gdb
+        self.gdb_binary_name = gdb_binary_name
+
+        self.zephyr_base = zephyr_base
+
+        self.no_dbg_server = (
+            simulated
+            if zpl_use_debug_server is None
+            else not zpl_use_debug_server
+        )
 
         self.sensors = sensors
         self.sensors_frequency = sensors_frequency
@@ -158,6 +264,8 @@ class ZephyrPlatform(BareMetalPlatform):
             profiler_interval_step=profiler_interval_step,
             runtime_init_log_msg=runtime_init_log_msg,
             runtime_init_timeout=runtime_init_timeout,
+            gdb_port=gdb_port,
+            enable_zephelin_gdb=enable_zephelin_gdb,
             uart_port=uart_port,
             uart_baudrate=uart_baudrate,
             uart_log_port=uart_log_port,
@@ -166,6 +274,68 @@ class ZephyrPlatform(BareMetalPlatform):
             openocd_path=openocd_path,
             sensor=sensor,
             number_of_batches=number_of_batches,
+        )
+
+    def deinit(self, measurements: Measurements):
+        if self.enable_zephelin_gdb:
+            self._deinit_tracing()
+        super().deinit(measurements)
+
+    def _deinit_tracing(self):
+        if self.zephyr_build_path is None:
+            KLogger.warning("No zephyr_build_path specified.")
+            KLogger.warning("The trace will not be captured.")
+            return None
+
+        if self.measurements_path is None:
+            KLogger.warning("No measurements path specified.")
+            KLogger.warning("The trace will not be captured.")
+            return None
+
+        prepare_input_path = str(
+            ZplSuffix.CTF._get_path_with_suffix(self.measurements_path)
+        )
+
+        prepare_output_path = str(
+            ZplSuffix.TRACE_JSON._get_path_with_suffix(self.measurements_path)
+        )
+
+        self.cmd = [
+            "west",
+            "zpl-gdb-capture",
+            prepare_input_path,
+            *(["--no-debug-server"] if self.no_dbg_server else []),
+            f"--gdb={self.gdb_binary_name}",
+            f"--gdb-port={self.gdb_port}",
+            "--capture-once",
+            "--elf-path="
+            f"{str(Path(self.zephyr_build_path / 'zephyr' / 'zephyr.elf'))}",
+        ]
+
+        KLogger.info("Traces capture started.")
+
+        self.tracing_subprocess = subprocess.Popen(
+            self.cmd,
+            stderr=subprocess.PIPE,
+        )
+
+        _, stderr = self.tracing_subprocess.communicate()
+
+        KLogger.info("Traces capture completed.")
+
+        if self.tracing_subprocess.returncode != 0:
+            msg = f"West command: '{' '.join(self.cmd)}' failed"
+            if stderr is not None:
+                msg += f" with a message:\n\n{stderr.decode()}"
+            KLogger.error(msg)
+            return None
+
+        _prepare_traces(
+            self.last_optimizer,
+            prepare_input_path,
+            prepare_output_path,
+            self.zephyr_build_path,
+            self.zephyr_base,
         )
 
     def _init_hardware(self):

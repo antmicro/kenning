@@ -61,7 +61,7 @@ class _ROS2GlobalContext(metaclass=Singleton):
 
     def start_node(self):
         if self.node_thread is not None:
-            KLogger.debug("ROS 2 Node is aleardy started")
+            KLogger.debug("ROS 2 Node is already started")
             return
 
         KLogger.debug("Initializing ROS 2 Node thread.")

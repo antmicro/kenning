@@ -226,7 +226,7 @@ class RenderReport(CommandTemplate):
 
         if hasattr(args, "parsed_report"):
             KLogger.debug(
-                "Parsed report has been found, using aleardy parsed report"
+                "Parsed report has been found, using already parsed report"
             )
             report = args.parsed_report
 

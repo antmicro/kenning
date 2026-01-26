@@ -17,6 +17,7 @@ class ZplSuffix(Enum):
 
     CTF = ".ctf"
     TVM_GRAPH_JSON = ".graph.json"
+    TVM_METADATA = ".tvm_metadata"
     TFLITE = ".tflite"
     TRACE_JSON = ".trace.json"
 

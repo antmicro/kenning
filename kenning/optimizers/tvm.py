@@ -8,6 +8,7 @@ Wrapper for TVM deep learning compiler.
 
 import json
 import re
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 import tvm
@@ -509,6 +510,11 @@ class TVMCompiler(Optimizer):
 
             else:
                 lib.export_library(outputpath)
+            metadata = lib.function_metadata
+            metadata_path = ZplSuffix.TVM_METADATA._get_path_with_suffix(
+                Path(outputpath)
+            )
+            metadata_path.write_text(tvm.ir.save_json(metadata))
 
     def compile(
         self,
@@ -591,6 +597,12 @@ class TVMCompiler(Optimizer):
                     "--tvm-model-paths",
                     str(
                         ZplSuffix.TVM_GRAPH_JSON._get_path_with_suffix(
+                            self.compiled_model_path
+                        )
+                    ),
+                    "--tvm-model-metadata-paths",
+                    str(
+                        ZplSuffix.TVM_METADATA._get_path_with_suffix(
                             self.compiled_model_path
                         )
                     ),

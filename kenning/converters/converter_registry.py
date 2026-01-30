@@ -206,7 +206,6 @@ class ConverterRegistry(metaclass=Singleton):
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")
 
-            current_model = None
             current_format = real_src
 
             try:

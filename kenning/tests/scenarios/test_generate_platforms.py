@@ -84,6 +84,13 @@ optimizers:
     compiled_model_path: ./output/magic-wand.tflite
     inference_input_type: float32
     inference_output_type: float32
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    workspace: .
+    output_path: FIELD_TO_BE_SET
+    run_west_update: false
+    extra_targets: [board-repl]
 """
     )
 
@@ -102,6 +109,9 @@ optimizers:
     def make_scenario(name):
         scenario = deepcopy(scenario_schema)
         scenario["platform"]["parameters"]["name"] = name
+        scenario["runtime_builder"]["parameters"][
+            "output_path"
+        ] = f"./output/kzr_build/{name}"
         return scenario
 
     SCENARIOS = []

@@ -403,13 +403,13 @@ class ONNXYOLOV4(YOLOWrapper):
         return ["onnx"]
 
     def save_to_onnx(self, model_path: PathOrURI):
-        shutil.copy(self.model_path, model_path)
+        self.save_model(model_path)
 
     def run_inference(self, X: List) -> Any:
         raise NotSupportedError
 
     def save_model(self, model_path: PathOrURI):
-        raise NotSupportedError
+        shutil.copy(self.model_path, model_path)
 
     def train_model(self):
         raise NotSupportedError

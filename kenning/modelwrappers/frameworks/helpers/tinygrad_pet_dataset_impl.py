@@ -464,6 +464,29 @@ class ResNetWithClassifier(ResNet):
 
         return x
 
+    def get_trainable_parameters(self):
+        """Return trainable parameters."""
+        return [p for p in get_parameters(self) if p.requires_grad]
+
+    def freeze_backbone(self):
+        """Freeze ResNet backbone parameters."""
+        for p in get_parameters(self):
+            p.requires_grad = False
+        for layer in [
+            self.finallayer1,
+            self.finallayer2,
+            self.finallayer3,
+            self.finaloutput,
+        ]:
+            for p in get_parameters(layer):
+                p.requires_grad = True
+
+    def unfreeze_backbone(self):
+        """Unfreeze all model parameters."""
+        for p in get_parameters(self):
+            p.requires_grad = True
+
+
 def fetch_pet_dataset(img_dir, anno_path):
     """Load image paths and labels from the Pet Dataset."""
     images, labels = [], []
@@ -529,6 +552,10 @@ if __name__ == "__main__":
             lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
         ]
     )
+
+    classes = 37
+    lr = 1e-4
+
     img_dir = "build/PetDataset/images"
     X_train, Y_train = fetch_pet_dataset(
         img_dir,
@@ -539,11 +566,19 @@ if __name__ == "__main__":
         "build/PetDataset/annotations/test.txt",
     )
 
-    model = ResNetWithClassifier(num=50, num_classes=37)
+    model = ResNetWithClassifier(num=50, num_classes=classes)
     model.load_from_pretrained()
-    from tinygrad import Context, GlobalCounters, TinyJit
-    optimizer = optim.Adam(get_parameters(model), lr=0.0001)
-    for _ in range(50):
+    model.freeze_backbone()
+
+    optimizer = optim.Adam(
+        model.get_trainable_parameters(),
+        lr=lr,
+    )
+
+    last_loss = 1e6
+    frozen = True
+
+    for epoch in range(50):
         losses, accs = train(
             model,
             X_train,
@@ -554,7 +589,17 @@ if __name__ == "__main__":
         )
 
         train_acc = float(np.mean(accs[-10:]))
-        print(f"Epoch {epoch}: train acc = {train_acc:.3f}")
+        loss = float(np.mean(losses[-10:]))
+
+        if last_loss < loss and frozen:
+            model.unfreeze_backbone()
+            optimizer = optim.Adam(
+                model.get_trainable_parameters(),
+                lr=lr * 0.1,
+            )
+            frozen = False
+
+        last_loss = loss
 
         test_acc = evaluate(
             model,
@@ -563,4 +608,14 @@ if __name__ == "__main__":
             num_classes=classes,
             transform=test_transform,
         )
-        print(f"Epoch {epoch}: test acc = {test_acc:.3f}")
+
+        safe_save(
+            get_state_dict(model),
+            f"resnet50_pet_classifier_epoch{epoch}.safetensors",
+        )
+
+        print(
+            f"Epoch {epoch}: "
+            f"train acc={train_acc:.3f}, "
+            f"test acc={test_acc:.3f}"
+        )

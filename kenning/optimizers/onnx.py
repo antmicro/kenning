@@ -81,6 +81,7 @@ class ONNXCompiler(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         input_model_path = ResourceURI(input_model_path)
 
@@ -103,7 +104,7 @@ class ONNXCompiler(Optimizer):
         }
 
         model = converter_registry.convert(
-            input_model_path, input_type, "onnx", **conversion_kwargs
+            input_model_path, input_type, "onnx", **conversion_kwargs, **kwargs
         )
 
         onnx.save(model, self.compiled_model_path)

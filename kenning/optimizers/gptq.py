@@ -81,6 +81,7 @@ class GPTQOptimizer(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
         from transformers import AutoTokenizer

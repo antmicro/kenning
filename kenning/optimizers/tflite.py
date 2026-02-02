@@ -374,6 +374,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         import tensorflow_model_optimization as tfmot
 
@@ -431,7 +432,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 "use_tf_select_ops": self.use_tf_select_ops,
             }
             converter = converter_registry.convert(
-                input_model_path, input_type, "tflite", **conversion_kwargs
+                input_model_path,
+                input_type,
+                "tflite",
+                **conversion_kwargs,
+                **kwargs,
             )
             try:
                 import tflite

@@ -521,6 +521,7 @@ class TVMCompiler(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
@@ -535,7 +536,7 @@ class TVMCompiler(Optimizer):
         }
 
         mod, params = converter_registry.convert(
-            input_model_path, input_type, "tvm", **conversion_kwargs
+            input_model_path, input_type, "tvm", **conversion_kwargs, **kwargs
         )
 
         self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)

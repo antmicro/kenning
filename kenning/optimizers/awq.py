@@ -115,6 +115,7 @@ class AWQOptimizer(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)

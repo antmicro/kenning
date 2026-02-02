@@ -134,6 +134,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         input_type = self.get_input_type(input_model_path)
 

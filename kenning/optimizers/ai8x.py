@@ -435,6 +435,7 @@ class Ai8xCompiler(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         if self.device_id is None:
             KLogger.warning("Ai8x device_id not specified. Defaulting to 85.")
@@ -500,7 +501,11 @@ class Ai8xCompiler(Optimizer):
             }
             input_type = self.get_input_type(input_model_path)
             converter_registry.convert(
-                input_model_path, input_type, "ai8x", **conversion_kwargs
+                input_model_path,
+                input_type,
+                "ai8x",
+                **conversion_kwargs,
+                **kwargs,
             )
             config_file = (
                 self.config_file

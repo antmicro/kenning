@@ -78,6 +78,7 @@ class ModelInserter(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         KLogger.warning("Inserting the model into pipeline")
         KLogger.warning("The input model from previous block is ignored")

@@ -209,6 +209,7 @@ class ExecuTorchOptimizer(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ) -> None:
         from executorch.exir import to_edge_transform_and_lower
         from torch.export import export
@@ -258,6 +259,7 @@ class ExecuTorchOptimizer(Optimizer):
             input_type,
             "executorch",
             **conversion_kwargs,
+            **kwargs,
         )
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)

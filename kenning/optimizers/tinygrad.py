@@ -120,6 +120,7 @@ class TinygradOptimizer(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         import onnx
 
@@ -157,7 +158,11 @@ class TinygradOptimizer(Optimizer):
         }
 
         model = converter_registry.convert(
-            input_model_path, input_type, "tinygrad", **conversion_kwargs
+            input_model_path,
+            input_type,
+            "tinygrad",
+            **conversion_kwargs,
+            **kwargs,
         )
         onnx_path = self.compiled_model_path.with_suffix(".onnx")
         onnx.save(model, onnx_path)

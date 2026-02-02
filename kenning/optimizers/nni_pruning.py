@@ -383,6 +383,7 @@ class NNIPruningOptimizer(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         input_type = self.get_input_type(input_model_path)
 
@@ -410,7 +411,11 @@ class NNIPruningOptimizer(Optimizer):
             "io_spec": io_spec_processed,
         }
         model = converter_registry.convert(
-            input_model_path, input_type, "torch", **conversion_kwargs
+            input_model_path,
+            input_type,
+            "torch",
+            **conversion_kwargs,
+            **kwargs,
         ).to(self.device)
 
         params_before = self.get_number_of_parameters(model)

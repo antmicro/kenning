@@ -138,11 +138,12 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         input_type = self.get_input_type(input_model_path)
 
         model = converter_registry.convert(
-            input_model_path, input_type, "keras"
+            input_model_path, input_type, "keras", **kwargs
         )
 
         pruning_params = {

@@ -190,6 +190,7 @@ class Optimizer(ArgumentsHandler, ABC):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         """
         Compiles the given model to a target format.
@@ -214,6 +215,8 @@ class Optimizer(ArgumentsHandler, ABC):
             Dictionary that has `input` and `output` keys that contain list
             of dictionaries mapping (property name) -> (property value)
             for the layers.
+        **kwargs : Dict
+            Additional keyword arguments used mainly by converters.
         """
         ...
 

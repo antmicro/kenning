@@ -463,14 +463,16 @@ class Ai8xCompiler(Optimizer):
 
                 # Check if batch norm is fused
                 bn_fused = True
-                for module in input_model.model.modules():
-                    if (
-                        isinstance(module, ai8x.QuantizationAwareModule)
-                        and module.bn is not None
-                    ):
-                        KLogger.debug("Unfused batch norm found")
-                        bn_fused = False
-                        break
+                if hasattr(input_model.model, "modules"):
+                    for module in input_model.model.modules():
+                        if (
+                            isinstance(module, ai8x.QuantizationAwareModule)
+                            and module.bn is not None
+                        ):
+                            KLogger.debug("Unfused batch norm found")
+                            bn_fused = False
+                            break
+
                 if not bn_fused:
                     KLogger.info("Fusing batch norm layers")
                     ai8x.fuse_bn_layers(input_model.model)

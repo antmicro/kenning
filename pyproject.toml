@@ -64,7 +64,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch",
-    "torch",
+    "torch==2.8.0",
     "torchvision>=0.15.0",
 ]
 mxnet = [

@@ -6,6 +6,7 @@
 A wrapper for the MMPose model used for pose estimation.
 """
 
+import shutil
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -95,11 +96,14 @@ class MMPoseModelWrapper(ModelWrapper):
             model_name=model_name,
         )
 
+        self.original_model_path = model_path
+
         self.model_prepared = False
         self.device = device
 
         self.pose_input_size = pose_input_size
         self.model_type = model_type
+        self.model = None
 
         self.keypoint_threshold = keypoint_threshold
 
@@ -121,6 +125,9 @@ class MMPoseModelWrapper(ModelWrapper):
     def load_model(self, model_path: PathOrURI):
         from rtmlib import RTMO, RTMPose
 
+        if self.model is not None:
+            del self.model
+
         if self.model_type == "rtmo":
             self.model = RTMO(
                 str(self.model_path),
@@ -139,10 +146,10 @@ class MMPoseModelWrapper(ModelWrapper):
             )
 
     def save_model(self, model_path: PathOrURI):
-        raise NotSupportedError
+        shutil.copy(self.original_model_path, model_path)
 
     def save_to_onnx(self, model_path: PathOrURI):
-        raise NotSupportedError
+        self.save_model(model_path)
 
     def run_inference(self, X: List[np.ndarray]) -> List[Any]:
         self.prepare_model()

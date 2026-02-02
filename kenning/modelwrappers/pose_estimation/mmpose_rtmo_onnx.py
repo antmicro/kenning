@@ -6,6 +6,7 @@
 A wrapper for the MMPose model used for pose estimation.
 """
 
+import shutil
 from typing import Any, Dict, List, Optional
 
 import cv2
@@ -91,6 +92,7 @@ class MMPoseRTMOONNX(ModelWrapper):
         self.original_model_path = model_path
 
         self.model_prepared = False
+        self.model = None
 
         self.keypoint_threshold = keypoint_threshold
         self.box_threshold = box_threshold
@@ -100,16 +102,24 @@ class MMPoseRTMOONNX(ModelWrapper):
     def prepare_model(self):
         if self.model_prepared:
             return
+        if not self.from_file:
+            raise NotSupportedError(
+                "MMPose RTMO ModelWrapper only supports loading\
+                model from a file."
+            )
+        self.load_model(self.original_model_path)
         self.model_prepared = True
 
     def load_model(self, model_path: PathOrURI):
-        pass
+        if self.model is not None:
+            del self.model
+        self.model = onnx.load_model(str(model_path))
 
     def save_model(self, model_path: PathOrURI):
-        raise NotSupportedError
+        self.save_model(model_path)
 
     def save_to_onnx(self, model_path: PathOrURI):
-        self.save_model(model_path)
+        shutil.copy(self.original_model_path, model_path)
 
     def run_inference(self, X: List[np.ndarray]) -> List[Any]:
         raise NotSupportedError

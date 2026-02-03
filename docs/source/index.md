@@ -20,5 +20,6 @@ kenning-development
 kenning-resources
 kenning-protocols
 kenning-platforms
+ros2-integration
 kenning-api
 ```

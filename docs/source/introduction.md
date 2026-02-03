@@ -17,4 +17,5 @@ This documentation consists of the following chapters:
 * [Creating applications with Kenning](kenning-flow) section describes KenningFlow and its usage,
 * [Developing Kenning blocks](kenning-development) section describes a way to develop new Kenning components,
 * [Kenning resources](kenning-resources) section describes how Kenning deals with its resources (pretrained models, datasets etc.),
+* [ROS 2 Integration](ros2-integration) section describes how Kenning can be used together with ROS 2 nodes,
 * [Kenning API](kenning-api) section provides an in-depth description of the {{projecturl}} API.

@@ -130,6 +130,8 @@ def get_all_snippets(
         Pattern with markdowns, has to be supported by `glob`.
     uses_gpu_flag: str
         Pattern of a docs gpu flag, '{{uses_gpu}}' by default.
+    uses_ros_flag: str
+        Pattern of a docs ROS 2 flag, '{{uses_ros2}}' by default.
 
     Yields
     ------

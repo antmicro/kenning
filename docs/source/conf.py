@@ -96,16 +96,15 @@ This example requires a CUDA-enabled GPU for proper execution, along with follow
 
 ros_info_admonition = """
 :::{info}
-This example requires a ROS 2 humble framework for proper execution.
+This example requires a ROS 2 Humble framework for proper execution.
 
-You can use our ready to use container with ROS 2 aleardy installed.
-Pull the latest Docker container with prepared ROS 2 environment, container.
+Ready to use Docker image can be pulled from the registry like so:
 
 ```bash test-skip
 docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
 ```
 
-Then, run a Docker container with:
+After this, run a Docker container with:
 
 ```bash test-skip
 docker run -it  \

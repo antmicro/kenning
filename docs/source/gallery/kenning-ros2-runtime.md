@@ -1,30 +1,30 @@
-# Instance Segmentation using ROS 2
+# Using Kenning with ROS 2 for evaluation and deployment
 
 This section contains tutorial of instance segmentation using Kenning and ROS 2 Nodes.
 
-In this example [YOLACT](https://github.com/dbolya/yolact?tab=readme-ov-file) model is going to be used, it stands for "You Only Look At CoefficientTs". Model itself is a fully convolutional model for real-time instance segmentation.
-
+In this example [YOLACT](https://github.com/dbolya/yolact?tab=readme-ov-file) (You Only Look At CoefficienTs) model for instance segmentation will be used.
 Model will be deployed on GPU using Kenning compiler [TVMCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tvm.py) - which is wrapper for [TVM deep neural network compiler](https://github.com/apache/tvm).
 
-# Requirements
+## Requirements
 
 For this example you need:
-- A camera for streaming frames
-- [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
-- [Docker](https://www.docker.com/) to use a prepared environment
-- [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) to provide access to the GPU in the Docker container
 
-# Quickstart
+* [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
+* [Docker](https://www.docker.com/) to use a prepared environment
+* [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) to provide access to the GPU in the Docker container
+* Git (to download all necessary sources)
+
+## Evaluating the model running in ROS 2 node
+
+The demo below will demonstrate evaluation and deployment of instance segmentation model for Lindenthal dataset.
 
 {{uses_gpu}}
 
-This is the minimal set of steps to use ROS 2 runtime and run demo application of Instance
-segmentation.
-
 {{uses_ros2}}
 
+Steps below assume working in a containerized environment.
 
-## Downloading the demo
+### Download the demo
 
 Create a workspace directory, where all downloaded repositories will be stored:
 
@@ -32,48 +32,50 @@ Create a workspace directory, where all downloaded repositories will be stored:
 mkdir kenning-ros2-demo && cd kenning-ros2-demo
 ```
 
-Then, download all denpendencies using the repo tool:
-```bash
-git config --global user.email "you@example.com"
+Then, download all dependencies using the `repo` tool:
 
+```bash
+# Configure git user if not configured (Docker does not have user configured)
+git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 
+# Obtain all sources
 repo init -u https://github.com/antmicro/ros2-vision-node-base.git -m examples/manifest.xml
-
 repo sync -j`nproc`
 ```
 
-## Starting the Docker environment
+### Prepare the Docker environment
 
+Install necessary GPU driver libraries in the container (library drivers should match host's drivers - this can be checked with `nvidia-smi`), for example:
 
-Install necessary GPU driver for example:
 ```bash
 apt update && apt install libnvidia-gl-530 -y
 ```
 
-Then, go to the workspace directory in the container:
+### Compile the demo and the model
 
-## Running the example
-
-First source the ROS 2 environment:
+In the container, first source the ROS 2 environment:
 
 ```bash
 source /opt/ros/setup.sh
 ```
 
-Then install kenning:
+Then install current version of Kenning:
+
 ```bash
 pip install "./kenning[tensorflow,object_detection,reports,onnx,docs,tflite,tvm,onnxruntime]"
 ```
 
-Download required models:
+In addition, download necessary models:
+
 ```bash
 mkdir -p models
 wget -P models/ https://dl.antmicro.com/kenning/models/instance_segmentation/yolact-lindenthal.onnx
 wget -P models/ https://dl.antmicro.com/kenning/models/instance_segmentation/yolact-lindenthal.onnx.json
 ```
 
-Build project:
+To build all necessary ROS 2 nodes for the demo, run:
+
 ```bash
 colcon build --base-path=src --packages-select \
     kenning_computer_vision_msgs \
@@ -82,20 +84,22 @@ colcon build --base-path=src --packages-select \
     --cmake-args ' -DBUILD_GUI=ON' ' -DBUILD_YOLACT=ON'
 ```
 
-Then execute YOLACT model optimalization using Apache TVM compiler:
+After this, compile the YOLACT model using TVM compiler like so:
 
 ```bash
 kenning optimize --json-cfg ./src/vision_node_base/examples/config/yolact-tvm-lindenthal.json
 ```
 
-After that you are good to go to run instance segmentation demo:
+### Evaluate the model
 
 Source installed nodes:
+
 ```bash
 source install/setup.sh
 ```
 
-Execute instance segmentation example using this launch file:
+Execute instance segmentation evaluation with a following launch file:
+
 ```bash
 ros2 launch cvnode_base yolact_kenning_launch.py \
     backend:=tvm \
@@ -104,13 +108,16 @@ ros2 launch cvnode_base yolact_kenning_launch.py \
     report_path:=tvm/report.md
 ```
 
-# Run the example with GUI Node
+This will run the compiled model and collect runtime statistics from running ROS 2 application.
 
-Example provide [GUI Node](https://github.com/antmicro/ros2-gui-node) that allows you to view data gathered in the topics, like
-images captured by camera node and instance segmentation output from Kenning in the real time.
+## Run the compiled model in full application
 
-GUI Node itself is a library for visualizaing data from ROS 2 topics and services. It provides tools for manipulating Widgets and data objects, used for data visualization. GUI itself
-is based upon [Dear Imgui](https://github.com/ocornut/imgui) library.
+Once the model is compiled and confirmed to work well, we can deploy Kenning's ROS 2 node encapsulating the model in a larger ROS 2 solution.
+Let's use it together with [GUI Node](https://github.com/antmicro/ros2-gui-node) and [Camera Node](https://github.com/antmicro/ros2-camera-node) to display live camera feed with instance segmentation.
+
+GUI Node itself is a library for visualizaing data from ROS 2 topics and services.
+It provides tools for manipulating Widgets and data objects, used for data visualization.
+GUI itself is based upon [Dear Imgui](https://github.com/ocornut/imgui) library.
 
 Steps are similar like in the example above but you have to allow non-network local connections to X11 so that the GUI can be started from the Docker container:
 
@@ -148,11 +155,12 @@ colcon build --base-path=src --packages-select \
 ```
 
 Source installed nodes:
+
 ```bash test-skip
 source install/setup.sh
 ```
 
-Now execute the example again:
+And execute the example as follows:
 ```bash test-skip
 ros2 launch cvnode_base yolact_kenning_launch.py \
     backend:=tvm \
@@ -161,87 +169,32 @@ ros2 launch cvnode_base yolact_kenning_launch.py \
     report_path:=tvm/report.md
 ```
 
-GUI should appear, with:
-- A live view with inferenced input data
-- Instance segmentation view based on predictions from Kenning
-- A widget with a list of detected objects
+With this, a GUI application should appear, with:
 
-# Preparing the Docker environment
+* A live view with inferenced input data
+* Instance segmentation view based on predictions from Kenning
+* A widget with a list of detected objects
 
-The Docker environment with all the necessary components is available in Dockerfile provided by example in repository [ros2-gui-node](https://github.com/antmicro/ros2-gui-node). The built image
-can be pulled with:
-```bash test-skip
-docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
-```
 
-or can be build.
+## Example of instance segmentation using camera and GUI Node:
 
-## Building the Docker image
+In this example full YOLACT instance segmentation model is going to be used with live input from the camera.
 
-First of clone ros2-gui-node repository:
+This demo requires a camera present under `/dev/videoX` path (`X` is a camera number).
 
-```bash test-skip
-git clone https://github.com/antmicro/ros2-gui-node
-cd ros2-gui-node
-git submodule update --init --recursive
-```
-
-Then go to the directory with example:
-
-```bash test-skip
-cd examples/kenning-instance-segmentation
-```
-
-then run the command:
-```bash test-skip
-docker build . --tag ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
-```
-
-Docker container itself contains:
-- [ROS 2 Humble](https://docs.ros.org/en/humble/index.html) environment
-- [OpenCV](https://github.com/opencv/opencv) for image processing
-- [Apache TVM](https://github.com/apache/tvm) for model optimization and runtime
-- CUDNN and CUDA libraries for NVIDIA GPU support
-- Additional development tools
-
-# Example using camera and GUI Node:
-
-In this example YOLACT segmentation is going to be used with live input from the camera.
-
-Before procedeing make sure that you have camera connected to your computer,
-you can check it by running:
-
-```bash test-skip
-ls /dev/video*
-```
-
-And then you should have output, with at least one entry like:
-
-```bash test-skip
-/dev/video0 /dev/video1 ...
-```
+Prepare a workspace for the demo:
 
 ```bash test-skip
 mkdir kenning-ros2-demo && cd kenning-ros2-demo
-```
 
-Then, download all denpendencies using the repo tool:
-```bash test-skip
 repo init -u https://github.com/antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
-
 repo sync -j`nproc`
 ```
 
-
-Now run docker container with additional parameter:
-
-And don't forget about:
+After this, run a Docker container with necessary environment as follows:
 
 ```bash test-skip
 xhost +local:
-```
-
-```bash test-skip
 docker run -it  \
     --device=/dev/video0:/dev/video0 \
     --device=/dev/dri:/dev/dri\
@@ -258,15 +211,18 @@ docker run -it  \
     /bin/bash
 ```
 
-If you camera is device other than /dev/video0 change line, to:
+:::{note}
+If you camera is device other than `/dev/video0`, just change the forwarded device, e.g.:
 
 ```bash test-skip
 --device=/dev/video0:/dev/videoN
 ```
 
-Where N is the id of the camera you want to use.
+Where N is the id of the camera that should be used.
+:::
 
-Install kenning with required dependencies:
+
+Install kenning with required dependencies in the image:
 
 ```bash test-skip
 pip install "./kenning[object_detection]"
@@ -274,15 +230,15 @@ pip install "./kenning[object_detection]"
 
 Compile the model using TVM:
 
-Source ROS 2 environment and build example:
+```bash test-skip
+kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
+```
+
+Build necessary nodes with:
 
 ```bash test-skip
 source /opt/ros/setup.sh
 colcon build --base-paths src --cmake-args -DBUILD_KENNING_YOLACT_DEMO=y
-```
-
-```bash test-skip
-kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
 ```
 
 Source installed nodes:
@@ -290,71 +246,7 @@ Source installed nodes:
 source install/setup.sh
 ```
 
-Now execute command:
+In the end, run:
 ```bash test-skip
 ros2 launch gui_node kenning-instance-segmentation.py use_gui:=True
-```
-
-
-# Executing Kenning in ROS 2
-
-The easiest option to execute Kenning process in ROS 2 project is to use ROS 2 launch file.
-
-In example provided above Kenning is executed in kenning-instance-segmentation.py or
-kenning-instance-segmentation-cpu.py launch file using:
-
-```python test-skip
-kenning_node = Node(
-        name="kenning_node",
-        executable="kenning",
-        arguments=["ros","flow","--verbosity","DEBUG"],
-        parameters=[{
-            "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json"
-        }]
-    )
-```
-
-It is standard Node from package launch_ros that is used to execute every ROS 2 related Node.
-
-You can pass standard command line arguments like verbosity level using **arguments** parameters in Node. You can set different verbosity level for Kenning logger and ROS 2 logger, in example above Kenning will log DEBUG messages but DEBUG messages related to ROS 2 itself won't be showed.
-
-If you want to see all logs, set arguments to:
-```python test-skip
-arguments=["--verbosity","DEBUG","--ros-args","--log-level","DEBUG"]
-```
-
-## Setting Kenning parameters
-
-You can use parameters section of Node to set all Kenning related parameters.
-
-To set Kenning pipeline you need to set appropriate arguments in **Node**:
-```python test-skip
-arguments=["ros","optimize","test" ...
-```
-is equivalent to running Kenning command with:
-```bash test-skip
-kenning optimize test ...
-```
-
-To use scenario config file, **config_file** parameter is used to provide path to the standard Kenning's scenario file:
-```json test-skip
-"config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json"
-```
-
-But you can also provide every standard command line argument supported by Kenning, using ROS 2 parameters, for example:
-
-```python test-skip
-arguments=["ros","optimize","test","--verbosity","DEBUG"],
-parameters=[{
-            "config_file":"./scripts/configs/tensorflow-pet-dataset-mobilenet.yml",
-            "measurements":"./workspace/data.json",
-            "report_path":"./report/report.md",
-            "report_name":"Mobilenet Pet Dataset Test"
-        }],
-```
-
-is equivalent to running the command:
-
-```bash test-skip
-kenning optimize test --cfg ./scripts/configs/tensorflow-pet-dataset-mobilenet.yml --measurements ./workspace/data.json --report-path ./report/report.md --report-name "Mobilenet Pet Dataset Test"
 ```

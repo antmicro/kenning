@@ -1,6 +1,6 @@
 # Kenning
 
-Copyright (c) 2020-2025 [Antmicro](https://www.antmicro.com)
+Copyright (c) 2020-2026 [Antmicro](https://www.antmicro.com)
 
 ![Kenning](img/kenninglogo.png)
 

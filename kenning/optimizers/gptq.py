@@ -23,7 +23,7 @@ class GPTQOptimizer(Optimizer):
     for quantizing LLMs using AutoGPTQ optimizer.
     """
 
-    inputtypes = {"safetensors-native": lambda x: x}
+    inputtypes = ["safetensors-native"]
 
     outputtypes = ["safetensors-gptq"]
 

@@ -25,12 +25,12 @@ class ONNXCompiler(Optimizer):
     The ONNX compiler.
     """
 
-    inputtypes = {
-        "keras": ...,
-        "torch": ...,
-        "tflite": ...,
-        "onnx": ...,
-    }
+    inputtypes = [
+        "keras",
+        "torch",
+        "tflite",
+        "onnx",
+    ]
 
     outputtypes = ["onnx"]
 
@@ -39,7 +39,7 @@ class ONNXCompiler(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         }
     }
 

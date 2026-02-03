@@ -22,8 +22,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
     into format that is compliant with sparsity_aware_kernel.
     """
 
-    inputtypes = {"safetensors-native": lambda x: x}
-
+    inputtypes = ["safetensors-native"]
     outputtypes = ["safetensors-sparsity-aware-kernel"]
 
     arguments_structure = {

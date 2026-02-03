@@ -24,9 +24,9 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     The TensorFlowPruning optimizer.
     """
 
-    inputtypes = {
-        "keras": ...,
-    }
+    inputtypes = [
+        "keras",
+    ]
 
     outputtypes = ["keras"]
 
@@ -35,7 +35,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "keras",
-            "enum": list(inputtypes.keys()),
+            "enum": inputtypes,
         },
         "prune_dense": {
             "description": "Prune only dense layers",

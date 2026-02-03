@@ -26,7 +26,7 @@ class AWQOptimizer(Optimizer):
     for quantizing LLMs using AutoAWQ optimizer.
     """
 
-    inputtypes = {"safetensors-native": lambda x: x}
+    inputtypes = ["safetensors-native"]
 
     outputtypes = ["safetensors-awq"]
 
@@ -35,7 +35,7 @@ class AWQOptimizer(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "safetensors-native",
-            "enum": list(inputtypes.keys()),
+            "enum": inputtypes,
         },
         # AWQ supports only 4bit quantization for now,
         # which may be upgraded in the future.

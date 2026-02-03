@@ -53,8 +53,7 @@ class OptimizerMock(Optimizer):
     Optimizer mock that only copies model.
     """
 
-    inputtypes = {"keras": lambda: None}
-
+    inputtypes = ["keras"]
     outputtypes = ["keras"]
 
     def compile(

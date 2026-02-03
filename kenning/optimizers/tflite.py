@@ -35,17 +35,17 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
     outputtypes = ["tflite"]
 
-    inputtypes = {
-        "keras": ...,
-        "onnx": ...,
-    }
+    inputtypes = [
+        "keras",
+        "onnx",
+    ]
 
     arguments_structure = {
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         },
         "target": {
             "description": "The TFLite target device scenario",

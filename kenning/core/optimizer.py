@@ -41,7 +41,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
     outputtypes = []
 
-    inputtypes = {}
+    inputtypes = []
 
     locations = ["host", "target"]
 
@@ -165,9 +165,9 @@ class Optimizer(ArgumentsHandler, ABC):
         inputtype : str
             Path to be set.
         """
-        assert inputtype in list(self.inputtypes.keys()) + ["any"], (
+        assert inputtype in (self.inputtypes + ["any"]), (
             f"Unsupported input type {inputtype}, only "
-            f"{', '.join(self.inputtypes.keys())} are supported"
+            f"{', '.join(self.inputtypes)} are supported"
         )
         self.inputtype = inputtype
 
@@ -225,7 +225,7 @@ class Optimizer(ArgumentsHandler, ABC):
         List[str]
             Names of possible input formats.
         """
-        return list(cls.inputtypes.keys())
+        return cls.inputtypes
 
     @classmethod
     def get_output_formats(cls) -> List[str]:

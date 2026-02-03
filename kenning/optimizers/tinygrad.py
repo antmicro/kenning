@@ -54,10 +54,10 @@ class TinygradOptimizer(Optimizer):
     for testing inference on Tinygrad models.
     """
 
-    inputtypes = {
-        "onnx": lambda x: x,
-        "safetensors": lambda x: x,
-    }
+    inputtypes = [
+        "onnx",
+        "safetensors",
+    ]
 
     outputtypes = ["tinygrad"]
 
@@ -66,7 +66,7 @@ class TinygradOptimizer(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         },
     }
 

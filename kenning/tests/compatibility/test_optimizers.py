@@ -63,7 +63,7 @@ def prepare_objects(
     except ValueError:
         pytest.skip("Blocks do not match")
 
-    model_type_input = list(optimizer_cls1.inputtypes.keys())[0]
+    model_type_input = optimizer_cls1.inputtypes[0]
     dataset, model, _ = DatasetModelRegistry.get(model_type_input)
 
     optimizers = []

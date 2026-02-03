@@ -308,10 +308,10 @@ class Ai8xCompiler(Optimizer):
 
     outputtypes = ["ai8x_c"]
 
-    inputtypes = {
-        "ai8x": ...,
-        "torch": ...,
-    }
+    inputtypes = [
+        "ai8x",
+        "torch",
+    ]
 
     SUPPORTED_DEVICE_IDS = [84, 85, 87]
     SUPPORTED_DEVICE_NAMES = ["MAX78002", "MAX78000"]

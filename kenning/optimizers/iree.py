@@ -72,10 +72,10 @@ class IREECompiler(Optimizer):
     IREE compiler.
     """
 
-    inputtypes = {
-        "keras": ...,
-        "tflite": ...,
-    }
+    inputtypes = [
+        "keras",
+        "tflite",
+    ]
 
     outputtypes = ["iree"]
 
@@ -84,7 +84,7 @@ class IREECompiler(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         },
         "backend": {
             "argparse_name": "--backend",

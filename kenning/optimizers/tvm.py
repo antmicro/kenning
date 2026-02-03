@@ -37,13 +37,13 @@ class TVMCompiler(Optimizer):
     The TVM compiler.
     """
 
-    inputtypes = {
-        "keras": ...,
-        "onnx": ...,
-        "darknet": ...,
-        "torch": ...,
-        "tflite": ...,
-    }
+    inputtypes = [
+        "keras",
+        "onnx",
+        "darknet",
+        "torch",
+        "tflite",
+    ]
 
     outputtypes = ["tvm"]
 
@@ -52,7 +52,7 @@ class TVMCompiler(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "any",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         },
         "target": {
             "description": "The kind or tag of the target device",

@@ -153,7 +153,7 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = {"torch": ..., "onnx": ...}
+    inputtypes = ["torch", "onnx"]
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,
@@ -165,7 +165,7 @@ class NNIPruningOptimizer(Optimizer):
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "torch",
-            "enum": list(inputtypes.keys()) + ["any"],
+            "enum": inputtypes + ["any"],
         },
         "finetuning_epochs": {
             "argparse_name": "--finetuning-epochs",

@@ -30,6 +30,7 @@ EXT_TO_FRAMEWORK = {
     ".pt": "torch",
     ".pth": "torch",
     ".tflite": "tflite",
+    ".graph_data": "tvm",
 }
 
 

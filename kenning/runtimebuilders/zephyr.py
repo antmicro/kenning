@@ -131,7 +131,7 @@ class WestRun:
 
         params.append("--")
         if extra_conf_file is not None:
-            params.append(f"-DEXTRA_CONF_FILE={extra_conf_file}")
+            params.append(f'-DEXTRA_CONF_FILE="{extra_conf_file}"')
 
         params.extend(extra_build_args)
 
@@ -233,7 +233,9 @@ class WestRun:
         cmd = [self._get_west_executable(), *params]
 
         try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+            subprocess.run(
+                " ".join(cmd), shell=True, **self._subprocess_cfg
+            ).check_returncode()
         except subprocess.CalledProcessError as e:
             msg = f"West command: '{' '.join(cmd)}' failed"
             if e.stderr is not None:
@@ -435,12 +437,12 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             f"-DMODULE_EXT_ROOT={self.workspace}",
             # Make sure KZR uses the same Python and dependencies,
             # required for Kenning installed with pipx
-            f'-DCONFIG_KENNING_PYTHON_PATH="{sys.executable}"',
+            f'-DCONFIG_KENNING_PYTHON_PATH=\\"{sys.executable}\\"',
         ]
 
         if self.model_path is not None:
             extra_build_args.append(
-                f'-DCONFIG_KENNING_MODEL_PATH="{self.model_path.resolve()}"'
+                f'-DCONFIG_KENNING_MODEL_PATH=\\"{self.model_path.resolve()}\\"'
             )
 
         extra_build_args.extend(self.extra_build_args)

@@ -38,13 +38,21 @@ class SensorRealtimeInferenceLoop(RealtimeInferenceLoop):
         platform: Optional[Platform] = None,
         protocol: Optional[Protocol] = None,
         runtime: Optional[Runtime] = None,
+        inference_limit: Optional[int] = None,
     ):
         super().__init__(
-            dataset, dataconverter, model_wrapper, platform, protocol, runtime
+            dataset,
+            dataconverter,
+            model_wrapper,
+            platform,
+            protocol,
+            runtime,
+            inference_limit,
         )
         self._sensors: list[Sensor] = []
         self._frequency = self._platform.sensors_frequency
         self._measurements = None
+        self.samples_fed = 0
 
     def _prepare(self):
         for sensor_path in self._platform.sensors:
@@ -63,10 +71,14 @@ class SensorRealtimeInferenceLoop(RealtimeInferenceLoop):
             if cur_time - self._dataset_last_sample_time > 1 / self._frequency:
                 self._dataset_last_sample_time = cur_time
                 sample = next(self._dataset_iter, None)
-                if sample is None:
+                if sample is None or (
+                    self.inference_limit is not None
+                    and self.samples_fed >= self.inference_limit
+                ):
                     if self._stop_event is not None:
                         self._stop_event.set()
                     return a
+                self.samples_fed = self.samples_fed + 1
                 if self._measurements is not None:
                     self._feed_sample(sample, self._measurements)
             return a
@@ -75,6 +87,7 @@ class SensorRealtimeInferenceLoop(RealtimeInferenceLoop):
 
     def _pre_loop_hook(self, measurements):
         self._measurements = measurements
+        self.samples_fed = 0
 
     def _set_i2c_hook(self, f):
         import System

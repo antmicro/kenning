@@ -43,9 +43,16 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
         protocol: Optional[Protocol] = None,
         runtime: Optional[Runtime] = None,
         model_path: str = "",
+        inference_limit: Optional[int] = None,
     ):
         super().__init__(
-            dataset, dataconverter, model_wrapper, platform, protocol, runtime
+            dataset,
+            dataconverter,
+            model_wrapper,
+            platform,
+            protocol,
+            runtime,
+            inference_limit,
         )
 
         self._model_path = Path(model_path)

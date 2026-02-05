@@ -5,6 +5,8 @@
 """
 Module containing an implementation of the anomaly inference loop.
 """
+from typing import Optional
+
 import sklearn
 import sklearn.metrics
 
@@ -34,9 +36,16 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         protocol=None,
         runtime=None,
         smoothing_window_size=10,
+        inference_limit: Optional[int] = None,
     ):
         super().__init__(
-            dataset, dataconverter, model_wrapper, platform, protocol, runtime
+            dataset,
+            dataconverter,
+            model_wrapper,
+            platform,
+            protocol,
+            runtime,
+            inference_limit,
         )
         self.smoothing_window_size = smoothing_window_size
 

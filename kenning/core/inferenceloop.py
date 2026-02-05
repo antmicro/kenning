@@ -30,7 +30,18 @@ class InferenceLoop(ArgumentsHandler, ABC):
     Abstract wrapper of inference loop.
     """
 
-    arguments_structure = {}
+    arguments_structure = {
+        "inference_limit": {
+            "argparse_name": "--inference-limit",
+            "description": "When used, the Kenning 'test' command will only "
+            "run the number of samples specified with this option, unless the "
+            "number specified is larger than size of the test subset of the "
+            "dataset, in which case all samples will be ran.",
+            "type": int,
+            "default": None,
+            "nullable": True,
+        },
+    }
 
     def __init__(
         self,
@@ -40,6 +51,7 @@ class InferenceLoop(ArgumentsHandler, ABC):
         platform: Optional[Platform] = None,
         protocol: Optional[Protocol] = None,
         runtime: Optional[Runtime] = None,
+        inference_limit: Optional[int] = None,
     ):
         self._platform = platform
         self._model_wrapper = model_wrapper
@@ -47,6 +59,7 @@ class InferenceLoop(ArgumentsHandler, ABC):
         self._protocol = protocol
         self._dataconverter: DataConverter = dataconverter
         self._runtime = runtime
+        self.inference_limit = inference_limit
 
     @abstractmethod
     def _prepare(self):
@@ -140,8 +153,12 @@ class SequentialInferenceLoop(InferenceLoop, ABC):
 
     def _run_loop(self, measurements: Measurements):
         with LoggerProgressBar() as logger_progress_bar:
+            iterator = self._dataset.iter_test()
             for X, y in tqdm(
-                self._dataset.iter_test(), **logger_progress_bar.kwargs
+                iterator.cull(self.inference_limit)
+                if self.inference_limit
+                else iterator,
+                **logger_progress_bar.kwargs,
             ):
                 # TODO: should_cancel?
                 prepX = self._preprocess(X)
@@ -170,9 +187,16 @@ class RealtimeInferenceLoop(InferenceLoop):
         platform=None,
         protocol=None,
         runtime=None,
+        inference_limit: Optional[int] = None,
     ):
         super().__init__(
-            dataset, dataconverter, model_wrapper, platform, protocol, runtime
+            dataset,
+            dataconverter,
+            model_wrapper,
+            platform,
+            protocol,
+            runtime,
+            inference_limit,
         )
         self._stop_event = threading.Event()
 

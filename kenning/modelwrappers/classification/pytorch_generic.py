@@ -65,13 +65,16 @@ class PyTorchGenericClassification(PyTorchWrapper):
         model_source=None,
         learning_rate=None,
         num_epochs=None,
+        export_dict=False,
     ):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.logdir = "logdir"
         self.batch_size = batch_size
         self.model_source = model_source
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
 
     def prepare_model(self):
         if self.model_prepared:

@@ -79,6 +79,15 @@ class DatasetIterator:
         """
         return ceil(len(self.indices) / self.dataset.batch_size)
 
+    def cull(self, length: int):
+        """
+        Truncates the iterator to the given length, by removing samples.
+
+        length: int
+            Desired length of the iterator.
+        """
+        self.indices = self.indices[:length]
+
 
 class Dataset(ArgumentsHandler, ABC):
     """

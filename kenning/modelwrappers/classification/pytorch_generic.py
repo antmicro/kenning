@@ -242,7 +242,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
                         dataset.batch_size,
                         dataset.num_features,
                     )
-                    if dataset.window_size is None
+                    if not hasattr(dataset, "window_size")
                     else (
                         dataset.batch_size,
                         dataset.window_size,
@@ -258,7 +258,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
                         dataset.batch_size,
                         dataset.num_features,
                     )
-                    if dataset.window_size is None
+                    if not hasattr(dataset, "window_size")
                     else (
                         dataset.batch_size,
                         dataset.window_size,

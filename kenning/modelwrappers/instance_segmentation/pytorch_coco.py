@@ -146,7 +146,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return {
             "input": [
                 {
-                    "name": "input.1",
+                    "name": "images",
                     "shape": (1, 3, 416, 416),
                     "dtype": "float32",
                 }

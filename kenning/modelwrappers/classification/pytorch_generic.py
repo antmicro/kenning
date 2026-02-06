@@ -65,7 +65,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
         model_source=None,
         learning_rate=None,
         num_epochs=None,
-        export_dict=False,
+        export_dict=True,
     ):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs

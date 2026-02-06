@@ -42,8 +42,11 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         dataset: Dataset,
         from_file: bool = True,
         model_name: Optional[str] = None,
+        export_dict: bool = True,
     ):
-        super().__init__(model_path, dataset, from_file, model_name)
+        super().__init__(
+            model_path, dataset, from_file, model_name, export_dict
+        )
         self.threshold = 0.7
         if dataset is not None:
             self.numclasses = dataset.numclasses

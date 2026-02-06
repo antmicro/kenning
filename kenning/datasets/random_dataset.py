@@ -584,7 +584,7 @@ class RandomizedAnomalyDetectionDataset(RandomizedImageClassificationDataset):
             "type": int,
             "default": 5,
         },
-        "features": {
+        "num_features": {
             "argparse_name": "--features",
             "description": "The number of features per one timestamps",
             "type": int,

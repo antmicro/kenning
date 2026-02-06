@@ -234,14 +234,17 @@ class PyTorchGenericClassification(PyTorchWrapper):
         cls,
         dataset: TabularDataset,
     ):
+        input_shape = (
+            (dataset.num_features,)
+            if hasattr(dataset, "num_features")
+            else (dataset.inputdims)
+        )
+
         return {
             "input": [
                 {
                     "name": "input_1",
-                    "shape": (
-                        dataset.batch_size,
-                        dataset.num_features,
-                    )
+                    "shape": (dataset.batch_size, *input_shape)
                     if not hasattr(dataset, "window_size")
                     else (
                         dataset.batch_size,
@@ -254,10 +257,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
             "processed_input": [
                 {
                     "name": "input_1",
-                    "shape": (
-                        dataset.batch_size,
-                        dataset.num_features,
-                    )
+                    "shape": (dataset.batch_size, *input_shape)
                     if not hasattr(dataset, "window_size")
                     else (
                         dataset.batch_size,
@@ -270,7 +270,10 @@ class PyTorchGenericClassification(PyTorchWrapper):
             "output": [
                 {
                     "name": "probs",
-                    "shape": (dataset.batch_size, len(dataset.class_names)),
+                    "shape": (
+                        dataset.batch_size,
+                        len(dataset.get_class_names()),
+                    ),
                     "dtype": "float32",
                 }
             ],

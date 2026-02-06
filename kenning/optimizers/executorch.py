@@ -144,7 +144,14 @@ class ExecuTorchOptimizer(Optimizer):
         for idx, input_spec in enumerate(input_specs):
             name = arg_names[idx]
             shape = input_spec.get("shape", None)
-            if shape is None or not isinstance(shape, (list, tuple)):
+
+            if shape is None or not isinstance(
+                shape,
+                (
+                    list,
+                    tuple,
+                ),
+            ):
                 dynamic_shapes[name] = None
                 continue
 
@@ -249,8 +256,14 @@ class ExecuTorchOptimizer(Optimizer):
 
         io_spec_processed = check_io_spec(io_spec)
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
         conversion_kwargs = {
             "io_spec": io_spec_processed,
+            "model_cls": model_cls,
         }
 
         input_type = self.get_input_type(input_model_path)
@@ -261,6 +274,7 @@ class ExecuTorchOptimizer(Optimizer):
             **conversion_kwargs,
             **kwargs,
         )
+        self.model.eval()
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)
         dynamic_shapes = self._extract_shapes_from_io_specification(

@@ -24,6 +24,7 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform
+from kenning.utils.compiler_flag import merge_compiler_flags
 from kenning.utils.logger import KLogger
 from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -59,7 +60,7 @@ class TVMCompiler(Optimizer):
         },
         "target": {
             "description": "The kind or tag of the target device",
-            "default": "llvm",
+            "default": None,
         },
         "target_attrs": {
             "description": "The target attributes (like device or arch) - e.g. '-device=arm_cpu -march=armv7e-m'",  # noqa: E501
@@ -167,7 +168,7 @@ class TVMCompiler(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_framework: str = "any",
-        target: str = "llvm",
+        target: Optional[str] = None,
         target_attrs: str = "",
         target_microtvm_board: Optional[str] = None,
         target_host: Optional[str] = None,
@@ -202,7 +203,7 @@ class TVMCompiler(Optimizer):
             Framework of the input model, used to select a proper backend. If
             set to "any", then the optimizer will try to derive model framework
             from file extension.
-        target : str
+        target : Optional[str]
             Target accelerator on which the model will be executed.
         target_attrs : str
             Target attributes.
@@ -256,14 +257,18 @@ class TVMCompiler(Optimizer):
         assert not (
             use_tensorrt and (use_fp16_precision or use_int8_precision)
         ), "TensorRT usage with FP16 or INT8 passes is not supported"
-        assert not (
-            use_tensorrt and ("cuda" not in target)
-        ), "TensorRT is only supported with CUDA target"
+        if target:
+            assert not (
+                use_tensorrt and ("cuda" not in target)
+            ), "TensorRT is only supported with CUDA target"
         self.model_framework = model_framework
 
         self.target = target
         self.target_attrs = target_attrs
         self.target_microtvm_board = target_microtvm_board
+
+        self.platform_target = None
+        self.platform_target_attrs = []
 
         self.target_host = target_host
         self.target_host_obj = (
@@ -289,35 +294,41 @@ class TVMCompiler(Optimizer):
     def init(self):
         import tvm.micro.testing as mtvmt
 
-        if self.target in mtvmt.utils.get_supported_platforms():
+        target = self._get_target()
+        assert target, (
+            "Target is not initialized. Ensure it is supplied "
+            + "either explicitly or through read_platform()"
+        )
+
+        target_attrs = self._get_target_attrs()
+
+        if target in mtvmt.utils.get_supported_platforms():
             if self.target_microtvm_board:
                 try:
                     self.target_obj = mtvmt.get_target(
-                        self.target, self.target_microtvm_board
+                        target, self.target_microtvm_board
                     )
-                    if self.target_attrs:
+                    if target_attrs:
                         KLogger.info(
                             "Target chosen from microTVM,"
                             " skipping provided target options"
                         )
                 except KeyError:
                     # board not found
-                    self.target_obj = tvm.target.Target(
-                        "c " + self.target_attrs
-                    )
+                    self.target_obj = tvm.target.Target("c " + target_attrs)
             else:
-                self.target_obj = tvm.target.Target("c " + self.target_attrs)
+                self.target_obj = tvm.target.Target("c " + target_attrs)
                 self.target_microtvm_board = True
         else:
-            self.target_obj = tvm.target.Target(
-                f"{self.target} {self.target_attrs}"
-            )
+            self.target_obj = tvm.target.Target(f"{target} {target_attrs}")
 
         KLogger.debug(f"Using target: {self.target_obj}")
 
     def compile_model(self, mod, params, outputpath, io_spec):
         # additional regular optimizations applied to models
         transforms = [relay.transform.RemoveUnusedFunctions()]
+
+        target = self._get_target()
 
         if self.use_int8_precision:
 
@@ -386,7 +397,7 @@ class TVMCompiler(Optimizer):
                 lib.export_library(str(outputpath) + ".so")
         else:
             pass_config = {}
-            if self.target.startswith("zephyr"):
+            if target.startswith("zephyr"):
                 pass_config["tir.disable_vectorize"] = True
 
             with tvm.transform.PassContext(
@@ -560,24 +571,17 @@ class TVMCompiler(Optimizer):
         self.save_io_specification(input_model_path, io_spec)
 
     def read_platform(self, platform: Platform):
-        target_attrs = (
-            " ".join(platform.compilation_flags)
-            if getattr(platform, "compilation_flags", None) is not None
-            else ""
-        )
+        platform_target_attrs = getattr(platform, "compilation_flags", [])
 
         match type(platform).__name__:
             case "CUDAPlatform":
-                self.target = "cuda"
-                target_attrs = " ".join(
-                    [
-                        target_attrs,
-                        f"-arch={platform.compute_capability}",
-                    ]
+                self.platform_target = "cuda"
+                platform_target_attrs.append(
+                    f"-arch={platform.compute_capability}"
                 )
 
             case "ZephyrPlatform":
-                self.target = "zephyr"
+                self.platform_target = "zephyr"
                 self.target_microtvm_board = platform.name
                 if self.zephyr_header_template is None:
                     self.zephyr_header_template = ResourceURI(
@@ -589,10 +593,10 @@ class TVMCompiler(Optimizer):
                     f"Unsupported platform: {type(platform).__name__}"
                 )
                 return None
-        self.target_attrs = target_attrs
-        KLogger.info(
-            f"Set TVMCompiler target to {self.target}, {platform.name}"
-        )
+
+        self.platform_target_attrs = platform_target_attrs
+
+        KLogger.info(f"Set TVMCompiler target to {self.target}")
 
     def get_framework_and_version(self):
         return ("tvm", tvm.__version__)
@@ -634,3 +638,13 @@ class TVMCompiler(Optimizer):
     @classmethod
     def get_framework_version(cls) -> str:
         return tvm.__version__
+
+    def _get_target(self):
+        return self.target or self.platform_target or "llvm"
+
+    def _get_target_attrs(self, tostring=True):
+        return merge_compiler_flags(
+            self.target_attrs.split(),
+            self.platform_target_attrs,
+            tostring=tostring,
+        )

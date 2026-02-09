@@ -106,7 +106,7 @@ class IREECompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
-        backend: str = "vmvx",
+        backend: Optional[str] = None,
         model_framework: str = "any",
         compiler_args: Optional[List[str]] = None,
         model_wrapper: Optional[ModelWrapper] = None,
@@ -124,7 +124,7 @@ class IREECompiler(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
-        backend : str
+        backend : Optional[str]
             Backend on which the model will be executed.
         model_framework : str
             Framework of the input model, used to select a proper backend. If
@@ -142,9 +142,9 @@ class IREECompiler(Optimizer):
         self.model_framework = model_framework
         self.set_input_type(model_framework)
         self.backend = backend
+        self.platform_backend = None
         self.compiler_args = compiler_args
 
-        self.converted_backend = backend_convert.get(backend, backend)
         if compiler_args is not None:
             self.parsed_compiler_args = [
                 f"--{option}" for option in compiler_args
@@ -221,11 +221,12 @@ class IREECompiler(Optimizer):
         )
 
         try:
+            backend = self._get_backend()
             compiled_buffer = ireecmp.compile_file(
                 str(intermediate_mlir_path.resolve()),
                 input_type="onnx",
                 extra_args=self.parsed_compiler_args,
-                target_backends=[self.converted_backend],
+                target_backends=[backend_convert.get(backend, backend)],
             )
         except ireecmp.CompilerToolError as e:
             raise CompilationError(e)
@@ -248,8 +249,7 @@ class IREECompiler(Optimizer):
         super().read_platform(platform)
         match type(platform).__name__:
             case "CUDAPlatform":
-                self.backend = "cuda"
-                self.converted_backend = "cuda"
+                self.platform_backend = "cuda"
                 if platform.compute_capability in [
                     "ada",
                     "hopper",
@@ -277,3 +277,6 @@ class IREECompiler(Optimizer):
                 KLogger.warning(
                     f"Unsupported platform: {type(platform).__name__}."
                 )
+
+    def _get_backend(self):
+        return self.backend or self.platform_backend or "cuda"

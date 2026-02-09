@@ -214,6 +214,17 @@ SKIP = (
         ("MistralInstruct", "AWQOptimizer"),
         ("MistralInstruct", "GPTQOptimizer"),
         ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+        # For now we don't have support for emlearn format
+        ("StubEmlearnModel", "Ai8xCompiler"),
+        ("StubEmlearnModel", "ExecuTorchOptimizer"),
+        ("StubEmlearnModel", "IREECompiler"),
+        ("StubEmlearnModel", "NNIPruningOptimizer"),
+        ("StubEmlearnModel", "ONNXCompiler"),
+        ("StubEmlearnModel", "TFLiteCompiler"),
+        ("StubEmlearnModel", "TVMCompiler"),
+        ("StubEmlearnModel", "TinygradOptimizer"),
+        ("StubEmlearnModel", "TensorFlowClusteringOptimizer"),
+        ("StubEmlearnModel", "TensorFlowPruningOptimizer"),
     ]
     # Skip LLM specific optimizers for non-LLMs.
     + [

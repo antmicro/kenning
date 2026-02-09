@@ -608,7 +608,7 @@ class AutoML(ArgumentsHandler, ABC):
             return CompatibilityStatus.SUCCESS, None
 
         model_size = None
-        with NamedTemporaryFile("w") as fd:
+        with NamedTemporaryFile("w", suffix=".pth") as fd:
             # Save model to file
             model_wrapper: ModelWrapper = model_wrapper_cls(
                 Path(fd.name), self.reduced_dataset

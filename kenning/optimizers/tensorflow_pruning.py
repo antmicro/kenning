@@ -16,6 +16,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -142,8 +143,27 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     ):
         input_type = self.get_input_type(input_model_path)
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
+        if io_spec is None:
+            io_spec = self.load_io_specification(input_model_path)
+
+        io_spec = check_io_spec(io_spec)
+
+        conversion_kwargs = {
+            "io_spec": io_spec,
+            "model_cls": model_cls,
+        }
+
         model = converter_registry.convert(
-            input_model_path, input_type, "keras", **kwargs
+            input_model_path,
+            input_type,
+            "keras",
+            **conversion_kwargs,
+            **kwargs,
         )
 
         pruning_params = {

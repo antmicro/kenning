@@ -407,8 +407,14 @@ class NNIPruningOptimizer(Optimizer):
                 "No input/output specification found"
             )
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
         conversion_kwargs = {
             "io_spec": io_spec_processed,
+            "model_cls": model_cls,
         }
         model = converter_registry.convert(
             input_model_path,

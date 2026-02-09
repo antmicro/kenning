@@ -529,8 +529,14 @@ class TVMCompiler(Optimizer):
         io_spec_processed = check_io_spec(io_spec)
         input_type = self.get_input_type(input_model_path)
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
         conversion_kwargs = {
             "io_spec": io_spec_processed,
+            "model_cls": model_cls,
             "conversion_func": self.conversion_func,
             "libdarknet_path": self.libdarknet_path,
         }

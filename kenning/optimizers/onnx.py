@@ -91,12 +91,11 @@ class ONNXCompiler(Optimizer):
         io_spec = check_io_spec(io_spec)
 
         input_type = self.get_input_type(input_model_path)
-        model_cls = None
-        try:
-            self.model_wrapper.create_model_structure()
-            model_cls = self.model_wrapper.model
-        except AttributeError:
-            KLogger.warning("Problems with deriving model architecture.")
+
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
 
         conversion_kwargs = {
             "io_spec": io_spec,

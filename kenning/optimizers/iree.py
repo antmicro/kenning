@@ -170,9 +170,17 @@ class IREECompiler(Optimizer):
         elif input_type == "tflite":
             self.compiler_input_type = "tosa"
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
         io_spec_processed = check_io_spec(io_spec)
 
-        conversion_kwargs = {"io_spec": io_spec_processed}
+        conversion_kwargs = {
+            "io_spec": io_spec_processed,
+            "model_cls": model_cls,
+        }
 
         # To compile a model with IREE compiler, we first convert it to ONNX
         # (that's because IREE TensorFlow workflow, as of version 3.6.0 is

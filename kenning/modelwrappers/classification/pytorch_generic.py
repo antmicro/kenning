@@ -55,6 +55,11 @@ class PyTorchGenericClassification(PyTorchWrapper):
 
     default_dataset = TabularDataset
 
+    default_template_path = (
+        "kenning/modelwrappers/classification/"
+        "generic_templates/torch_classification_test.py"
+    )
+
     def __init__(
         self,
         model_path,
@@ -71,7 +76,12 @@ class PyTorchGenericClassification(PyTorchWrapper):
         self.num_epochs = num_epochs
         self.logdir = "logdir"
         self.batch_size = batch_size
-        self.model_source = model_source
+
+        if model_source is not None:
+            self.model_source = model_source
+        else:
+            self.model_source = self.default_template_path
+
         super().__init__(
             model_path, dataset, from_file, model_name, export_dict
         )
@@ -80,14 +90,13 @@ class PyTorchGenericClassification(PyTorchWrapper):
         if self.model_prepared:
             return None
 
-        self.from_file = True
-
         if self.from_file:
             self.load_model(self.model_path)
             self.model_prepared = True
         else:
-            msg = "'from_file' is false"
-            raise RuntimeError(msg)
+            self.create_model_structure()
+            self.model_prepared = True
+            self.save_model(self.model_path)
 
         self.model.to(self.device)
 

@@ -96,7 +96,9 @@ def create_model(model_cls: Type[ModelWrapper], dataset: Optional[Dataset]):
         model_path = get_tmp_path()
         remove_file_or_dir(model_path)
         from_file = False
-    return model_cls(model_path, dataset, from_file)
+    return model_cls(
+        model_path=model_path, dataset=dataset, from_file=from_file
+    )
 
 
 @pytest.fixture(scope="function")

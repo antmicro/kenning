@@ -231,7 +231,9 @@ The fields describing the argument are as follows:
 Let's add parameters to the example class:
 
 ```python
+from typing import Optional, Literal
 from pathlib import Path
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
@@ -268,15 +270,23 @@ class TensorFlowLiteCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 0.25,
-            quantize_model: bool = False):
+            quantize_model: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
+    ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
         self.quantize_model = quantize_model
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location=location,
+            model_wrapper=model_wrapper,
+        )
 
     @classmethod
     def from_argparse(cls, dataset, args):
@@ -312,35 +322,40 @@ The list of supported output formats is represented in a class with an `outputty
     ]
 ```
 
-The supported input formats are delivered in a form of a dictionary, mapping the supported input type name to the function used to load a model:
+Likewise, the list of support input formats is also organized in the same class as the `inputtypes` list:
 
 ```python test-skip
-    inputtypes = {
-        'keras': kerasconversion,
-        'tensorflow': tensorflowconversion
-    }
+    inputtypes = [
+        'keras',
+        'tensorflow'
+    ]
 ```
 
 Let's update the code with supported types:
 
 ```python
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.core.dataset import Dataset
+
+from typing import Optional, Literal
+
+
 import tensorflow as tf
 from pathlib import Path
 
 
-def kerasconversion(modelpath: Path):
-    model = tf.keras.models.load_model(modelpath)
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    return converter
-
-
-def tensorflowconversion(modelpath: Path):
-    converter = tf.lite.TFLiteConverter.from_saved_model(modelpath)
-    return converter
-
-
 class TensorFlowLiteCompiler(Optimizer):
+
+    outputtypes = [
+        'tflite'
+    ]
+
+    inputtypes = [
+        'keras',
+        'tensorflow'
+    ]
+
     arguments_structure = {
         'inferenceinputtype': {
             'argparse_name': '--inference-input-type',
@@ -368,28 +383,27 @@ class TensorFlowLiteCompiler(Optimizer):
         }
     }
 
-    outputtypes = [
-        'tflite'
-    ]
-
-    inputtypes = {
-        'keras': kerasconversion,
-        'tensorflow': tensorflowconversion
-    }
-
     def __init__(
             self,
             dataset: Dataset,
             compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 0.25,
-            quantize_model: bool = False):
+            quantize_model: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
+    ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
         self.quantize_model = quantize_model
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location=location,
+            model_wrapper=model_wrapper,
+        )
 
     @classmethod
     def from_argparse(cls, dataset, args):
@@ -413,28 +427,29 @@ In case of the [](optimizer-api) class, it is the `compile` method and `get_fram
 When implementing unimplemented methods, it is crucial to follow type hints both for inputs and outputs - more details can be found in the documentation for the method.
 Sticking to the type hints ensures compatibility between blocks, which is required for a seamless connection between compilation components.
 
-Let's finish the implementation of the [](optimizer-api)-based class:
+Let's finish the implementation of the [](optimizer-api)-based class.
 
 ```python
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
+from kenning.utils.update_h5_file import update_h5_file
 import tensorflow as tf
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Literal
 
-
-def kerasconversion(modelpath: Path):
-    model = tf.keras.models.load_model(modelpath)
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    return converter
-
-
-def tensorflowconversion(modelpath: Path):
-    converter = tf.lite.TFLiteConverter.from_saved_model(modelpath)
-    return converter
-
+from kenning.converters import converter_registry
 
 class TensorFlowLiteCompiler(Optimizer):
+    outputtypes = [
+        'mytflite'
+    ]
+
+    inputtypes = [
+        'keras',
+        'tensorflow',
+    ]
+
     arguments_structure = {
         'inferenceinputtype': {
             'argparse_name': '--inference-input-type',
@@ -462,28 +477,22 @@ class TensorFlowLiteCompiler(Optimizer):
         }
     }
 
-    outputtypes = [
-        'tflite'
-    ]
-
-    inputtypes = {
-        'keras': kerasconversion,
-        'tensorflow': tensorflowconversion
-    }
-
     def __init__(
             self,
             dataset: Dataset,
             compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 0.25,
-            quantize_model: bool = False):
+            quantize_model: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
+    ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
         self.quantize_model = quantize_model
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(dataset, compiled_model_path, location=location)
 
     @classmethod
     def from_argparse(cls, dataset, args):
@@ -506,25 +515,55 @@ class TensorFlowLiteCompiler(Optimizer):
             io_spec = self.load_io_specification(inputmodelpath)
 
         # load the model using chosen input type
-        converter = self.inputtypes[self.inputtype](inputmodelpath)
+        if self.inputtype == 'keras':
+            if inputmodelpath.suffix in ('.h5', '.hdf5'):
+                # Update to the newest version of Tensorflow.
+                inputmodelpath = update_h5_file(inputmodelpath)
+            model = tf.keras.models.load_model(str(inputmodelpath))
+            keras_model = model
 
-        # preparing model compilation using class arguments
-        if self.quantize_model:
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            converter.target_spec.supported_ops = [
-                tf.lite.OpsSet.TFLITE_BUILTINS_INT8
-            ]
-        converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)
-        converter.inference_output_type = tf.as_dtype(self.inferenceoutputtype)
+            if self.quantize_model:
+                import tensorflow_model_optimization as tfmodt
 
-        # dataset can be used during compilation i.e. for calibration
-        # purposes
-        if self.dataset and self.quantize_model:
-            def generator():
-                for entry in self.dataset.calibration_dataset_generator(
-                        self.dataset_percentage):
-                    yield [np.array(entry, dtype=np.float32)]
-            converter.representative_dataset = generator
+                def annotate_model(layer):
+                    # Mark every dense layer so that it will be quantized.
+                    if isinstance(layer, tf.keras.layers.Dense):
+                        return tfmot.quantization.keras.quantize_annotate_layer(
+                            layer
+                        )
+                    return layer
+
+                # Create a copy with the quantize annotations applied.
+                quant_aware_annotate_model = tf.keras.models.clone_model(
+                    model, clone_function=annotate_model
+                )
+
+                # Perform quantization
+                pcqat_model = tfmot.quantization.keras.quantize_apply(
+                    quant_aware_annotate_model,
+                    tfmot.experimental.combine.Default8BitClusterPreserveQuantizeScheme(
+                        preserve_sparsity=True
+                    ),
+                )
+
+                keras_model = self.train_model(pcqat_model)
+            converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
+        else:
+            # We need to find the converter somewhere else.
+            inputtype = self.get_input_type(inputmodelpath)
+            io_spec_processed = check_io_spec(io_spec)
+            conversion_kwargs = {
+                'io_spec': io_spec_processed,
+                'target': self.target,
+                'inferenceinputtype': self.inferenceinputtype,
+                'inferenceoutputtype': self.inferenceoutputtype,
+            }
+
+            # Use the converter_registry to find a converter from
+            # our input type to tflite
+            converter = converter_registry.convert(
+                inputmodelpath, inputtype, 'tflite', **conversion_kwargs
+            )
 
         # compile and save the model
         tflite_model = converter.convert()
@@ -582,6 +621,8 @@ There are several important things regarding the code snippet above:
 * The information regarding inputs and outputs can be collected with the `self.load_io_specification` method, present in all classes.
 * The information about the input format to use is delivered in the `self.inputtype` field - it is updated automatically by the function consulting the best supported format for previous and current block.
 * If the I/O metadata is affected by the current block, it needs to be updated and saved along with the compiled model using the `self.save_io_specification` method.
+* When the input type is different than the ones defined in `self.inputtype`, `converter_registry` is used to find a suitable [ModelConverter](kenning.core.converter.ModelConverter).
+It is possible that intermediate formats will be needed during a conversion.
 
 ### Using the implemented block
 

@@ -43,6 +43,7 @@ dependencies = [
     "tqdm>=4.60.0",
     "kenning[onnx2tf] ; python_version < '3.12'",
     "polars",
+    "setuptools==80.9.0",
 ]
 
 [project.optional-dependencies]

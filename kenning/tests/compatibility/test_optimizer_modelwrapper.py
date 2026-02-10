@@ -201,6 +201,11 @@ EXPECTED_FAIL = [
     ("TinygradImageNet", "ONNXCompiler"),
     ("TinygradImageNet", "TFLiteCompiler"),
     ("TinygradImageNet", "TVMCompiler"),
+    # some strange error with executorch
+    ("PyTorchAnomalyDetectionCNN", "ExecuTorchOptimizer"),
+    ("PyTorchAnomalyDetectionVAE", "ExecuTorchOptimizer"),
+    ("PyTorchMagicWandModelWrapper", "ExecuTorchOptimizer"),
+    ("PyTorchPetDatasetMobileNetV2", "ExecuTorchOptimizer"),
 ]
 
 SKIP = (

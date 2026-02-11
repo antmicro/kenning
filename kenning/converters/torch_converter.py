@@ -62,11 +62,29 @@ class TorchConverter(ModelConverter):
         import torch
 
         if not model:
-            model = torch.load(
+            loaded_data = torch.load(
                 self.source_model_path,
                 weights_only=False,
                 map_location=torch.device(_DEFAULT_DEVICE),
             )
+            if isinstance(loaded_data, dict):
+                model_cls = kwargs.get("model_cls")
+
+                if not model_cls:
+                    raise ConversionError(
+                        "The loaded file is a state_dict containing "
+                        "only weights. To convert this, you must "
+                        "provide the model class."
+                    )
+
+                model = model_cls
+
+                if "model_state_dict" in loaded_data:
+                    model.load_state_dict(loaded_data["model_state_dict"])
+                else:
+                    model.load_state_dict(loaded_data)
+            else:
+                model = loaded_data
 
         return model
 

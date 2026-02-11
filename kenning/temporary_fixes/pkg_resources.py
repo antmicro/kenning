@@ -6,39 +6,52 @@
 Package that is mocking pkg_resources module.
 """
 
-import importlib_resources
+import os
+import pkgutil
+from pathlib import Path
 
 
 def resource_string(x, y):
     """
     A mock for pkg_resources resource_string function.
     """
-    return importlib_resources.files(x).joinpath(y).read_bytes()
+    return pkgutil.get_data(x, y)
 
 
 def resource_isdir(x, y):
     """
     A mock for pkg_resources resource_isdir function.
     """
-    return importlib_resources.files(x).joinpath(y).is_dir()
+    resource_path = resource_filename(x, y)
+
+    return os.path.isdir(resource_path)
 
 
 def resource_listdir(x, y):
     """
     A mock for pkg_resources resource_listdir function.
     """
-    return importlib_resources.files(f"{x}.{y}").iterdir()
+    module_path = resource_filename(x, y)
+
+    return os.listdir(module_path)
 
 
 def resource_stream(x, y):
     """
     A mock for pkg_resources resource_stream function.
     """
-    return importlib_resources.files(x).joinpath(y)
+    loader = pkgutil.get_loader(x)
+
+    module_path = Path(pkgutil.get_loader(x).get_filename())
+    resource_path = os.path.join(module_path.parent, y)
+
+    return loader.get_data(resource_path)
 
 
 def resource_filename(x, y):
     """
     A mock for pkg_resources resource_filename function.
     """
-    return importlib_resources.as_file(importlib_resources.files(x) / y)
+    module_path = Path(pkgutil.get_loader(x).get_filename())
+
+    return os.path.join(module_path.parent, y)

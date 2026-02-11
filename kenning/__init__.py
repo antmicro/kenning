@@ -19,6 +19,13 @@ from importlib.metadata import PackageNotFoundError, version
 from kenning.utils.excepthook import kenning_missing_import_excepthook
 from kenning.utils.logger import KLogger
 
+try:
+    import pkg_resources
+except ImportError:
+    import kenning.temporary_fixes.pkg_resources as pkg_resources
+
+    sys.modules["pkg_resources"] = pkg_resources
+
 # Extend execpthook function to handle ModuleNotFoundError
 if os.environ.get("KENNING_USE_DEFAULT_EXCEPTHOOK", None) is None:
     sys.excepthook = kenning_missing_import_excepthook

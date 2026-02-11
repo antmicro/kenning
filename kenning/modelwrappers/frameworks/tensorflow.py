@@ -88,7 +88,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
 
     def save_model(self, model_path: PathOrURI):
         self.prepare_model()
-        self.model.export(model_path)
+        self.model.save(model_path, overwrite=True, save_format="h5")
 
     def run_inference(self, X: List[np.ndarray]) -> List[np.ndarray]:
         self.prepare_model()

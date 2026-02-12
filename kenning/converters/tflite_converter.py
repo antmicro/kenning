@@ -71,6 +71,8 @@ class TFLiteConverter(ModelConverter):
             is_model = isinstance(model, tflite.Model.Model)
 
         if not is_model:
+            import tensorflow as tf
+
             target = kwargs.get("targets", "default")
             inferenceinputtype = kwargs.get("inferenceinputtype", "float32")
             inferenceoutputtype = kwargs.get("inferenceoutputtype", "float32")

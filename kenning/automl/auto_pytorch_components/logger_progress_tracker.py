@@ -18,7 +18,11 @@ from autoPyTorch.utils.progress_tracker import (
 from smac.utils.constants import MAXINT
 from tqdm import tqdm
 
-from kenning.utils.logger import KLogger, LoggerProgressBar
+from rich.console import Console
+from rich.live import Live
+from rich.panel import Panel
+
+from kenning.utils.logger import KLogger, LoggerProgressBar, RichLogger
 
 
 class TrainingProgressLogger(TrainingProgressTracker):
@@ -38,7 +42,6 @@ class TrainingProgressLogger(TrainingProgressTracker):
         self.lowest_cost = MAXINT
         self.best_metrics = {}
         self.pbar = None
-
         TrainingProgressTracker.__init__(self, total_time_expected_seconds)
 
     def __enter__(self):
@@ -181,3 +184,42 @@ class EpochEvaluationStepLogger(EpochTracker):
         if self.progress_tracker:
             self.progress_tracker.report_time()
         self.pbar.update(1)
+
+class RichLoggerTrainingProgressTracker(TrainingProgressTracker):
+    def __init__(
+        self,
+        richlogger: RichLogger,
+        total_time_expected_seconds: float,
+    ):
+        self.richlogger = richlogger
+
+        self.total_time_passed = 0
+        self.lowest_cost = MAXINT
+        self.best_metrics = {}
+        
+        super().__init__(total_time_expected_seconds)
+
+    def __enter__(self):
+        self.total_time_passed = 0
+        self.lowest_cost = MAXINT
+        self.best_metrics = {}
+        return super().__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        super().__exit__(exc_type, exc_val, exc_tb)
+
+    def report_progress(
+        self, time_passed: float, metrics: Dict, model: str, cost
+    ) -> None:
+        model_str = f'Model backbone: {model}'
+        metrics_str = 'No metrics yet'
+        if self.best_metrics != {}:
+            best_metrics = 'so-far best configuration metrics:'
+            accuracy_str = f'- accuracy: {metrics["accuracy"]}'
+            f1_str = f'- f1: {metrics["f1"]}'
+            f1_macro = f'- f1_macro: {metrics["f1_macro"]}'
+            f1_micro = f'- f1_micro: {metrics["f1_micro"]}'
+            log_loss = f'- log loss: {metrics["log_loss"]}'
+            metrics_str = f'{best_metrics}\n{accuracy_str}\n{f1_str}\n{f1_macro}\n{f1_micro}\n{log_loss}'
+        msg_str = f'{model_str}\n{metrics_str}'
+        self.richlogger.enqueue_bar(msg_str)

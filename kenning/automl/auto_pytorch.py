@@ -31,6 +31,7 @@ from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
     EpochEvaluationStepLogger,
     EpochTrainingStepLogger,
     TrainingProgressLogger,
+    RichLoggerTrainingProgressTracker,
 )
 from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
@@ -42,7 +43,7 @@ from kenning.core.platform import Platform
 from kenning.core.runtime import CompatibilityStatus, Runtime
 from kenning.utils.args_manager import get_type, traverse_parents_with_args
 from kenning.utils.class_loader import load_class
-from kenning.utils.logger import KLogger
+from kenning.utils.logger import KLogger, RichLogger
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
 BUDGET_TYPES = ["epochs", "runtime"]
@@ -704,6 +705,9 @@ class AutoPyTorchML(AutoML):
             progress_tracker=self.training_progress_tracker
         )
 
+        self.rich_logger = RichLogger()
+        self.time_limit = time_limit
+
     def prepare_framework(self):
         # Split and flatten the dataset
         Xtr, Xte, Ytr, Yte = self.dataset.train_test_split_representations()
@@ -762,20 +766,37 @@ class AutoPyTorchML(AutoML):
             temporary_directory=str(autoPyTorch_tmp_dir),
             delete_tmp_folder_after_terminate=False,
         )
+
+        self.rich_logger.start()
+
+        richlogger_progress_tracker = RichLoggerTrainingProgressTracker(
+            self.rich_logger,
+            self.time_limit * 60
+        )
+
+        # from time import sleep
+
+        # for i in range(5):
+        #     self.rich_logger.enqueue_bar(f'I am on number {i}')
+        #     sleep(1)
+        # self.rich_logger.stop()
+        
         self._api.set_pipeline_options(
             device="cuda" if self.use_cuda else "cpu",
             torch_num_threads=cpu_count(),
             use_tensorboard_logger=True,
             early_stopping=True,
             pre_training_callback=self.pre_training_callback,
-            training_tracker=self.training_progress_tracker,
-            training_epoch_tracker=self.training_epoch_tracker,
-            evaluation_epoch_tracker=self.eval_epoch_tracker,
+            training_tracker=richlogger_progress_tracker,
+            # training_tracker=self.training_progress_tracker,
+            # training_epoch_tracker=self.training_epoch_tracker,
+            # evaluation_epoch_tracker=self.eval_epoch_tracker,
             data_loader_workers=self.data_loader_workers,
         )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
         try:
+            self.rich_logger.enqueue_bar('Starting AutoML search process...')
             self._api.search(
                 X_train=self.X_train,
                 y_train=self.y_train,
@@ -792,6 +813,7 @@ class AutoPyTorchML(AutoML):
                 enable_traditional_pipeline=False,
                 all_supported_metrics=self.all_supported_metrics,
             )
+            self.rich_logger.stop()
         except ValueError as e:
             if "No valid model" in str(e):
                 KLogger.error(str(e))

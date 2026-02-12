@@ -32,6 +32,16 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from kenning.core.exceptions import DownloadError
 from kenning.utils.singleton import Singleton
 
+from time import sleep
+
+from threading import Thread, Event
+
+import random
+from rich.console import Console
+from rich.live import Live
+from rich.panel import Panel
+from queue import SimpleQueue
+
 PROGRESS_BAR_STACKLEVEL = 2
 
 CUSTOM_LEVEL_STYLES = {
@@ -39,6 +49,14 @@ CUSTOM_LEVEL_STYLES = {
     "verbose": {"color": "cyan"},
     "device": {"color": "magenta"},
 }
+
+class RichConsoleLogHandler(logging.Handler):
+    def __init__(self, richlogger, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.richlogger = richlogger
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.richlogger.log(record)
 
 
 class _DuplicateStream(TextIOBase):
@@ -521,3 +539,82 @@ class TqdmCallback(tqdm):
                     format_dict, *tagged_callback.callback.args
                 )
         return True
+
+class RichLoggerProgressBar:
+    def __init__(self, title: str, console: Console):
+        self.thread = Thread(target=self._progress_bar_thread, daemon=True)
+        self.queue = SimpleQueue()
+        self.stop_event = Event()
+        self.title = title
+        self.console = console
+
+    def _make_panel(self, content):
+        return Panel(content, title=self.title)
+
+    def _progress_bar_thread(self):
+        current = ""
+        with Live(self._make_panel(current), console=self.console, refresh_per_second=10, screen=False) as live:
+            while not self.stop_event.is_set():
+                updated = False
+                while not self.queue.empty():
+                    current = self.queue.get()
+                    updated = True
+                if updated:
+                    live.update(self._make_panel(current))
+            while not self.queue.empty():
+                current = self.queue.get()
+            live.update(self._make_panel(current))
+    def start(self):
+        self.thread.start()
+
+    def stop(self, timeout=1.0):
+        self.stop_event.set()
+        self.thread.join(timeout=timeout)
+
+class RichLogger:
+    FORMAT = (
+        "[%(asctime)-15s.%(msecs)04d {package} %(filename)s:%(lineno)s] "
+        "[%(levelname)s] %(message)s"
+    )
+    def __init__(self):
+        self.logger_thread = Thread(target=self._logger_thread, daemon=True)
+
+        self.console = Console()
+        self.stop_event = Event()
+        self.status_queue = SimpleQueue()
+
+        self.mainbar = RichLoggerProgressBar('AutoML Status', self.console)
+        self.formatter = logging.Formatter(FORMAT)
+
+    def start(self):
+        self.logger_thread.start()
+        self.mainbar.start()
+
+    def stop(self, timeout=0.1):
+        self.logger_thread.join(timeout=timeout)
+        self.mainbar.stop()
+
+    def log(self, record: logging.LogRecord):
+        try:
+            text = self.formatter.format(record)
+        except Exception:
+            text = record.getMessage()
+        self.status_queue.put(text)
+        # self.status_queue.put(
+
+    def _logger_thread(self):
+        while not self.stop_event.is_set():
+            text = self.status_queue.get()
+            self.console.print(text)
+
+    def enqueue_bar(self, msg: str):
+        if self.mainbar is not None and not self.mainbar.stop_event.is_set():
+            self.mainbar.queue.put(msg)
+
+
+def attach_handler_to_logger(richlogger, logger_name: str | None = None, remove_others: bool = True):
+    target = logging.getLogger(logger_name) if logger_name else logging.getLogger()
+    if remove_others:
+        target.handlers.clear()
+    qh = RichConsoleLogHandler(richlogger)
+    target.addHandler(qh)

@@ -1,0 +1,1333 @@
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="">
+    
+    
+      
+        <title>Optimizing and comparing instance segmentation models - Kenning</title>
+      
+    
+    
+      
+        
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+        <link rel="stylesheet" type="text/css" href="../_static/sphinx_immaterial_theme.c5589c0bd87d933a4.min.css?v=eeeb54bc" />
+        <link rel="stylesheet" type="text/css" href="../_static/css/bokeh.css?v=8bee089c" />
+        <link rel="stylesheet" type="text/css" href="../_static/css/compatibility.css?v=5eb45fba" />
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Kenning" class="md-header__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="../_static/white.svg" alt="logo">
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kenning
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Optimizing and comparing instance segmentation models
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <div class="md-header__button">
+        <a href="../kenning.pdf" title="PDF - kenning.pdf">
+          <div class="md-icon">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M64 0C28.7 0 0 28.7 0 64v384c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zm192 0v128h128L256 0zM64 224h24c30.9 0 56 25.1 56 56s-25.1 56-56 56h-8v32c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16zm24 80c13.3 0 24-10.7 24-24s-10.7-24-24-24h-8v48h8zm72-64c0-8.8 7.2-16 16-16h24c26.5 0 48 21.5 48 48v64c0 26.5-21.5 48-48 48h-24c-8.8 0-16-7.2-16-16V240zm32 112h8c8.8 0 16-7.2 16-16v-64c0-8.8-7.2-16-16-16h-8v96zm96-128h48c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v32h32c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v48c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16z"/></svg>
+          </div>
+        </a>
+      </div>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Kenning" class="md-nav__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="../_static/white.svg" alt="logo">
+    </a>
+    Kenning
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction.html" class="md-nav__link">
+        <span class="md-ellipsis">Introduction</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-readme.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dl-deployment-stack.html" class="md-nav__link">
+        <span class="md-ellipsis">Deep Learning deployment stack</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../json-scenarios.html" class="md-nav__link">
+        <span class="md-ellipsis">Defining optimization pipelines in Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd-usage.html" class="md-nav__link">
+        <span class="md-ellipsis">Using Kenning via command line arguments</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+      
+      
+      
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../kenning-gallery.html"><span class="md-ellipsis">Kenning gallery of use cases</span></a>
+          
+            <label for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Kenning gallery of use cases" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          <span class="md-ellipsis">Kenning gallery of use cases</span>
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="anomaly-detection-automl.html" class="md-nav__link">
+        <span class="md-ellipsis">Generating anomaly detection models for the MAX32690 Evaluation Kit with Auto<wbr>ML</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="anomaly-detection-on-mcu.html" class="md-nav__link">
+        <span class="md-ellipsis">Anomaly detection model training and deployment on the MAX32690 Evaluation Kit</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="displaying-information-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Displaying information about available classes</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-zephyr-runtime.html" class="md-nav__link">
+        <span class="md-ellipsis">Evaluating models on hardware using Kenning Zephyr Runtime</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pipeline-manager-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Visualizing Kenning data flows with Pipeline Manager</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="renode-integration-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Bare-<wbr>metal IREE runtime simulated using Renode</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="structured-pruning-torch.html" class="md-nav__link">
+        <span class="md-ellipsis">Structured pruning for Py<wbr>Torch models</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tflite-tvm.html" class="md-nav__link">
+        <span class="md-ellipsis">Model quantization and compilation using TFLite and TVM</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="unstructured-pruning-tensorflow.html" class="md-nav__link">
+        <span class="md-ellipsis">Unstructured Pruning of Tensor<wbr>Flow Models</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          <span class="md-ellipsis">Optimizing and comparing instance segmentation models</span>
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="#" class="md-nav__link md-nav__link--active">
+        <span class="md-ellipsis">Optimizing and comparing instance segmentation models</span>
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">Setup</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#experiments-on-cpu" class="md-nav__link">
+    <span class="md-ellipsis">Experiments on CPU</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Experiments on CPU">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tvm-optimization" class="md-nav__link">
+    <span class="md-ellipsis">TVM optimization</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onnx-runtime-execution-of-model" class="md-nav__link">
+    <span class="md-ellipsis">ONNX Runtime execution of model</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">Comparison</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gpu-experiments" class="md-nav__link">
+    <span class="md-ellipsis">GPU Experiments</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GPU Experiments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#id1" class="md-nav__link">
+    <span class="md-ellipsis">TVM optimization</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onnx-optimization" class="md-nav__link">
+    <span class="md-ellipsis">ONNX optimization</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-of-gpu-runtimes" class="md-nav__link">
+    <span class="md-ellipsis">Comparison of GPU runtimes</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-variables.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning environment variables</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-measurements.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning measurements</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline-optimizer.html" class="md-nav__link">
+        <span class="md-ellipsis">Choosing optimal optimization pipeline</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sample-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample autogenerated report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sample-automl-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample Auto<wbr>ML report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-flow.html" class="md-nav__link">
+        <span class="md-ellipsis">Creating applications with Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-development.html" class="md-nav__link">
+        <span class="md-ellipsis">Developing Kenning blocks</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-resources.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning resources</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-protocols.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning protocols</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-platforms.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning platforms</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-api.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning API</span>
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset" role="main">
+                  
+
+
+  <a href="https://github.com/antmicro/kenning/blob/main/docs/source/gallery/yolact-object-detection-comparison.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+<h1 id="optimizing-and-comparing-instance-segmentation-models">Optimizing and comparing instance segmentation models<a class="headerlink" href="#optimizing-and-comparing-instance-segmentation-models" title="Link to this heading">¶</a></h1>
+<p>This example demonstrates how to optimize computer vision models and compare different optimizers.</p>
+<p>Base model used for demonstration is going to be <a class="reference external" href="https://github.com/dbolya/yolact?tab=readme-ov-file">YOLACT</a>, short for “You Only Look At CoefficientTs” which is a fully convolutional model for real-time instance segmentation.</p>
+<p>We will also need dataset for evaluation purposes - in this case it is going to be <a class="reference external" href="https://github.com/antmicro/kenning/blob/main/kenning/datasets/open_images_dataset.py"><code class="docutils literal notranslate"><span class="pre">OpenImagesDatasetV6</span></code></a>.</p>
+<p>Model will be deployed on CPU and GPU using following Kenning compilers:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/antmicro/kenning/blob/main/kenning/optimizers/onnx.py">ONNXCompiler</a> - wrapper for optimizing and converting models to format compliant for <a class="reference external" href="https://github.com/microsoft/onnxruntime">ONNX Runtime</a>.</p></li>
+<li><p><a class="reference external" href="https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tvm.py">TVMCompiler</a> - wrapper for <a class="reference external" href="https://github.com/apache/tvm">TVM deep neural network compiler</a>.</p></li>
+</ul>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
+<p>To install all necessary dependencies run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;kenning[object_detection,tvm,onnxruntime,reports] @ git+https://github.com/antmicro/kenning.git&quot;</span>
+</code></pre></div>
+</div>
+<h2 id="experiments-on-cpu">Experiments on CPU<a class="headerlink" href="#experiments-on-cpu" title="Link to this heading">¶</a></h2>
+<h3 id="tvm-optimization">TVM optimization<a class="headerlink" href="#tvm-optimization" title="Link to this heading">¶</a></h3>
+<p>The scenario for TVM compilation may look as follows:</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption highlight"><span class="filename"><span class="caption-number">Listing 15 </span><span class="caption-text">
+</span>yolact-tvm-cpu-detection.yml<a class="headerlink" href="#id2" title="Permalink to this code">¶</a></span></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.modelwrappers.instance_segmentation.yolact.YOLACT</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/instance_segmentation/yolact.onnx</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.datasets.open_images_dataset.OpenImagesDatasetV6</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/OpenImagesDatasetV6</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance_segmentation</span>
+<span class="w">    </span><span class="nt">image_width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="w">    </span><span class="nt">image_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.optimizers.tvm.TVMCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">onnx</span>
+<span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llvm</span>
+<span class="w">    </span><span class="nt">opt_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">compile_use_vm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled-model.tar</span>
+<span class="nt">runtime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.runtimes.tvm.TVMRuntime</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">save_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled-model.tar</span>
+<span class="w">    </span><span class="nt">target_device_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class="w">    </span><span class="nt">runtime_use_vm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div>
+<p>In this scenario:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">model_path</span></code> points to a location of the YOLACT model in ONNX format.
+It can be either local file or a remote URL.
+<code class="docutils literal notranslate"><span class="pre">kenning://</span></code> is a special schema for Kenning’s demonstration models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataset</span></code> tells to use Open Images dataset.
+The model will be downloaded to <code class="docutils literal notranslate"><span class="pre">./build/OpenImagesDatasetV6</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">task</span></code> field allows to specify whether the dataset is used for instance segmentation or object detection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">optimizers</span></code> contains only one element - <code class="docutils literal notranslate"><span class="pre">TVMCompiler</span></code>.
+In there we specify input model framework (<code class="docutils literal notranslate"><span class="pre">onnx</span></code>), and tell to use <code class="docutils literal notranslate"><span class="pre">llvm</span></code> target with <code class="docutils literal notranslate"><span class="pre">opt_level</span></code> equal to 3 (applying all possible optimizations not directly affecting model’s output).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code> tells Kenning to use <code class="docutils literal notranslate"><span class="pre">TVMRuntime</span></code> for model execution, on CPU target.</p></li>
+</ul>
+<p>To optimize and test the defined scenario, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>yolact-tvm-cpu-detection.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>./build/yolact-tvm.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<h3 id="onnx-runtime-execution-of-model">ONNX Runtime execution of model<a class="headerlink" href="#onnx-runtime-execution-of-model" title="Link to this heading">¶</a></h3>
+<p>Switching to a different runtime is a matter of changing several lines in the scenario as shown below:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption highlight"><span class="filename"><span class="caption-number">Listing 16 </span><span class="caption-text">
+</span>yolact-onnx-cpu-detection.yml<a class="headerlink" href="#id3" title="Permalink to this code">¶</a></span></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LocalPlatform</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.modelwrappers.instance_segmentation.yolact.YOLACT</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/instance_segmentation/yolact.onnx</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.datasets.open_images_dataset.OpenImagesDatasetV6</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/OpenImagesDatasetV6</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance_segmentation</span>
+<span class="w">    </span><span class="nt">image_width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="w">    </span><span class="nt">image_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="hll"><span class="nt">optimizers</span><span class="p">:</span>
+</span><span class="hll"><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.optimizers.onnx.ONNXCompiler</span>
+</span><span class="hll"><span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+</span><span class="hll"><span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled_model.onnx</span>
+</span><span class="hll"><span class="nt">runtime</span><span class="p">:</span>
+</span><span class="hll"><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.runtimes.onnx.ONNXRuntime</span>
+</span><span class="hll"><span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+</span><span class="hll"><span class="w">    </span><span class="nt">save_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled_model.onnx</span>
+</span><span class="hll"><span class="w">    </span><span class="nt">execution_providers</span><span class="p">:</span>
+</span><span class="hll"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CPUExecutionProvider</span>
+</span></code></pre></div></td></tr></table></div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ONNXRuntime</span></code> in this specific scenario acts as a passthrough for an existing ONNX model.
+The main change in runtime lies in <code class="docutils literal notranslate"><span class="pre">ONNXRuntime</span></code>, where <code class="docutils literal notranslate"><span class="pre">execution_providers</span></code> holds a list of possible layer executors starting from the most preferred one.
+For CPU-only execution <code class="docutils literal notranslate"><span class="pre">CPUExecutionProvider</span></code> is required.</p>
+<p>This scenario can be executed with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>yolact-onnx-cpu-detection.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>./build/yolact-onnx.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Link to this heading">¶</a></h2>
+<figure class="align-center" id="yolact-cpu-mean-performance-comparison">
+<img alt="Mean performance comparison" src="../_images/yolact-cpu-mean-performance-comparison.png" />
+<figcaption>
+<p><span class="caption-number">Figure 6 </span><span class="caption-text"><span class="caption-text">
+Sample comparison plot demonstrating model size, speed and quality for two YOLACT Optimizers</span><a class="headerlink" href="#yolact-cpu-mean-performance-comparison" title="Permalink to this image">¶</a></figcaption>
+</figure>
+<p>To create a comparison report comparing performance and model quality for the above optimizers, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>build/yolact-report/report.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-name<span class="w"> </span><span class="s2">&quot;YOLACT detection report&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--root-dir<span class="w"> </span>build/yolact-report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--img-dir<span class="w"> </span>build/yolact-report/imgs<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-types<span class="w"> </span>performance<span class="w"> </span>detection<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>build/yolact-tvm.json<span class="w"> </span>build/yolact-onnx.json
+</code></pre></div>
+</div>
+<h2 id="gpu-experiments">GPU Experiments<a class="headerlink" href="#gpu-experiments" title="Link to this heading">¶</a></h2>
+<div class="info admonition">
+<p class="admonition-title">Info</p>
+<p>This example requires a CUDA-enabled GPU for proper execution, along with following dependencies:</p>
+<ul class="simple">
+<li><p>CUDA (11.8 is recommended version)</p></li>
+<li><p>CUDNN (8 is recommended version)</p></li>
+<li><p>NVCC</p></li>
+<li><p>NVRTC</p></li>
+<li><p>CUDA Toolkit</p></li>
+<li><p>NVML (for report generation)</p></li>
+</ul>
+</div>
+<h3 id="id1">TVM optimization<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<details class="admonition">
+<summary class="admonition-title">Open for instructions on building TVM with CUDA enabled</summary><p>To run TVM on GPU you need to build it with necessary libraries included - follow <a class="reference external" href="https://tvm.apache.org/docs/install/from_source.html">Building from source in TVM documentation</a>.</p>
+<p>On Linux-based distributions:</p>
+<ol class="arabic">
+<li><p>Uninstall previously installed TVM version (supports only CPU):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>uninstall<span class="w"> </span>-y<span class="w"> </span>apache-tvm
+</code></pre></div>
+</div>
+</li>
+<li><p>Ensure installation of:</p>
+<ul class="simple">
+<li><p>GCC &gt;= 7.1 /  Clang &gt;= 5.0</p></li>
+<li><p>CMAKE &gt;= 3.24</p></li>
+<li><p>LLVM &gt;= 15</p></li>
+<li><p>Git</p></li>
+<li><p>Python &gt;= 3.8</p></li>
+</ul>
+</li>
+<li><p>Clone tvm repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>https://github.com/apache/tvm<span class="w"> </span>-b<span class="w"> </span>v0.14.0<span class="w"> </span>tvm
+</code></pre></div>
+</div>
+</li>
+<li><p>Configure the build by setting the necessary flags in <code class="docutils literal notranslate"><span class="pre">config.cmake</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>tvm<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cp<span class="w"> </span>../cmake/config.cmake<span class="w"> </span>.
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;set(USE_CUBLAS ON)&quot;</span>&gt;&gt;<span class="w"> </span>config.cmake
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;set(USE_CUDA ON)&quot;</span><span class="w">  </span>&gt;&gt;<span class="w"> </span>config.cmake
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;set(USE_CUDNN ON)&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>config.cmake
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;set(USE_MICRO ON)&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>config.cmake
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;set(USE_LLVM ON)&quot;</span><span class="w">  </span>&gt;&gt;<span class="w"> </span>config.cmake
+</code></pre></div>
+</div>
+</li>
+<li><p>Build TVM with the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span>/usr/<span class="w"> </span>..<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>-j<span class="w"> </span><span class="k">$(</span>nproc<span class="k">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>install<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ldconfig
+<span class="nb">cd</span><span class="w"> </span>../..
+</code></pre></div>
+</div>
+</li>
+<li><p>Add built libraries to <code class="docutils literal notranslate"><span class="pre">TVM_LIBRARY_PATH</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">TVM_LIBRARY_PATH</span><span class="o">=</span>/usr/lib/
+</code></pre></div>
+</div>
+</li>
+<li><p>Install new TVM version using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>./tvm/python
+</code></pre></div>
+</div>
+</li>
+</ol>
+<p>CUDA runtime is very strict about <code class="docutils literal notranslate"><span class="pre">gcc</span></code> versions so if you get an error <code class="docutils literal notranslate"><span class="pre">unsupported</span> <span class="pre">GNU</span> <span class="pre">version!</span> <span class="pre">gcc</span> <span class="pre">versions</span> <span class="pre">later</span> <span class="pre">than</span> <span class="pre">11</span> <span class="pre">are</span> <span class="pre">not</span> <span class="pre">supported!</span></code>, then set the necessary flag:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">NVCC_APPEND_FLAGS</span><span class="o">=</span><span class="s1">&#39;-allow-unsupported-compiler&#39;</span>
+</code></pre></div>
+</div>
+</details>
+<p>To run TVM optimization of YOLACT for GPU, the previous TVM scenario requires changes in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">TVMCompiler</span></code> - need to set <code class="docutils literal notranslate"><span class="pre">target</span></code> to <code class="docutils literal notranslate"><span class="pre">cuda</span> <span class="pre">-libs=cudnn,cublas</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TVMRuntime</span></code> - need to configure <code class="docutils literal notranslate"><span class="pre">target_device_context</span></code> to <code class="docutils literal notranslate"><span class="pre">cuda</span></code></p></li>
+</ul>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption highlight"><span class="filename"><span class="caption-number">Listing 17 </span><span class="caption-text">
+</span>yolact-tvm-gpu-detection.yml<a class="headerlink" href="#id4" title="Permalink to this code">¶</a></span></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.modelwrappers.instance_segmentation.yolact.YOLACT</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/instance_segmentation/yolact.onnx</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.datasets.open_images_dataset.OpenImagesDatasetV6</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/OpenImagesDatasetV6</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance_segmentation</span>
+<span class="w">    </span><span class="nt">image_width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="w">    </span><span class="nt">image_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.optimizers.tvm.TVMCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">onnx</span>
+<span class="hll"><span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cuda</span><span class="nv"> </span><span class="s">-libs=cudnn,cublas&quot;</span>
+</span><span class="w">    </span><span class="nt">opt_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">compile_use_vm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">output_conversion_function</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">    </span><span class="nt">target_host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled-model.tar</span>
+<span class="nt">runtime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.runtimes.tvm.TVMRuntime</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">save_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled-model.tar</span>
+<span class="hll"><span class="w">    </span><span class="nt">target_device_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuda</span>
+</span><span class="w">    </span><span class="nt">runtime_use_vm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div>
+<p>To run it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>yolact-tvm-gpu-detection.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>./build/yolact-gpu-tvm.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<h3 id="onnx-optimization">ONNX optimization<a class="headerlink" href="#onnx-optimization" title="Link to this heading">¶</a></h3>
+<details class="admonition">
+<summary class="admonition-title">Open for instructions on installing ONNX Runtime with CUDA enabled</summary><p>If you want to run ONNX on GPU you need to install <code class="docutils literal notranslate"><span class="pre">onnxruntime-gpu</span></code>:</p>
+<ul>
+<li><p>Uninstall CPU-only variant with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>uninstall<span class="w"> </span>-y<span class="w"> </span>onnxruntime
+</code></pre></div>
+</div>
+</li>
+<li><p>Install GPU-enabled ONNX Runtime:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;kenning[onnxruntime_gpu] @ git+https://github.com/antmicro/kenning.git&quot;</span>
+</code></pre></div>
+</div>
+</li>
+<li><p>Add necessary CUDA libraries to path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/usr/local/cuda/lib64:<span class="nv">$LD_LIBRARY_PATH</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span>/usr/local/cuda/bin:<span class="nv">$PATH</span>
+</code></pre></div>
+</div>
+</li>
+</ul>
+</details>
+<p>The only difference compared to CPU-only execution using ONNX Runtime lies in adding new executor in the <code class="docutils literal notranslate"><span class="pre">runtime</span></code>:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption highlight"><span class="filename"><span class="caption-number">Listing 18 </span><span class="caption-text">
+</span>yolact-onnx-gpu-detection.yml<a class="headerlink" href="#id5" title="Permalink to this code">¶</a></span></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.modelwrappers.instance_segmentation.yolact.YOLACT</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/instance_segmentation/yolact.onnx</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.datasets.open_images_dataset.OpenImagesDatasetV6</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/OpenImagesDatasetV6</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance_segmentation</span>
+<span class="w">    </span><span class="nt">image_width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="w">    </span><span class="nt">image_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">550</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.optimizers.onnx.ONNXCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled_model.onnx</span>
+<span class="nt">runtime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning.runtimes.onnx.ONNXRuntime</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">save_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled_model.onnx</span>
+<span class="w">    </span><span class="nt">execution_providers</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CUDAExecutionProvider</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CPUExecutionProvider</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div>
+<p>Run the scenario as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>yolact-onnx-gpu-detection.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>./build/yolact-gpu-onnx.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<h3 id="comparison-of-gpu-runtimes">Comparison of GPU runtimes<a class="headerlink" href="#comparison-of-gpu-runtimes" title="Link to this heading">¶</a></h3>
+<figure class="align-center" id="yolact-gpu-mean-performance-comparison">
+<img alt="Mean performance comparison" src="../_images/yolact-gpu-mean-performance-comparison.png" />
+<figcaption>
+<p><span class="caption-number">Figure 7 </span><span class="caption-text"><span class="caption-text">
+Model size, speed and quality comparison for two YOLACT Optimizers running on CUDA GPU</span><a class="headerlink" href="#yolact-gpu-mean-performance-comparison" title="Permalink to this image">¶</a></figcaption>
+</figure>
+<p>To create a comparison report comparing performance and model quality for the above optimizers, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>kenning<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>build/yolact-report/report.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-name<span class="w"> </span><span class="s2">&quot;YOLACT detection report&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--root-dir<span class="w"> </span>build/yolact-report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--img-dir<span class="w"> </span>build/yolact-report/imgs<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-types<span class="w"> </span>performance<span class="w"> </span>detection<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>build/yolact-gpu-tvm.json<span class="w"> </span>build/yolact-gpu-onnx.json
+</code></pre></div>
+</div>
+
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      2026-02-12
+    
+  </small>
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="unstructured-pruning-tensorflow.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Unstructured Pruning of TensorFlow Models" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Unstructured Pruning of TensorFlow Models
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../kenning-variables.html" class="md-footer__link md-footer__link--next" aria-label="Next: Kenning environment variables" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Kenning environment variables
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  
+  
+  <div class="md-footer-meta md-typeset">
+    
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-footer-copyright__highlight">
+        Copyright &#169; 2020-2025, Antmicro.
+        
+    </div>
+  
+      <a href="https://github.com/antmicro/kenning/tree/f85992e2278041c41303b1c402b144427c0f2a97">f85992e2</a>
+        @ <a href="https://github.com/antmicro/kenning/tree/main">main</a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/antmicro" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/antmicro" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+    
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.integrate"], "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+      
+        <script src="../_static/sphinx_immaterial_theme.f9d9eeeb247ace16c.min.js?v=8ec58cb5"></script>
+    
+  </body>
+</html>

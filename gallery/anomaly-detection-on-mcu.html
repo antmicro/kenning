@@ -1,0 +1,1318 @@
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="">
+    
+    
+      
+        <title>Anomaly detection model training and deployment on the MAX32690 Evaluation Kit - Kenning</title>
+      
+    
+    
+      
+        
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+        <link rel="stylesheet" type="text/css" href="../_static/sphinx_immaterial_theme.c5589c0bd87d933a4.min.css?v=eeeb54bc" />
+        <link rel="stylesheet" type="text/css" href="../_static/css/bokeh.css?v=8bee089c" />
+        <link rel="stylesheet" type="text/css" href="../_static/css/compatibility.css?v=5eb45fba" />
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Kenning" class="md-header__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="../_static/white.svg" alt="logo">
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kenning
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Anomaly detection model training and deployment on the MAX32690 Evaluation Kit
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <div class="md-header__button">
+        <a href="../kenning.pdf" title="PDF - kenning.pdf">
+          <div class="md-icon">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M64 0C28.7 0 0 28.7 0 64v384c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zm192 0v128h128L256 0zM64 224h24c30.9 0 56 25.1 56 56s-25.1 56-56 56h-8v32c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16zm24 80c13.3 0 24-10.7 24-24s-10.7-24-24-24h-8v48h8zm72-64c0-8.8 7.2-16 16-16h24c26.5 0 48 21.5 48 48v64c0 26.5-21.5 48-48 48h-24c-8.8 0-16-7.2-16-16V240zm32 112h8c8.8 0 16-7.2 16-16v-64c0-8.8-7.2-16-16-16h-8v96zm96-128h48c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v32h32c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v48c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16z"/></svg>
+          </div>
+        </a>
+      </div>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Kenning" class="md-nav__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="../_static/white.svg" alt="logo">
+    </a>
+    Kenning
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction.html" class="md-nav__link">
+        <span class="md-ellipsis">Introduction</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-readme.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dl-deployment-stack.html" class="md-nav__link">
+        <span class="md-ellipsis">Deep Learning deployment stack</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../json-scenarios.html" class="md-nav__link">
+        <span class="md-ellipsis">Defining optimization pipelines in Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd-usage.html" class="md-nav__link">
+        <span class="md-ellipsis">Using Kenning via command line arguments</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+      
+      
+      
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../kenning-gallery.html"><span class="md-ellipsis">Kenning gallery of use cases</span></a>
+          
+            <label for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Kenning gallery of use cases" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          <span class="md-ellipsis">Kenning gallery of use cases</span>
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="anomaly-detection-automl.html" class="md-nav__link">
+        <span class="md-ellipsis">Generating anomaly detection models for the MAX32690 Evaluation Kit with Auto<wbr>ML</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          <span class="md-ellipsis">Anomaly detection model training and deployment on the MAX32690 Evaluation Kit</span>
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="#" class="md-nav__link md-nav__link--active">
+        <span class="md-ellipsis">Anomaly detection model training and deployment on the MAX32690 Evaluation Kit</span>
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-an-environment-for-development" class="md-nav__link">
+    <span class="md-ellipsis">Prepare an environment for development</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-software-necessary-for-flashing-the-max32690-evaluation-kit" class="md-nav__link">
+    <span class="md-ellipsis">Install software necessary for flashing the MAX32690 Evaluation Kit</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#train-the-sample-anomaly-detection-model-optional" class="md-nav__link">
+    <span class="md-ellipsis">Train the sample anomaly detection model <wbr>(optional)</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-the-vae-model-with-tensorflow-lite-micro" class="md-nav__link">
+    <span class="md-ellipsis">Deploy the VAE model with Tensor<wbr>Flow Lite Micro</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-the-vae-model-with-microtvm" class="md-nav__link">
+    <span class="md-ellipsis">Deploy the VAE model with micro<wbr>TVM</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-performance-and-quality-of-runtimes-and-models" class="md-nav__link">
+    <span class="md-ellipsis">Comparing performance and quality of runtimes and models</span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specification-of-the-kenning-datasets-anomaly-detection-dataset-module" class="md-nav__link">
+    <span class="md-ellipsis">Specification of the kenning.<wbr>datasets.<wbr>anomaly_<wbr>detection_<wbr>dataset module</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Specification of the kenning.datasets.anomaly_detection_dataset module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#module-description" class="md-nav__link">
+    <span class="md-ellipsis">Module description</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#class-anomalydetectiondataset" class="md-nav__link">
+    <span class="md-ellipsis">Class Anomaly<wbr>Detection<wbr>Dataset</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="displaying-information-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Displaying information about available classes</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-zephyr-runtime.html" class="md-nav__link">
+        <span class="md-ellipsis">Evaluating models on hardware using Kenning Zephyr Runtime</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pipeline-manager-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Visualizing Kenning data flows with Pipeline Manager</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="renode-integration-example.html" class="md-nav__link">
+        <span class="md-ellipsis">Bare-<wbr>metal IREE runtime simulated using Renode</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="structured-pruning-torch.html" class="md-nav__link">
+        <span class="md-ellipsis">Structured pruning for Py<wbr>Torch models</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tflite-tvm.html" class="md-nav__link">
+        <span class="md-ellipsis">Model quantization and compilation using TFLite and TVM</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="unstructured-pruning-tensorflow.html" class="md-nav__link">
+        <span class="md-ellipsis">Unstructured Pruning of Tensor<wbr>Flow Models</span>
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="yolact-object-detection-comparison.html" class="md-nav__link">
+        <span class="md-ellipsis">Optimizing and comparing instance segmentation models</span>
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-variables.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning environment variables</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-measurements.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning measurements</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline-optimizer.html" class="md-nav__link">
+        <span class="md-ellipsis">Choosing optimal optimization pipeline</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sample-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample autogenerated report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sample-automl-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample Auto<wbr>ML report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-flow.html" class="md-nav__link">
+        <span class="md-ellipsis">Creating applications with Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-development.html" class="md-nav__link">
+        <span class="md-ellipsis">Developing Kenning blocks</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-resources.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning resources</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-protocols.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning protocols</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-platforms.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning platforms</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kenning-api.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning API</span>
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset" role="main">
+                  
+
+
+  <a href="https://github.com/antmicro/kenning/blob/main/docs/source/gallery/anomaly-detection-on-mcu.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+<h1 id="anomaly-detection-model-training-and-deployment-on-the-max32690-evaluation-kit">Anomaly detection model training and deployment on the MAX32690 Evaluation Kit<a class="headerlink" href="#anomaly-detection-model-training-and-deployment-on-the-max32690-evaluation-kit" title="Link to this heading">¶</a></h1>
+<p>This example demonstrates how to train an example anomaly detection model and deploys it on an MCU using Kenning and Zephyr RTOS.
+The platform used in this example is the Analog Devices <a class="reference external" href="https://www.analog.com/en/resources/evaluation-hardware-and-software/evaluation-boards-kits/max32690evkit.html#eb-overview">MAX32690 Evaluation Kit</a>.
+This demo uses <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime">Kenning Zephyr Runtime</a> and <a class="reference external" href="https://www.zephyrproject.org/">Zephyr RTOS</a> for execution of the model on hardware.</p>
+<h2 id="prepare-an-environment-for-development">Prepare an environment for development<a class="headerlink" href="#prepare-an-environment-for-development" title="Link to this heading">¶</a></h2>
+<p>This example uses a pre-built Docker image from <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime">Kenning Zephyr Runtime</a>.
+To get started, create a Docker container with the necessary environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:<span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="w"> </span>-w<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="w"> </span>ghcr.io/antmicro/kenning-zephyr-runtime:latest<span class="w"> </span>/bin/bash
+</code></pre></div>
+</div>
+<p>Then, create a workspace directory in the container:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>zephyr-workspace<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>zephyr-workspace
+</code></pre></div>
+</div>
+<p>In case the MAX32690 Evaluation Kit is connected to the desktop PC using a MAX32625PICO debugger, the Docker container needs to be started in privileged mode, with UART and ACM devices forwarded to it.
+Assuming that the programmer is available as <code class="docutils literal notranslate"><span class="pre">/dev/ttyACM0</span></code>, and UART as <code class="docutils literal notranslate"><span class="pre">/dev/ttyUSB0</span></code> in the currently running system, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--privileged<span class="w"> </span>--device<span class="w"> </span>/dev/ttyACM0<span class="w"> </span>--device<span class="w"> </span>/dev/ttyUSB0<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:<span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="w"> </span>-v<span class="w"> </span>/dev/serial/by-id/:/dev/serial/by-id/<span class="w"> </span>-w<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="w"> </span>ghcr.io/antmicro/kenning-zephyr-runtime:latest<span class="w"> </span>/bin/bash
+</code></pre></div>
+</div>
+<p>Then, in the Docker container, clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/antmicro/kenning-zephyr-runtime.git
+<span class="nb">cd</span><span class="w"> </span>kenning-zephyr-runtime/
+./scripts/prepare_zephyr_env.sh
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+./scripts/prepare_modules.sh
+</code></pre></div>
+</div>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>Optionally, to use the latest Kenning version, install it in the image and reload the virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git&quot;</span>
+</code></pre></div>
+</div>
+</div>
+<p>An environment configured this way will allow you to work with Kenning and Zephyr RTOS.
+For more step-by-step instructions on how to set up the environment locally, see <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/tree/main#user-content-building-the-project">Kenning Zephyr Runtime build instructions</a>.</p>
+<p>Now create a <code class="docutils literal notranslate"><span class="pre">workspace</span></code> director where intermediate results of commands executed further will be stored:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>workspace
+</code></pre></div>
+</div>
+<h2 id="install-software-necessary-for-flashing-the-max32690-evaluation-kit">Install software necessary for flashing the MAX32690 Evaluation Kit<a class="headerlink" href="#install-software-necessary-for-flashing-the-max32690-evaluation-kit" title="Link to this heading">¶</a></h2>
+<p>To flash the MAX32690 Evaluation Kit, a Maxim Micros SDK is needed.</p>
+<p>Within the Docker image, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/share/applications
+wget<span class="w"> </span>-O<span class="w"> </span>./MaximMicrosSDK_linux.run<span class="w"> </span>https://github.com/analogdevicesinc/msdk/releases/download/v2024_10/MaximMicrosSDK_linux.run
+chmod<span class="w"> </span>+x<span class="w"> </span>./MaximMicrosSDK_linux.run
+./MaximMicrosSDK_linux.run<span class="w"> </span>install
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span>/root/MaximSDK/Tools/OpenOCD/:<span class="nv">$PATH</span>
+</code></pre></div>
+</div>
+<p>Now follow along, answering prompts in the installation process.
+Once everything is installed successfully, it will be possible to flash the device using the evaluation app from Kenning Zephyr Runtime.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>During installation, the script may notify you that it was unable to install libncurses5.</p>
+<p>In such a case, answer <code class="docutils literal notranslate"><span class="pre">Ignore</span></code> and proceed with the installation - it is not needed for this demo.</p>
+</div>
+<h2 id="train-the-sample-anomaly-detection-model-optional">Train the sample anomaly detection model (optional)<a class="headerlink" href="#train-the-sample-anomaly-detection-model-optional" title="Link to this heading">¶</a></h2>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>The pretrained model is available at <code class="docutils literal notranslate"><span class="pre">https://dl.antmicro.com/kenning/models/anomaly_detection/vae_cats.pth</span></code>.
+In Kenning, such files are obtainable using the <code class="docutils literal notranslate"><span class="pre">kenning://</span></code> scheme, e.g. <code class="docutils literal notranslate"><span class="pre">kenning:///models/anomaly_detection/vae_cats.pth</span></code>.</p>
+<p>To skip the training step, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://dl.antmicro.com/kenning/models/anomaly_detection/vae_cats.pth
+wget<span class="w"> </span>https://dl.antmicro.com/kenning/models/anomaly_detection/vae_cats.pth.json
+</code></pre></div>
+</div>
+<p>And proceed to the next section.</p>
+</div>
+<p>Once the environment is set up, the sample model can be trained.
+In this demo, a <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">Variational AutoEncoder (VAE)</a> will be used.
+In Kenning, there is a <a class="reference external" href="https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/anomaly_detection/vae.py">PytorchAnomalyDetectionVAE</a> <code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code> encapsulating the model.</p>
+<p><a class="reference external" href="https://data.niaid.nih.gov/resources?id=zenodo_7646896">Controlled Anomalies Time Series (CATS)</a> will be used for a dataset.
+It provides telemetry readings of a simulated complex dynamical system with external stimuli.
+It provides a representative set of time series for sensors with anomalies.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>Check <a class="reference internal" href="#anomaly-csv-format"><span class="std std-ref">Specification of the kenning.datasets.anomaly_detection_dataset module</span></a> for details on the expected structure of the dataset’s CSV file to understand how to create custom dataset compliant with the class.</p>
+</div>
+<p>The model can be trained using the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>train<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-cls<span class="w"> </span>AnomalyDetectionDataset<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-root<span class="w"> </span>./dataset/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--csv-file<span class="w"> </span>https://zenodo.org/records/8338435/files/data.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--modelwrapper-cls<span class="w"> </span>PyTorchAnomalyDetectionVAE<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-path<span class="w"> </span>./vae_cats.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--batch-size<span class="w"> </span><span class="m">256</span><span class="w"> </span>--learning-rate<span class="w"> </span><span class="m">0</span>.00002<span class="w"> </span>--num-epochs<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>workspace/vae-torch-native.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--inference-batch-size<span class="w"> </span><span class="m">256</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--batch-norm<span class="w"> </span>--loss-beta<span class="w"> </span><span class="m">0</span>.2<span class="w"> </span>--loss-capacity<span class="w"> </span><span class="m">0</span>.1
+</code></pre></div>
+</div>
+<p>This command:</p>
+<ul class="simple">
+<li><p>Downloads the CATS dataset from https://zenodo.org/records/8338435/files/data.csv (if it has not been downloaded yet)</p></li>
+<li><p>Creates the <code class="docutils literal notranslate"><span class="pre">AnomalyDetectionDataset</span></code> class with dataset data taken from the downloaded CSV</p></li>
+<li><p>Creates  the <code class="docutils literal notranslate"><span class="pre">PyTorchAnomalyDetectionVAE</span></code> model wrapper encapsulating the VAE model, providing necessary methods for input preprocessing, output postprocessing, model training and more</p></li>
+<li><p>Trains the model using the provided batch size, learning rate, number of epochs and other exposed training parameters for the model</p></li>
+<li><p>Evaluates the model at the end, providing evaluation results in <code class="docutils literal notranslate"><span class="pre">./workspace/vae-torch-native.json</span></code></p></li>
+<li><p>Saves the trained model as the <code class="docutils literal notranslate"><span class="pre">./vae_cats.pth</span></code> file.</p></li>
+</ul>
+<h2 id="deploy-the-vae-model-with-tensorflow-lite-micro">Deploy the VAE model with TensorFlow Lite Micro<a class="headerlink" href="#deploy-the-vae-model-with-tensorflow-lite-micro" title="Link to this heading">¶</a></h2>
+<p>Once the VAE model is trained and available under <code class="docutils literal notranslate"><span class="pre">./vae_cats.pth</span></code>, it can be compiled with <code class="docutils literal notranslate"><span class="pre">kenning</span> <span class="pre">optimize</span></code> command and deployed on device using either TensorFlow Lite Micro or microTVM.
+This section focuses on TensorFlow Lite Micro.</p>
+<p>Let’s consider the following scenario:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># This scenario demonstrates deployment of Anomaly Detection in time series on MAX32960 Evaluation Kit</span>
+<span class="c1"># It provides two variants of execution - a deployment on an actual hardware, and simulation in Renode</span>
+<span class="c1"># This scenario should be executed within kenning-zephyr-runtime project, with built evaluation app for</span>
+<span class="c1"># TFLite Micro runtime:</span>
+<span class="c1">#</span>
+<span class="c1"># west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE=&quot;tflite.conf&quot;</span>
+<span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max32690evkit/max32690/m4</span>
+<span class="w">    </span><span class="c1"># to run inference on actual hardwarem change simulated to false</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">zephyr_build_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/</span>
+<span class="w">    </span><span class="nt">uart_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/ttyUSB0</span>
+
+<span class="c1"># model wrapper for the VAE anomaly detection model</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyTorchAnomalyDetectionVAE</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../vae_cats.pth</span>
+<span class="w">    </span><span class="nt">encoder_neuron_list</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">batch_norm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="c1"># A dataset used for evaluating the model</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnomalyDetectionDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./workspace/dataset</span>
+<span class="w">    </span><span class="nt">csv_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://zenodo.org/records/8338435/files/data.csv</span>
+<span class="w">    </span><span class="nt">split_fraction_test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0005</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">split_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
+
+<span class="c1"># run TFLite conversion from above PyTorch model to TFLite Flatbuffers</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TFLiteCompiler</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">      </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./workspace/vae_cats.tflite</span>
+<span class="w">      </span><span class="nt">inference_input_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">      </span><span class="nt">inference_output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+</code></pre></div>
+</div>
+<p>The scenario contents are as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">platform</span></code> - specifies the target platform where the model will be deployed.
+In this case, the target platform is called <code class="docutils literal notranslate"><span class="pre">max32690evkit/max32690/m4</span></code>.
+<code class="docutils literal notranslate"><span class="pre">simulated</span></code> boolean tells whether the board should be simulated or not.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_wrapper</span></code> - provides a class that encapsulates necessary preprocessing and postprocessing functions for input and output data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataset</span></code> - provides a class implementing methods around dataset management</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">optimizers</span></code> - provides a list of optimizations that are used for optimizing and/or compiling the model.</p></li>
+</ul>
+<p>First, compile the model using <code class="docutils literal notranslate"><span class="pre">kenning</span> <span class="pre">optimize</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span>--cfg<span class="w"> </span>./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml
+</code></pre></div>
+</div>
+<p>This scenario will create a <code class="docutils literal notranslate"><span class="pre">./workspace/vae_cats.tflite</span></code> file with an optimized model.</p>
+<p>Now, to test the model in simulation or an actual hardware, the evaluation app needs to be compiled.
+To do so, use the <code class="docutils literal notranslate"><span class="pre">west</span> <span class="pre">build</span></code> command with a <code class="docutils literal notranslate"><span class="pre">tflite.conf</span></code> configuration for the selected board.
+However, this will build TensorFlow Lite Micro runtime with a limited set of operators.
+To get the runtime with just the necessary set of operators for a given model, you can provide the model that was just created.</p>
+<p>To build the evaluation application, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>always<span class="w"> </span>-b<span class="w"> </span>max32690evkit/max32690/m4<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-DEXTRA_CONF_FILE<span class="o">=</span>tflite.conf<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-DCONFIG_KENNING_MODEL_PATH<span class="o">=</span><span class="se">\&quot;</span>./workspace/vae_cats.tflite<span class="se">\&quot;</span>
+west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<p>Once the model and evaluation app are ready, you can simulate the board in Renode with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--cfg<span class="w"> </span>./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml<span class="w"> </span>--measurements<span class="w"> </span>workspace/vae-tflite-renode.json<span class="w"> </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>The only difference between <code class="docutils literal notranslate"><span class="pre">./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">./kenning-scenarios/zephyr-tflite-vae-inference-max32690-renode.yml</span></code> is which runtime and protocol is commented out.
+Other parts are the same.</p>
+</div>
+<p>The produced <code class="docutils literal notranslate"><span class="pre">workspace/vae-tflite.json</span></code> is a file with raw measurements regarding the model’s performance and predictions.</p>
+<p>It can be parsed and rendered into a Markdown-based or HTML-based report using the <code class="docutils literal notranslate"><span class="pre">kenning</span> <span class="pre">report</span></code> command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>report<span class="w"> </span>--measurements<span class="w"> </span>workspace/vae-tflite-renode.json<span class="w"> </span>--report-path<span class="w"> </span>reports/vae-tflite-renode/report.md<span class="w"> </span>--to-html
+</code></pre></div>
+</div>
+<p>Lastly, the model can be evaluated on actual MAX32690 Evaluation Kit.
+To do so, first flash the board with an evaluation app:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>/root/MaximSDK/Tools/OpenOCD/openocd<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-s<span class="w"> </span>/root/MaximSDK/Tools/OpenOCD/scripts/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;source [find interface/cmsis-dap.cfg]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;source [find target/max32690.cfg]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;init&#39;</span><span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;targets&#39;</span><span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;reset init&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;flash write_image erase ./build/zephyr/zephyr.hex&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;reset run&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;shutdown&#39;</span>
+</code></pre></div>
+</div>
+<p>Logs from the flashing process should look as follows to ensure successful flashing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">Open</span> <span class="n">On</span><span class="o">-</span><span class="n">Chip</span> <span class="n">Debugger</span> <span class="p">(</span><span class="n">Analog</span> <span class="n">Devices</span> <span class="mf">0.12.0</span><span class="o">-</span><span class="mf">1.0.0</span><span class="o">-</span><span class="mi">7</span><span class="p">)</span>  <span class="n">OpenOCD</span> <span class="mf">0.12.0</span> <span class="p">(</span><span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">27</span><span class="o">-</span><span class="mi">07</span><span class="p">:</span><span class="mi">53</span><span class="p">)</span>
+<span class="n">Licensed</span> <span class="n">under</span> <span class="n">GNU</span> <span class="n">GPL</span> <span class="n">v2</span>
+<span class="n">Report</span> <span class="n">bugs</span> <span class="n">to</span> <span class="o">&lt;</span><span class="n">processor</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">support</span><span class="nd">@analog</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">SWD</span> <span class="n">supported</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">Atomic</span> <span class="n">commands</span> <span class="n">supported</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">Test</span> <span class="n">domain</span> <span class="n">timer</span> <span class="n">supported</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">FW</span> <span class="n">Version</span> <span class="o">=</span> <span class="mf">2.0.0</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">Serial</span><span class="c1"># = 0409170272c2c8d800000000000000000000000097969906</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">Interface</span> <span class="n">Initialised</span> <span class="p">(</span><span class="n">SWD</span><span class="p">)</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">SWCLK</span><span class="o">/</span><span class="n">TCK</span> <span class="o">=</span> <span class="mi">1</span> <span class="n">SWDIO</span><span class="o">/</span><span class="n">TMS</span> <span class="o">=</span> <span class="mi">1</span> <span class="n">TDI</span> <span class="o">=</span> <span class="mi">0</span> <span class="n">TDO</span> <span class="o">=</span> <span class="mi">0</span> <span class="n">nTRST</span> <span class="o">=</span> <span class="mi">0</span> <span class="n">nRESET</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">CMSIS</span><span class="o">-</span><span class="n">DAP</span><span class="p">:</span> <span class="n">Interface</span> <span class="n">ready</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">clock</span> <span class="n">speed</span> <span class="mi">2000</span> <span class="n">kHz</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">SWD</span> <span class="n">DPIDR</span> <span class="mh">0x2ba01477</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="p">[</span><span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span><span class="p">]</span> <span class="n">Cortex</span><span class="o">-</span><span class="n">M4</span> <span class="n">r0p1</span> <span class="n">processor</span> <span class="n">detected</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="p">[</span><span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span><span class="p">]</span> <span class="n">target</span> <span class="n">has</span> <span class="mi">6</span> <span class="n">breakpoints</span><span class="p">,</span> <span class="mi">4</span> <span class="n">watchpoints</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">starting</span> <span class="n">gdb</span> <span class="n">server</span> <span class="k">for</span> <span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span> <span class="n">on</span> <span class="mi">3333</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">Listening</span> <span class="n">on</span> <span class="n">port</span> <span class="mi">3333</span> <span class="k">for</span> <span class="n">gdb</span> <span class="n">connections</span>
+    <span class="n">TargetName</span>         <span class="n">Type</span>       <span class="n">Endian</span> <span class="n">TapName</span>            <span class="n">State</span>
+<span class="o">--</span>  <span class="o">------------------</span> <span class="o">----------</span> <span class="o">------</span> <span class="o">------------------</span> <span class="o">------------</span>
+ <span class="mi">0</span><span class="o">*</span> <span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span>       <span class="n">cortex_m</span>   <span class="n">little</span> <span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span>       <span class="n">running</span>
+
+<span class="p">[</span><span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span><span class="p">]</span> <span class="n">halted</span> <span class="n">due</span> <span class="n">to</span> <span class="n">debug</span><span class="o">-</span><span class="n">request</span><span class="p">,</span> <span class="n">current</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Thread</span>
+<span class="n">xPSR</span><span class="p">:</span> <span class="mh">0x61000000</span> <span class="n">pc</span><span class="p">:</span> <span class="mh">0x10016372</span> <span class="n">psp</span><span class="p">:</span> <span class="mh">0x2000afa0</span>
+<span class="n">Info</span> <span class="p">:</span> <span class="n">SWD</span> <span class="n">DPIDR</span> <span class="mh">0x2ba01477</span>
+<span class="p">[</span><span class="n">max32xxx</span><span class="o">.</span><span class="n">cpu</span><span class="p">]</span> <span class="n">halted</span> <span class="n">due</span> <span class="n">to</span> <span class="n">debug</span><span class="o">-</span><span class="n">request</span><span class="p">,</span> <span class="n">current</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Thread</span>
+<span class="n">xPSR</span><span class="p">:</span> <span class="mh">0x01000000</span> <span class="n">pc</span><span class="p">:</span> <span class="mh">0x0000fff4</span> <span class="n">msp</span><span class="p">:</span> <span class="mh">0x2000a900</span>
+<span class="n">auto</span> <span class="n">erase</span> <span class="n">enabled</span>
+<span class="n">wrote</span> <span class="mi">131072</span> <span class="nb">bytes</span> <span class="kn">from</span><span class="w"> </span><span class="nn">file</span> <span class="o">./</span><span class="n">build</span><span class="o">/</span><span class="n">zephyr</span><span class="o">/</span><span class="n">zephyr</span><span class="o">.</span><span class="n">hex</span> <span class="ow">in</span> <span class="mf">3.210366</span><span class="n">s</span> <span class="p">(</span><span class="mf">39.871</span> <span class="n">KiB</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
+
+<span class="n">Info</span> <span class="p">:</span> <span class="n">SWD</span> <span class="n">DPIDR</span> <span class="mh">0x2ba01477</span>
+<span class="n">shutdown</span> <span class="n">command</span> <span class="n">invoked</span>
+</code></pre></div>
+</div>
+<p>Once <code class="docutils literal notranslate"><span class="pre">./build/zephyr/zephyr.hex</span></code> is successfully written to the device, the model can be tested directly on hardware platform.</p>
+<p>In order to do so, set <code class="docutils literal notranslate"><span class="pre">simulated</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in the <code class="docutils literal notranslate"><span class="pre">./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml</span></code> file.
+Finally, use a single-command approach, where <code class="docutils literal notranslate"><span class="pre">kenning</span> <span class="pre">test</span> <span class="pre">report</span></code> are invoked all at once (model is already compiled, hence lack of <code class="docutils literal notranslate"><span class="pre">optimize</span></code>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span>--cfg<span class="w"> </span>./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>workspace/vae-tflite-hw.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/vae-tflite-hw/report.md<span class="w"> </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">workspace/vae-tflite-hw.json</span></code> will hold the collected performance and quality data, and <code class="docutils literal notranslate"><span class="pre">reports/vae-tflite-hw/report/report.html</span></code> will demonstrate the work of the model on hardware.</p>
+<h2 id="deploy-the-vae-model-with-microtvm">Deploy the VAE model with microTVM<a class="headerlink" href="#deploy-the-vae-model-with-microtvm" title="Link to this heading">¶</a></h2>
+<p>For microTVM, the deployment looks similar to the scenario above.
+The only difference are the optimizers and runtimes used:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># This scenario demonstrates deployment of Anomaly Detection in time series on MAX32960 Evaluation Kit</span>
+<span class="c1"># It provides two variants of execution - a deployment on an actual hardware, and simulation in Renode</span>
+<span class="c1"># This scenario should be executed within kenning-zephyr-runtime project, with built evaluation app for</span>
+<span class="c1"># microTVM runtime:</span>
+<span class="c1">#</span>
+<span class="c1"># west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE=&#39;tvm.conf;boards/max32690evkit_max32690_m4.conf&#39; -DKENNING_MODEL_PATH=`realpath ./vae_cats.pth`</span>
+<span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max32690evkit/max32690/m4</span>
+<span class="w">    </span><span class="c1"># to run inference on actual hardwarem change simulated to false</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">zephyr_build_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/</span>
+<span class="w">    </span><span class="nt">uart_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dev/ttyUSB0</span>
+
+<span class="c1"># model wrapper for the VAE anomaly detection model</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyTorchAnomalyDetectionVAE</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./vae_cats.pth</span>
+<span class="w">    </span><span class="nt">encoder_neuron_list</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">batch_norm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="c1"># A dataset used for evaluating the model</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnomalyDetectionDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./workspace/dataset</span>
+<span class="w">    </span><span class="nt">csv_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://zenodo.org/records/8338435/files/data.csv</span>
+<span class="w">    </span><span class="nt">split_fraction_test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0005</span>
+<span class="w">    </span><span class="nt">inference_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">split_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
+
+<span class="c1"># run TVM conversion from above PyTorch model</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TVMCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./workspace/vae_cats.graph_data</span>
+</code></pre></div>
+</div>
+<p>To begin evaluation, compile the evaluation app using microTVM as the runtime:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>always<span class="w"> </span>-b<span class="w"> </span>max32690evkit/max32690/m4<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span><span class="s1">&#39;tvm.conf;boards/max32690evkit_max32690_m4.conf&#39;</span>
+west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<p>Then, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span>--cfg<span class="w"> </span>./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>workspace/vae-tvm-renode.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/vae-tvm-renode/report.md<span class="w"> </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<p>This performs all actions at once - model optimization, model evaluation and report generation.</p>
+<p>To test the model on hardware, set <code class="docutils literal notranslate"><span class="pre">simulated</span></code> in the scenario to <code class="docutils literal notranslate"><span class="pre">false</span></code> and then flash the device with the microTVM-based app:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>/root/MaximSDK/Tools/OpenOCD/openocd<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-s<span class="w"> </span>/root/MaximSDK/Tools/OpenOCD/scripts/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;source [find interface/cmsis-dap.cfg]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;source [find target/max32690.cfg]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;init&#39;</span><span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;targets&#39;</span><span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;reset init&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;flash write_image erase ./build/zephyr/zephyr.hex&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;reset run&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="s1">&#39;shutdown&#39;</span>
+</code></pre></div>
+</div>
+<p>Run tests on device (<code class="docutils literal notranslate"><span class="pre">optimize</span></code> is not necessary, since compilation was done before simulation in Renode):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span>--cfg<span class="w"> </span>./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>workspace/vae-tvm-hw.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/vae-tvm-hw/report.md<span class="w"> </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<h2 id="comparing-performance-and-quality-of-runtimes-and-models">Comparing performance and quality of runtimes and models<a class="headerlink" href="#comparing-performance-and-quality-of-runtimes-and-models" title="Link to this heading">¶</a></h2>
+<p>Based on the results for microTVM and TensorFlow Lite Micro runtimes, you can generate comparison reports that will show the differences in performance and quality between the two.</p>
+<p>To generate a report for Renode simulations, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>report<span class="w"> </span>--measurements<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>workspace/vae-tflite-renode.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>workspace/vae-tvm-renode.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/vae-tflite-tvm-comparison-renode/report.md<span class="w"> </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<p>For comparison of execution on hardware, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>report<span class="w"> </span>--measurements<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>workspace/vae-tflite-hw.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>workspace/vae-tvm-hw.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/vae-tflite-tvm-comparison-hw/report.md<span class="w"> </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<p>The reports in HTML format will be available here:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reports/vae-tflite-tvm-comparison-renode/report/report.html</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reports/vae-tflite-tvm-comparison-hw/report/report.html</span></code></p></li>
+</ul>
+<h2 id="specification-of-the-kenning-datasets-anomaly-detection-dataset-module"><span id="anomaly-csv-format"></span>Specification of the <a class="reference external" href="https://github.com/antmicro/kenning/blob/main/kenning/datasets/anomaly_detection_dataset.py">kenning.datasets.anomaly_detection_dataset</a> module<a class="headerlink" href="#specification-of-the-kenning-datasets-anomaly-detection-dataset-module" title="Link to this heading">¶</a></h2>
+<h3 id="module-description">Module description<a class="headerlink" href="#module-description" title="Link to this heading">¶</a></h3>
+<p>Dataset wrapper for anomaly detection in time series.</p>
+<h3 id="class-anomalydetectiondataset">Class AnomalyDetectionDataset<a class="headerlink" href="#class-anomalydetectiondataset" title="Link to this heading">¶</a></h3>
+<p>Generic dataset for anomaly detection in time series problem.</p>
+<p>It reads data from provided CSV file and prepares sequences of data.</p>
+<p>CSV file has to follow the schema:</p>
+<table class="docutils data align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Timestamp column</p></th>
+<th class="head"><p>Param 1 name</p></th>
+<th class="head"><p>Param 2 name</p></th>
+<th class="head"><p>…</p></th>
+<th class="head"><p>Param N name</p></th>
+<th class="head"><p>Label</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>timestamps</p></td>
+<td><p>Numerical values</p></td>
+<td><p>Numerical values</p></td>
+<td><p>…</p></td>
+<td><p>Numerical values</p></td>
+<td><p>Integer values</p></td>
+</tr>
+</tbody>
+</table>
+<p>Kenning automatically discards the timestamp column, as well as the
+header row.</p>
+<p>The numerical values of parameters are used as signals or data from
+sensors, whereas the labels specify anomaly occurrence (values greater
+than 0).</p>
+<p>Each label describes whether an anomaly has been observed within
+<span class="title-ref">window_size</span> previous samples.</p>
+<p>This results with final version of dataset where one entry looks like:</p>
+<table class="docutils data align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>X</p></th>
+<th class="head"><p></p></th>
+<th class="head"><p></p></th>
+<th class="head"><p>Y</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Param 1 value from <span class="title-ref">t - window_size + 1</span></p></td>
+<td><p>…</p></td>
+<td><p>Param N value from <span class="title-ref">t - window_size + 1</span></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>…</p></td>
+<td><p>…</p></td>
+<td><p>…</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Param 1 value from <span class="title-ref">t - 1</span></p></td>
+<td><p>…</p></td>
+<td><p>Param N value from <span class="title-ref">t - 1</span></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>Param 1 value from <span class="title-ref">t</span></p></td>
+<td><p>…</p></td>
+<td><p>Param N value from <span class="title-ref">t</span></p></td>
+<td><p>0 (no anomaly) or 1 (anomaly)</p></td>
+</tr>
+</tbody>
+</table>
+
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      2026-02-12
+    
+  </small>
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="anomaly-detection-automl.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Generating anomaly detection models for the MAX32690 Evaluation Kit with AutoML" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Generating anomaly detection models for the MAX32690 Evaluation Kit with AutoML
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="displaying-information-example.html" class="md-footer__link md-footer__link--next" aria-label="Next: Displaying information about available classes" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Displaying information about available classes
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  
+  
+  <div class="md-footer-meta md-typeset">
+    
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-footer-copyright__highlight">
+        Copyright &#169; 2020-2025, Antmicro.
+        
+    </div>
+  
+      <a href="https://github.com/antmicro/kenning/tree/f85992e2278041c41303b1c402b144427c0f2a97">f85992e2</a>
+        @ <a href="https://github.com/antmicro/kenning/tree/main">main</a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/antmicro" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/antmicro" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+    
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.integrate"], "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+      
+        <script src="../_static/sphinx_immaterial_theme.f9d9eeeb247ace16c.min.js?v=8ec58cb5"></script>
+    
+  </body>
+</html>

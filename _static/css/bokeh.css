@@ -1,0 +1,109 @@
+/*
+ * Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Background for bokeh plots */
+figure:has(div>.bk-GridPlot, div>.bk-Figure, div>.bk-Column, div.bk-Row) {
+  width: 95%;
+}
+
+/* Centring of bokeh plots in divs instead of figure */
+div.figure.align-center {
+  display: flex !important;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+div.figure.align-center img,
+figure.align-center img {
+  background: var(--md-code-bg-color);
+  padding: 0.5em;
+  border-radius: 0.1rem;
+}
+
+/* Styles for custom tooltip */
+div.bk-tooltip-custom {
+  background-color: var(--md-code-bg-color) !important;
+  border-color: var(--md-default-bg-color) !important;
+  text-align: left;
+}
+
+.bk-tt-entry-name .bk-tt-entry-value {
+  font-family: var(--md-code-font-family);
+}
+
+.bk-tt-entry-name {
+  color: var(--md-code-hl-keyword-color);
+  padding-right: 0.5em;
+}
+
+.bk-tt-entry-name:after {
+  content: ": ";
+}
+
+.bk-tt-entry-value {
+  color: var(--md-code-hl-number-color);
+}
+
+/* Changing color of tooltip's arrow */
+ .bk-tooltip.bk-right.bk-tooltip-arrow::after {
+  border-left-color: var(--md-default-bg-color) !important;
+}
+
+ .bk-tooltip.bk-left.bk-tooltip-arrow::before {
+  border-right-color: var(--md-default-bg-color) !important;
+}
+
+ .bk-tooltip.bk-below::after {
+  border-top-color: var(--md-default-bg-color) !important;
+}
+
+ .bk-tooltip.bk-above::before {
+  border-bottom-color: var(--md-default-bg-color) !important;
+}
+
+.md-typeset h1, .md-typeset h2, .md-typeset h3 {
+  overflow: clip;
+  text-overflow: ellipsis;
+}
+
+.md-typeset .figure.align-center, .md-typeset .figure.align-right, .md-typeset figure.align-center, .md-typeset figure.align-right, .md-typeset img.align-center, .md-typeset img.align-right, .md-typeset object.align-center, .md-typeset object.align-right {
+  margin: 0;
+}
+
+/* DataTable styles */
+ .slick-cell,
+.bk.root .slick-cell.bk-cell-index {
+  background: var(--md-code-bg-color) !important;
+  border-right-style: none !important;
+  text-align: left;
+}
+ .slick-cell a:hover {
+  color: var(--md-code-hl-keyword-color) !important;
+}
+ .slick-header-column:hover {
+  background-color: var(--md-default-bg-color);
+}
+ .slick-header-column.ui-state-default {
+  font-weight: bold;
+  border-style: none;
+}
+ .slick-cell.active {
+  border-style: none;
+}
+ .slick-header-column-sorted {
+  font-style: normal;
+}
+ .slick-sort-indicator-asc,
+ .slick-sort-indicator-desc {
+  display: none;
+}
+ .slick-row,
+ .slick-row.odd,
+ .slick-row.even {
+  background: none;
+}

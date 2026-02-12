@@ -23,6 +23,7 @@ from kenning.core.exceptions import (
 )
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
+from kenning.utils.logger import KLogger
 from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 from kenning.utils.update_h5_file import update_h5_file
@@ -384,6 +385,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 "No input/ouput specification found"
             )
 
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
         if self.quantization_aware_training:
             assert self.inputtype == "keras"
             if input_model_path.suffix in (".h5", ".hdf5"):
@@ -418,6 +424,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
             conversion_kwargs = {
                 "io_spec": io_spec_processed,
+                "model_cls": model_cls,
                 "target": self.target,
                 "inferenceinputtype": self.inferenceinputtype,
                 "inferenceoutputtype": self.inferenceoutputtype,
@@ -576,7 +583,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             )
 
         return flags
-    
+
     @classmethod
     def get_framework(cls) -> str:
         return "tflite"

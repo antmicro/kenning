@@ -10,7 +10,7 @@ import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -93,6 +93,24 @@ class Optimizer(ArgumentsHandler, ABC):
         Initializes optimizer, should be called before compilation.
         """
         ...
+
+    def get_model_class(self) -> Optional[Any]:
+        """
+        Function that tries to deduce model
+        class of model wrapper.
+
+        Returns
+        -------
+        Optional[Any]
+            Model class of the model wrapper or None when
+            model class is not available.
+        """
+        try:
+            self.model_wrapper.create_model_structure()
+            model_cls = self.model_wrapper.model
+            return model_cls
+        except AttributeError:
+            return None
 
     @classmethod
     def from_argparse(

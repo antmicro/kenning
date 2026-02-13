@@ -176,6 +176,16 @@ class ExecuTorchOptimizer(Optimizer):
                     expected_arg_names[i]: v
                     for i, v in enumerate(dynamic_shapes.values())
                 }
+
+        to_remove = []
+
+        for shap in dynamic_shapes.keys():
+            if dynamic_shapes[shap] is None:
+                to_remove.append(shap)
+
+        for rem in to_remove:
+            del dynamic_shapes[rem]
+
         return dynamic_shapes
 
     def _generate_sample_inputs(
@@ -199,13 +209,7 @@ class ExecuTorchOptimizer(Optimizer):
                     " but it is missing."
                 )
 
-            for s in input_shape:
-                if type(s) is not int or s <= 0:
-                    raise IOSpecificationMissingEntryError(
-                        f"All dimensions should be positive integers, got: {s}"
-                    )
-
-            shape = tuple(s for s in input_shape)
+            shape = tuple(s if s > 0 else 1 for s in input_shape)
             return torch.randn(*shape).cpu()
 
         raise IOSpecificationMissingEntryError(
@@ -280,6 +284,7 @@ class ExecuTorchOptimizer(Optimizer):
         dynamic_shapes = self._extract_shapes_from_io_specification(
             io_specification=io_spec,
         )
+        KLogger.debug(f"Dynamic shapes: {dynamic_shapes}")
 
         if not self.quantize:
             exported_program = export(

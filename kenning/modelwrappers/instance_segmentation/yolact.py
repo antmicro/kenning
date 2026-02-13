@@ -399,7 +399,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         return {
             "input": [
                 {
-                    "name": "input",
+                    "name": "input_list",
                     "shape": (1, 3, -1, -1),
                     "dtype": "float32",
                 }
@@ -676,7 +676,7 @@ class YOLACT(YOLACTWrapper):
         return {
             "input": [
                 {
-                    "name": "input",
+                    "name": "input_list",
                     "shape": (1, 3, -1, -1),
                     "dtype": "float32",
                 }

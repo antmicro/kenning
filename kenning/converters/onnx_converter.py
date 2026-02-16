@@ -73,7 +73,8 @@ class OnnxConverter(ModelConverter):
 
         """
         import onnx
-        from onnx2torch import convert
+
+        from kenning.onnxconverters.onnx2torch import convert
 
         if not model:
             model = onnx.load(str(self.source_model_path))

@@ -31,6 +31,7 @@ EXT_TO_FRAMEWORK = {
     ".pth": "torch",
     ".tflite": "tflite",
     ".graph_data": "tvm",
+    ".safetensors": "safetensors",
 }
 
 

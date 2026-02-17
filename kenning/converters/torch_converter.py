@@ -57,7 +57,7 @@ class TorchConverter(ModelConverter):
         Raises
         ------
         ConversionError
-            Raiased if model file is a state_dict, and no
+            Raised when model file is a state_dict, and no
             architecture was specified.
         """
         import torch
@@ -199,16 +199,38 @@ class TorchConverter(ModelConverter):
 
         from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 
-        model = torch.load(
-            self.source_model_path,
-            weights_only=False,
-            map_location=torch.device(_DEFAULT_DEVICE),
-        )
+        if model is None:
+            KLogger.info("Loading model from model file.")
+            loaded_data = torch.load(
+                self.source_model_path,
+                weights_only=False,
+                map_location=torch.device(_DEFAULT_DEVICE),
+            )
+            if isinstance(loaded_data, dict):
+                model_cls = kwargs.get("model_cls")
+
+                if not model_cls:
+                    raise ConversionError(
+                        "The loaded file is a state_dict containing "
+                        "only weights. To convert this, you must "
+                        "provide the model class."
+                    )
+
+                model = model_cls
+
+                if "model_state_dict" in loaded_data:
+                    model.load_state_dict(loaded_data["model_state_dict"])
+                else:
+                    model.load_state_dict(loaded_data)
+            else:
+                model = loaded_data
+        else:
+            KLogger.info("Using preloaded model.")
 
         if not isinstance(model, torch.nn.Sequential):
             raise ConversionError(
                 "Only Sequential models are supported,"
-                "got {type(model).__name__}"
+                f"got {type(model).__name__}"
             )
 
         ai8x_model = fuse_torch_sequential(

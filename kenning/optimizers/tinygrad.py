@@ -144,34 +144,34 @@ class TinygradOptimizer(Optimizer):
             )
 
         input_type = self.get_input_type(input_model_path)
+        if input_type != "safetensors" and input_type != "tinygrad":
+            model_cls = self.get_model_class()
 
-        model_cls = self.get_model_class()
+            if model_cls is None:
+                KLogger.warning("Cannot get model class from model wrapper.")
 
-        if model_cls is None:
-            KLogger.warning("Cannot get model class from model wrapper.")
+            conversion_kwargs = {
+                "io_spec": io_spec,
+                "model_cls": model_cls,
+            }
 
-        conversion_kwargs = {
-            "io_spec": io_spec,
-            "model_cls": model_cls,
-        }
+            model = converter_registry.convert(
+                input_model_path,
+                input_type,
+                "tinygrad",
+                **conversion_kwargs,
+                **kwargs,
+            )
+            onnx_path = self.compiled_model_path.with_suffix(".onnx")
+            onnx.save(model, onnx_path)
 
-        model = converter_registry.convert(
-            input_model_path,
-            input_type,
-            "tinygrad",
-            **conversion_kwargs,
-            **kwargs,
-        )
-        onnx_path = self.compiled_model_path.with_suffix(".onnx")
-        onnx.save(model, onnx_path)
+            input_model_path = onnx_path
 
-        input_model_path = onnx_path
+            for spec, input in zip(io_spec["input"], model.graph.input):
+                spec["name"] = input.name
 
-        for spec, input in zip(io_spec["input"], model.graph.input):
-            spec["name"] = input.name
-
-        for spec, output in zip(io_spec["output"], model.graph.output):
-            spec["name"] = output.name
+            for spec, output in zip(io_spec["output"], model.graph.output):
+                spec["name"] = output.name
 
         self.save_io_specification(input_model_path, io_spec)
         (

@@ -64,7 +64,7 @@ class StubEmlearnModel(ModelWrapper):
 
     @classmethod
     def get_framework_version(cls) -> str:
-        return "dummy"
+        return "stub"
 
     @classmethod
     def get_output_formats(cls):

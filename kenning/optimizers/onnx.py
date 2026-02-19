@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +31,7 @@ class ONNXCompiler(Optimizer):
         "tflite",
         "onnx",
         "any",
+        "sklearn",
     ]
 
     outputtypes = ["onnx"]

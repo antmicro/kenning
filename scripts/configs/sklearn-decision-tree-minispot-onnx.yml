@@ -1,0 +1,23 @@
+model_wrapper:
+  type: SKLearnGenericDecisionTreeClassifier
+  parameters:
+    model_path: ./model.gz
+    dtype: float64
+dataset:
+  type: TabularDataset
+  parameters:
+    dataset_root: build/data
+    dataset_path: https://dl.antmicro.com/kenning/datasets/anomaly_detection/minispot.csv
+    cols_x: [roll, pitch, gz, ax, ay, az]
+    col_y: anomaly
+    shuffle_data: False
+    download_dataset: True
+optimizers:
+- type: ONNXCompiler
+  parameters:
+    compiled_model_path: build/compiled_model.onnx
+    model_framework: sklearn
+runtime:
+  type: ONNXRuntime
+  parameters:
+    save_model_path: build/compiled_model.onnx

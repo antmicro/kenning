@@ -448,6 +448,7 @@ class PipelineRunner(object):
             CommandTemplate.current_command = TEST
 
             if self.runtime is None and not protocol_required:
+                self.model_wrapper.prepare_model()
                 self.model_wrapper.test_inference()
             else:
                 measurements = None

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -116,29 +116,29 @@ class TabularDataset(Dataset):
         else:
             self.dataX = [
                 rowsX[i : i + self.window_size]
-                for i in range(max(0, len(rowsX) - self.window_size))
+                for i in range(max(0, len(rowsX) - self.window_size + 1))
             ]
-            self.dataY = rowsY[self.window_size :]
-
+            self.dataY = rowsY[self.window_size - 1 :]
         self.mean = list(dfX.mean())
         self.std = list(dfX.std())
-        self.class_names = list(map(str, dfY.unique().sort()))
+        self.classnames = list(map(str, dfY.unique().sort()))
         self.num_features = dfX.shape[1]
 
     def prepare_output_samples(self, samples):
-        return [np.eye(len(self.class_names))[samples]]
+        return [np.eye(len(self.classnames))[samples]]
 
     def evaluate(self, predictions, truth):
         measurements = Measurements()
         ts = np.argmax(truth[0], axis=-1)
-        ps = predictions[0]
+        ps = np.argmax(predictions[0], axis=-1)
+
         confusion_matrix = metrics.confusion_matrix(
-            ts, ps, labels=range(len(self.class_names))
+            ts, ps, labels=range(len(self.classnames))
         )
         measurements.accumulate(
             "eval_confusion_matrix",
             confusion_matrix,
-            lambda: np.zeros((len(self.class_names), len(self.class_names))),
+            lambda: np.zeros((len(self.classnames), len(self.classnames))),
         )
         measurements.add_measurement(
             "predictions",
@@ -156,4 +156,4 @@ class TabularDataset(Dataset):
         return self.mean, self.std
 
     def get_class_names(self):
-        return self.class_names
+        return self.classnames

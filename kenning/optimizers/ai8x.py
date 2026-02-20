@@ -491,6 +491,8 @@ class Ai8xCompiler(Optimizer):
                     ),
                 )
 
+            model_cls = self.get_model_class()
+
             # convert model
             converted_model_path = tmp_dir / f"{input_model_path.stem}_c.pth"
 
@@ -498,6 +500,7 @@ class Ai8xCompiler(Optimizer):
                 "ai8x_model_path": converted_model_path,
                 "ai8x_tools": self.ai8x_tools,
                 "device_id": self.device_id,
+                "model_cls": model_cls,
             }
             input_type = self.get_input_type(input_model_path)
             converter_registry.convert(

@@ -261,7 +261,7 @@ The only difference are the optimizers and runtimes used:
 To begin evaluation, compile the model for microTVM:
 
 ```bash
-kenning optimize --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml
+kenning optimize --cfg ./kenning-scenarios/vae-inference/tvm-max32690.yml
 ```
 
 Then compile the evaluation app using microTVM as the runtime.

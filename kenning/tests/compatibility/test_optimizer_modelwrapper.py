@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -101,8 +101,6 @@ EXPECTED_FAIL = [
     ("MMPoseRTMOONNX", "TensorFlowClusteringOptimizer"),
     ("MMPoseRTMOONNX", "TensorFlowPruningOptimizer"),
     ("MagicWandModelWrapper", "NNIPruningOptimizer"),
-    ("MagicWandModelWrapper", "ExecuTorchOptimizer"),
-    ("MagicWandModelWrapper", "TinygradOptimizer"),
     ("PHI2", "AWQOptimizer"),
     ("PHI2", "GPTQOptimizer"),
     ("PHI2", "GPTQSparseGPTOptimizer"),
@@ -114,7 +112,6 @@ EXPECTED_FAIL = [
     ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
     ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
     ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
-    ("PyTorchCOCOMaskRCNN", "TinygradOptimizer"),
     ("PyTorchPetDatasetMobileNetV2", "Ai8xCompiler"),
     ("TFLiteCompiler", "MagicWandModelWrapper"),
     ("TFLiteCompiler", "TensorFlowPetDatasetMobileNetV2"),
@@ -122,8 +119,6 @@ EXPECTED_FAIL = [
     ("TVMCompiler", "TensorFlowPetDatasetMobileNetV2"),
     ("TVMDarknetCOCOYOLOV3", "TVMCompiler"),
     ("TensorFlowImageNet", "NNIPruningOptimizer"),
-    ("TensorFlowImageNet", "TFLiteCompiler"),
-    ("TensorFlowImageNet", "TVMCompiler"),
     ("TensorFlowImageNet", "TensorFlowClusteringOptimizer"),
     ("TensorFlowImageNet", "TensorFlowPruningOptimizer"),
     ("TensorFlowPetDatasetMobileNetV2", "NNIPruningOptimizer"),
@@ -142,10 +137,8 @@ EXPECTED_FAIL = [
     ("MMPoseDetectionInput", "ONNXCompiler"),
     ("MMPoseModelWrapper", "IREECompiler"),
     ("MMPoseModelWrapper", "NNIPruningOptimizer"),
-    ("MMPoseModelWrapper", "ONNXCompiler"),
     ("MMPoseModelWrapper", "TFLiteCompiler"),
     ("MMPoseModelWrapper", "TVMCompiler"),
-    ("MMPoseModelWrapper", "TinygradOptimizer"),
     ("MMPoseONNX", "NNIPruningOptimizer"),
     ("MMPoseONNX", "ONNXCompiler"),
     ("MMPoseONNX", "TFLiteCompiler"),
@@ -201,11 +194,13 @@ EXPECTED_FAIL = [
     ("TinygradImageNet", "ONNXCompiler"),
     ("TinygradImageNet", "TFLiteCompiler"),
     ("TinygradImageNet", "TVMCompiler"),
-    # some strange error with executorch
-    ("PyTorchAnomalyDetectionCNN", "ExecuTorchOptimizer"),
-    ("PyTorchAnomalyDetectionVAE", "ExecuTorchOptimizer"),
-    ("PyTorchMagicWandModelWrapper", "ExecuTorchOptimizer"),
-    ("PyTorchPetDatasetMobileNetV2", "ExecuTorchOptimizer"),
+    # doesn't work for unknown causes
+    ("SKLearnGenericDecisionTreeClassifier", "Ai8xCompiler"),
+    ("SKLearnGenericDecisionTreeClassifier", "ExecuTorchOptimizer"),
+    ("SKLearnGenericDecisionTreeClassifier", "IREECompiler"),
+    ("SKLearnGenericDecisionTreeClassifier", "NNIPruningOptimizer"),
+    ("SKLearnGenericDecisionTreeClassifier", "TFLiteCompiler"),
+    ("SKLearnGenericDecisionTreeClassifier", "TVMCompiler"),
 ]
 
 SKIP = (

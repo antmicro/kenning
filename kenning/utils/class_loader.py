@@ -310,12 +310,15 @@ def objs_from_json(
             ConfigKey.runtime,
             ConfigKey.runtime_builder,
             ConfigKey.automl,
+            ConfigKey.report,
         ]
-    ).intersection(keys)
+    )
 
     if override:
         args, not_parsed = override
         merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
+
+    keys_regular = keys_regular.intersection(keys)
 
     if ConfigKey.automl in keys_regular:
         keys_regular.remove(ConfigKey.automl)
@@ -398,10 +401,20 @@ def merge_argparse_and_json(
     """
     keys = keys.difference([ConfigKey.dataconverter, ConfigKey.optimizers])
 
+    # When class is not specified in json_cfg, try to get type from args
+    for key in keys:
+        key = key.value
+        if key not in json_cfg.keys():
+            KLogger.debug(f"{key} not found in json config")
+            arg_name = f"{key}_cls"
+            if hasattr(args, arg_name):
+                KLogger.debug("Getting class type from args")
+                arg_cls = getattr(args, arg_name)
+                json_cfg[key] = {"type": arg_cls}
+
     classes = {
         key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
     }
-
     args = parse_classes(
         list(classes.values()), args, not_parsed, override_only=True
     )

@@ -373,6 +373,7 @@ def objs_from_json(
             ConfigKey.automl,
             dataset=dataset,
             platform=objs.get(ConfigKey.platform),
+            optimizers=objs[ConfigKey.optimizers],
         )
 
     return objs

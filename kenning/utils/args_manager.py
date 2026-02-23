@@ -33,6 +33,7 @@ from typing import (
 import jsonschema
 import numpy as np
 
+from kenning.core.exceptions import InvalidArgumentsError
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
@@ -670,7 +671,13 @@ def add_argparse_argument(
                     keywords["nargs"] = "*"
 
             elif prop_type is bool:
-                assert "default" in prop and prop["default"] in [True, False]
+                if not (
+                    "default" in prop and prop["default"] in [True, False]
+                ):
+                    raise InvalidArgumentsError(
+                        f"Default value should be defined for prop \
+                            {name} and has value True or False."
+                    )
 
                 if override_only:
                     keywords["action"] = argparse.BooleanOptionalAction

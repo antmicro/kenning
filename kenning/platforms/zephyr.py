@@ -125,8 +125,7 @@ class ZephyrPlatform(BareMetalPlatform):
             " on or off. When None, debug server is on when simulated=true"
             " and off otherwise",
             "type": bool,
-            "nullable": True,
-            "default": None,
+            "default": False,
         },
         "zephyr_base": {
             "description": "Path to Zephyr base directory",
@@ -155,7 +154,7 @@ class ZephyrPlatform(BareMetalPlatform):
         enable_zephelin: bool = False,
         gdb_port: int = 3333,
         gdb_binary_name: str = "gdb",
-        zpl_use_debug_server: Optional[bool] = None,
+        zpl_use_debug_server: bool = False,
         zephyr_base: Optional[Path] = None,
         uart_port: Optional[Path] = None,
         uart_baudrate: int = None,
@@ -212,9 +211,9 @@ class ZephyrPlatform(BareMetalPlatform):
             Port number for collecting traces from GDB server.
         gdb_binary_name : str
             Name of system gdb binary.
-        zpl_use_debug_server: Optional[bool]
+        zpl_use_debug_server: bool
             Optionally force debug server to be switched
-            on or off. When None, debug server is on when simulated=true
+            on or off. When False, debug server is on when simulated=true
             and off otherwise.
         zephyr_base : Optional[Path]
             Path to Zephyr Base directory.
@@ -258,9 +257,7 @@ class ZephyrPlatform(BareMetalPlatform):
         self.zephyr_base = zephyr_base
 
         self.no_dbg_server = (
-            simulated
-            if zpl_use_debug_server is None
-            else not zpl_use_debug_server
+            simulated if not zpl_use_debug_server else not zpl_use_debug_server
         )
 
         self.sensors = sensors

@@ -101,7 +101,8 @@ anomaly_detection = [
 ]
 auto_pytorch = [
     "kenning[torch]",
-    "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
+    "autoPyTorch @ file:///home/karl/Projects/kenning/89171-improved-automl-tracking/kenning-auto-pytorch",
+    # "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
     "ConfigSpace>=1.2.1",
     "smac>=1.4,<2.0.0",
 ]

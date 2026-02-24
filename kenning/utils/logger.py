@@ -17,6 +17,7 @@ import io
 import logging
 import os
 import sys
+import threading
 import urllib.request
 from contextlib import redirect_stdout
 from dataclasses import dataclass
@@ -26,6 +27,15 @@ from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import coloredlogs
+from rich.console import Console
+from rich.live import Live
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TextColumn,
+    TimeRemainingColumn,
+)
+from rich.table import Table
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -49,14 +59,6 @@ CUSTOM_LEVEL_STYLES = {
     "verbose": {"color": "cyan"},
     "device": {"color": "magenta"},
 }
-
-class RichConsoleLogHandler(logging.Handler):
-    def __init__(self, richlogger, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.richlogger = richlogger
-
-    def emit(self, record: logging.LogRecord) -> None:
-        self.richlogger.log(record)
 
 
 class _DuplicateStream(TextIOBase):
@@ -540,81 +542,296 @@ class TqdmCallback(tqdm):
                 )
         return True
 
-class RichLoggerProgressBar:
-    def __init__(self, title: str, console: Console):
-        self.thread = Thread(target=self._progress_bar_thread, daemon=True)
-        self.queue = SimpleQueue()
-        self.stop_event = Event()
-        self.title = title
-        self.console = console
+class RichProgressBar:
+    """
+    Wrapper class for handling the progress bar.
+    """
 
-    def _make_panel(self, content):
-        return Panel(content, title=self.title)
+    def __init__(self, richstatus, task_id: int):
+        self.richstatus = richstatus
+        self.task_id = task_id
 
-    def _progress_bar_thread(self):
-        current = ""
-        with Live(self._make_panel(current), console=self.console, refresh_per_second=10, screen=False) as live:
-            while not self.stop_event.is_set():
-                updated = False
-                while not self.queue.empty():
-                    current = self.queue.get()
-                    updated = True
-                if updated:
-                    live.update(self._make_panel(current))
-            while not self.queue.empty():
-                current = self.queue.get()
-            live.update(self._make_panel(current))
-    def start(self):
-        self.thread.start()
 
-    def stop(self, timeout=1.0):
-        self.stop_event.set()
-        self.thread.join(timeout=timeout)
+class RichStatus:
+    """
+    Class for handling status logs with a table and a progress bar.
+    """
 
-class RichLogger:
-    FORMAT = (
-        "[%(asctime)-15s.%(msecs)04d {package} %(filename)s:%(lineno)s] "
-        "[%(levelname)s] %(message)s"
-    )
-    def __init__(self):
-        self.logger_thread = Thread(target=self._logger_thread, daemon=True)
+    def __init__(
+        self,
+        console: Optional[Console] = None,
+        progress: Optional[Progress] = None,
+        enable_live: bool = True,
+        refresh_per_second: int = 10,
+    ) -> None:
+        """
+        Initializes an instance of the class.
 
-        self.console = Console()
-        self.stop_event = Event()
-        self.status_queue = SimpleQueue()
+        Parameters
+        ----------
+        console: Optional[Console]
+            Optional Console instance to use (injected for testability).
+        progress: Optional[Progress]
+            Optional Progress instance to use (injected for testability).
+        enable_live: bool
+            If False, live rendering is disabled (headless mode).
+        refresh_per_second: int
+            Live refresh rate when live rendering is enabled.
+        """
+        self.console = console or Console()
+        self.stop_event = threading.Event()
+        # use injected Progress if provided, otherwise create one
+        self.progress = progress or Progress(
+            TextColumn("[bold cyan]{task.description}"),
+            BarColumn(bar_width=None),
+            TextColumn("{task.completed:>2.0f}/{task.total:>2.0f}"),
+            TextColumn("{task.percentage:>3.0f}%"),
+            TimeRemainingColumn(),
+            console=self.console,
+            redirect_stdout=True,
+            redirect_stderr=True,
+            transient=False,
+        )
 
-        self.mainbar = RichLoggerProgressBar('AutoML Status', self.console)
-        self.formatter = logging.Formatter(FORMAT)
+        self.state_lock = threading.Lock()
+        self.extra_info: Dict[str, Any] = {}
+        self.pbars: list[int] = []
 
-    def start(self):
-        self.logger_thread.start()
-        self.mainbar.start()
+        self.iterations = 0
+        self.model_name = None
 
-    def stop(self, timeout=0.1):
-        self.logger_thread.join(timeout=timeout)
-        self.mainbar.stop()
+        # live control
+        self.enable_live = enable_live
+        self.refresh_per_second = refresh_per_second
+        self.live: Optional[Live] = None
 
-    def log(self, record: logging.LogRecord):
+    def _fmt_table_entry(self, val: Any) -> str:
+        """
+        Internal function used to format the value for rendering in the table.
+
+        Parameters
+        ----------
+        val: Any
+            The value to add to the table.
+
+        Returns
+        -------
+        str
+            Formatted string of the value
+        """
+        if isinstance(val, float):
+            return f"{val:.3f}"
+        return str(val)
+
+    def _make_table(self) -> Table:
+        """
+        Internal function for creating the `rich` table.
+        """
+        table = Table(expand=True)
+        table.add_column("Column 1")
+        table.add_column("Column 2", justify="right")
+
+        with self.state_lock:
+            for k, v in self.extra_info.items():
+                table.add_row(k, self._fmt_table_entry(v))
+
+        return table
+
+    def _make_layout(self) -> Table:
+        """
+        Internal function for creating the `rich` layout.
+        """
+        return self._make_table()
+        # return Group(self.progress, table)
+
+    def add_progress_bar(self, title: str, total: int | float) -> int:
+        """
+        Add a rich `Progress` status bar with the title and the total
+        number of units.
+
+        Parameters
+        ----------
+        title: str
+            Title or description for the given progress bar
+        total: int | float
+            Total number of units for the progress bar.
+
+        Returns
+        -------
+        int
+            Task ID of the progress bar. This is used for updating
+            the progress bar.
+        """
+        total_value = float(total)
+        task_id = self.progress.add_task(title, total=total_value)
+        with self.state_lock:
+            self.pbars.append(task_id)
+        return task_id
+
+    def start(self) -> None:
+        """
+        Start the rich console.
+        """
+        if not self.enable_live:
+            return
+        if self.live is not None:
+            return
         try:
-            text = self.formatter.format(record)
+            self.live = Live(
+                self._make_layout(),
+                console=self.console,
+                refresh_per_second=self.refresh_per_second,
+                transient=False,
+            )
+            self.live.__enter__()
+        except Exception as e:
+            KLogger.exception("Failed to start Live: %s", e)
+            raise
+            # keep live as None so callers can still use progress
+            # in headless mode
+
+    def stop(self) -> None:
+        """
+        Stop the rich console.
+        """
+        KLogger.debug("Stopping RichStatus")
+        self.stop_event.set()
+        # Ensure we always attempt to clean up live and
+        # progress without raising
+        try:
+            if self.live is not None:
+                try:
+                    self.live.__exit__(None, None, None)
+                except Exception:
+                    KLogger.exception("Error while exiting Live")
+                finally:
+                    self.live = None
+        finally:
+            try:
+                self.progress.stop()
+            except Exception:
+                KLogger.exception("Error while stopping Progress")
+                raise
+
+    def advance(self, task: int, advance: int | float = 1) -> None:
+        """
+        Advance the progress bar.
+
+        Parameters
+        ----------
+        task: int
+            Task ID of the progress bar to advance
+        advance: int | float
+            The number of units to advance.
+
+        Raises
+        ------
+        Exception
+            Any exception caught when creating the rich `live` context.
+        """
+        try:
+            self.progress.update(task, advance=advance)
+            # update live only if present
+            if self.live is not None:
+                try:
+                    self.live.update(self._make_layout(), refresh=True)
+                except Exception:
+                    KLogger.exception("Error while updating Live in advance")
+                    raise
         except Exception:
-            text = record.getMessage()
-        self.status_queue.put(text)
-        # self.status_queue.put(
+            KLogger.exception("Error while advancing progress")
+            raise
 
-    def _logger_thread(self):
-        while not self.stop_event.is_set():
-            text = self.status_queue.get()
-            self.console.print(text)
+    def reset_task(self, task: int, title: str, total: int | float) -> None:
+        """
+        Reset the progress bar given the task ID with the new
+        title and new total.
 
-    def enqueue_bar(self, msg: str):
-        if self.mainbar is not None and not self.mainbar.stop_event.is_set():
-            self.mainbar.queue.put(msg)
+        Parameters
+        ----------
+        task: int
+            Task ID
+        title: str
+            New title for the task
+        total: int | float
+            New total number of units for the task.
+        """
+        KLogger.debug(f"Resetting task {task}")
+        try:
+            total_value = float(total)
+            self.progress.update(
+                task, description=title, total=total_value, completed=0.0
+            )
+            if self.live is not None:
+                try:
+                    self.live.update(self._make_layout(), refresh=True)
+                except Exception:
+                    KLogger.exception(
+                        "Error while updating Live in reset_task"
+                    )
+        except Exception:
+            KLogger.exception("Error while resetting task")
 
+    def update_table(self, new_table: Optional[dict] = None) -> None:
+        """
+        Update the table in the console view.
 
-def attach_handler_to_logger(richlogger, logger_name: str | None = None, remove_others: bool = True):
-    target = logging.getLogger(logger_name) if logger_name else logging.getLogger()
-    if remove_others:
-        target.handlers.clear()
-    qh = RichConsoleLogHandler(richlogger)
-    target.addHandler(qh)
+        Parameters
+        ----------
+        new_table: Optional[dict]
+            The new table of values to render. This can be any subclass
+            of `dict`such as `OrderedDict`. If the value is None, the
+            `self.extra_info` property is reused and rerendered. One
+            can directly edit `self.extra_info` and call this method.
+        """
+        if new_table:
+            with self.state_lock:
+                self.extra_info = new_table
+        # update live only if present
+        KLogger.info(f"Update live only if present. Live = {self.live}")
+        if self.live is not None:
+            try:
+                self.live.update(self._make_layout(), refresh=True)
+            except Exception:
+                KLogger.exception("Error while updating Live in update_table")
+                raise
+
+    def get_task_info(self, task_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Return information about a given task ID.
+        Returns None if the task is not found.
+        """
+        try:
+            task = None
+            try:
+                task = self.progress.tasks[task_id]
+            except Exception:
+                # Try searching by id in list
+                for t in getattr(self.progress, "tasks", []):
+                    if getattr(t, "id", None) == task_id:
+                        task = t
+                        break
+            if task is None:
+                return None
+
+            return {
+                "id": getattr(task, "id", task_id),
+                "description": getattr(task, "description", None),
+                "completed": getattr(task, "completed", None),
+                "total": getattr(task, "total", None),
+                "percentage": getattr(task, "percentage", None),
+            }
+        except Exception:
+            KLogger.exception("Error while fetching task info")
+            return None
+
+    def __enter__(self) -> "RichStatus":
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        try:
+            self.stop()
+        except Exception:
+            raise
+        return False

@@ -17,7 +17,7 @@ from autoPyTorch.utils.progress_tracker import (
 from rich.table import Table
 from smac.utils.constants import MAXINT
 
-from kenning.utils.logger import RichStatus, KLogger
+from kenning.utils.logger import RichStatus
 
 
 class AutoMLRichStatus(RichStatus):

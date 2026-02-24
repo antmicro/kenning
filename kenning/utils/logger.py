@@ -42,16 +42,6 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from kenning.core.exceptions import DownloadError
 from kenning.utils.singleton import Singleton
 
-from time import sleep
-
-from threading import Thread, Event
-
-import random
-from rich.console import Console
-from rich.live import Live
-from rich.panel import Panel
-from queue import SimpleQueue
-
 PROGRESS_BAR_STACKLEVEL = 2
 
 CUSTOM_LEVEL_STYLES = {
@@ -542,6 +532,7 @@ class TqdmCallback(tqdm):
                 )
         return True
 
+
 class RichProgressBar:
     """
     Wrapper class for handling the progress bar.
@@ -783,6 +774,11 @@ class RichStatus:
             of `dict`such as `OrderedDict`. If the value is None, the
             `self.extra_info` property is reused and rerendered. One
             can directly edit `self.extra_info` and call this method.
+
+        Raises
+        ------
+        Exception
+            Generic exception whenever the live view is unable to update.
         """
         if new_table:
             with self.state_lock:

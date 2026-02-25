@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from kenning.cli.command_template import TRAIN
-from kenning.core.dataset import Dataset
+from kenning.core.dataset import Dataset, DatasetIterator
 from kenning.modelwrappers.frameworks.sklearn import SKLearnModelWrapper
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -98,7 +98,9 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         self.min_samples_split = min_samples_split
         self.max_leaf_nodes = max_leaf_nodes
 
-    def _train_for_n_samples(self, model: Any, n: int) -> float:
+    def _train_for_n_samples(
+        self, model: Any, n: int, dataset: DatasetIterator
+    ) -> float:
         """
         Run training on the given model for first n samples in the dataset.
 
@@ -108,16 +110,19 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
             Model object
         n: int
             Number of samples
+        dataset: DatasetIterator
+            Data source
 
         Returns
         -------
         float
             Model accuracy
         """
+        iterator = iter(dataset)
         X = []
         y = []
         for _ in range(n):
-            _x, _y = next(self.dataset)
+            _x, _y = next(iterator)
             X.append(np.asarray(_x).flatten().tolist())
             y.append(np.asarray(_y).flatten().tolist())
         model.fit(X, y)
@@ -135,7 +140,7 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
             max_leaf_nodes=self.max_leaf_nodes,
         )
         # We have to train the model a bit to give it proper input/output shape
-        self._train_for_n_samples(model, 1)
+        self._train_for_n_samples(model, 1, self.dataset)
         return model
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
@@ -202,5 +207,5 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
             "Commencing training of for SKLearnDecisionTreeClassifier..."
         )
         iter = self.dataset.iter_train()
-        score = self._train_for_n_samples(self.model, len(iter))
+        score = self._train_for_n_samples(self.model, len(iter), iter)
         KLogger.info(f"Training finished, accuracy: {score}.")

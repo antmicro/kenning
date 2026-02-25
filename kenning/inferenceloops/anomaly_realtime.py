@@ -260,8 +260,9 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         measurements += {
             "eval_confusion_matrix": confusion_matrix.tolist(),
-            "class_names": ["normal", "anomaly"],
         }
+
+        self._dataset.classnames = ["normal", "anomaly"]
 
         measurements += {
             "anomaly_metrics": {

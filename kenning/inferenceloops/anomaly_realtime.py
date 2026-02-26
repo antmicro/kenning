@@ -5,13 +5,32 @@
 """
 Module containing an implementation of the anomaly inference loop.
 """
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import sklearn
 import sklearn.metrics
 
 from kenning.core.measurements import Measurements
+from kenning.core.metrics import (
+    ANOMALY_DETECTION_METRICS,
+    Metric,
+    hausdorff_distance_metric,
+    mean_signed_difference,
+    nab_metric,
+)
 from kenning.inferenceloops.sensor_realtime import SensorRealtimeInferenceLoop
+
+DEFAULT_METRICS = [
+    Metric.Hausdorff,
+    Metric.MSD,
+    Metric.NAB,
+    Metric.FDR,
+    Metric.FAR,
+    Metric.ADD,
+    Metric.P_AUC,
+    Metric.ROC_AUC,
+]
 
 
 class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
@@ -24,7 +43,39 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             "argparse_name": "--smoothing-window-size",
             "type": int,
             "default": 10,
-        }
+        },
+        "use_metrics": {
+            "type": List[str],
+            "enum": [
+                metric.name.lower()
+                for metric in list(ANOMALY_DETECTION_METRICS)
+            ],
+            "default": [metric.name.lower() for metric in DEFAULT_METRICS],
+        },
+        "nab_true_positive": {
+            "description": "Scoring weight for true "
+            "positive used by NAB metric",
+            "type": float,
+            "default": 2.0,
+        },
+        "nab_true_negative": {
+            "description": "Scoring weight for true "
+            "positive used by NAB metric",
+            "type": float,
+            "default": 0.0,
+        },
+        "nab_false_positive": {
+            "description": "Scoring weight for false "
+            "positive used by NAB metric",
+            "type": float,
+            "default": 0.25,
+        },
+        "nab_false_negative": {
+            "description": "Scoring weight for true "
+            "negative used by NAB metric",
+            "type": float,
+            "default": -0.25,
+        },
     }
 
     def __init__(
@@ -37,6 +88,13 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         runtime=None,
         smoothing_window_size=10,
         inference_limit: Optional[int] = None,
+        use_metrics: list[str] = [
+            metric.name.lower() for metric in DEFAULT_METRICS
+        ],
+        nab_true_positive: float = 2.0,
+        nab_true_negative: float = 0.5,
+        nab_false_positive: float = 0.25,
+        nab_false_negative: float = -0.25,
     ):
         super().__init__(
             dataset,
@@ -48,8 +106,15 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             inference_limit,
         )
         self.smoothing_window_size = smoothing_window_size
+        self.use_metrics = use_metrics
+        self.nab_true_positive = nab_true_positive
+        self.nab_true_negative = nab_true_negative
+        self.nab_false_positive = nab_false_positive
+        self.nab_false_negative = nab_false_negative
 
-    def _compute_detections_and_scored_results(self, samples, results):
+    def _compute_detections_and_scored_results(
+        self, samples: List, results: List
+    ) -> Tuple[List, List]:
         """
         Matches samples with results to score all classifications
         and detections.
@@ -77,7 +142,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             for result_idx, (result, n_result) in enumerate(
                 zip(results[prev_result_idx:], results[prev_result_idx + 1 :])
             ):
-                result_time, r = result
+                result_time, r, score = result
 
                 if sample_time < result_time and result_time < n_sample_time:
                     prev_result_idx = result_idx
@@ -89,6 +154,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
                             "result_time": result_time,
                             "target": anomaly,
                             "pred": anomaly_pred,
+                            "pred_scored": score,
                         }
                     )
 
@@ -118,7 +184,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         return scored_results, detections
 
-    def _compute_chunks(self, scored_results, window_func):
+    def _compute_chunks(self, scored_results: List, window_func: List) -> List:
         """
         Divides results into chunks using the target category and computes
         score using the provided window function.
@@ -151,7 +217,9 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         return chunks
 
-    def _compute_metric_per_threshold(self, chunks, threshold_number=20):
+    def _compute_metric_per_threshold(
+        self, chunks: Dict, threshold_number: int = 20
+    ) -> Dict:
         """
         Computes ADD, FDR and FAR for multiple thresholds.
         """
@@ -185,19 +253,32 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
                 if not target and anomaly:
                     false_alarms += 1
 
-            metrics_per_threshold[threshold] = {
-                "fdr": detected_alarms / expected_alarms
-                if expected_alarms
-                else 1.0,
-                "far": false_alarms / (detected_alarms + false_alarms)
-                if (detected_alarms + false_alarms)
-                else 0.0,
-                "add": sum(delays) / len(delays) if len(delays) else 0,
-            }
+            metrics_per_threshold[threshold] = {}
+
+            if Metric.FDR.name.lower() in self.use_metrics:
+                metrics_per_threshold[threshold]["fdr"] = (
+                    detected_alarms / expected_alarms
+                    if expected_alarms
+                    else 1.0
+                )
+
+            if Metric.FAR.name.lower() in self.use_metrics:
+                metrics_per_threshold[threshold]["far"] = (
+                    false_alarms / (detected_alarms + false_alarms)
+                    if (detected_alarms + false_alarms)
+                    else 0.0
+                )
+
+            if Metric.ADD.name.lower() in self.use_metrics:
+                metrics_per_threshold[threshold]["add"] = (
+                    sum(delays) / len(delays) if len(delays) else 0,
+                )
 
         return metrics_per_threshold
 
-    def _compute_confusion_f1_acc(self, scored_results):
+    def _compute_confusion_f1_acc(
+        self, scored_results: List
+    ) -> Tuple[float, float, float]:
         """
         Computes confusion matrix, F1-score and accuracy using scored results.
         """
@@ -222,9 +303,68 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         return confusion_matrix, f1, acc
 
+    def _compute_time_based_metrics(
+        self, scored_results: List
+    ) -> Tuple[
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        Optional[float],
+    ]:
+        x = []
+        y = []
+
+        for scores in scored_results:
+            x_time = scores["sample_time"]
+            x_result = scores["pred"]
+
+            y_time = scores["result_time"]
+            y_result = scores["target"]
+
+            x.append([x_time, x_result])
+            y.append([y_time, y_result])
+
+        x = np.array(x, dtype=np.float32)
+        y = np.array(y, dtype=np.float32)
+
+        hausdorff_metric = (
+            hausdorff_distance_metric(x, y)
+            if Metric.Hausdorff.name.lower() in self.use_metrics
+            else None
+        )
+
+        # NAB doesn't really care about time, it takes
+        # position of the data into account
+        x = x[:, 1:].flatten()
+        y = y[:, 1:].flatten()
+        
+        msd = (
+            mean_signed_difference(x, y)
+            if Metric.MSD.name.lower() in self.use_metrics
+            else None
+        )
+
+        nab_score = (
+            nab_metric(
+                x,
+                y,
+                self.nab_true_positive,
+                self.nab_true_negative,
+                self.nab_false_positive,
+                self.nab_false_negative,
+            )
+            if Metric.NAB.name.lower() in self.use_metrics
+            else None
+        )
+
+        return hausdorff_metric, nab_score, msd
+
     def _compute_metrics(self, measurements: Measurements):
         samples = list(measurements.get_values("samples"))
-        results = list(measurements.get_values("results"))
+        results_with_probabilities = list(
+            measurements.get_values("results_scored")
+        )
 
         def window_func(sample):
             if not hasattr(window_func, "window_buffer"):
@@ -242,7 +382,9 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         (
             scored_results,
             detections,
-        ) = self._compute_detections_and_scored_results(samples, results)
+        ) = self._compute_detections_and_scored_results(
+            samples, results_with_probabilities
+        )
 
         chunks = self._compute_chunks(scored_results, window_func)
 
@@ -258,15 +400,35 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             scored_results
         )
 
+        (
+            hausdorff_distance,
+            nab_score,
+            msd,
+        ) = self._compute_time_based_metrics(scored_results)
+
         measurements += {
             "eval_confusion_matrix": confusion_matrix.tolist(),
         }
 
         self._dataset.classnames = ["normal", "anomaly"]
 
+        time_based_metrics = {}
+
+        if hausdorff_distance is not None:
+            time_based_metrics[Metric.Hausdorff] = hausdorff_distance
+
+        if nab_score is not None:
+            time_based_metrics[Metric.NAB] = nab_score
+
+        if msd is not None:
+            time_based_metrics[Metric.MSD] = msd
+
         measurements += {
             "anomaly_metrics": {
                 "accuracy": acc,
                 "f1": f1,
-            }
+            },
         }
+
+        if len(time_based_metrics.keys()) > 0:
+            measurements += {"anomaly_timeseries_metrics": time_based_metrics}

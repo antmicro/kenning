@@ -201,7 +201,6 @@ class RichEpochTrainingStepLogger(EpochTracker):
         super().__init__()
 
     def __enter__(self):
-        self.richlogger.reset_task(self.task, "Training", self.total_steps)
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -237,7 +236,6 @@ class RichEpochEvaluationStepLogger(EpochTracker):
         super().__init__()
 
     def __enter__(self):
-        self.richlogger.reset_task(self.task, "Evaluation", self.total_steps)
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -25,6 +25,7 @@ from io import TextIOBase
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
+from abc import ABC, abstractmethod
 
 import coloredlogs
 from rich.console import Console
@@ -34,6 +35,7 @@ from rich.progress import (
     Progress,
     TextColumn,
     TimeRemainingColumn,
+    Group,
 )
 from rich.table import Table
 from tqdm import tqdm
@@ -533,15 +535,116 @@ class TqdmCallback(tqdm):
         return True
 
 
-class RichProgressBar:
+
+
+class BaseProgressBar(ABC):
+    @abstractmethod
+    def advance(self, advance: Union[int, float] = 1) -> None:
+        """
+        Advance the progress by `advance` units.
+
+        Parameters
+        ----------
+        advance: Union[int, float]
+            How many units to advance.
+        """
+
+    @abstractmethod
+    def reset(self, title: str, total: Union[int, float]) -> None:
+        """
+        Reset the task with a new title and total."
+        
+        Parameters
+        ----------
+        title: str
+            New title of the progress bar.
+        total: Union[int, float]
+            New total of the progress bar.
+        """
+
+    @abstractmethod
+    def get_info(self) -> Optional[Dict[str, Any]]:
+        """
+        Return info about the task or None if not found.
+        """
+
+    @abstractmethod
+    def remove(self) -> None:
+        """
+        Remove or finalize the task.
+        """
+
+class DelegatedProgressBar(BaseProgressBar):
     """
-    Wrapper class for handling the progress bar.
+    ProgressBar that delegates to a RichStatus Progress.
+    Creates its task during initialization and stores the task_id internally.
     """
 
-    def __init__(self, richstatus, task_id: int):
+    def __init__(
+            self,
+            richstatus: "RichStatus",
+            title: str,
+            total: Union[int, float]
+    ):
+        """
+        Initializes an instance of `RichProgressBar`. When `richstatus`
+        is passed, this acts as a wrapper that holds the task ID and a
+        weak reference to the owning `Progress` instance via `RichStatus`
+        If `richstatus` is left as `None`, this will be a standalone
+        progress bar.
+
+        Parameters
+        ----------
+        richstatus: RichStatus
+            The RichStatus instance to interact with.
+        title: str
+            Title of the progress bar.
+        total: Union[int, float]
+            Total of the progress bar.
+        """
         self.richstatus = richstatus
-        self.task_id = task_id
+        self.task_id = self.richstatus.progress.add_task(title, total=float(total))
+        with getattr(self.richstatus, "state_lock", threading.Lock()):
+            if hasattr(self.richstatus, "pbars"):
+                self.richstatus.pbars.append(self.task_id)
 
+    def _prog(self) -> Progress:
+        return self.richstatus.progress
+
+    def _live(self) -> Optional[Live]:
+        return self.richstatus.live
+
+    def advance(self, amount: Union[int, float] = 1.0) -> None:
+        try:
+            self._prog().update(self.task_id, advance=advance)
+            if self._live() is not None:
+                try:
+                    self._live().refresh()
+                except:
+                    KLogger.exception("Error updating Live in DelegatedProgressBar.advance")
+                    raise
+        except Exception:
+            KLogger.exception("Error advancing DelegatedProgressBar")
+            raise
+
+    def reset(self, title: str, total: Union[int, float]) -> None:
+        try:
+            self._prog().update(self.task_id, description=title, total=float(total), completed=0.0)
+            if self._live() is not None:
+                try:
+                    self._live().update(self.richstatus._make_layout(), refresh=True)
+                except Exception:
+                    KLogger.exception("Error updating Live in DelegatedProgressBar.reset")
+                    raise
+        except Exception:
+            KLogger.exception("Error resetting DelgatedProgressBar")
+            raise
+
+    def get_info(self) -> Optional[Dict[str, Any]]:
+        return self.richstatus.get_task_info(self.task_id)
+
+    def remove(self) -> None:
+        raise NotImplementedError
 
 class RichStatus:
     """
@@ -632,10 +735,10 @@ class RichStatus:
         """
         Internal function for creating the `rich` layout.
         """
-        return self._make_table()
-        # return Group(self.progress, table)
+        # return self._make_table()
+        return Group(self.progress, self._make_table())
 
-    def add_progress_bar(self, title: str, total: int | float) -> int:
+    def add_progress_bar(self, title: str, total: Union[int, float]) -> int:
         """
         Add a rich `Progress` status bar with the title and the total
         number of units.
@@ -644,7 +747,7 @@ class RichStatus:
         ----------
         title: str
             Title or description for the given progress bar
-        total: int | float
+        total: Union[int, float]
             Total number of units for the progress bar.
 
         Returns
@@ -653,11 +756,7 @@ class RichStatus:
             Task ID of the progress bar. This is used for updating
             the progress bar.
         """
-        total_value = float(total)
-        task_id = self.progress.add_task(title, total=total_value)
-        with self.state_lock:
-            self.pbars.append(task_id)
-        return task_id
+        return DelegatedProgressBar(self, title=title, total=total)
 
     def start(self) -> None:
         """
@@ -705,66 +804,6 @@ class RichStatus:
                 KLogger.exception("Error while stopping Progress")
                 raise
 
-    def advance(self, task: int, advance: int | float = 1) -> None:
-        """
-        Advance the progress bar.
-
-        Parameters
-        ----------
-        task: int
-            Task ID of the progress bar to advance
-        advance: int | float
-            The number of units to advance.
-
-        Raises
-        ------
-        Exception
-            Any exception caught when creating the rich `live` context.
-        """
-        try:
-            self.progress.update(task, advance=advance)
-            # update live only if present
-            if self.live is not None:
-                try:
-                    self.live.refresh()
-                    # self.live.update(self._make_layout(), refresh=True)
-                except Exception:
-                    KLogger.exception("Error while updating Live in advance")
-                    raise
-        except Exception:
-            KLogger.exception("Error while advancing progress")
-            raise
-
-    def reset_task(self, task: int, title: str, total: int | float) -> None:
-        """
-        Reset the progress bar given the task ID with the new
-        title and new total.
-
-        Parameters
-        ----------
-        task: int
-            Task ID
-        title: str
-            New title for the task
-        total: int | float
-            New total number of units for the task.
-        """
-        KLogger.debug(f"Resetting task {task}")
-        try:
-            total_value = float(total)
-            self.progress.update(
-                task, description=title, total=total_value, completed=0.0
-            )
-            if self.live is not None:
-                try:
-                    self.live.update(self._make_layout(), refresh=True)
-                except Exception:
-                    KLogger.exception(
-                        "Error while updating Live in reset_task"
-                    )
-        except Exception:
-            KLogger.exception("Error while resetting task")
-
     def update_table(self, new_table: Optional[dict] = None) -> None:
         """
         Update the table in the console view.
@@ -793,35 +832,6 @@ class RichStatus:
             except Exception:
                 KLogger.exception("Error while updating Live in update_table")
                 raise
-
-    def get_task_info(self, task_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Return information about a given task ID.
-        Returns None if the task is not found.
-        """
-        try:
-            task = None
-            try:
-                task = self.progress.tasks[task_id]
-            except Exception:
-                # Try searching by id in list
-                for t in getattr(self.progress, "tasks", []):
-                    if getattr(t, "id", None) == task_id:
-                        task = t
-                        break
-            if task is None:
-                return None
-
-            return {
-                "id": getattr(task, "id", task_id),
-                "description": getattr(task, "description", None),
-                "completed": getattr(task, "completed", None),
-                "total": getattr(task, "total", None),
-                "percentage": getattr(task, "percentage", None),
-            }
-        except Exception:
-            KLogger.exception("Error while fetching task info")
-            return None
 
     def __enter__(self) -> "RichStatus":
         self.start()

@@ -120,7 +120,9 @@ void print_progress(std::uintmax_t done, std::uintmax_t total)
  */
 template < typename T >
 void read_into(std::ifstream &stream, T &var)
-{ stream.read((char *)&var, sizeof(T)); }
+{
+    stream.read((char *)&var, sizeof(T));
+}
 
 /**
  * Reads string of given length from input stream.

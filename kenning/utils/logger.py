@@ -581,7 +581,7 @@ class RichStatus:
             console=self.console,
             redirect_stdout=True,
             redirect_stderr=True,
-            transient=False,
+            transient=True,
         )
 
         self.state_lock = threading.Lock()
@@ -668,8 +668,9 @@ class RichStatus:
         if self.live is not None:
             return
         try:
+            self.layout = self._make_layout()
             self.live = Live(
-                self._make_layout(),
+                self.layout,
                 console=self.console,
                 refresh_per_second=self.refresh_per_second,
                 transient=False,
@@ -725,7 +726,8 @@ class RichStatus:
             # update live only if present
             if self.live is not None:
                 try:
-                    self.live.update(self._make_layout(), refresh=True)
+                    self.live.refresh()
+                    # self.live.update(self._make_layout(), refresh=True)
                 except Exception:
                     KLogger.exception("Error while updating Live in advance")
                     raise

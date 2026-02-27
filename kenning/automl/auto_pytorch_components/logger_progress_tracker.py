@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,6 +8,8 @@ Module implements loggers for autopytorch progress tracking.
 
 import time
 from typing import Dict, Optional
+from pathlib import Path
+from datetime import datetime
 
 import torch
 from autoPyTorch.utils.progress_tracker import (
@@ -19,6 +21,7 @@ from smac.utils.constants import MAXINT
 
 from kenning.utils.logger import RichStatus
 
+import pandas as pd
 
 class AutoMLRichStatus(RichStatus):
     """
@@ -41,7 +44,44 @@ class AutoMLRichStatus(RichStatus):
         """
         self.current_values = {}
         self.best_values = {}
+        self.keep_history = keep_history
+        self.history: list[dict] = []
         super().__init__(enable_live=enable_live)
+
+    def _log_current_values(self) -> None:
+        """
+        Store a snapshot of `current_values` into history.
+        """
+        if not self.keep_history:
+            return
+
+        with self.state_lock:
+            snapshot = dict(self.current_values)
+        snapshot["timestamp"] = datetime.utcnow()
+        self.history.append(snapshot)
+
+    def get_history_df(self) -> pd.DataFrame:
+        """
+        Return the logged history as a pandas DataFrame.
+        """
+        if not self.history:
+            return pd.DataFrame()
+        return pd.DataFrame(self.history)
+
+    def save_history_csv(self, path: Path) -> None:
+        """
+        Save logged history to CSV file
+
+        Parameters
+        ----------
+        path: str
+            Path to save the CSV file.
+        """
+        df = self.get_history_df()
+        if df.empty:
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(path, index=True)
 
     def _make_table(self) -> Table:
         """
@@ -68,6 +108,13 @@ class AutoMLRichStatus(RichStatus):
                     if key not in ["Model", "Iterations"]:
                         add_row(key)
         return table
+
+    def update_table(self, new_table: Optional[dict] = None) -> None:
+        if new_table:
+            with self.state_lock:
+                self.current_values = new_table
+        self._log_current_values()
+        super().update_table(new_table)
 
 
 class RichTrainingProgressTracker(TrainingProgressTracker):

@@ -697,7 +697,7 @@ class AutoPyTorchML(AutoML):
         self.best_configs: List[Path] = []
 
         self.time_limit = time_limit
-        self.richlogger = AutoMLRichStatus()
+        self.richlogger = AutoMLRichStatus(keep_history=True)
 
         progress_tracker_task = self.richlogger.add_progress_bar(
             "Total Training Time",
@@ -827,6 +827,10 @@ class AutoPyTorchML(AutoML):
                 KLogger.error(str(e))
             else:
                 raise
+
+        metrics_out = self.output_directory / "metrics.csv"
+        self.richlogger.save_history_csv(metrics_out)
+        KLogger.info(f"Metrics saved to {metrics_out}")
 
     def extract_model(self, pipeline: Pipeline) -> PyTorchModel:
         """

@@ -1,11 +1,11 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 """
 Class for easily handling compiler flags in optimizers.
 """
-from typing import List
+from typing import List, Union
 
 
 class CompilerFlag:
@@ -13,26 +13,25 @@ class CompilerFlag:
     Basic class for representing compiler flags.
     """
 
-    def __init__(self, flag: "CompilerFlag | str"):
+    def __init__(self, flag: "Union[CompilerFlag, str]"):
         """
         Create a new compiler flag. This can be a single flag
         or a key-value pair.
 
         Parameters
         ----------
-        flag: CompilerFlag | str
+        flag: Union[CompilerFlag, str]
             The flag to be parsed.
         """
-        if isinstance(type(flag), str):
-            self.key = flag.key
-            self.value = flag.value
-
-        else:
+        if type(flag) is str:
             if "=" in flag:
                 self.key, self.value = flag.split("=", 1)
             else:
                 self.key = flag
                 self.value = None
+        else:
+            self.key = flag.key
+            self.value = flag.value
 
     def __str__(self):
         if self.value is None:
@@ -74,7 +73,7 @@ def merge_compiler_flags(
 
     tostring: bool
         Automatically convert to a string that can be passed to
-        a subprocess
+        a subprocess.
 
     Returns
     -------

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -279,4 +279,4 @@ class IREECompiler(Optimizer):
                 )
 
     def _get_backend(self):
-        return self.backend or self.platform_backend or "cuda"
+        return self.backend or self.platform_backend or "vmvx"

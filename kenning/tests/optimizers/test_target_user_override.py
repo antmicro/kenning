@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -35,19 +35,19 @@ def assert_compiler_flags(
     Parameters
     ----------
     additional_flags: List[CompilerFlag]
-        The flags that do not exist in the original flags
+        The flags that do not exist in the original flags.
 
     override_flag: Optional[CompilerFlag]
-        The flag that already exist and we want to override
+        The flag that already exist and we want to override.
 
     original_flags: List[CompilerFlag]
         The original set of compiler flags.
 
     actual_flags: List[CompilerFlag]
-        The resulting set of flags after processing
+        The resulting set of flags after processing.
     """
 
-    def flags2set(flags):
+    def flags2set(flags: List[CompilerFlag]):
         return set(map(str, flags))
 
     if override_flag:
@@ -167,7 +167,7 @@ class TestTargetUserOverride:
         assert compiler._get_target() == "llvm"
         assert compiler._get_target_attrs() == ""
 
-    def test_user_override_ivee(self, dataset: Dataset, tmpfolder: Path):
+    def test_user_override_iree(self, dataset: Dataset, tmpfolder: Path):
         machine = "nvidia_rtx_4090"
         platform = CUDAPlatform(machine)
 
@@ -187,7 +187,7 @@ class TestTargetUserOverride:
             compiler._get_backend() == "vulkan"
         ), "The backend was overridden"
 
-    def test_user_no_override_ivee(self, dataset: Dataset, tmpfolder: Path):
+    def test_user_no_override_iree(self, dataset: Dataset, tmpfolder: Path):
         machine = "nvidia_rtx_4090"
         platform = CUDAPlatform(machine)
 
@@ -217,4 +217,25 @@ class TestTargetUserOverride:
 
         compiler.init()
 
-        assert compiler._get_backend() == "cuda"
+        assert compiler._get_backend() == "vmvx"
+
+    def test_empty_target_attrs_tvm(self, dataset: Dataset, tmpfolder: Path):
+        machine = "max32690evkit/max32690/m4"
+        platform = ZephyrPlatform(machine)
+
+        compiled_model_path = tmpfolder / "model-mock.tar"
+
+        compiler = TVMCompiler(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            model_framework="tflite",
+            target_attrs="",
+        )
+
+        compiler.read_platform(platform)
+        compiler.init()
+
+        original_flags = map(CompilerFlag, compiler.platform_target_attrs)
+        actual_flags = compiler._get_target_attrs(tostring=False)
+
+        assert_compiler_flags([], None, original_flags, actual_flags)

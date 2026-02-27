@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -297,7 +297,7 @@ class TVMCompiler(Optimizer):
         target = self._get_target()
         assert target, (
             "Target is not initialized. Ensure it is supplied "
-            + "either explicitly or through read_platform()"
+            "either explicitly or through read_platform()"
         )
 
         target_attrs = self._get_target_attrs()
@@ -315,9 +315,9 @@ class TVMCompiler(Optimizer):
                         )
                 except KeyError:
                     # board not found
-                    self.target_obj = tvm.target.Target("c " + target_attrs)
+                    self.target_obj = tvm.target.Target(f"c {target_attrs}")
             else:
-                self.target_obj = tvm.target.Target("c " + target_attrs)
+                self.target_obj = tvm.target.Target(f"c {target_attrs}")
                 self.target_microtvm_board = True
         else:
             self.target_obj = tvm.target.Target(f"{target} {target_attrs}")
@@ -582,7 +582,6 @@ class TVMCompiler(Optimizer):
 
             case "ZephyrPlatform":
                 self.platform_target = "zephyr"
-                self.target_microtvm_board = platform.name
                 if self.zephyr_header_template is None:
                     self.zephyr_header_template = ResourceURI(
                         "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
@@ -595,6 +594,7 @@ class TVMCompiler(Optimizer):
                 return None
 
         self.platform_target_attrs = platform_target_attrs
+        self.target_microtvm_board = platform.name
 
         KLogger.info(f"Set TVMCompiler target to {self.target}")
 

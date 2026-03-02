@@ -342,6 +342,62 @@ def nab_metric(
     return np.floor(output)
 
 
+def prob_auc_metric(
+    target: np.ndarray,
+    preds: np.ndarray,
+    preds_score: np.ndarray,
+) -> float:
+    """
+    Computes pAUC ( probabilistic Area Under the Curve ) metric.
+
+    Original description found in:
+    https://dmip.webs.upv.es/ROCML2005/papers/ferriCRC.pdf
+
+    Parameters
+    ----------
+    target : np.ndarray
+        Ground truth, a set of ground truth values.
+    preds : np.ndarray
+        Predictions, a set of predicted values.
+    preds_score : np.ndarray
+        Probabilities for every selected samples.
+
+    Returns
+    -------
+    float
+        pAUC metric.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch length.
+    """
+    if not target.shape == preds.shape and preds.ndim == 1:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    # pAUC takes into account probability of each assigned classes
+    # Found a indexes with true positive
+    true_positives = np.where((target == preds) & (preds == 1))
+    false_positives = np.where((target != preds) & (preds == 1))
+
+    # Probabilities for true positvies
+    pos = preds_score[true_positives]
+
+    # Probailities for false positives
+    neg = preds_score[false_positives]
+
+    true_positives_count = true_positives[0].shape[0]
+    false_positives_count = false_positives[0].shape[0]
+
+    return (
+        float(
+            (np.sum(pos)) / true_positives_count
+            + (np.sum(1.0 - neg)) / false_positives_count
+        )
+        / 2.0
+    )
+
+
 def z_score_detection(
     x: np.ndarray,
     y: np.ndarray,
@@ -545,6 +601,7 @@ class Metric(str, Enum):
     ROC_AUC = "ROC AUC"
     ROC_AUC_WEIGHTED = "ROC AUC weighted"
     ROC_AUC_CLASS = "ROC AUC"
+    P_AUC = "pAUC"
     F1 = "F1 score"
     F1_WEIGHTED = "F1 score weighted"
     F1_CLASS = "F1 score"
@@ -565,9 +622,20 @@ CLASSIFICATION_METRICS = [
     Metric.ROC_AUC_WEIGHTED,
     Metric.F1,
     Metric.F1_WEIGHTED,
+    Metric.P_AUC,
 ]
 
-ANOMALY_DETECTION_METRICS = [Metric.Hausdorff]
+ANOMALY_DETECTION_METRICS = [
+    Metric.Hausdorff,
+    Metric.MSD,
+    Metric.NAB,
+    Metric.Z_SCORE,
+    Metric.FDR,
+    Metric.FAR,
+    Metric.ADD,
+    Metric.P_AUC,
+    Metric.ROC_AUC,
+]
 
 
 def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:

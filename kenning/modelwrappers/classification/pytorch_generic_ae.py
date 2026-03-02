@@ -27,6 +27,11 @@ class PyTorchGenericAutoencoderClassification(PyTorchGenericClassification):
     Wrapper for autoencoder based PyTorch classfication models.
     """
 
+    default_template_path = (
+        "kenning/modelwrappers/classification/"
+        "generic_templates/torch_ae_test.py"
+    )
+
     def train_model(self):
         import torch
         import torch.optim as optim

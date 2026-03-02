@@ -486,6 +486,108 @@ class ResNetWithClassifier(ResNet):
         for p in get_parameters(self):
             p.requires_grad = True
 
+    def train(self):
+        """Train a model."""
+        mean = np.array([0.485, 0.456, 0.406], dtype="float32")
+        std = np.array([0.229, 0.224, 0.225], dtype="float32")
+        mean = mean.reshape(1, 1, 1, 3)
+        std = std.reshape(1, 1, 1, 3)
+        transform = ComposeTransforms(
+            [
+                lambda x: [
+                    color_jitter(
+                        random_hflip(
+                            Image.open(xx).convert("RGB").resize((224, 224)),
+                        )
+                    )
+                    for xx in x
+                ],
+                lambda x: np.stack([np.asarray(xx) for xx in x], 0),
+                lambda x: x / 255.0,
+                lambda x: (x - mean) / std,
+                lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
+            ]
+        )
+
+        test_transform = ComposeTransforms(
+            [
+                lambda x: [
+                    Image.open(xx).convert("RGB").resize((224, 224))
+                    for xx in x
+                ],
+                lambda x: np.stack([np.asarray(xx) for xx in x], 0),
+                lambda x: x / 255.0,
+                lambda x: (x - mean) / std,
+                lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
+            ]
+        )
+
+        classes = 37
+        lr = 1e-4
+
+        img_dir = "build/PetDataset/images"
+        X_train, Y_train = fetch_pet_dataset(
+            img_dir,
+            "build/PetDataset/annotations/trainval.txt",
+        )
+        X_test, Y_test = fetch_pet_dataset(
+            img_dir,
+            "build/PetDataset/annotations/test.txt",
+        )
+
+        self.load_from_pretrained()
+        self.freeze_backbone()
+
+        optimizer = optim.Adam(
+            self.get_trainable_parameters(),
+            lr=lr,
+        )
+
+        last_loss = 1e6
+        frozen = True
+
+        for epoch in range(50):
+            losses, accs = train(
+                self,
+                X_train,
+                Y_train,
+                optimizer,
+                steps=100,
+                transform=transform,
+            )
+
+            train_acc = float(np.mean(accs[-10:]))
+            loss = float(np.mean(losses[-10:]))
+
+            if last_loss < loss and frozen:
+                self.unfreeze_backbone()
+                optimizer = optim.Adam(
+                    self.get_trainable_parameters(),
+                    lr=lr * 0.1,
+                )
+                frozen = False
+
+            last_loss = loss
+
+            test_acc = evaluate(
+                self,
+                X_test,
+                Y_test,
+                num_classes=classes,
+                transform=test_transform,
+            )
+
+            safe_save(
+                get_state_dict(self),
+                f"resnet50_pet_classifier_epoch{epoch}.safetensors",
+            )
+
+            print(
+                f"Epoch {epoch}: "
+                f"train acc={train_acc:.3f}, "
+                f"test acc={test_acc:.3f}"
+            )
+
 
 def fetch_pet_dataset(img_dir, anno_path):
     """Load image paths and labels from the Pet Dataset."""
@@ -519,103 +621,5 @@ def color_jitter(img, b=0.05, c=0.05):
 
 
 if __name__ == "__main__":
-    Tensor.default_device = "CUDA"
-    mean = np.array([0.485, 0.456, 0.406], dtype="float32")
-    std = np.array([0.229, 0.224, 0.225], dtype="float32")
-    mean = mean.reshape(1, 1, 1, 3)
-    std = std.reshape(1, 1, 1, 3)
-    transform = ComposeTransforms(
-        [
-            lambda x: [
-                color_jitter(
-                    random_hflip(
-                        Image.open(xx).convert("RGB").resize((224, 224)),
-                    )
-                )
-                for xx in x
-            ],
-            lambda x: np.stack([np.asarray(xx) for xx in x], 0),
-            lambda x: x / 255.0,
-            lambda x: (x - mean) / std,
-            lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
-        ]
-    )
-
-    test_transform = ComposeTransforms(
-        [
-            lambda x: [
-                Image.open(xx).convert("RGB").resize((224, 224)) for xx in x
-            ],
-            lambda x: np.stack([np.asarray(xx) for xx in x], 0),
-            lambda x: x / 255.0,
-            lambda x: (x - mean) / std,
-            lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
-        ]
-    )
-
-    classes = 37
-    lr = 1e-4
-
-    img_dir = "build/PetDataset/images"
-    X_train, Y_train = fetch_pet_dataset(
-        img_dir,
-        "build/PetDataset/annotations/trainval.txt",
-    )
-    X_test, Y_test = fetch_pet_dataset(
-        img_dir,
-        "build/PetDataset/annotations/test.txt",
-    )
-
-    model = ResNetWithClassifier(num=50, num_classes=classes)
-    model.load_from_pretrained()
-    model.freeze_backbone()
-
-    optimizer = optim.Adam(
-        model.get_trainable_parameters(),
-        lr=lr,
-    )
-
-    last_loss = 1e6
-    frozen = True
-
-    for epoch in range(50):
-        losses, accs = train(
-            model,
-            X_train,
-            Y_train,
-            optimizer,
-            steps=100,
-            transform=transform,
-        )
-
-        train_acc = float(np.mean(accs[-10:]))
-        loss = float(np.mean(losses[-10:]))
-
-        if last_loss < loss and frozen:
-            model.unfreeze_backbone()
-            optimizer = optim.Adam(
-                model.get_trainable_parameters(),
-                lr=lr * 0.1,
-            )
-            frozen = False
-
-        last_loss = loss
-
-        test_acc = evaluate(
-            model,
-            X_test,
-            Y_test,
-            num_classes=classes,
-            transform=test_transform,
-        )
-
-        safe_save(
-            get_state_dict(model),
-            f"resnet50_pet_classifier_epoch{epoch}.safetensors",
-        )
-
-        print(
-            f"Epoch {epoch}: "
-            f"train acc={train_acc:.3f}, "
-            f"test acc={test_acc:.3f}"
-        )
+    model = ResNetWithClassifier(num=50, num_classes=37)
+    model.train()

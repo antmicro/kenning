@@ -16,7 +16,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError, ParametersMismatchError
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.modelwrappers.frameworks.tinygrad import TinygradWrapper
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class TinygradImageNet(TinygradWrapper):
@@ -161,9 +161,17 @@ class TinygradImageNet(TinygradWrapper):
             self.load_model(self.model_path)
             self.model_prepared = True
         else:
-            raise NotSupportedError(
-                "TinygradImageNet only supports loading model from a file."
-            )
+            model_file = ResourceURI(self.model_file)
+            self.model = self.load_model_class(
+                self.modelcls_name, model_file
+            )()
 
     def train_model(self):
-        raise NotSupportedError("This model does not support training.")
+        train_fn = getattr(self.model, "train", None)
+
+        if train_fn is None or not callable(train_fn):
+            raise NotSupportedError(
+                "model.train() was not defined in model implementation"
+            )
+
+        train_fn()

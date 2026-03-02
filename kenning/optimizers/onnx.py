@@ -16,8 +16,8 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     Optimizer,
 )
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 

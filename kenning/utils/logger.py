@@ -19,23 +19,24 @@ import os
 import sys
 import threading
 import urllib.request
+from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from io import TextIOBase
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
-from abc import ABC, abstractmethod
 
 import coloredlogs
 from rich.console import Console
 from rich.live import Live
 from rich.progress import (
     BarColumn,
+    Group,
     Progress,
+    TaskProgressColumn,
     TextColumn,
     TimeRemainingColumn,
-    Group,
 )
 from rich.table import Table
 from tqdm import tqdm
@@ -535,25 +536,27 @@ class TqdmCallback(tqdm):
         return True
 
 
-
-
 class BaseProgressBar(ABC):
+    """
+    Base Progress Bar for rich-enabled progress bars in kenning.
+    """
+
     @abstractmethod
-    def advance(self, advance: Union[int, float] = 1) -> None:
+    def advance(self, amount: Union[int, float] = 1) -> None:
         """
-        Advance the progress by `advance` units.
+        Advance the progress by `amount` units.
 
         Parameters
         ----------
-        advance: Union[int, float]
+        amount: Union[int, float]
             How many units to advance.
         """
 
     @abstractmethod
     def reset(self, title: str, total: Union[int, float]) -> None:
         """
-        Reset the task with a new title and total."
-        
+        Reset the task with a new title and total.
+
         Parameters
         ----------
         title: str
@@ -574,6 +577,7 @@ class BaseProgressBar(ABC):
         Remove or finalize the task.
         """
 
+
 class DelegatedProgressBar(BaseProgressBar):
     """
     ProgressBar that delegates to a RichStatus Progress.
@@ -581,10 +585,10 @@ class DelegatedProgressBar(BaseProgressBar):
     """
 
     def __init__(
-            self,
-            richstatus: "RichStatus",
-            title: str,
-            total: Union[int, float]
+        self,
+        richstatus: "RichStatus",
+        title: str,
+        total: Optional[Union[int, float]],
     ):
         """
         Initializes an instance of `RichProgressBar`. When `richstatus`
@@ -599,11 +603,12 @@ class DelegatedProgressBar(BaseProgressBar):
             The RichStatus instance to interact with.
         title: str
             Title of the progress bar.
-        total: Union[int, float]
-            Total of the progress bar.
+        total: Optional[Union[int, float]]
+            Total of the progress bar. If None, the progress bar
+            is indeterminate.
         """
         self.richstatus = richstatus
-        self.task_id = self.richstatus.progress.add_task(title, total=float(total))
+        self.task_id = self.richstatus.progress.add_task(title, total=total)
         with getattr(self.richstatus, "state_lock", threading.Lock()):
             if hasattr(self.richstatus, "pbars"):
                 self.richstatus.pbars.append(self.task_id)
@@ -614,14 +619,28 @@ class DelegatedProgressBar(BaseProgressBar):
     def _live(self) -> Optional[Live]:
         return self.richstatus.live
 
+    def start_task(self, total: Union[int, float]) -> None:
+        """
+        Start the task if the task is indeterminate.
+
+        Parameters
+        ----------
+        total: Union[int, float]
+            Total of the progress bar.
+        """
+        self._prog().update(self.task_id, total=total)
+        self._prog().start_task(self.task_id)
+
     def advance(self, amount: Union[int, float] = 1.0) -> None:
         try:
-            self._prog().update(self.task_id, advance=advance)
+            self._prog().update(self.task_id, advance=amount)
             if self._live() is not None:
                 try:
                     self._live().refresh()
                 except:
-                    KLogger.exception("Error updating Live in DelegatedProgressBar.advance")
+                    KLogger.exception(
+                        "Error updating Live in DelegatedProgressBar.advance"
+                    )
                     raise
         except Exception:
             KLogger.exception("Error advancing DelegatedProgressBar")
@@ -629,15 +648,24 @@ class DelegatedProgressBar(BaseProgressBar):
 
     def reset(self, title: str, total: Union[int, float]) -> None:
         try:
-            self._prog().update(self.task_id, description=title, total=float(total), completed=0.0)
+            self._prog().update(
+                self.task_id,
+                description=title,
+                total=float(total),
+                completed=0.0,
+            )
             if self._live() is not None:
                 try:
-                    self._live().update(self.richstatus._make_layout(), refresh=True)
+                    self._live().update(
+                        self.richstatus._make_layout(), refresh=True
+                    )
                 except Exception:
-                    KLogger.exception("Error updating Live in DelegatedProgressBar.reset")
+                    KLogger.exception(
+                        "Error updating Live in DelegatedProgressBar.reset"
+                    )
                     raise
         except Exception:
-            KLogger.exception("Error resetting DelgatedProgressBar")
+            KLogger.exception("Error resetting DelegatedProgressBar")
             raise
 
     def get_info(self) -> Optional[Dict[str, Any]]:
@@ -645,6 +673,7 @@ class DelegatedProgressBar(BaseProgressBar):
 
     def remove(self) -> None:
         raise NotImplementedError
+
 
 class RichStatus:
     """
@@ -678,8 +707,10 @@ class RichStatus:
         self.progress = progress or Progress(
             TextColumn("[bold cyan]{task.description}"),
             BarColumn(bar_width=None),
-            TextColumn("{task.completed:>2.0f}/{task.total:>2.0f}"),
-            TextColumn("{task.percentage:>3.0f}%"),
+            TaskProgressColumn(),
+            # TextColumn()
+            # TextColumn("{task.completed:>2.0f}/{task.total:>2.0f}"),
+            # TextColumn("{task.percentage:>3.0f}%"),
             TimeRemainingColumn(),
             console=self.console,
             redirect_stdout=True,
@@ -738,7 +769,9 @@ class RichStatus:
         # return self._make_table()
         return Group(self.progress, self._make_table())
 
-    def add_progress_bar(self, title: str, total: Union[int, float]) -> int:
+    def add_progress_bar(
+        self, title: str, total: Optional[Union[int, float]]
+    ) -> int:
         """
         Add a rich `Progress` status bar with the title and the total
         number of units.
@@ -747,7 +780,7 @@ class RichStatus:
         ----------
         title: str
             Title or description for the given progress bar
-        total: Union[int, float]
+        total: Optional[Union[int, float]]
             Total number of units for the progress bar.
 
         Returns

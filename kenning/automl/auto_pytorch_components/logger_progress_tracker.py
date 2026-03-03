@@ -7,21 +7,22 @@ Module implements loggers for autopytorch progress tracking.
 """
 
 import time
-from typing import Dict, Optional
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+import pandas as pd
 import torch
 from autoPyTorch.utils.progress_tracker import (
     EpochTracker,
     TrainingProgressTracker,
 )
+from rich.progress import Progress
 from rich.table import Table
 from smac.utils.constants import MAXINT
 
 from kenning.utils.logger import RichStatus
 
-import pandas as pd
 
 class AutoMLRichStatus(RichStatus):
     """
@@ -29,7 +30,10 @@ class AutoMLRichStatus(RichStatus):
     """
 
     def __init__(
-        self, enable_live: bool = True, keep_history: bool = True
+        self,
+        enable_live: bool = True,
+        keep_history: bool = True,
+        exclude_metrics: List[str] = [],
     ) -> None:
         """
         Initializes an instance of the class.
@@ -41,11 +45,15 @@ class AutoMLRichStatus(RichStatus):
         keep_history: bool
             If True, will keep track of all the table updates over
             the duration of the search.
+        exclude_metrics: List[str]
+            The metrics that will be excluded in the table and final
+            CSV report.
         """
         self.current_values = {}
         self.best_values = {}
         self.keep_history = keep_history
-        self.history: list[dict] = []
+        self.history = []
+        self.exclude_metrics = exclude_metrics
         super().__init__(enable_live=enable_live)
 
     def _log_current_values(self) -> None:
@@ -63,6 +71,11 @@ class AutoMLRichStatus(RichStatus):
     def get_history_df(self) -> pd.DataFrame:
         """
         Return the logged history as a pandas DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            The pandas Dataframe that contains the history.
         """
         if not self.history:
             return pd.DataFrame()
@@ -70,11 +83,11 @@ class AutoMLRichStatus(RichStatus):
 
     def save_history_csv(self, path: Path) -> None:
         """
-        Save logged history to CSV file
+        Save logged history to CSV file.
 
         Parameters
         ----------
-        path: str
+        path: Path
             Path to save the CSV file.
         """
         df = self.get_history_df()
@@ -93,6 +106,9 @@ class AutoMLRichStatus(RichStatus):
         table.add_column("Value (current)")
 
         def add_row(key):
+            if key in self.exclude_metrics:
+                return
+
             table.add_row(
                 key,
                 self._fmt_table_entry(self.best_values[key]),
@@ -100,6 +116,7 @@ class AutoMLRichStatus(RichStatus):
             )
 
         if "Model" in self.best_values and "Model" in self.current_values:
+            # Ensure this always goes on top.
             add_row("Model")
             add_row("Iterations")
 
@@ -126,17 +143,31 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
         self,
         richlogger: AutoMLRichStatus,
         total_time_expected_seconds: float,
-        task,
+        progress_bar: Progress,
     ):
+        """
+        Initialize a new `RichTrainingProgressTracker` instance.
+
+        Parameters
+        ----------
+        richlogger: AutoMLRichStatus
+            Instance of `AutoMLRichStatus` to use.
+
+        total_time_expected_seconds: float
+            Total time that search is going to take place.
+
+        progress_bar: Progress
+            The progress bar to use for the training progress tracker.
+        """
         self.richlogger = richlogger
 
-        self.total_time_passed = 0
+        # self.total_time_passed = 0
         self.lowest_cost = MAXINT
         self.best_metrics = {}
 
         self.iters = 0
 
-        self.task = task
+        self.progress_bar = progress_bar
         super().__init__(total_time_expected_seconds)
 
     def __enter__(self):
@@ -152,21 +183,42 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
         self.current_values = new_table
 
         self.richlogger.update_table()
+
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         super().__exit__(exc_type, exc_val, exc_tb)
 
     def report_time(self, time_passed: Optional[float] = None):
+        # Currently broken. Resets the progress bar to 0 when used
+        # from within `RichEpochStepLogger`.
         cur_time = time.time()
+
         if not time_passed:
             time_passed = cur_time - self.last_time_updated
         self.last_time_updated = cur_time
-        self.richlogger.advance(self.task, advance=time_passed)
 
     def report_progress(
-        self, time_passed: float, metrics: Dict, model: str, cost
+        self, time_passed: float, metrics: dict, model: str, cost: Any
     ) -> None:
+        """
+        Function that AutoPyTorch calls to report progress to kenning.
+
+        Parameters
+        ----------
+        time_passed: float
+            How much time has passed since last call.
+
+        metrics: dict
+            Metrics obtained for the training step.
+
+        model: str
+            Name of the model used.
+
+        cost: Any
+            Value of the metric used to determine the performance
+            of the model.
+        """
         self.iters += 1
 
         metrics["Model"] = model
@@ -181,26 +233,27 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
         self.richlogger.current_values = metrics
         self.richlogger.update_table()
 
+        self.progress_bar.advance(amount=time_passed)
+
         self.total_time_passed += time_passed
 
 
-class RichEpochTrainingStepLogger(EpochTracker):
+class RichEpochStepLogger(EpochTracker):
     """
-    Progress Tracker for each training step.
+    Progress Tracker for each Epoch.
     """
 
     def __init__(
         self,
         richlogger: AutoMLRichStatus,
-        task,
-        progress_tracker=None,
+        progress_bar: Progress,
     ):
         self.richlogger = richlogger
-        self.task = task
-        self.progress_tracker = progress_tracker
+        self.progress_bar = progress_bar
         super().__init__()
 
     def __enter__(self):
+        self.progress_bar.start_task(self.total_steps)
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -214,41 +267,4 @@ class RichEpochTrainingStepLogger(EpochTracker):
         targets: torch.Tensor,
         additional_info: Optional[Dict] = None,
     ) -> None:
-        if self.progress_tracker:
-            self.progress_tracker.report_time()
-        self.richlogger.advance(self.task)
-
-
-class RichEpochEvaluationStepLogger(EpochTracker):
-    """
-    Tracks and logs progress of one epoch evaluation in autoPyTorch.
-    """
-
-    def __init__(
-        self,
-        richlogger: AutoMLRichStatus,
-        task,
-        progress_tracker=None,
-    ):
-        self.richlogger = richlogger
-        self.task = task
-        self.progress_tracker = progress_tracker
-        super().__init__()
-
-    def __enter__(self):
-        return super().__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        super().__exit__(exc_type, exc_val, exc_tb)
-
-    def report_step_progress(
-        self,
-        loss: float,
-        batch_size: int,
-        outputs: torch.Tensor,
-        targets: torch.Tensor,
-        additional_info: Optional[Dict] = None,
-    ) -> None:
-        if self.progress_tracker:
-            self.progress_tracker.report_time()
-        self.richlogger.advance(self.task)
+        self.progress_bar.advance(amount=1)

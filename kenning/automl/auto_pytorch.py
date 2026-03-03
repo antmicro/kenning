@@ -25,12 +25,12 @@ from typing import (
 
 import numpy as np
 import psutil
+from autoPyTorch.api.base_task import BaseTask
 from sklearn.pipeline import Pipeline
 
 from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
     AutoMLRichStatus,
-    RichEpochEvaluationStepLogger,
-    RichEpochTrainingStepLogger,
+    RichEpochStepLogger,
     RichTrainingProgressTracker,
 )
 from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
@@ -699,37 +699,37 @@ class AutoPyTorchML(AutoML):
         self.time_limit = time_limit
         self.richlogger = AutoMLRichStatus(keep_history=True)
 
-        progress_tracker_task = self.richlogger.add_progress_bar(
+        training_progress_bar = self.richlogger.add_progress_bar(
             "Total Training Time",
-            time_limit * 60,
+            float(time_limit * 60),
         )
 
-        train_tracker_task = self.richlogger.add_progress_bar(
+        train_epoch_progress_bar = self.richlogger.add_progress_bar(
             "Training",
-            30,  # Dummy value. This gets replaced later.
+            None,
+            # 30,  # Dummy value. This gets replaced later.
         )
 
-        eval_tracker_task = self.richlogger.add_progress_bar(
+        eval_epoch_progress_bar = self.richlogger.add_progress_bar(
             "Validation",
-            30,  # Dummy value. This gets replaced later.
+            None,
+            # 30,  # Dummy value. This gets replaced later.
         )
 
         self.training_progress_tracker = RichTrainingProgressTracker(
             self.richlogger,
             self.time_limit * 60,
-            progress_tracker_task,
+            training_progress_bar,
         )
 
-        self.training_epoch_tracker = RichEpochTrainingStepLogger(
+        self.training_epoch_tracker = RichEpochStepLogger(
             self.richlogger,
-            train_tracker_task,
-            progress_tracker=self.training_progress_tracker,
+            progress_bar=train_epoch_progress_bar,
         )
 
-        self.eval_epoch_tracker = RichEpochEvaluationStepLogger(
+        self.eval_epoch_tracker = RichEpochStepLogger(
             self.richlogger,
-            eval_tracker_task,
-            progress_tracker=self.training_progress_tracker,
+            progress_bar=eval_epoch_progress_bar,
         )
 
     def prepare_framework(self):
@@ -757,10 +757,6 @@ class AutoPyTorchML(AutoML):
         self._prepared = True
 
     def search(self):
-        from autoPyTorch.api.tabular_classification import (
-            TabularClassificationTask,
-        )
-
         assert (
             self._prepared
         ), "`search` has to be called after `prepare_framework`"
@@ -772,23 +768,8 @@ class AutoPyTorchML(AutoML):
             )
             rmtree(autoPyTorch_tmp_dir)
 
-        self._api = TabularClassificationTask(
-            seed=self.seed,
-            include_components={
-                "network_backbone": [
-                    component.__name__ for component in self._components
-                ],
-            },
-            # search_space_updates=search_space_updates,
-            n_jobs=self.jobs,
-            n_threads=cpu_count(),
-            # Do not ensemble models
-            ensemble_nbest=1,
-            ensemble_size=0,
-            # Setup autoPyTorch directory, where intermediate results
-            # and tensorboard data are stored
-            temporary_directory=str(autoPyTorch_tmp_dir),
-            delete_tmp_folder_after_terminate=False,
+        self._api = self._get_autopytorch_task(
+            autoPyTorch_tmp_dir, cpu_count()
         )
 
         self._api.set_pipeline_options(
@@ -1187,3 +1168,47 @@ class AutoPyTorchML(AutoML):
             return CompatibilityStatus.FAILED_CHECK, None
 
         return self._pre_training_callback(model_wrapper_class, model, logger)
+
+    def _get_autopytorch_task(
+        self, autoPyTorch_tmp_dir: Path, n_threads: int
+    ) -> BaseTask:
+        """
+        Return the appropriate autopytorch task.
+
+        Parameters
+        ----------
+        autoPyTorch_tmp_dir : Path
+            Temporary directory to save intermediate results.
+        n_threads : int
+            Number of threads to use.
+
+        Returns
+        -------
+        BaseTask
+            The AutoPytorch base task class (needs to be subclassed).
+        """
+        from autoPyTorch.api.tabular_classification import (
+            TabularClassificationTask,
+        )
+
+        task = TabularClassificationTask(
+            seed=self.seed,
+            include_components={
+                "network_backbone": [
+                    component.__name__ for component in self._components
+                ],
+            },
+            # search_space_updates=search_space_updates,
+            n_jobs=self.jobs,
+            n_threads=n_threads,
+            # Do not ensemble models
+            ensemble_nbest=1,
+            ensemble_size=0,
+            # Setup autoPyTorch directory, where intermediate results
+            # and tensorboard data are stored
+            temporary_directory=str(autoPyTorch_tmp_dir),
+            delete_tmp_folder_after_terminate=False,
+        )
+
+        # For now, only TabularClassificationTask
+        return task

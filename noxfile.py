@@ -38,7 +38,7 @@ def _prepare_pyrenode(session: nox.Session):
             external=True,
         )
 
-        renode_bin = Path(glob("renode_*-dotnet_portable/renode")[0]).resolve()
+        renode_bin = Path(glob("renode_*-portable/renode")[0]).resolve()
 
         session.env["PYRENODE_RUNTIME"] = "coreclr"
         session.env["PYRENODE_BIN"] = renode_bin

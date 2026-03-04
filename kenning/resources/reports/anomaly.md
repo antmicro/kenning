@@ -21,3 +21,22 @@ Anomaly Average Detection Delay plot
 ```
 
 {%- endif %}
+
+{%- if 'anomaly_timeseries_metrics' in data %}
+
+## Anomaly detection metrics:
+
+```{list-table} Anomaly detection metrics:
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Value
+{%- for metric,value in data['anomaly_timeseries_metrics'].items() %}
+* - *{{ metric }}*
+  - **{{ '%.6f' % value }}**
+{%- endfor %}
+```
+
+{%- endif %}

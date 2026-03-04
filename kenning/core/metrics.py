@@ -608,7 +608,13 @@ class Metric(str, Enum):
     mAP = "mAP"
     MAX_mAP = "max_mAP"
     MAX_mAP_ID = "max_mAP_index"
-    Hausdorff = "hausdorff"
+    Hausdorff = "Hausdorff"
+    MSD = "Mean Signed Difference"
+    NAB = "NAB scoring"
+    Z_SCORE = "Z score"
+    FDR = "False detection rate"
+    FAR = "False alarm rate"
+    ADD = "Average detection delay"
 
 
 # List of metrics used for classification

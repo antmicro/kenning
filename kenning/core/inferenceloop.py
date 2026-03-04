@@ -254,17 +254,25 @@ class RealtimeInferenceLoop(InferenceLoop):
                     output = self._model_wrapper.convert_output_from_bytes(
                         payload
                     )
-
                 result = self._postproces(output)
+
             except Exception as e:
                 KLogger.error(e)
                 raise e
-
             nonlocal measurements
+            result_score = output[0][0][int(result[0][0])]
+
             measurements += {
                 "results": [
                     (result_time, list(map(int, np.array(result).flatten())))
-                ]
+                ],
+                "results_scored": [
+                    (
+                        result_time,
+                        list(map(int, np.array(result).flatten())),
+                        result_score,
+                    )
+                ],
             }
 
             self._platform.inference_step_callback()

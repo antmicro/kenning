@@ -88,7 +88,7 @@ def zephyr_traces_report(
     KenningReportError
         All methods of retrieving Zephyr traces failed.
     """
-    from kenning.platforms.zephyr import ZephyrPlatform
+    from kenning.platforms.zephyr import _prepare_traces
     from kenning.utils.zpl_suffix import ZplSuffix
 
     # We extract Zephyr traces from available sources.
@@ -127,11 +127,13 @@ def zephyr_traces_report(
 
     if convert_needed:
         optimizer = measurementsdata["optimizers"][-1]["compiler_framework"]
-        ZephyrPlatform._prepare_traces(
-            "TVMCompiler"
+        from kenning.optimizers.tflite import TFLiteCompiler
+        from kenning.optimizers.tvm import TVMCompiler
+
+        _prepare_traces(
+            TVMCompiler
             if optimizer == "tvm"
-            else ("TFLiteCompiler" if optimizer == "tflite" else "none"),
-            compiled_model_path,
+            else (TFLiteCompiler if optimizer == "tflite" else None),
             path_ctf,
             path_tef,
             zephyr_build_path,

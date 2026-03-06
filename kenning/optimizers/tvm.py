@@ -596,7 +596,7 @@ class TVMCompiler(Optimizer):
         self.platform_target_attrs = platform_target_attrs
         self.target_microtvm_board = platform.name
 
-        KLogger.info(f"Set TVMCompiler target to {self.target}")
+        KLogger.info(f"Set TVMCompiler target to {self.platform_target}")
 
     def get_framework_and_version(self):
         return ("tvm", tvm.__version__)

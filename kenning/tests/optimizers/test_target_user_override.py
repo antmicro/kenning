@@ -27,10 +27,11 @@ def assert_compiler_flags(
     override_flag: Optional[CompilerFlag],
     original_flags: List[CompilerFlag],
     actual_flags: List[CompilerFlag],
-):
+) -> None:
     """
     Ensure that the compiler flags that we have gotten
-    are the ones that we expect.
+    are the ones that we expect. Panics when they are
+    different.
 
     Parameters
     ----------
@@ -75,7 +76,7 @@ class TestTargetUserOverride:
         self,
         dataset: Dataset,
         tmpfolder: Path,
-    ):
+    ) -> None:
         machine = "max32690evkit/max32690/m4"
         platform = ZephyrPlatform(machine)
 
@@ -109,7 +110,7 @@ class TestTargetUserOverride:
         self,
         dataset: Dataset,
         tmpfolder: Path,
-    ):
+    ) -> None:
         machine = "max32690evkit/max32690/m4"
         platform = ZephyrPlatform(machine)
 
@@ -133,7 +134,9 @@ class TestTargetUserOverride:
 
         assert_compiler_flags([], None, original_flags, actual_flags)
 
-    def test_user_override_tvm_cuda(self, dataset: Dataset, tmpfolder: Path):
+    def test_user_override_tvm_cuda(
+        self, dataset: Dataset, tmpfolder: Path
+    ) -> None:
         machine = "max32690evkit/max32690/m4"
         platform = CUDAPlatform(machine)
 
@@ -153,7 +156,7 @@ class TestTargetUserOverride:
             compiler._get_target() == "cuda"
         ), "User-supplied CUDA was overwritten"
 
-    def test_no_platform_tvm(self, dataset: Dataset, tmpfolder: Path):
+    def test_no_platform_tvm(self, dataset: Dataset, tmpfolder: Path) -> None:
         compiled_model_path = tmpfolder / "model-mock.tar"
 
         compiler = TVMCompiler(
@@ -167,7 +170,9 @@ class TestTargetUserOverride:
         assert compiler._get_target() == "llvm"
         assert compiler._get_target_attrs() == ""
 
-    def test_user_override_iree(self, dataset: Dataset, tmpfolder: Path):
+    def test_user_override_iree(
+        self, dataset: Dataset, tmpfolder: Path
+    ) -> None:
         machine = "nvidia_rtx_4090"
         platform = CUDAPlatform(machine)
 
@@ -187,7 +192,9 @@ class TestTargetUserOverride:
             compiler._get_backend() == "vulkan"
         ), "The backend was overridden"
 
-    def test_user_no_override_iree(self, dataset: Dataset, tmpfolder: Path):
+    def test_user_no_override_iree(
+        self, dataset: Dataset, tmpfolder: Path
+    ) -> None:
         machine = "nvidia_rtx_4090"
         platform = CUDAPlatform(machine)
 
@@ -206,7 +213,7 @@ class TestTargetUserOverride:
             compiler._get_backend() == "cuda"
         ), "The backend is not the default"
 
-    def test_no_platform_iree(self, dataset: Dataset, tmpfolder: Path):
+    def test_no_platform_iree(self, dataset: Dataset, tmpfolder: Path) -> None:
         compiled_model_path = tmpfolder / "model-mock.tar"
 
         compiler = IREECompiler(
@@ -219,7 +226,9 @@ class TestTargetUserOverride:
 
         assert compiler._get_backend() == "vmvx"
 
-    def test_empty_target_attrs_tvm(self, dataset: Dataset, tmpfolder: Path):
+    def test_empty_target_attrs_tvm(
+        self, dataset: Dataset, tmpfolder: Path
+    ) -> None:
         machine = "max32690evkit/max32690/m4"
         platform = ZephyrPlatform(machine)
 

@@ -89,6 +89,8 @@ class _KLogger(logging.Logger, metaclass=Singleton):
     Kenning Logger class.
     """
 
+    custom_log_backends = {}
+
     FORMAT = (
         "[%(asctime)-15s.%(msecs)04d {package} %(filename)s:%(lineno)s] "
         "[%(levelname)s] %(message)s"

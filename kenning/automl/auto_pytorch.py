@@ -33,7 +33,7 @@ from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
     RichEpochStepLogger,
     RichTrainingProgressTracker,
 )
-from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
+from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelClassNotValidError,

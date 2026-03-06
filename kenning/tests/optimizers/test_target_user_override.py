@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import pytest
 
@@ -47,23 +47,23 @@ def assert_compiler_flags(
         The resulting set of flags after processing.
     """
 
-    def flags2set(flags: List[CompilerFlag]):
-        return set(map(str, flags))
+    def flags2set(flags: List[CompilerFlag]) -> Set[str]:
+        return {str(flag) for flag in flags}
 
     if override_flag:
         expected = (
-            set(
+            {
                 str(flag)
                 for flag in original_flags
                 if not flag.is_same_flag(override_flag)
-            )
+            }
             | flags2set(additional_flags)
-            | set([str(override_flag)])
+            | {str(override_flag)}
         )
     else:
-        expected = set(map(str, original_flags)) | flags2set(additional_flags)
+        expected = flags2set(original_flags) | flags2set(additional_flags)
 
-    actual = set(map(str, actual_flags))
+    actual = flags2set(actual_flags)
 
     assert (
         actual == expected

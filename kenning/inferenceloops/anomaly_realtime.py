@@ -18,6 +18,7 @@ from kenning.core.metrics import (
     hausdorff_distance_metric,
     mean_signed_difference,
     nab_metric,
+    prob_auc_metric,
 )
 from kenning.inferenceloops.sensor_realtime import SensorRealtimeInferenceLoop
 
@@ -314,6 +315,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
     ]:
         x = []
         y = []
+        x_scores = []
 
         for scores in scored_results:
             x_time = scores["sample_time"]
@@ -321,9 +323,11 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
             y_time = scores["result_time"]
             y_result = scores["target"]
+            score = scores["pred_scored"]
 
             x.append([x_time, x_result])
             y.append([y_time, y_result])
+            x_scores.append(score)
 
         x = np.array(x, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
@@ -358,7 +362,19 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             else None
         )
 
-        return hausdorff_metric, nab_score, msd
+        auc = (
+            sklearn.metrics.roc_auc_score(y, x)
+            if Metric.ROC_AUC.name.lower() in self.use_metrics
+            else None
+        )
+
+        pauc = (
+            prob_auc_metric(y, x, x_scores)
+            if Metric.P_AUC.name.lower() in self.use_metrics
+            else None
+        )
+
+        return hausdorff_metric, nab_score, msd, auc, pauc
 
     def _compute_metrics(self, measurements: Measurements):
         samples = list(measurements.get_values("samples"))
@@ -404,6 +420,8 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             hausdorff_distance,
             nab_score,
             msd,
+            auc,
+            pauc,
         ) = self._compute_time_based_metrics(scored_results)
 
         measurements += {
@@ -422,6 +440,12 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         if msd is not None:
             time_based_metrics[Metric.MSD] = msd
+
+        if pauc is not None:
+            time_based_metrics[Metric.P_AUC] = pauc
+
+        if auc is not None:
+            time_based_metrics[Metric.ROC_AUC] = auc
 
         measurements += {
             "anomaly_metrics": {

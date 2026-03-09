@@ -132,8 +132,11 @@ class TabularDataset(Dataset):
                 for i in range(max(0, len(rowsX) - self.window_size + 1))
             ]
             self.dataY = rowsY[self.window_size - 1 :]
-        self.mean = list(dfX.mean())
-        self.std = list(dfX.std())
+        # Making sure shapes of mean and std match shape of inputs (so that
+        # it can be easily subtracted/added to inputs for standardization).
+        # We also want normal numpy arrays, not whatever `polars` lib returns.
+        self.mean = np.asarray(list(dfX.mean())).transpose()
+        self.std = np.asarray(list(dfX.std())).transpose()
         self.classnames = list(map(str, dfY.unique().sort()))
         self.num_features = dfX.shape[1]
 

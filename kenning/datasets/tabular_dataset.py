@@ -144,9 +144,8 @@ class TabularDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         measurements = Measurements()
-        ts = np.argmax(truth[0], axis=-1)
-        ps = np.argmax(predictions[0], axis=-1)
-
+        ts = [np.argmax(truth[0], axis=-1)]
+        ps = [np.argmax(predictions[0], axis=-1)]
         confusion_matrix = metrics.confusion_matrix(
             ts, ps, labels=range(len(self.classnames))
         )

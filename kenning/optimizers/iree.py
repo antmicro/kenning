@@ -8,6 +8,7 @@ Wrapper for IREE compiler.
 
 import re
 import subprocess
+import sys
 from typing import Dict, List, Literal, Optional, Tuple
 
 import onnx
@@ -209,16 +210,17 @@ class IREECompiler(Optimizer):
             ".tmp.mlir"
         )
 
-        subprocess.call(
-            [
-                "iree-import-onnx",
-                intermediate_onnx_model_path.resolve(),
-                "--opset-version",
-                "17",
-                "-o",
-                intermediate_mlir_path.resolve(),
-            ]
-        )
+        cmd = [
+            "iree-import-onnx",
+            str(intermediate_onnx_model_path.resolve()),
+        ]
+
+        if sys.version_info < (3, 12):
+            cmd.extend(["--opset-version", "17"])
+
+        cmd.extend(["-o", str(intermediate_mlir_path.resolve())])
+
+        subprocess.call(cmd)
 
         try:
             backend = self._get_backend()

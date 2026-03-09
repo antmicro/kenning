@@ -843,7 +843,7 @@ class Dataset(ArgumentsHandler, ABC):
             append_index=True,
         )
         # Preserve order of dataset
-        reduced_indices = np.sort(reduced_indices)
+        reduced_indices = np.sort(reduced_indices).tolist()
         if isinstance(self.dataX, np.ndarray):
             self.dataX = self.dataX[reduced_indices]
         else:

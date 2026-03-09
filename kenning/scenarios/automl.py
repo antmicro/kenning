@@ -399,7 +399,8 @@ class AutoMLCommand(InferenceTester):
 
                     test_output = (
                         args.measurements[-1]
-                        if args.measurements[-1]
+                        if hasattr(args, "measurements")
+                        and args.measurements[-1]
                         else None
                     )
                     evaluate_unoptimized = getattr(

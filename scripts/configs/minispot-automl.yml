@@ -1,0 +1,56 @@
+automl:
+  type: AutoPyTorchML
+  parameters:
+    # Time limit for AutoML task (in minutes)
+    time_limit: 10
+    # List of model architectures used for AutoML,
+    # represented by ModelWrapper (has to implement AutoMLModel class)
+    use_models:
+      - PyTorchAnomalyDetectionCNN
+    # Folder storing AutoML results
+    output_directory: ./workspace/automl-results
+    # Maximum number of models returned by the flow
+    n_best_models: 5
+
+    # AutoPyTorch specific options
+    # Chosen metric to optimize
+    optimize_metric: f1
+    # Type of budget for training models, either epochs or time limit
+    budget_type: epochs
+    # Lower and upper limit of the budger
+    min_budget: 1
+    max_budget: 5
+    # Size of the application that will use generated models
+    application_size: 75.5
+
+model_wrapper:
+  type: PyTorchAnomalyDetectionCNN
+  parameters:
+    model_path: _
+
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: stm32f746g_disco
+    simulated: true
+    zephyr_build_path: build
+
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    target: default
+    compiled_model_path: ./workspace/automl-results/minispot.tflite
+    inference_input_type: float32
+    inference_output_type: float32
+
+dataset:
+  type: kenning.datasets.tabular_dataset.TabularDataset
+  parameters:
+    dataset_root: build/data
+    dataset_path: https://dl.antmicro.com/kenning/datasets/anomaly_detection/minispot.csv
+    cols_x: [roll, pitch, gz, ax, ay, az]
+    col_y: anomaly
+    window_size: 8
+    shuffle_data: False
+    download_dataset: True
+    expand_classes: False

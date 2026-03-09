@@ -52,6 +52,17 @@ class TabularDataset(Dataset):
             "type": bool,
             "default": True,
         },
+        "expand_classes": {
+            "argparse_name": "--expand-classes",
+            "description": "If enabled, 'prepare_output_samples' function will"
+            " transform outputs into vector of length N, where N is number of"
+            " classes. Example: [1,1,0,2,0] will be changed to [[0,1,0],"
+            " [0,1,0],[1,0,0],[0,0,1],[1,0,0]]. This is to prepare the dataset"
+            " to be used for a typical classifier. It should be disabled when"
+            " using AutoML, because AutoPyTorch does it on it's own.",
+            "type": bool,
+            "default": True,
+        },
     }
 
     def __init__(
@@ -70,12 +81,14 @@ class TabularDataset(Dataset):
         split_seed=1234,
         dataset_percentage=1,
         shuffle_data=True,
+        expand_classes=True,
     ):
         self.colsX = colsX
         self.colY = colY
         self.dataset_path = dataset_path
         assert dataset_path is not None
         self.window_size = window_size
+        self.expand_classes = expand_classes
         super().__init__(
             root,
             batch_size,
@@ -125,7 +138,9 @@ class TabularDataset(Dataset):
         self.num_features = dfX.shape[1]
 
     def prepare_output_samples(self, samples):
-        return [np.eye(len(self.classnames))[samples]]
+        if self.expand_classes:
+            return [np.eye(len(self.classnames))[samples]]
+        return samples
 
     def evaluate(self, predictions, truth):
         measurements = Measurements()

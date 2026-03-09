@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy>=1.21.3,<2.0.0"]
+requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy<2.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -56,10 +56,12 @@ docs = [
 ]
 tensorflow = [
     "kenning[onnx2tf]",
-    "tf_keras==2.15.0",
+    "tf-keras==2.15.0; python_version<'3.12'",
+    "tf-keras==2.20; python_version=='3.12'",
     "tensorflow_addons; python_version<'3.12'",
+    "tensorflow==2.15.0; python_version < '3.12'",
+    "tensorflow; python_version == '3.12'",
     "tensorflow_model_optimization",
-    "tensorflow==2.15.0",
     "h5py",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
 ]
@@ -201,11 +203,14 @@ onnx2tf = [
     "onnx2tf==1.17.5",
     "onnx>=1.14.0,<=1.17.0",
     "onnxruntime==1.18.1",
-    "onnxsim==0.4.33",
+    "onnxsim==0.4.33; python_version < '3.12'",
+    "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
-    "tensorflow==2.15.0",
-    "tf-keras==2.15.0",
+    "tensorflow==2.15.0; python_version < '3.12'",
+    "tensorflow; python_version == '3.12'",
+    "tf-keras==2.15.0; python_version<'3.12'",
+    "tf-keras==2.20; python_version=='3.12'",
     "ai-edge-litert==1.2.0",
     "psutil==5.9.5",
     "ml_dtypes>=0.2.0,<=0.5.1",

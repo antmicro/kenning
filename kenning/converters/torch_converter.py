@@ -7,7 +7,7 @@ Enables loading of PyTorch models and conversion to other formats.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from kenning.core.converter import ModelConverter
 from kenning.core.exceptions import (
@@ -15,12 +15,10 @@ from kenning.core.exceptions import (
     ConversionError,
 )
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import PathOrURI
 
 if TYPE_CHECKING:
     import onnx
     import torch
-    import tvm
 
     from kenning.optimizers.ai8x import Ai8xTools
 
@@ -269,146 +267,150 @@ class TorchConverter(ModelConverter):
 
         KLogger.info(f"Model YAML configuration saved in {yaml_cfg_path}")
 
-    def to_tvm(
-        self,
-        io_spec: Dict[str, List[Dict]],
-        conversion_func: Optional[str],
-        model: Optional["torch.nn.Module"] = None,
-        **kwargs,
-    ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
-        """
-        Converts Torch file to TVM format.
-
-        Parameters
-        ----------
-        io_spec: Dict[str, List[Dict]]
-            Input and output specification.
-        conversion_func: Optional[str]
-            Model-specific selector of output conversion functions.
-        model : Optional["torch.nn.Module"]
-            Optional model object.
-        **kwargs:
-            Keyword arguments passed between conversions.
-
-        Returns
-        -------
-        mod: tvm.IRModule
-            The relay module.
-        params: Union[Dict, str]
-            Parameters dictionary to be used by relay module.
-
-        Raises
-        ------
-        ValueError
-            Raised if no shapes provided in the input specification.
-        IOSpecificationNotFoundError
-            Raised if input specification is not provided.
-        """
-        import numpy as np
-        import torch
-        import tvm.relay as relay
-
-        def no_conversion(out_dict):
-            """
-            Passes model as is to the compiler.
-            """
-            return out_dict
-
-        # This is a model-specific selector of output conversion functions.
-        # It defaults to a no_conversion function that just returns its input
-        # It is easily expandable in case it is needed for other models
-        if conversion_func == "dict_to_tuple":
-            # For PyTorch Mask R-CNN Model
-            from kenning.modelwrappers.instance_segmentation.pytorch_coco import (  # noqa: E501
-                dict_to_tuple,
-            )
-
-            wrapper = dict_to_tuple
-        else:  # General case - no conversion is happening
-            wrapper = no_conversion
-
-        def mul(x: tuple) -> int:
-            """
-            Method used to convert shape-representing tuple
-            to a 1-dimensional size to allow the model to be inferred with
-            an 1-dimensional byte array.
-
-            Parameters
-            ----------
-            x : tuple
-                Tuple describing the regular input shape.
-
-            Returns
-            -------
-            int
-                The size of a 1-dimensional input matching the original shape.
-            """
-            ret = 1
-            for i in list(x):
-                ret *= i
-            return ret
-
-        class TraceWrapper(torch.nn.Module):
-            def __init__(self, model):
-                super().__init__()
-                self.model = model
-
-            def forward(self, inp):
-                out = self.model(
-                    inp.reshape(input_shapes[list(input_shapes.keys())[0]])
-                )
-                return wrapper(out[0])
-
-        device = torch.device(
-            "cuda" if torch.cuda.is_available() else _DEFAULT_DEVICE
-        )
-
-        def model_func(model_path: PathOrURI):
-            device = torch.device(
-                "cuda" if torch.cuda.is_available() else _DEFAULT_DEVICE
-            )
-            loaded_model = torch.load(
-                str(model_path), map_location=device, weights_only=False
-            )
-            if not isinstance(loaded_model, torch.nn.Module):
-                raise CompilationError(
-                    "TVM compiler expects the input data of type: "
-                    f"torch.nn.Module, but got: {type(loaded_model).__name__}"
-                )
-            return loaded_model
-
-        model = model if model else model_func(self.source_model_path)
-        wrapped_model = TraceWrapper(model)
-        wrapped_model.eval()
-
-        input_shapes = {
-            spec["name"]: spec["shape"] for spec in io_spec["input"]
-        }
-        if not input_shapes:
-            raise ValueError("No shapes in the input specification")
-
-        shape = input_shapes[list(input_shapes.keys())[0]]
-        sample_input = torch.Tensor(
-            np.random.uniform(0.0, 250.0, (mul(shape))),
-        )
-
-        sample_input = sample_input.to(device)
-
-        with torch.no_grad():
-            wrapped_model(sample_input)
-            model_trace = torch.jit.trace(wrapped_model, sample_input)
-            model_trace.eval()
-
-        return relay.frontend.from_pytorch(
-            model_trace,
-            # this is a list of input infos where there is a dict
-            # constructed from {input_name: (n-dim tuple-shape)}
-            # into {input_name: [product_of_the_dimensions]}
-            list(
-                {
-                    list(input_shapes.keys())[0]: [
-                        mul(input_shapes[list(input_shapes.keys())[0]])
-                    ]
-                }.items()
-            ),
-        )
+    """
+    This converter is commented-out, because it breaks output shapes of models
+    (flattens the dimensions).
+    """
+    # def to_tvm(
+    #     self,
+    #     io_spec: Dict[str, List[Dict]],
+    #     conversion_func: Optional[str],
+    #     model: Optional["torch.nn.Module"] = None,
+    #     **kwargs,
+    # ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
+    #     """
+    #     Converts Torch file to TVM format.
+    #
+    #     Parameters
+    #     ----------
+    #     io_spec: Dict[str, List[Dict]]
+    #         Input and output specification.
+    #     conversion_func: Optional[str]
+    #         Model-specific selector of output conversion functions.
+    #     model : Optional["torch.nn.Module"]
+    #         Optional model object.
+    #     **kwargs:
+    #         Keyword arguments passed between conversions.
+    #
+    #     Returns
+    #     -------
+    #     mod: tvm.IRModule
+    #         The relay module.
+    #     params: Union[Dict, str]
+    #         Parameters dictionary to be used by relay module.
+    #
+    #     Raises
+    #     ------
+    #     ValueError
+    #         Raised if no shapes provided in the input specification.
+    #     IOSpecificationNotFoundError
+    #         Raised if input specification is not provided.
+    #     """
+    #     import numpy as np
+    #     import torch
+    #     import tvm.relay as relay
+    #
+    #     def no_conversion(out_dict):
+    #         """
+    #         Passes model as is to the compiler.
+    #         """
+    #         return out_dict
+    #
+    #     # This is a model-specific selector of output conversion functions.
+    #     # It defaults to a no_conversion function that just returns its input
+    #     # It is easily expandable in case it is needed for other models
+    #     if conversion_func == "dict_to_tuple":
+    #         # For PyTorch Mask R-CNN Model
+    #         from kenning.modelwrappers.instance_segmentation.pytorch_coco import (  # noqa: E501
+    #             dict_to_tuple,
+    #         )
+    #
+    #         wrapper = dict_to_tuple
+    #     else:  # General case - no conversion is happening
+    #         wrapper = no_conversion
+    #
+    #     def mul(x: tuple) -> int:
+    #         """
+    #         Method used to convert shape-representing tuple
+    #         to a 1-dimensional size to allow the model to be inferred with
+    #         an 1-dimensional byte array.
+    #
+    #         Parameters
+    #         ----------
+    #         x : tuple
+    #             Tuple describing the regular input shape.
+    #
+    #         Returns
+    #         -------
+    #         int
+    #             The size of a 1-dimensional input matching the original shape. # noqa: E501
+    #         """
+    #         ret = 1
+    #         for i in list(x):
+    #             ret *= i
+    #         return ret
+    #
+    #     class TraceWrapper(torch.nn.Module):
+    #         def __init__(self, model):
+    #             super().__init__()
+    #             self.model = model
+    #
+    #         def forward(self, inp):
+    #             out = self.model(
+    #                 inp.reshape(input_shapes[list(input_shapes.keys())[0]])
+    #             )
+    #             return wrapper(out[0])
+    #
+    #     device = torch.device(
+    #         "cuda" if torch.cuda.is_available() else _DEFAULT_DEVICE
+    #     )
+    #
+    #     def model_func(model_path: PathOrURI):
+    #         device = torch.device(
+    #             "cuda" if torch.cuda.is_available() else _DEFAULT_DEVICE
+    #         )
+    #         loaded_model = torch.load(
+    #             str(model_path), map_location=device, weights_only=False
+    #         )
+    #         if not isinstance(loaded_model, torch.nn.Module):
+    #             raise CompilationError(
+    #                 "TVM compiler expects the input data of type: "
+    #                 f"torch.nn.Module, but got: {type(loaded_model).__name__}" # noqa: E501
+    #             )
+    #         return loaded_model
+    #
+    #     model = model if model else model_func(self.source_model_path)
+    #     wrapped_model = TraceWrapper(model)
+    #     wrapped_model.eval()
+    #
+    #     input_shapes = {
+    #         spec["name"]: spec["shape"] for spec in io_spec["input"]
+    #     }
+    #     if not input_shapes:
+    #         raise ValueError("No shapes in the input specification")
+    #
+    #     shape = input_shapes[list(input_shapes.keys())[0]]
+    #     sample_input = torch.Tensor(
+    #         np.random.uniform(0.0, 250.0, (mul(shape))),
+    #     )
+    #
+    #     sample_input = sample_input.to(device)
+    #
+    #     with torch.no_grad():
+    #         wrapped_model(sample_input)
+    #         model_trace = torch.jit.trace(wrapped_model, sample_input)
+    #         model_trace.eval()
+    #
+    #     return relay.frontend.from_pytorch(
+    #         model_trace,
+    #         # this is a list of input infos where there is a dict
+    #         # constructed from {input_name: (n-dim tuple-shape)}
+    #         # into {input_name: [product_of_the_dimensions]}
+    #         list(
+    #             {
+    #                 list(input_shapes.keys())[0]: [
+    #                     mul(input_shapes[list(input_shapes.keys())[0]])
+    #                 ]
+    #             }.items()
+    #         ),
+    #     )

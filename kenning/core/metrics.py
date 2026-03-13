@@ -342,6 +342,53 @@ def nab_metric(
     return np.floor(output)
 
 
+def z_score_detection(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Perform anomaly detection using z score
+    metric.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, a set of predicted values.
+    y : np.ndarray
+        Ground truth, a set of ground truth values.
+
+    Returns
+    -------
+    float
+        Number of detected anomalies.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch length
+    """
+    if not x.shape == y.shape and x.ndim == 1:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    # Calculate mean and standard deviation of ground truth data
+    m = np.mean(y)
+    std = np.std(y)
+
+    # To avoid division by zero
+    if std == 0:
+        std += 10e-9
+
+    # Calculate z score for every detected samples
+    z_scores = (x - m) / std
+
+    # Values 3 times away from the mean indicates a potential outlier
+    detected_outliers = np.abs(z_scores) >= 3.0
+
+    outliers = np.sum(detected_outliers)
+
+    return float(outliers)
+
+
 def hausdorff_distance_metric(
     x: np.ndarray,
     y: np.ndarray,

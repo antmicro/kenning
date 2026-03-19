@@ -187,7 +187,7 @@ Finally, we can run Kenning with one of the example [scenarios](json-scenarios) 
 
 ```bash
 kenning optimize test report \
-    --cfg kenning-scenarios/renode-zephyr-tflite-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tflite/renode-stm32f746g.yml \
     --measurements results.json \
     --report-path reports/stm32-renode-tflite-magic-wand/report.md \
     --to-html
@@ -234,7 +234,7 @@ When running this, Kenning will:
 * Receive evaluation results and save them under `results.json` (as specified with the `--measurements` CLI option).
 * Generate a report and save it under `reports/stm32-renode-tflite-magic-wand/`
 
-To run evaluation on a physical board (not one simulated in Renode) we would need to set `simulated` to `false` and provide a path to the correct `UART` port with `uart_port` ([example](https://github.com/antmicro/kenning-zephyr-runtime/blob/main/kenning-scenarios/zephyr-tflite-magic-wand-inference.yml)).
+To run evaluation on a physical board (not one simulated in Renode) we would need to set `simulated` to `false` and provide a path to the correct `UART` port with `uart_port` ([example](https://github.com/antmicro/kenning-zephyr-runtime/blob/main/kenning-scenarios/magic-wand-inference/tflite/stm32f746g.yml)).
 
 It is also possible to run a standalone Renode simulation manually and have Kenning connect to the existing simulation.
 
@@ -290,7 +290,7 @@ This example scenario can be ran without first building the `app`:
 
 ```bash
 kenning optimize test report \
-    --cfg kenning-scenarios/renode-zephyr-auto-tflite-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tflite/renode-auto-stm32f746g.yml \
     --measurements results.json \
     --report-path reports/stm32-renode-tflite-magic-wand/report.md \
     --to-html
@@ -306,31 +306,31 @@ Zephelin supports TVM and TFLite.
 
 First, install Zephelin's Python dependencies:
 
-```
+```bash
 pip install -r ../zephelin/requirements.txt
 ```
 
 Then, you need to build Kenning Zephyr Runtime with Zephelin included, by adding extra configuration files.
 
-For tracing with GDB:
-
-```
-west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;tvm_zpl.conf;zpl_gdb.conf"
-```
-
 For tracing with UART:
 
+```bash
+west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_uart.conf"
 ```
-west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;tvm_zpl.conf;zpl_uart.conf"
+
+For tracing with GDB:
+
+```bash
+west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_gdb.conf"
 ```
 
 For GDB tracing, you also need to install GDB with support for multiple architectures. On Linux Debian it can be done with:
 
-```
+```bash
 apt install -y gdb-multiarch
 ```
 
-Finally, you can run optimization, testing and report generation, using a scenario with platform parameter `enable_zephelin` set to `true`:
+Finally, you can run optimization, testing and report generation, using a scenario with platform parameter `enable_zephelin` set to `true` (or `enable_zephelin_gdb` for GDB tracing):
 
 ```yaml
 platform:
@@ -339,7 +339,7 @@ platform:
     name: stm32f746g_disco
     simulated: true
     # this line enables trace collection
-    enable_zephelin: true
+    enable_zephelin_gdb: true
     zephyr_build_path: ./build/
 
 model_wrapper:
@@ -360,15 +360,15 @@ optimizers:
 
 Since we will be running Kenning Zephyr Runtime in a Renode simulation, we need to prepare a `.repl` file:
 
-```
+```bash
 west build -t board-repl
 ```
 
 To include traces in the report, you must specify it with `--report-types` option, as shown below:
 
-```
+```bash
 kenning optimize test report \
-    --cfg kenning-scenarios/zephelin-renode-zephyr-tvm-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tvm/renode-zephelin-gdb-stm32f746g.yml \
     --measurements build/zephelin-zephyr-stm32-tvm-magic-wand.json --verbosity INFO \
     --report-path build/zephelin-zephyr-stm32-tvm.md \
     --report-types zephyr_traces renode_stats performance classification \
@@ -376,6 +376,7 @@ kenning optimize test report \
 ```
 
 A dedicated report section (`zephyr_traces`) will be generated, with an interactive window allowing you to analyze the traces with Zephelin Trace Viewer.
+A [sample Zephyr tracing report](sample-zephyr-tracing-report) has been included in this documentation.
 
 :::{note}
 For more details on trace collection in Zephyr, check [Zephelin documentation](https://antmicro.github.io/zephelin/).
@@ -437,7 +438,7 @@ You can see, that `llext_binary_path` was parameter added to `platform`.
 
 ```bash
 kenning optimize test report \
-    --cfg kenning-scenarios/renode-zephyr-tvm-llext-magic-wand-inference.yml \
+    --cfg kenning-scenarios/magic-wand-inference/tvm/renode-llext-stm32f746g.yml \
     --measurements results.json --verbosity INFO \
     --report-path reports/stm32-renode-tvm-llext-magic-wand/report.md \
     --to-html \

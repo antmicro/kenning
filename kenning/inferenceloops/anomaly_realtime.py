@@ -304,15 +304,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
         return confusion_matrix, f1, acc
 
-    def _compute_time_based_metrics(
-        self, scored_results: List
-    ) -> Tuple[
-        Optional[float],
-        Optional[float],
-        Optional[float],
-        Optional[float],
-        Optional[float],
-    ]:
+    def _compute_time_based_metrics(self, scored_results: List) -> Dict:
         x = []
         y = []
         x_scores = []
@@ -332,25 +324,21 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         x = np.array(x, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
-        hausdorff_metric = (
-            hausdorff_distance_metric(x, y)
-            if Metric.Hausdorff.name.lower() in self.use_metrics
-            else None
-        )
+        output = {}
+
+        if Metric.Hausdorff.name.lower() in self.use_metrics:
+            output[Metric.Hausdorff] = hausdorff_distance_metric(x, y)
 
         # NAB doesn't really care about time, it takes
         # position of the data into account
         x = x[:, 1:].flatten()
         y = y[:, 1:].flatten()
-        
-        msd = (
-            mean_signed_difference(x, y)
-            if Metric.MSD.name.lower() in self.use_metrics
-            else None
-        )
 
-        nab_score = (
-            nab_metric(
+        if Metric.MSD.name.lower() in self.use_metrics:
+            output[Metric.MSD] = mean_signed_difference(x, y)
+
+        if Metric.NAB.name.lower() in self.use_metrics:
+            output[Metric.NAB] = nab_metric(
                 x,
                 y,
                 self.nab_true_positive,
@@ -358,23 +346,14 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
                 self.nab_false_positive,
                 self.nab_false_negative,
             )
-            if Metric.NAB.name.lower() in self.use_metrics
-            else None
-        )
 
-        auc = (
-            sklearn.metrics.roc_auc_score(y, x)
-            if Metric.ROC_AUC.name.lower() in self.use_metrics
-            else None
-        )
+        if Metric.ROC_AUC.name.lower() in self.use_metrics:
+            output[Metric.ROC_AUC] = sklearn.metrics.roc_auc_score(y, x)
 
-        pauc = (
-            prob_auc_metric(y, x, x_scores)
-            if Metric.P_AUC.name.lower() in self.use_metrics
-            else None
-        )
+        if Metric.P_AUC.name.lower() in self.use_metrics:
+            output[Metric.P_AUC] = prob_auc_metric(y, x, x_scores)
 
-        return hausdorff_metric, nab_score, msd, auc, pauc
+        return output
 
     def _compute_metrics(self, measurements: Measurements):
         samples = list(measurements.get_values("samples"))
@@ -416,36 +395,13 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             scored_results
         )
 
-        (
-            hausdorff_distance,
-            nab_score,
-            msd,
-            auc,
-            pauc,
-        ) = self._compute_time_based_metrics(scored_results)
+        time_based_metrics = self._compute_time_based_metrics(scored_results)
 
         measurements += {
             "eval_confusion_matrix": confusion_matrix.tolist(),
         }
 
         self._dataset.classnames = ["normal", "anomaly"]
-
-        time_based_metrics = {}
-
-        if hausdorff_distance is not None:
-            time_based_metrics[Metric.Hausdorff] = hausdorff_distance
-
-        if nab_score is not None:
-            time_based_metrics[Metric.NAB] = nab_score
-
-        if msd is not None:
-            time_based_metrics[Metric.MSD] = msd
-
-        if pauc is not None:
-            time_based_metrics[Metric.P_AUC] = pauc
-
-        if auc is not None:
-            time_based_metrics[Metric.ROC_AUC] = auc
 
         measurements += {
             "anomaly_metrics": {

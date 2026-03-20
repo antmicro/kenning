@@ -594,53 +594,53 @@ class Metric(str, Enum):
     """
 
     ACC = "Accuracy"
-    TOP_5 = "Top-5 accuracy"
-    MEAN_PREC = "Mean precision"
-    MEAN_SENS = "Mean sensitivity"
-    G_MEAN = "G-mean"
-    ROC_AUC = "ROC AUC"
-    ROC_AUC_WEIGHTED = "ROC AUC weighted"
-    ROC_AUC_CLASS = "ROC AUC"
-    P_AUC = "pAUC"
+    ADD = "Average detection delay"
     F1 = "F1 score"
-    F1_WEIGHTED = "F1 score weighted"
     F1_CLASS = "F1 score"
+    F1_WEIGHTED = "F1 score weighted"
+    FAR = "False alarm rate"
+    FDR = "False detection rate"
+    G_MEAN = "G-mean"
+    Hausdorff = "Hausdorff"
     mAP = "mAP"
     MAX_mAP = "max_mAP"
     MAX_mAP_ID = "max_mAP_index"
-    Hausdorff = "Hausdorff"
+    MEAN_PREC = "Mean precision"
+    MEAN_SENS = "Mean sensitivity"
     MSD = "Mean Signed Difference"
     NAB = "NAB scoring"
+    P_AUC = "pAUC"
+    ROC_AUC = "ROC AUC"
+    ROC_AUC_CLASS = "ROC AUC"
+    ROC_AUC_WEIGHTED = "ROC AUC weighted"
+    TOP_5 = "Top-5 accuracy"
     Z_SCORE = "Z score"
-    FDR = "False detection rate"
-    FAR = "False alarm rate"
-    ADD = "Average detection delay"
 
 
 # List of metrics used for classification
 CLASSIFICATION_METRICS = [
     Metric.ACC,
-    Metric.TOP_5,
+    Metric.F1_WEIGHTED,
+    Metric.F1,
+    Metric.G_MEAN,
     Metric.MEAN_PREC,
     Metric.MEAN_SENS,
-    Metric.G_MEAN,
-    Metric.ROC_AUC,
-    Metric.ROC_AUC_WEIGHTED,
-    Metric.F1,
-    Metric.F1_WEIGHTED,
     Metric.P_AUC,
+    Metric.ROC_AUC_WEIGHTED,
+    Metric.ROC_AUC,
+    Metric.TOP_5,
 ]
 
 ANOMALY_DETECTION_METRICS = [
+    Metric.ADD,
+    Metric.FAR,
+    Metric.FDR,
     Metric.Hausdorff,
     Metric.MSD,
     Metric.NAB,
-    Metric.Z_SCORE,
-    Metric.FDR,
-    Metric.FAR,
-    Metric.ADD,
     Metric.P_AUC,
     Metric.ROC_AUC,
+    Metric.Z_SCORE,
 ]
 
 

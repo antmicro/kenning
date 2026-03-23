@@ -248,3 +248,32 @@ class TestTargetUserOverride:
         actual_flags = compiler._get_target_attrs(tostring=False)
 
         assert_compiler_flags([], None, original_flags, actual_flags)
+
+    def test_get_target_attrs_handles_none_platform_attrs(
+        self, dataset: Dataset, tmpfolder: Path
+    ) -> None:
+        compiled_model_path = tmpfolder / "model-mock.tar"
+
+        compiler = TVMCompiler(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            model_framework="tflite",
+        )
+
+        compiler.init()
+        attrs = compiler._get_target_attrs(tostring=False)
+        assert isinstance(attrs, list)
+
+        platform = ZephyrPlatform("max32690evkit/max32690/m4")
+        compiler = TVMCompiler(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            model_framework="tflite",
+        )
+
+        platform.target_attrs = None
+        compiler.read_platform(platform)
+        compiler.init()
+        # should not raise and should return a safe empty value
+        attrs = compiler._get_target_attrs(tostring=False)
+        assert isinstance(attrs, list)

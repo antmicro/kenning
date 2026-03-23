@@ -5,7 +5,7 @@
 """
 Class for easily handling compiler flags in optimizers.
 """
-from typing import List, Union
+from typing import List, Optional, Union
 
 
 class CompilerFlag:
@@ -54,20 +54,20 @@ class CompilerFlag:
 
 
 def merge_compiler_flags(
-    user_flags: List[CompilerFlag | str],
-    default_flags: List[CompilerFlag | str],
+    user_flags: Optional[List[Union[CompilerFlag, str]]],
+    default_flags: Optional[List[Union[CompilerFlag, str]]],
     tostring: bool = False,
-) -> List[CompilerFlag]:
+) -> Union[List[CompilerFlag], str]:
     """
     Merge two lists of compiler flags together.
 
     Parameters
     ----------
-    user_flags: List[CompilerFlag | str]
+    user_flags: Optional[List[Union[CompilerFlag, str]]]
         List of flags set by the user. This takes precedence in
         case of key conflict.
 
-    default_flags: List[CompilerFlag | str]
+    default_flags: Optional[List[Union[CompilerFlag, str]]]
         List of flags default in kenning. In case of missing user flags,
         this serves as the default.
 
@@ -77,11 +77,27 @@ def merge_compiler_flags(
 
     Returns
     -------
-    List[CompilerFlag]
+    Union[List[CompilerFlag], str]
         Merged list of the flags with respect to keys.
+
+    Raises
+    ------
+    TypeError
+        Raised when User Flags is not a list.
     """
+    if user_flags is None:
+        user_flags = []
+    if default_flags is None:
+        default_flags = []
+
+    if not isinstance(user_flags, list):
+        raise TypeError("user_flags must be a list")
+    if not isinstance(default_flags, list):
+        raise TypeError("default_flags must be a list")
+
     # Copy each flag, do not modify original list.
     flags = [CompilerFlag(flag) for flag in user_flags]
+
     for def_flag in default_flags:
         def_flag = CompilerFlag(def_flag)
         if not def_flag.has_same_flag(flags):

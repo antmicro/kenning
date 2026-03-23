@@ -264,7 +264,7 @@ class TVMCompiler(Optimizer):
         self.model_framework = model_framework
 
         self.target = target
-        self.target_attrs = target_attrs
+        self.target_attrs = target_attrs or ""
         self.target_microtvm_board = target_microtvm_board
 
         self.platform_target = None

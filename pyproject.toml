@@ -42,7 +42,7 @@ dependencies = [
     "scipy<1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
-    "kenning[onnx2tf] ; python_version < '3.12'",
+    "kenning[onnx2tf]",
     "polars",
 ]
 
@@ -57,7 +57,7 @@ docs = [
 tensorflow = [
     "kenning[onnx2tf]",
     "tf-keras==2.15.0; python_version<'3.12'",
-    "tf-keras==2.20; python_version=='3.12'",
+    "tf-keras>=2.16.0; python_version=='3.12'",
     "tensorflow_addons; python_version<'3.12'",
     "tensorflow==2.15.0; python_version < '3.12'",
     "tensorflow; python_version == '3.12'",
@@ -109,9 +109,11 @@ tflite = [
 ]
 tvm = [
     "apache-tvm==0.14.dev273; python_version<'3.12'",
+    "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'"
 ]
 tinygrad = [
-    "tinygrad==0.11.0",
+    "tinygrad==0.11.0 ; python_version<'3.12'",
+    "tinygrad>0.11.0 ; python_version>='3.12'",
 ]
 iree = [
     "iree-base-compiler[onnx]==3.6.0; python_version<'3.12'",
@@ -134,6 +136,7 @@ test = [
     "filelock",
     "pexpect",
     "pytest",
+    "pytest-env",
     "pytest-cov",
     "pytest-dependency",
     "pytest-mock",
@@ -194,14 +197,17 @@ llm = [
     "kenning[torch]",
     "auto_gptq; python_version<'3.12'",
     "autoawq==0.2.5; python_version<'3.12'",
+    "torch ; python_version=='3.12'",
+    "autoawq ; python_version=='3.12'",
     "rouge-score",
-    "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization
+    "transformers==4.40.2 ; python_version<'3.12'",  # version fixed for sparsegpt+gptq optimization
+    "transformers ; python_version=='3.12'",  # version fixed for sparsegpt+gptq optimization
     # "vllm; python_version<'3.12'",
 ]
 
 onnx2tf = [
-    "onnx2tf==1.17.5",
-    "onnx>=1.14.0,<=1.17.0",
+    "onnx2tf==1.17.5; python_version < '3.12'",
+    "onnx2tf>1.17.5; python_version == '3.12'",
     "onnxruntime==1.18.1",
     "onnxsim==0.4.33; python_version < '3.12'",
     "onnxsim>=0.4.33; python_version == '3.12'",
@@ -210,7 +216,7 @@ onnx2tf = [
     "tensorflow==2.15.0; python_version < '3.12'",
     "tensorflow; python_version == '3.12'",
     "tf-keras==2.15.0; python_version<'3.12'",
-    "tf-keras==2.20; python_version=='3.12'",
+    "tf-keras>=2.16.0; python_version=='3.12'",
     "ai-edge-litert==1.2.0",
     "psutil==5.9.5",
     "ml_dtypes>=0.2.0,<=0.5.1",
@@ -286,6 +292,7 @@ convention = "numpy"
 "setup.py" = ["D100"]
 "kenning/tests/*" = ["D100", "D101", "D103"]
 
+
 [tool.pytest.ini_options]
 addopts = "-ra --dist=loadgroup --order-dependencies --color=yes --report-log=log.json -vv"
 markers = [
@@ -301,6 +308,10 @@ markers = [
 log_cli = true
 log_level = "DEBUG"
 log_format = "[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s"
+env = [
+    "TF_USE_LEGACY_KERAS=1",
+]
+
 
 [tool.coverage.run]
 branch = true

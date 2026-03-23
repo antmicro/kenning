@@ -103,8 +103,6 @@ class TinygradOptimizer(Optimizer):
         str
             Type of framework that will be used
         """
-        import tinygrad.frontend.onnx
-
         from kenning.modelwrappers.frameworks.tinygrad import TinygradWrapper
 
         if issubclass(type(self.model_wrapper), TinygradWrapper):
@@ -114,7 +112,16 @@ class TinygradOptimizer(Optimizer):
             ) = self.model_wrapper.get_model_structure_info()
             return (model_module_path, modelcls_name, "tinygrad")
         else:
-            return (tinygrad.frontend.onnx.__file__, "OnnxRunner", "onnx")
+            file = None
+            if importlib.metadata.version("tinygrad") >= "0.12.0":
+                import tinygrad.nn.onnx
+
+                file = tinygrad.nn.onnx.__file__
+            else:
+                import tinygrad.frontend.onnx
+
+                file = tinygrad.frontend.onnx.__file__
+            return (file, "OnnxRunner", "onnx")
 
     def compile(
         self,

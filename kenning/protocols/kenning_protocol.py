@@ -542,6 +542,9 @@ class OutgoingTransmission(OutgoingEvent):
               Callback/wait mechanism will be triggered (protocol success),
         """
 
+        NEW = 0
+        CONFIRMED = 1
+        DENIED = 2
         PENDING = 3
 
     State._member_map_.update(ProtocolEvent.State._member_map_)
@@ -636,6 +639,9 @@ class IncomingTransmission(IncomingEvent):
               Callback/wait mechanism will be triggered (protocol success).
         """
 
+        NEW = 0
+        CONFIRMED = 1
+        DENIED = 2
         RECEIVING = 4
 
     State._member_map_.update(ProtocolEvent.State._member_map_)
@@ -738,6 +744,9 @@ class OutgoingRequest(OutgoingEvent):
             Callback/wait mechanism will be triggered (protocol success).
         """
 
+        NEW = 0
+        CONFIRMED = 1
+        DENIED = 2
         PENDING = 4
         SENT = 5
         ACCEPTED = 6
@@ -902,6 +911,9 @@ class IncomingRequest(IncomingEvent):
             message, with the 'LAST' flag set.
         """
 
+        NEW = 0
+        CONFIRMED = 1
+        DENIED = 2
         RECEIVING = 4
 
     State._member_map_.update(ProtocolEvent.State._member_map_)
@@ -980,6 +992,9 @@ class Listen(ProtocolEvent):
             either the IncomingRequest or the IncomingTransmission.
         """
 
+        NEW = 0
+        CONFIRMED = 1
+        DENIED = 2
         LISTENING = 4
         RECEIVING = 5
 

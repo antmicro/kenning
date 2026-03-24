@@ -43,7 +43,7 @@ from kenning.core.platform import Platform
 from kenning.core.runtime import CompatibilityStatus, Runtime
 from kenning.utils.args_manager import get_type, traverse_parents_with_args
 from kenning.utils.class_loader import load_class
-from kenning.utils.logger import KLogger
+from kenning.utils.logger import KLogger, suppress_stderr_cpp
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
 BUDGET_TYPES = ["epochs", "runtime"]
@@ -786,7 +786,7 @@ class AutoPyTorchML(AutoML):
         self.initial_run_num = self._api._backend.get_next_num_run()
 
         try:
-            with self.richlogger:
+            with self.richlogger, suppress_stderr_cpp():
                 self._api.search(
                     X_train=self.X_train,
                     y_train=self.y_train,

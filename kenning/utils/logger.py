@@ -20,7 +20,7 @@ import sys
 import threading
 import urllib.request
 from abc import ABC, abstractmethod
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, contextmanager
 from dataclasses import dataclass
 from io import TextIOBase
 from pathlib import Path
@@ -52,6 +52,20 @@ CUSTOM_LEVEL_STYLES = {
     "verbose": {"color": "cyan"},
     "device": {"color": "magenta"},
 }
+
+@contextmanager
+def suppress_stderr_cpp():
+    """Suppress C++ and Python stderr."""
+    stderr_fd = sys.stderr.fileno()
+    saved_stderr_fd = os.dup(stderr_fd)
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fd, stderr_fd)
+    try:
+        yield
+    finally:
+        os.dup2(saved_stderr_fd, stderr_fd)
+        os.close(devnull_fd)
+        os.close(saved_stderr_fd)
 
 
 class _DuplicateStream(TextIOBase):

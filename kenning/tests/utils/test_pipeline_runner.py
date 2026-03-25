@@ -5,7 +5,7 @@
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -329,15 +329,19 @@ class TestPipelineRunnerRun:
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         platform_mock.needs_protocol = True
-        runner = PipelineRunner(
-            dataset=dataset_mock,
-            model_wrapper=model_mock,
-            runtime=runtime_mock,
-            protocol=protocol_mock,
-            platform=platform_mock,
-        )
 
-        runner.run(run_optimizations=True, run_benchmarks=True)
+        # We have to patch this, because inference loop checks if file exists
+        # and would throw an exception if we returned actual path.
+        with patch.object(Runtime, "get_io_spec_path"):
+            runner = PipelineRunner(
+                dataset=dataset_mock,
+                model_wrapper=model_mock,
+                runtime=runtime_mock,
+                protocol=protocol_mock,
+                platform=platform_mock,
+            )
+
+            runner.run(run_optimizations=True, run_benchmarks=True)
 
         protocol_mock.initialize_client.assert_called_once()
         protocol_mock.upload_io_specification.assert_called_once()
@@ -363,14 +367,18 @@ class TestPipelineRunnerRun:
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         platform_mock.needs_protocol = True
-        runner = PipelineRunner(
-            platform=platform_mock,
-            dataset=dataset_mock,
-            model_wrapper=model_mock,
-            protocol=protocol_mock,
-        )
 
-        runner.run(run_optimizations=True, run_benchmarks=True)
+        # We have to patch this, because inference loop checks if file exists
+        # and would throw an exception if we returned actual path.
+        with patch.object(Runtime, "get_io_spec_path"):
+            runner = PipelineRunner(
+                platform=platform_mock,
+                dataset=dataset_mock,
+                model_wrapper=model_mock,
+                protocol=protocol_mock,
+            )
+
+            runner.run(run_optimizations=True, run_benchmarks=True)
 
     def test_run_local_optimizations(
         self,
@@ -604,6 +612,7 @@ class TestPipelineRunnerRun:
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         runtime_builder_mock.use_llext = False
+
         runner = PipelineRunner(
             dataset=dataset_mock,
             model_wrapper=model_mock,
@@ -637,16 +646,20 @@ class TestPipelineRunnerRun:
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         runtime_builder_mock.use_llext = False
-        runner = PipelineRunner(
-            platform=platform_mock,
-            dataset=dataset_mock,
-            model_wrapper=model_mock,
-            runtime=runtime_mock,
-            protocol=protocol_mock,
-            runtime_builder=runtime_builder_mock,
-        )
 
-        runner.run(run_optimizations=True, run_benchmarks=True)
+        # We have to patch this, because inference loop checks if file exists
+        # and would throw an exception if we returned actual path.
+        with patch.object(Runtime, "get_io_spec_path"):
+            runner = PipelineRunner(
+                platform=platform_mock,
+                dataset=dataset_mock,
+                model_wrapper=model_mock,
+                runtime=runtime_mock,
+                protocol=protocol_mock,
+                runtime_builder=runtime_builder_mock,
+            )
+
+            runner.run(run_optimizations=True, run_benchmarks=True)
 
         runtime_builder_mock.build.assert_called_once()
 
@@ -671,21 +684,25 @@ class TestPipelineRunnerRun:
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         runtime_builder_mock.use_llext = True
-        with TemporaryDirectory() as llext_dir:
-            llext_path = Path(llext_dir) / "runtime.llext"
-            with llext_path.open("wb") as f:
-                f.write(b"12345")
-            runtime_builder_mock.output_path = Path(llext_dir)
-            runner = PipelineRunner(
-                platform=platform_mock,
-                dataset=dataset_mock,
-                model_wrapper=model_mock,
-                runtime=runtime_mock,
-                protocol=protocol_mock,
-                runtime_builder=runtime_builder_mock,
-            )
 
-            runner.run(run_optimizations=True, run_benchmarks=True)
+        # We have to patch this, because inference loop checks if file exists
+        # and would throw an exception if we returned actual path.
+        with patch.object(Runtime, "get_io_spec_path"):
+            with TemporaryDirectory() as llext_dir:
+                llext_path = Path(llext_dir) / "runtime.llext"
+                with llext_path.open("wb") as f:
+                    f.write(b"12345")
+                runtime_builder_mock.output_path = Path(llext_dir)
+                runner = PipelineRunner(
+                    platform=platform_mock,
+                    dataset=dataset_mock,
+                    model_wrapper=model_mock,
+                    runtime=runtime_mock,
+                    protocol=protocol_mock,
+                    runtime_builder=runtime_builder_mock,
+                )
 
-            runtime_builder_mock.build.assert_called_once()
-            protocol_mock.upload_runtime.assert_called_once()
+                runner.run(run_optimizations=True, run_benchmarks=True)
+
+                runtime_builder_mock.build.assert_called_once()
+                protocol_mock.upload_runtime.assert_called_once()

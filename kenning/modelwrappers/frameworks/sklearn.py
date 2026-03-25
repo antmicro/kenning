@@ -7,7 +7,7 @@ Generic ModelWrapper for models from scikit-learn framework.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
@@ -15,6 +15,10 @@ from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.tabular_dataset import TabularDataset
 from kenning.utils.resource_manager import PathOrURI
+
+# We use this data type as default, because of good support for this type in
+# ONNX.
+DEFAULT_SKLEARN_DTYPE = "int64"
 
 
 class SKLearnModelWrapper(ModelWrapper, ABC):
@@ -27,7 +31,7 @@ class SKLearnModelWrapper(ModelWrapper, ABC):
             "argparse_name": "--dtype",
             "description": "Data type used in input/output of the model (eg. float32).",  # noqa: E501
             "type": str,
-            "default": "int16",
+            "default": DEFAULT_SKLEARN_DTYPE,
             "subcommands": [TRAIN],
         },
     }
@@ -40,7 +44,7 @@ class SKLearnModelWrapper(ModelWrapper, ABC):
         dataset: Dataset,
         from_file: bool = False,
         model_name: Optional[str] = None,
-        dtype: str = "int16",
+        dtype: str = DEFAULT_SKLEARN_DTYPE,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.dtype = dtype
@@ -75,15 +79,6 @@ class SKLearnModelWrapper(ModelWrapper, ABC):
     @classmethod
     def get_output_formats(cls) -> List[str]:
         return ["sklearn"]
-
-    def convert_input_to_bytes(self, inputdata: Any) -> bytes:
-        return inputdata.to_bytes(2, byteorder="big")
-
-    def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
-        return [
-            int.from_bytes(outputdata[i : i + 1], 2, byteorder="big")
-            for i in range(0, len(outputdata), 2)
-        ]
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):

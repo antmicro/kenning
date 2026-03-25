@@ -14,7 +14,14 @@ import numpy as np
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset, DatasetIterator
-from kenning.modelwrappers.frameworks.sklearn import SKLearnModelWrapper
+from kenning.datasets.tabular_dataset import (
+    DATA_TYPE as TABULAR_DATASET_DATA_TYPE,
+)
+from kenning.modelwrappers.frameworks.sklearn import (
+    DEFAULT_SKLEARN_DTYPE,
+    SKLearnModelWrapper,
+)
+from kenning.optimizers.emlearn import DECISION_TREE_OUTPUT_DTYPE
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -74,6 +81,15 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
             "nullable": True,
             "subcommands": [TRAIN],
         },
+        "input_values_multiplier": {
+            "argparse_name": "--input-values-multiplier",
+            "description": "An integer, by which all inputs of all data"
+            " samples will be multiplied. This is useful, when converting"
+            " the tree to emlearn (which only supports int16) and the dataset"
+            " operates on small floating point values.",
+            "type": int,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -82,13 +98,14 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         dataset: Dataset,
         from_file: bool = False,
         model_name: Optional[str] = None,
-        dtype: str = "int16",
+        dtype: str = DEFAULT_SKLEARN_DTYPE,
         criterion: str = "gini",
         splitter: str = "best",
         max_depth: Optional[int] = None,
         min_samples_leaf: int = 1,
         min_samples_split: int = 2,
         max_leaf_nodes: Optional[int] = None,
+        input_values_multiplier: int = 1,
     ):
         super().__init__(model_path, dataset, from_file, model_name, dtype)
         self.criterion = criterion
@@ -97,6 +114,7 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         self.min_samples_leaf = min_samples_leaf
         self.min_samples_split = min_samples_split
         self.max_leaf_nodes = max_leaf_nodes
+        self.input_values_multiplier = input_values_multiplier
 
     def _train_for_n_samples(
         self, model: Any, n: int, dataset: DatasetIterator
@@ -123,8 +141,13 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         y = []
         for _ in range(n):
             _x, _y = next(iterator)
-            X.append(np.asarray(_x).flatten().tolist())
-            y.append(np.asarray(_y).flatten().tolist())
+            X.append(
+                (
+                    np.asarray(_x).flatten()
+                    * self._get_input_scale_from_iospec()
+                ).astype(self.dtype)
+            )
+            y.append((np.asarray(_y).flatten()).astype(self.dtype))
         model.fit(X, y)
         return model.score(X, y)
 
@@ -152,7 +175,7 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
                     "shape": [
                         (1, 1, prod(np.asarray(x).shape)),
                     ],
-                    "dtype": self.dtype,
+                    "dtype": TABULAR_DATASET_DATA_TYPE,
                 }
             ],
             "processed_input": [
@@ -160,46 +183,77 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
                     "name": "input_1",
                     "shape": (1, prod(np.asarray(x).shape)),
                     "dtype": self.dtype,
+                    "scale": self.input_values_multiplier,
                 }
             ],
             "output": [
                 {
                     "name": "classification_result",
-                    "shape": (1, prod(np.asarray(y).shape)),
+                    "shape": (prod(np.asarray(y).shape),),
                     "dtype": self.dtype,
                 },
                 {
                     "name": "class_probabilities",
-                    "shape": (prod(np.asarray(y).shape), 1, 2),
+                    "shape": (prod(np.asarray(y).shape), 2),
                     "dtype": self.dtype,
                 },
             ],
         }
+
+    def _get_input_scale_from_iospec(self) -> int:
+        """
+        Get the number by which all dataset input values are multiplied, before
+        being used in the model.
+
+        Returns
+        -------
+        int
+            Multiplier value.
+        """
+        io_spec = self.get_io_specification()
+        return io_spec["processed_input"][0]["scale"]
 
     def _preprocess_input(
         self,
         X: List[Any],
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ) -> List[Any]:
-        X = [np.expand_dims(np.asarray(X).flatten(), axis=0)]
+        X = [
+            np.expand_dims(
+                (
+                    np.asarray(X).flatten()
+                    * self._get_input_scale_from_iospec()
+                ).astype(self.dtype),
+                axis=0,
+            )
+        ]
         return X
 
     def run_inference(self, X: List[Any]) -> List[Any]:
-        y = [self.model.predict(X[0]), self.model.predict_proba(X[0])]
+        input_multiplier = self._get_input_scale_from_iospec()
+        y = [
+            np.asarray(
+                self.model.predict(X[0] * input_multiplier).astype(self.dtype)
+            ),
+            np.asarray(
+                self.model.predict_proba(X[0] * input_multiplier)
+            ).astype(self.dtype),
+        ]
+        # For multi-class classifiers the output comes wrapped in an extra
+        # dimension, that we need to drop
+        if y[0].shape == (1, len(y[1])):
+            y[0] = y[0][0]
         # If the model didn't see all possible values of all outputs during
         # training, shapes of the probability distribution it returns will be
         # invalid. It needs to be corrected.
         for i in range(len(y[1])):
             distribution = y[1][i]
             if distribution.shape == (1, 1):
-                if y[0][0][i] == 1:
-                    y[1][i] = np.asarray(
-                        [[distribution[0][0], 1 - distribution[0][0]]]
-                    )
+                y[1] = np.zeros((len(y[1]), 2))
+                if y[0][i] == 1:
+                    y[1][i] = np.asarray([1.0, 0.0])
                 else:
-                    y[1][i] = np.asarray(
-                        [[1 - distribution[0][0], distribution[0][0]]]
-                    )
+                    y[1][i] = np.asarray([0.0, 1.0])
         return y
 
     def train_model(self):
@@ -209,3 +263,26 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         iter = self.dataset.iter_train()
         score = self._train_for_n_samples(self.model, len(iter), iter)
         KLogger.info(f"Training finished, accuracy: {score}.")
+
+    def convert_input_to_bytes(self, inputdata: Any) -> bytes:
+        bytestream = bytes()
+        for sample in inputdata:
+            bytestream += sample.tobytes()
+        return bytestream
+
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
+        # This is intended for use with a decision tree optimized to emlearn,
+        # which always returns  an int32, no matter what data type the
+        # tree was trained on. If using any other optimizer, which requires
+        # serialization - this will need to be changed.
+        size = 4
+        return [
+            np.asarray(
+                [
+                    int.from_bytes(
+                        outputdata[i : i + size], byteorder="little"
+                    )
+                    for i in range(0, len(outputdata), size)
+                ]
+            ).astype(DECISION_TREE_OUTPUT_DTYPE)
+        ]

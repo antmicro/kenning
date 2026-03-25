@@ -154,10 +154,10 @@ class SequentialInferenceLoop(InferenceLoop, ABC):
     def _run_loop(self, measurements: Measurements):
         with LoggerProgressBar() as logger_progress_bar:
             iterator = self._dataset.iter_test()
-            for X, y in tqdm(
+            if self.inference_limit:
                 iterator.cull(self.inference_limit)
-                if self.inference_limit
-                else iterator,
+            for X, y in tqdm(
+                iterator,
                 **logger_progress_bar.kwargs,
             ):
                 # TODO: should_cancel?

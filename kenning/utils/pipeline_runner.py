@@ -750,6 +750,15 @@ class PipelineRunner(object):
         self, model_path: Optional[str] = None, remote: bool = False
     ):
         if self.inference_loop:
+            from kenning.inferenceloops.remote_sequential import (
+                RemoteSequentialInferenceLoop,
+            )
+
+            if (
+                type(self.inference_loop) is RemoteSequentialInferenceLoop
+                and not self.inference_loop._model_path
+            ):
+                self.inference_loop._model_path = Path(model_path)
             return self.inference_loop
 
         generic_params = {
@@ -839,6 +848,8 @@ class PipelineRunner(object):
         for previous_block, next_block in zip(chain, chain[1:]):
             input_format = previous_block.get_framework()
             output_format = next_block.get_framework()
+            if input_format in next_block.inputtypes:
+                continue
             if not converter_registry.find_all_paths(
                 input_format, output_format
             ):

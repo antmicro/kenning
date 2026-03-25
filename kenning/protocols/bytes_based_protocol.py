@@ -459,33 +459,38 @@ class BytesBasedProtocol(Protocol, ABC):
             self.request_blocking(MessageType.DATA, None, data),
         )
 
-    def upload_model(self, path: Path) -> bool:
+    def upload_model(self, path: Optional[Path]) -> bool:
         KLogger.debug("Uploading model")
-        with open(path, "rb") as modfile:
-            data = modfile.read()
+        data = bytes()
+        if path is not None:
+            with open(path, "rb") as modfile:
+                data = modfile.read()
         return self.check_status(
             ServerStatus(ServerAction.UPLOADING_MODEL),
             self.request_blocking(MessageType.MODEL, None, data),
         )
 
-    def upload_runtime(self, path: Path) -> bool:
+    def upload_runtime(self, path: Optional[Path]) -> bool:
         KLogger.debug("Uploading runtime")
-
-        with open(path, "rb") as llext_file:
-            data = llext_file.read()
-            # Since runtime buffer may be dynamically allocated on the target
-            # platform, we place a 4-byte size field at the beginning of the
-            # payload.
-            payload = len(data).to_bytes(4, "little") + data
+        payload = bytes()
+        if path is not None:
+            with open(path, "rb") as llext_file:
+                data = llext_file.read()
+                # Since runtime buffer may be dynamically allocated on the
+                # target platform, we place a 4-byte size field at the
+                # beginning of the payload.
+                payload = len(data).to_bytes(4, "little") + data
         return self.check_status(
             ServerStatus(ServerAction.UPLOADING_RUNTIME),
             self.request_blocking(MessageType.RUNTIME, None, payload),
         )
 
-    def upload_io_specification(self, path: Path) -> bool:
+    def upload_io_specification(self, path: Optional[Path]) -> bool:
         KLogger.debug("Uploading io specification")
-        with open(path, "rb") as detfile:
-            data = detfile.read()
+        data = bytes()
+        if path is not None:
+            with open(path, "rb") as detfile:
+                data = detfile.read()
         return self.check_status(
             ServerStatus(ServerAction.UPLOADING_IOSPEC),
             self.request_blocking(MessageType.IO_SPEC, None, data),
@@ -536,12 +541,14 @@ class BytesBasedProtocol(Protocol, ABC):
 
     def request_optimization(
         self,
-        model_path: Path,
+        model_path: Optional[Path],
         get_time_func: Callable[[], float] = time.perf_counter,
     ) -> Tuple[bool, Optional[bytes]]:
         KLogger.debug("Requesting model optimization")
-        with open(model_path, "rb") as model_f:
-            model = model_f.read()
+        model = bytes()
+        if model_path is not None:
+            with open(model_path, "rb") as model_f:
+                model = model_f.read()
         self.request_blocking(MessageType.UNOPTIMIZED_MODEL, None, model)
         compiled_model_data, flags = timemeasurements(
             "protocol_model_optimization", get_time_func

@@ -240,12 +240,14 @@ class UARTProtocol(KenningProtocol):
             "Kenning Server cannot use UART (the protocol is client-side only)"
         )
 
-    def upload_io_specification(self, path: Path) -> bool:
+    def upload_io_specification(self, path: Optional[Path]) -> bool:
         KLogger.debug("Uploading io specification")
-        with open(path, "rb") as io_spec_file:
-            io_spec = json.load(io_spec_file)
+        data = bytes()
+        if path is not None:
+            with open(path, "rb") as io_spec_file:
+                io_spec = json.load(io_spec_file)
 
-        data = IOInterface.serialize_io_specification_for_uart(io_spec)
+            data = IOInterface.serialize_io_specification_for_uart(io_spec)
 
         return self.check_status(
             ServerStatus(ServerAction.UPLOADING_IOSPEC),

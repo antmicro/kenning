@@ -356,7 +356,7 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
-    def upload_model(self, path: Path) -> bool:
+    def upload_model(self, path: Optional[Path]) -> bool:
         """
         Uploads the model to the target device.
 
@@ -368,8 +368,8 @@ class Protocol(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        path : Path
-            Path to the model.
+        path : Optional[Path]
+            Path to the model. If None, empty bytestream will be sent.
 
         Returns
         -------
@@ -379,7 +379,7 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
-    def upload_runtime(self, path: Path) -> bool:
+    def upload_runtime(self, path: Optional[Path]) -> bool:
         """
         Uploads the runtime to the target device.
 
@@ -391,8 +391,8 @@ class Protocol(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        path : Path
-            Path to the runtime binary.
+        path : Optional[Path]
+            Path to the runtime binary. If None, empty bytestream will be sent.
 
         Returns
         -------
@@ -402,7 +402,7 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
-    def upload_io_specification(self, path: Path) -> bool:
+    def upload_io_specification(self, path: Optional[Path]) -> bool:
         """
         Uploads input/output specification to the target device.
 
@@ -414,8 +414,8 @@ class Protocol(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        path : Path
-            Path to the json file.
+        path : Optional[Path]
+            Path to the json file. If None, empty bytestream will be sent.
 
         Returns
         -------
@@ -506,7 +506,7 @@ class Protocol(ArgumentsHandler, ABC):
     @abstractmethod
     def request_optimization(
         self,
-        model_path: Path,
+        model_path: Optional[Path],
         get_time_func: Callable[[], float] = time.perf_counter,
     ) -> Tuple[bool, Optional[bytes]]:
         """
@@ -514,8 +514,9 @@ class Protocol(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        model_path : Path
-            Path to the model for optimization.
+        model_path : Optional[Path]
+            Path to the model for optimization. If None, empty bytestream will
+            be sent.
         get_time_func : Callable[[], float]
             Function that returns current timestamp.
 

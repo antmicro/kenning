@@ -210,13 +210,13 @@ class ROS2Protocol(Protocol):
         KLogger.debug("Successfully initialized client")
         return True
 
-    def upload_io_specification(self, path: Path) -> bool:
+    def upload_io_specification(self, path: Optional[Path]) -> bool:
         KLogger.warning(
             "IO specification is not supported in ROS2 protocol. " "Skipping."
         )
         return True
 
-    def upload_model(self, path: Path) -> bool:
+    def upload_model(self, path: Optional[Path]) -> bool:
         KLogger.debug("Uploading model")
         if self.model_service is None:
             KLogger.error("Model service is not initialized")
@@ -383,7 +383,7 @@ class ROS2Protocol(Protocol):
 
     def request_optimization(
         self,
-        model_path: Path,
+        model_path: Optional[Path],
         get_time_func: Callable[[], float] = time.perf_counter,
     ) -> Tuple[bool, Optional[bytes]]:
         raise NotSupportedError(
@@ -395,7 +395,7 @@ class ROS2Protocol(Protocol):
             "ROS2 protocol does not support upload opimizers."
         )
 
-    def upload_runtime(self, path: Path) -> bool:
+    def upload_runtime(self, path: Optional[Path]) -> bool:
         raise NotSupportedError(
             "ROS2 protocol does not support upload runtime."
         )

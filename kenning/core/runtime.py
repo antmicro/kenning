@@ -440,7 +440,8 @@ class Runtime(ArgumentsHandler, ABC):
         KLogger.info("Input/Output specification loaded")
         return True
 
-    def get_io_spec_path(self, model_path: PathOrURI) -> Path:
+    @staticmethod
+    def get_io_spec_path(model_path: PathOrURI) -> Path:
         """
         Gets path to a input/output specification file which is
         `model_path` and `.json` concatenated.

@@ -232,8 +232,14 @@ sklearn = [
     "skl2onnx",
 ]
 
+emlearn = [
+    "emlearn",
+    "kenning[sklearn]",
+    "jinja2",
+]
+
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch,sklearn]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch,sklearn,emlearn]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

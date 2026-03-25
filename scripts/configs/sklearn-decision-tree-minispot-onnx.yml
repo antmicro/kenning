@@ -2,7 +2,7 @@ model_wrapper:
   type: SKLearnGenericDecisionTreeClassifier
   parameters:
     model_path: ./model.gz
-    dtype: float64
+    dtype: float32
 dataset:
   type: TabularDataset
   parameters:
@@ -12,6 +12,8 @@ dataset:
     col_y: anomaly
     shuffle_data: False
     download_dataset: True
+    # Decision tree does not need classes split into "neurons" - one column for classes is fine
+    expand_classes: False
 optimizers:
 - type: ONNXCompiler
   parameters:

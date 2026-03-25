@@ -28,10 +28,20 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
     arguments_structure = {
         "model_path": {
             "argparse_name": "--model-path",
-            "description": "Model path for remote sequential inference loop",
+            "description": "Model path for remote sequential inference loop. "
+            " If not provided, will be deduced and injected.",
             "type": str,
-            "required": True,
-        }
+            "nullable": True,
+            "default": None,
+        },
+        "skip_model_sending": {
+            "argparse_name": "--skip-model-sending",
+            "description": "If set to true, an empty buffer (buffer of size 0)"
+            " will be sent to device, instead of the model. Useful for tools "
+            " where model is pre-compiled into the runtime (like emlearn).",
+            "type": bool,
+            "default": False,
+        },
     }
 
     def __init__(
@@ -42,8 +52,9 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
         platform: Optional[Platform] = None,
         protocol: Optional[Protocol] = None,
         runtime: Optional[Runtime] = None,
-        model_path: str = "",
+        model_path: Optional[str] = None,
         inference_limit: Optional[int] = None,
+        skip_model_sending: bool = False,
     ):
         super().__init__(
             dataset,
@@ -54,16 +65,20 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
             runtime,
             inference_limit,
         )
-
-        self._model_path = Path(model_path)
+        self.skip_model_sending = skip_model_sending
+        self._model_path = Path(model_path) if model_path else None
 
     def _prepare(self):
-        compiled_model_path = None
+        compiled_model_path = self._model_path
+        spec_path = Runtime.get_io_spec_path(self._model_path)
+        if not spec_path.exists():
+            KLogger.error("No Input/Output specification found")
+            raise FileNotFoundError("IO specification not found")
+        check_request(
+            self._protocol.upload_io_specification(spec_path),
+            "upload io spec",
+        )
         if self._runtime is not None:
-            spec_path = self._runtime.get_io_spec_path(self._model_path)
-            if not spec_path.exists():
-                KLogger.error("No Input/Output specification found")
-                raise FileNotFoundError("IO specification not found")
             if (
                 ram_kb := self._runtime.get_available_ram(self._platform)
             ) and (
@@ -76,20 +91,16 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
                 raise ModelTooLargeError(
                     f"Model too large ({model_kb}KB > {ram_kb}KB)"
                 )
-
-            check_request(
-                self._protocol.upload_io_specification(spec_path),
-                "upload io spec",
-            )
-
             compiled_model_path = (
                 self._runtime.preprocess_model_to_upload(self._model_path)
                 if self._model_path is not None
                 else None
             )
-
         check_request(
-            self._protocol.upload_model(compiled_model_path), "upload model"
+            self._protocol.upload_model(
+                None if self.skip_model_sending else compiled_model_path
+            ),
+            "upload model",
         )
 
     def _cleanup(self):

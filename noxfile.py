@@ -6,6 +6,7 @@ from glob import glob
 from pathlib import Path
 
 import nox
+from nox_uv import session
 
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
@@ -16,6 +17,7 @@ PYTEST_EXPLICIT_DOWNLOAD = (
 KENNING_DEPS_DIR = Path("kenning-deps").resolve()
 
 nox.options.sessions = ["run_pytest", "run_gallery_tests"]
+nox.options.default_venv_backend = "uv"
 
 
 def _prepare_pyrenode(session: nox.Session):
@@ -45,52 +47,6 @@ def _prepare_pyrenode(session: nox.Session):
 
         session.log(f"Using Renode from: '{renode_bin}'.")
 
-
-def _prepare_pip_params(session: nox.Session, device: str):
-    """
-    Installs Kenning with all dependencies.
-    """
-    optional_dependencies = [
-        "docs",
-        "tensorflow",
-        "torch",
-        "mxnet",
-        "object_detection",
-        "speech_to_text",
-        "tflite",
-        "tvm",
-        "iree",
-        "tinygrad",
-        "onnxruntime",
-        "pose_estimation",
-        "test",
-        "real_time_visualization",
-        "pipeline_manager",
-        "reports",
-        "uart",
-        "renode",
-        "zephyr",
-        "nni",
-        "ros2",
-        "albumentations",
-        "llm",
-        "anomaly_detection",
-        "auto_pytorch",
-    ]
-
-    extra_indices = []
-
-    if device == "any":
-        optional_dependencies.append("nvidia_perf")
-
-    if device == "cpu":
-        extra_indices.append("https://download.pytorch.org/whl/cpu")
-
-    deps_str = ",".join(optional_dependencies)
-    indices_strs = [f"--extra-index-url={url}" for url in extra_indices]
-    return [*indices_strs, f".[{deps_str}]"]
-
-
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
@@ -115,56 +71,25 @@ def _fix_name(name):
     return "-".join(params)
 
 
-def _prepare_kenning(session: nox.Session, device):
-    if not PYTEST_EXPLICIT_DOWNLOAD:
-        pip_params = _prepare_pip_params(session, device)
-        session.install(*pip_params)
-        return
-
-    for path in KENNING_DEPS_DIR.glob("*"):
-        path = Path(path)
-        name, ver, *params = path.name.split("-")
-
-        if session.python == ver and device in params:
-            wheels = path.glob("*")
-            deps = []
-            for dep in wheels:
-                # TODO pip >= 24 does not allow ".tip" suffix present in
-                # sphinx_immaterial
-                if (
-                    "sphinx_immaterial-0.0.post1.tip-py3-none-any.whl"
-                    == dep.name
-                ):
-                    newpath = (
-                        dep.parent
-                        / "sphinx_immaterial-0.0.post1-py3-none-any.whl"
-                    )
-                    dep.rename(newpath)
-                    dep = newpath
-                deps.append(dep)
-            session.install("--no-deps", ".", *deps)
-            return
-
-
-@nox.session(python=PYTHON_VERSIONS)
+@session(python=PYTHON_VERSIONS, uv_sync_locked=False)
 @nox.parametrize("device", ["cpu", "any"])
 def get_deps(session: nox.Session, device):
     """
     Downloads Kenning dependencies.
     """
-    pip_params = _prepare_pip_params(session, device)
     name = _fix_name(session.name)
     deps_path = KENNING_DEPS_DIR / name
-    session.run("pip", "download", f"--dest={deps_path}", *pip_params)
+    session.run(
+        "uv", "tool", "install", ".[all]", env={"UV_TOOL_DIR": deps_path}
+    )
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@session(python=PYTHON_VERSIONS, uv_all_extras=True, uv_sync_locked=False)
 @nox.parametrize("device", ["cpu", "any"])
 def run_pytest(session: nox.Session, device):
     """
     Install Kenning with all dependencies and run pytest.
     """
-    _prepare_kenning(session, device)
     _prepare_pyrenode(session)
 
     # Build cython extensions in-place
@@ -174,7 +99,9 @@ def run_pytest(session: nox.Session, device):
 
     requirements_path = Path("requirements") / f"{name}.txt"
     requirements_path.parent.mkdir(exist_ok=True)
-    requirements_path.write_text(session.run("pip", "freeze", silent=True))
+    requirements_path.write_text(
+        session.run("uv", "pip", "freeze", silent=True)
+    )
 
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
@@ -196,14 +123,16 @@ def run_pytest(session: nox.Session, device):
     )
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@session(
+    python=PYTHON_VERSIONS,
+    uv_extras=["test", "pipeline_manager"],
+    uv_sync_locked=False,
+)
 @nox.parametrize("specification", ["cpu", "gpu", "ros", "all"])
 def run_gallery_tests(session: nox.Session, specification):
     """
     Install Kenning with minimal dependencies and run gallery tests.
     """
-    session.install(".[test,pipeline_manager]")
-
     name = _fix_name(session.name)
 
     pattern_md = (
@@ -241,14 +170,22 @@ def run_gallery_tests(session: nox.Session, specification):
     )
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@session(
+    python=PYTHON_VERSIONS,
+    uv_extras=[
+        "test",
+        "pipeline_manager",
+        "tvm",
+        "tensorflow",
+        "reports",
+        "renode",
+    ],
+    uv_sync_locked=False,
+)
 def test_generate_platforms(session: nox.Session):
     """
     Install Kenning with all dependencies and run pytest.
     """
-    session.install(".[test,pipeline_manager]")
-    session.install(".[tvm,tensorflow,reports,renode]")
-
     name = _fix_name(session.name)
 
     report_path = Path("platform-tests-reports") / f"{name}.json"

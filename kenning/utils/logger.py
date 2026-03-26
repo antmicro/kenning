@@ -20,7 +20,7 @@ import sys
 import threading
 import urllib.request
 from abc import ABC, abstractmethod
-from contextlib import redirect_stdout, contextmanager
+from contextlib import contextmanager, redirect_stdout
 from dataclasses import dataclass
 from io import TextIOBase
 from pathlib import Path
@@ -52,6 +52,7 @@ CUSTOM_LEVEL_STYLES = {
     "verbose": {"color": "cyan"},
     "device": {"color": "magenta"},
 }
+
 
 @contextmanager
 def suppress_stderr_cpp():
@@ -724,9 +725,6 @@ class RichStatus:
             TextColumn("[bold cyan]{task.description}"),
             BarColumn(bar_width=None),
             TaskProgressColumn(),
-            # TextColumn()
-            # TextColumn("{task.completed:>2.0f}/{task.total:>2.0f}"),
-            # TextColumn("{task.percentage:>3.0f}%"),
             TimeRemainingColumn(),
             console=self.console,
             redirect_stdout=True,
@@ -821,7 +819,7 @@ class RichStatus:
                 self.layout,
                 console=self.console,
                 refresh_per_second=self.refresh_per_second,
-                transient=False,
+                transient=True,
             )
             self.live.__enter__()
         except Exception as e:
@@ -873,8 +871,8 @@ class RichStatus:
         if new_table:
             with self.state_lock:
                 self.extra_info = new_table
+
         # update live only if present
-        KLogger.info(f"Update live only if present. Live = {self.live}")
         if self.live is not None:
             try:
                 self.live.update(self._make_layout(), refresh=True)

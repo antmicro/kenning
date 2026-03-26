@@ -556,6 +556,11 @@ class AutoPyTorchML(AutoML):
             "type": int,
             "default": cpu_count() // 2,
         },
+        "show_progress_bar": {
+            "description": "Show the training and search progress bars",
+            "type": bool,
+            "default": True,
+        },
     }
 
     def __init__(
@@ -581,6 +586,7 @@ class AutoPyTorchML(AutoML):
         all_supported_metrics: bool = True,
         use_cuda: bool = False,
         data_loader_workers: int = cpu_count() // 2,
+        show_progress_bar: bool = True,
     ):
         """
         Prepares the AutoML object.
@@ -638,6 +644,8 @@ class AutoPyTorchML(AutoML):
             Whether to use CUDA-compatible accelerator.
         data_loader_workers : int
             The number of workers to use for data loaders.
+        show_progress_bar : bool
+            Show the training and search progress bars.
         """
         from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
@@ -697,23 +705,24 @@ class AutoPyTorchML(AutoML):
         self.best_configs: List[Path] = []
 
         self.time_limit = time_limit
-        self.richlogger = AutoMLRichStatus(keep_history=True)
+        self.richlogger = AutoMLRichStatus(
+            enable_live=show_progress_bar,
+            keep_history=True,
+        )
 
         training_progress_bar = self.richlogger.add_progress_bar(
-            "Total Training Time",
+            "Total Training Progress",
             float(time_limit * 60),
         )
 
         train_epoch_progress_bar = self.richlogger.add_progress_bar(
             "Training",
             None,
-            # 30,  # Dummy value. This gets replaced later.
         )
 
         eval_epoch_progress_bar = self.richlogger.add_progress_bar(
             "Validation",
             None,
-            # 30,  # Dummy value. This gets replaced later.
         )
 
         self.training_progress_tracker = RichTrainingProgressTracker(
@@ -785,24 +794,32 @@ class AutoPyTorchML(AutoML):
         )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
+        def _start_search():
+            self._api.search(
+                X_train=self.X_train,
+                y_train=self.y_train,
+                X_test=self.X_test,
+                y_test=self.y_test,
+                optimize_metric=self.optimize_metric,
+                total_walltime_limit=self.time_limit * 60,
+                func_eval_time_limit_secs=self.max_evaluation_time * 60,
+                memory_limit=self.max_memory_usage,
+                budget_type=self.budget_type,
+                min_budget=self.min_budget,
+                max_budget=self.max_budget,
+                # Disable non NN-based methods
+                enable_traditional_pipeline=False,
+                all_supported_metrics=self.all_supported_metrics,
+            )
+
         try:
-            with self.richlogger, suppress_stderr_cpp():
-                self._api.search(
-                    X_train=self.X_train,
-                    y_train=self.y_train,
-                    X_test=self.X_test,
-                    y_test=self.y_test,
-                    optimize_metric=self.optimize_metric,
-                    total_walltime_limit=self.time_limit * 60,
-                    func_eval_time_limit_secs=self.max_evaluation_time * 60,
-                    memory_limit=self.max_memory_usage,
-                    budget_type=self.budget_type,
-                    min_budget=self.min_budget,
-                    max_budget=self.max_budget,
-                    # Disable non NN-based methods
-                    enable_traditional_pipeline=False,
-                    all_supported_metrics=self.all_supported_metrics,
-                )
+            if self.richlogger.enable_live:
+                with self.richlogger, suppress_stderr_cpp():
+                    _start_search()
+            else:
+                with self.richlogger:
+                    _start_search()
+
         except ValueError as e:
             if "No valid model" in str(e):
                 KLogger.error(str(e))

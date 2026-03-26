@@ -21,7 +21,7 @@ from rich.progress import Progress
 from rich.table import Table
 from smac.utils.constants import MAXINT
 
-from kenning.utils.logger import RichStatus
+from kenning.utils.logger import KLogger, RichStatus
 
 
 class AutoMLRichStatus(RichStatus):
@@ -231,6 +231,20 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
             self.richlogger.best_values = metrics
 
         self.richlogger.current_values = metrics
+
+        KLogger.info(
+            (
+                f"AutoML Iteration {self.iters} on {model} "
+                f"(time passed: {time_passed:.3f}s, "
+                f"cost: {cost:.3f})"
+            )
+        )
+
+        if not self.richlogger.enable_live:
+            for k, v in metrics.items():
+                vfmt = self.richlogger._fmt_table_entry(v)
+                KLogger.info(f"- {k} = {vfmt}")
+
         self.richlogger.update_table()
 
         self.progress_bar.advance(amount=time_passed)

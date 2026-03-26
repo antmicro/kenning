@@ -15,6 +15,8 @@ from sklearn import metrics
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 
+DATA_TYPE = "float64"
+
 
 class TabularDataset(Dataset):
     """

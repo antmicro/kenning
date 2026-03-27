@@ -6,10 +6,15 @@
 Module containing converters for model formats and optimizers.
 """
 
+import os
+
 from kenning.core.converter import ModelConverter
 from kenning.utils.class_loader import get_all_subclasses
 
 from .converter_registry import ConverterRegistry
+
+# needed for python 3.12 compatibility
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 converters = get_all_subclasses("kenning.converters", ModelConverter)
 converter_registry = ConverterRegistry()

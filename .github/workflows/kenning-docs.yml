@@ -80,7 +80,7 @@ jobs:
           ./scripts/zephyr-automl-report.sh
           cp $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/workspace/automl-results/vae.0.tflite $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/vae.tflite
           cp $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/workspace/automl-results/vae.0.tflite.json $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/vae.tflite.json
-          uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
+          pip3 install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
           ./scripts/renode-zephelin-tflite-anomaly-detection-vae.sh vae.tflite kenning:///datasets/anomaly_detection/cats_nano.csv $DOCS_DIR/source/generated/sample-zephyr-tracing.md
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

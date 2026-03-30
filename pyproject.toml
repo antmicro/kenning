@@ -64,6 +64,7 @@ tensorflow = [
     "tensorflow_model_optimization",
     "h5py",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
+    "tf2onnx",
 ]
 torch = [
     "onnx2torch",
@@ -116,14 +117,10 @@ tinygrad = [
     "tinygrad>0.11.0 ; python_version>='3.12'",
 ]
 iree = [
-    "iree-base-compiler[onnx]==3.6.0; python_version<'3.12'",
-    "iree-base-runtime==3.6.0; python_version<'3.12'",
-    "iree-tools-tf==20250718.1326; python_version<'3.12'",
-    "iree-tools-tflite==20250718.1326; python_version<'3.12'",
-    "iree-compiler; python_version=='3.12'",
-    "iree-runtime; python_version=='3.12'",
-    "iree-tools-tf; python_version=='3.12'",
-    "iree-tools-tflite; python_version=='3.12'",
+    "iree-base-compiler[onnx]==3.6.0",
+    "iree-base-runtime==3.6.0",
+    "iree-tools-tf==20250718.1326",
+    "iree-tools-tflite==20250718.1326",
     "tf2onnx",
 ]
 onnxruntime = [

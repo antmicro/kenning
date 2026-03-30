@@ -7,11 +7,8 @@ Module implements loggers for autopytorch progress tracking.
 """
 
 import time
-from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import torch
 from autoPyTorch.utils.progress_tracker import (
     EpochTracker,
@@ -32,7 +29,6 @@ class AutoMLRichStatus(RichStatus):
     def __init__(
         self,
         enable_live: bool = True,
-        keep_history: bool = True,
         exclude_metrics: List[str] = [],
     ) -> None:
         """
@@ -42,59 +38,14 @@ class AutoMLRichStatus(RichStatus):
         ----------
         enable_live: bool
             If False, live rendering is disabled (headless mode).
-        keep_history: bool
-            If True, will keep track of all the table updates over
-            the duration of the search.
         exclude_metrics: List[str]
             The metrics that will be excluded in the table and final
             CSV report.
         """
         self.current_values = {}
         self.best_values = {}
-        self.keep_history = keep_history
-        self.history = []
         self.exclude_metrics = exclude_metrics
         super().__init__(enable_live=enable_live)
-
-    def _log_current_values(self) -> None:
-        """
-        Store a snapshot of `current_values` into history.
-        """
-        if not self.keep_history:
-            return
-
-        with self.state_lock:
-            snapshot = dict(self.current_values)
-        snapshot["timestamp"] = datetime.utcnow()
-        self.history.append(snapshot)
-
-    def get_history_df(self) -> pd.DataFrame:
-        """
-        Return the logged history as a pandas DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            The pandas Dataframe that contains the history.
-        """
-        if not self.history:
-            return pd.DataFrame()
-        return pd.DataFrame(self.history)
-
-    def save_history_csv(self, path: Path) -> None:
-        """
-        Save logged history to CSV file.
-
-        Parameters
-        ----------
-        path: Path
-            Path to save the CSV file.
-        """
-        df = self.get_history_df()
-        if df.empty:
-            return
-        path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(path, index=True)
 
     def _make_table(self) -> Table:
         """
@@ -130,7 +81,6 @@ class AutoMLRichStatus(RichStatus):
         if new_table:
             with self.state_lock:
                 self.current_values = new_table
-        self._log_current_values()
         super().update_table(new_table)
 
 

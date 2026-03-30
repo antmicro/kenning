@@ -116,6 +116,7 @@ class AutoMLRunner(object):
 
         out_dir = self.autoML.output_directory
         # Dump statistics from the run
+        KLogger.debug(f"Dumping to {out_dir / AutoML.STATS_FILE_NAME}")
         with (out_dir / AutoML.STATS_FILE_NAME).open("w") as fd:
             json.dump(stats, fd)
 

@@ -9,6 +9,7 @@ Provides runner for AutoML flow.
 import argparse
 import json
 from copy import deepcopy
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -23,6 +24,18 @@ from kenning.core.automl import AutoML
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import ConfigKey, objs_from_json
 from kenning.utils.logger import KLogger
+
+
+class AutoMLJSONEncoder(json.JSONEncoder):
+    """
+    Class that handles JSON encoding of types
+    coming from AutoPyTorch.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, Enum):
+            return {"__enum__": f"{obj.__class__.__name__}.{obj.name}"}
+        return super().default(obj)
 
 
 class AutoMLRunner(object):
@@ -116,9 +129,8 @@ class AutoMLRunner(object):
 
         out_dir = self.autoML.output_directory
         # Dump statistics from the run
-        KLogger.debug(f"Dumping to {out_dir / AutoML.STATS_FILE_NAME}")
         with (out_dir / AutoML.STATS_FILE_NAME).open("w") as fd:
-            json.dump(stats, fd)
+            json.dump(stats, fd, cls=AutoMLJSONEncoder)
 
         # Get best models and prepare their configurations
         for i, conf in enumerate(self.autoML.get_best_configs()):

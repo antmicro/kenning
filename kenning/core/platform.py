@@ -25,7 +25,6 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 
-
 class Platform(ArgumentsHandler, ABC):
     """
     Wraps the platform that is being evaluated. This class provides methods to
@@ -75,7 +74,10 @@ class Platform(ArgumentsHandler, ABC):
         self.platforms_definitions = platforms_definitions
         if self.platforms_definitions is None:
             with path(platforms, "platforms.yml") as platforms_path:
-                self.platforms_definitions = [platforms_path]
+                self.platforms_definitions = [
+                    platforms_path,
+                    ResourceURI("kenning:///platforms/platforms.yml"),
+                ]
         self.read_data_from_platforms_yaml()
         # Parameters to be set by `PipelineRunner`
         self.last_optimizer = None

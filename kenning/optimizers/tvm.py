@@ -16,9 +16,7 @@ import tvm.relay as relay
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import (
-    CompilationError,
-)
+from kenning.core.exceptions import CompilationError, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     Optimizer,
@@ -539,6 +537,18 @@ class TVMCompiler(Optimizer):
 
         io_spec_processed = check_io_spec(io_spec)
         input_type = self.get_input_type(input_model_path)
+
+        if self.target_microtvm_board and (
+            self.model_framework == "keras" or input_type == "keras"
+        ):
+            raise NotSupportedError(
+                "Compilation of keras models to microTVM is currently"
+                " unsupported, because versions of the 'keras' package"
+                " that are compatible with microTVM (<=2.15.0) cannot be"
+                " installed with Kenning on Python 3.12. Steps are"
+                " being taken to address the issue and reinstate"
+                " support for that conversion."
+            )
 
         model_cls = self.get_model_class()
 

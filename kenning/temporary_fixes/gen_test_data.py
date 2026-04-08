@@ -6,21 +6,25 @@
 Generate test data for onnx2tf calibration.
 This script is meant to be run from the terminal for dev
 purposes.
-"""
 
+The images are downloaded using the script `downloader.py` as
+instructed on this page:
+https://storage.googleapis.com/openimages/web/download_v7.html.
+"""
+import argparse
+from pathlib import Path
 
 if __name__ == "__main__":
     import numpy as np
-    import PIL
-    from datasets import load_dataset
+    from PIL import Image
 
-    def preprocess_img(img: PIL.Image.Image) -> np.ndarray:
+    def preprocess_img(img: Image.Image) -> np.ndarray:
         """
         Preprocess the image to retain shape for calibration.
 
         Arguments
         ---------
-        img: PIL.Image.Image
+        img: Image.Image
             The PIL image.
 
         Returns
@@ -28,17 +32,50 @@ if __name__ == "__main__":
         np.ndarray
             The numpy array representation of the image.
         """
+        img = img.convert("RGB")
         img = img.crop((0, 0, 128, 128))
-        return np.array(img).reshape(1, 128, 128, 3)
+        return np.array(img).astype(np.float32).reshape(1, 128, 128, 3) / 255.0
 
-    COUNT = 20
-    ds = load_dataset("timm/mini-imagenet")
-    train_ds = ds["train"]
-    perms = np.random.permutation(range(len(train_ds)))[0:COUNT].tolist()
-    selected_imgs = [preprocess_img(img) for img in train_ds[perms]["image"]]
+    parser = argparse.ArgumentParser(description="Process images.")
+    parser.add_argument(
+        "--dir", "-d", required=True, help="Directory containing images"
+    )
+
+    parser.add_argument(
+        "--count",
+        "-n",
+        required=True,
+        type=int,
+        help="Number of images to use",
+    )
+
+    parser.add_argument(
+        "--output",
+        "-o",
+        required=True,
+        help="Output filename (e.g., result.jpg or out.zip)",
+    )
+
+    args = parser.parse_args()
+
+    COUNT = args.count
+    images_dir = Path(args.dir)
+
+    n_images = 0
+    images = []
+    for img_path in images_dir.iterdir():
+        if n_images >= COUNT:
+            break
+        with Image.open(img_path) as img:
+            images.append(img.copy())
+            n_images += 1
+
+    selected_imgs = list(map(preprocess_img, images))
     selected_imgs = np.concatenate(selected_imgs, axis=0)
     np.save(
-        "resources/sample-calibration-20x128x128x3.npy",
+        f"resources/{args.output}",
         selected_imgs,
         allow_pickle=False,
     )
+
+    print(f"Saved to resources/{args.output}")

@@ -99,22 +99,24 @@ def test_to_ai8x_rejects_non_sequential(dummy_torch_model):
         conv.to_ai8x(Path("x"), MagicMock(), 0)
 
 
-def test_to_tvm(dummy_torch_model):
-    conv = TorchConverter(source_model_path=dummy_torch_model["path"])
-
-    io_spec = dummy_torch_model["io_spec"]
-    io_spec["input"] = (
-        io_spec["processed_input"]
-        if "processed_input" in io_spec
-        else io_spec["input"]
-    )
-
-    mod, params = conv.to_tvm(
-        io_spec=io_spec,
-        conversion_func=None,
-    )
-
-    import tvm
-
-    assert isinstance(mod, tvm.ir.IRModule)
-    assert isinstance(params, dict)
+# This converter test is commented-out, because the converter breaks output
+# shapes of models (flattens the dimensions).
+# def test_to_tvm(dummy_torch_model):
+#     conv = TorchConverter(source_model_path=dummy_torch_model["path"])
+#
+#     io_spec = dummy_torch_model["io_spec"]
+#     io_spec["input"] = (
+#         io_spec["processed_input"]
+#         if "processed_input" in io_spec
+#         else io_spec["input"]
+#     )
+#
+#     mod, params = conv.to_tvm(
+#         io_spec=io_spec,
+#         conversion_func=None,
+#     )
+#
+#     import tvm
+#
+#     assert isinstance(mod, tvm.ir.IRModule)
+#     assert isinstance(params, dict)

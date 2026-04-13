@@ -471,12 +471,17 @@ def get_parsed_args_dict(
             value = getattr(args, argparse_name)
 
         if value is None and not override_only:
-            try:
+            if "default" in arg_properties.keys():
                 value = arg_properties["default"]
-            except KeyError:
+            elif (
+                "required" in arg_properties.keys()
+                and arg_properties["required"]
+            ):
                 raise Exception(
                     f"No default value provided for {argparse_name}"
                 )
+            else:
+                value = None
 
         if value is None and override_only:
             continue

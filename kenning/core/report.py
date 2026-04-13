@@ -67,6 +67,7 @@ class Report(ArgumentsHandler, ABC):
             "description": "Path to the JSON file with statistics\
                   during the AutoML run",
             "type": Path,
+            "default": None,
             "overridable": True,
         },
     }

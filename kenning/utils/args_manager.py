@@ -467,16 +467,16 @@ def get_parsed_args_dict(
 
         value = try_to_load_param_from_ros(argparse_name)
 
-        if value is None:
-            if hasattr(args, argparse_name):
-                value = getattr(args, argparse_name)
-            else:
-                try:
-                    value = arg_properties["default"]
-                except KeyError:
-                    raise Exception(
-                        f"No default value provided for {argparse_name}"
-                    )
+        if value is None and hasattr(args, argparse_name):
+            value = getattr(args, argparse_name)
+
+        if value is None and not override_only:
+            try:
+                value = arg_properties["default"]
+            except KeyError:
+                raise Exception(
+                    f"No default value provided for {argparse_name}"
+                )
 
         if value is None and override_only:
             continue

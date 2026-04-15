@@ -54,6 +54,13 @@ apt update && apt install libnvidia-gl-530 -y
 
 ### Compile the demo and the model
 
+Initialize uv:
+
+``` bash
+uv venv
+source .venv/bin/activate
+```
+
 In the container, first source the ROS 2 environment:
 
 ```bash
@@ -63,7 +70,7 @@ source /opt/ros/setup.sh
 Then install current version of Kenning:
 
 ```bash
-pip install "./kenning[tensorflow,object_detection,reports,onnx,docs,tflite,tvm,onnxruntime]"
+uv pip install "./kenning[tensorflow,object_detection,reports,onnx,docs,tflite,tvm,onnxruntime]"
 ```
 
 In addition, download necessary models:
@@ -225,7 +232,7 @@ Where N is the id of the camera that should be used.
 Install kenning with required dependencies in the image:
 
 ```bash test-skip
-pip install "./kenning[object_detection]"
+uv pip install "./kenning[object_detection]"
 ```
 
 Compile the model using TVM:

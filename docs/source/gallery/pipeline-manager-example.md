@@ -15,7 +15,7 @@ Kenning requires extra dependencies in order to run the Pipeline Manager integra
 To install them, run:
 
 ```bash
-pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Running Pipeline Manager with Kenning

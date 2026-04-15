@@ -6,7 +6,7 @@ Below, we provide an overview of means to display this information.
 
 First, make sure that Kenning is installed:
 ```bash
-pip install "kenning @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Kenning list

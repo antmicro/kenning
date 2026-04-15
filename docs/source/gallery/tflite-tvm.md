@@ -9,7 +9,7 @@ To do this, we are going to use the [`PetDataset`](https://github.com/antmicro/k
 First of all, we need to install all necessary dependencies:
 
 ```bash
-pip install "kenning[tensorflow,tflite,tvm,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,tflite,tvm,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Train the model (optional)

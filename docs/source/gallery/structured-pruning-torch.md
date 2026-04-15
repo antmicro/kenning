@@ -8,7 +8,7 @@ In this example, we present scenarios for structured pruning of [`PyTorchPetData
 Install required dependencies:
 
 ```bash
-pip install "kenning[nni,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[torch,nni,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Experiments

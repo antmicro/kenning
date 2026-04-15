@@ -30,7 +30,7 @@ dependencies = [
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
     "numpy>=1.21.3,<2.0.0",
-    "onnx==1.16.0",
+    "onnx==1.21.0",
     "importlib-resources",
     "pandoc",
     "Pillow>=8.1.0",
@@ -56,13 +56,14 @@ docs = [
 ]
 tensorflow = [
     "kenning[onnx2tf]",
-    "tf-keras==2.15.0; python_version<'3.12'",
-    "tf-keras>=2.16.0; python_version=='3.12'",
+    "tf-keras==2.18.0; python_version<'3.12'",
+    "tf-keras==2.21.0; python_version=='3.12'",
     "tensorflow_addons; python_version<'3.12'",
-    "tensorflow==2.15.0; python_version < '3.12'",
-    "tensorflow; python_version == '3.12'",
+    "tensorflow>=2.18.1",
     "tensorflow_model_optimization",
     "h5py",
+    "h5py==3.14.0; python_version=='3.12'",
+    "protobuf==7.34.1; python_version=='3.12'",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
     "tf2onnx",
 ]
@@ -194,12 +195,11 @@ albumentations = [
 llm = [
     "kenning[torch]",
     "auto_gptq; python_version<'3.12'",
-    "autoawq==0.2.5; python_version<'3.12'",
+    "autoawq==0.2.7; python_version<'3.12'",
     "torch ; python_version=='3.12'",
-    "autoawq ; python_version=='3.12'",
+    "autoawq==0.2.7 ; python_version=='3.12'",
     "rouge-score",
-    "transformers==4.40.2 ; python_version<'3.12'",  # version fixed for sparsegpt+gptq optimization
-    "transformers ; python_version=='3.12'",  # version fixed for sparsegpt+gptq optimization
+    "transformers>=5.0.0",
     "peft==0.10.0",
     # "vllm; python_version<'3.12'",
 ]
@@ -212,13 +212,12 @@ onnx2tf = [
     "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
-    "tensorflow==2.15.0; python_version < '3.12'",
-    "tensorflow; python_version == '3.12'",
-    "tf-keras==2.15.0; python_version<'3.12'",
-    "tf-keras>=2.16.0; python_version=='3.12'",
+    "tensorflow>=2.18.1",
+    "tf-keras==2.18.0; python_version<'3.12'",
+    "tf-keras==2.21.0; python_version=='3.12'",
     "ai-edge-litert==1.2.0",
     "psutil==5.9.5",
-    "ml_dtypes>=0.2.0,<=0.5.1",
+    "ml_dtypes>=0.2.0,<=0.5.4",
     "flatbuffers>=23.1.21",
 ]
 

@@ -28,24 +28,29 @@ docker run --rm -it --name automl -w $(realpath sample-app) -v $(pwd):$(pwd) ken
 Then, in the Docker container, initialize the Zephyr application and Kenning Zephyr Runtime as follows:
 
 ```bash
+pip install --break-system-packages uv
+uv venv .venv
+source .venv/bin/activate
 west init -l app
 west update
 west zephyr-export
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip setuptools
 pushd ./kenning-zephyr-runtime
-pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
 ./scripts/prepare_modules.sh
 popd
-python -m west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
+```
+
+Then install Zephyr SKD:
+
+```bash test-skip
+west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 ```
 
 :::{note}
 To make sure you have the latest version of the Kenning with AutoML features, run:
 
 ```bash
-pip install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
 ```
 :::
 

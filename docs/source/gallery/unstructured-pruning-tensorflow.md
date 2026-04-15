@@ -12,7 +12,7 @@ It can be used to improve model compression (for storage purposes) and for use w
 A few additional dependencies are required to prune TensorFlow models, they can be installed using the following command:
 
 ```bash
-pip install "kenning[tensorflow,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Experiments

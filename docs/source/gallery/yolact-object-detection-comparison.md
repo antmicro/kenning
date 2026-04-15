@@ -16,7 +16,7 @@ Model will be deployed on CPU and GPU using following Kenning compilers:
 To install all necessary dependencies run:
 
 ```bash
-pip install "kenning[object_detection,tvm,onnxruntime,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[object_detection,tvm,onnxruntime,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Experiments on CPU
@@ -45,7 +45,7 @@ In this scenario:
 To optimize and test the defined scenario, run:
 
 ```bash
-python -m kenning optimize test \
+kenning optimize test \
     --cfg yolact-tvm-cpu-detection.yml \
     --measurements ./build/yolact-tvm.json \
     --verbosity INFO
@@ -68,7 +68,7 @@ For CPU-only execution `CPUExecutionProvider` is required.
 This scenario can be executed with:
 
 ```bash
-python -m kenning optimize test \
+kenning optimize test \
     --cfg yolact-onnx-cpu-detection.yml \
     --measurements ./build/yolact-onnx.json \
     --verbosity INFO
@@ -89,7 +89,7 @@ Sample comparison plot demonstrating model size, speed and quality for two YOLAC
 To create a comparison report comparing performance and model quality for the above optimizers, run:
 
 ```bash
-python -m kenning report \
+kenning report \
     --report-path build/yolact-report/report.md \
     --report-name "YOLACT detection report" \
     --root-dir build/yolact-report \
@@ -168,7 +168,7 @@ To run TVM optimization of YOLACT for GPU, the previous TVM scenario requires ch
 To run it:
 
 ```bash
-python -m kenning optimize test \
+kenning optimize test \
     --cfg yolact-tvm-gpu-detection.yml \
     --measurements ./build/yolact-gpu-tvm.json \
     --verbosity INFO
@@ -206,7 +206,7 @@ The only difference compared to CPU-only execution using ONNX Runtime lies in ad
 
 Run the scenario as follows:
 ```bash
-python -m kenning optimize test \
+kenning optimize test \
     --cfg yolact-onnx-gpu-detection.yml \
     --measurements ./build/yolact-gpu-onnx.json \
     --verbosity INFO
@@ -227,7 +227,7 @@ Model size, speed and quality comparison for two YOLACT Optimizers running on CU
 To create a comparison report comparing performance and model quality for the above optimizers, run:
 
 ```bash
-python -m kenning report \
+kenning report \
     --report-path build/yolact-report/report.md \
     --report-name "YOLACT detection report" \
     --root-dir build/yolact-report \

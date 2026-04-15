@@ -12,7 +12,7 @@ Start with installing dependencies:
 * `curl`
 * `west`
 * `CMake`
-* `python` with `uv` or `pip`
+* `python` with `uv`
 
 On Debian-based Linux distributions, the above-listed dependencies can be installed as follows:
 
@@ -35,12 +35,13 @@ cd kenning-zephyr-runtime
 Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, and install Python dependencies with:
 
 ```bash
-pip install west
+uv venv .venv
+source .venv/bin/activate
+uv pip install west
 west init -l .
 west update
 west zephyr-export
-pip install --upgrade pip setuptools
-pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
 west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 ```
 
@@ -53,10 +54,10 @@ Finally, prepare additional Zephyr modules:
 ## Installing Kenning with Renode support
 
 Evaluating models using Kenning Zephyr Runtime requires [Kenning](https://github.com/antmicro/kenning) with Renode support.
-Use `pip` or `uv` to install it:
+Use `uv` to install it:
 
 ```bash
-pip install "kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tvm,tensorflow,reports,renode,uart,tflite,torch] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 To use Renode, either follow [Renode documentation](https://renode.readthedocs.io/en/latest/introduction/installing.html) or use the script:
@@ -142,7 +143,7 @@ west build -t board-repl
 Second, install Zephelin's Python dependencies and the [GDB debugger](https://www.sourceware.org/gdb/) with support for multiple architectures:
 
 ```bash
-pip install -r ../zephelin/requirements.txt
+uv pip install -r ../zephelin/requirements.txt
 apt install -y gdb-multiarch
 ```
 

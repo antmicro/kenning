@@ -212,8 +212,14 @@ class ConverterRegistry(metaclass=Singleton):
         if "io_spec" in kwargs:
             kwargs["io_spec"] = ensure_processed_input(kwargs["io_spec"])
 
+
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")
+
+            current_model = (
+                model if not isinstance(model, (Path, ResourceURI)) else None
+            )
+            source_path = model if current_model is None else None
 
             current_format = real_src
 

@@ -4,7 +4,7 @@ This chapter describes the development process of Kenning components.
 
 To run below examples it is required to install Kenning with dependencies as follows:
 ```bash
-pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 (model-io-metadata)=
@@ -978,7 +978,7 @@ Running the simples AutoML flow, assuming the implementation and the scenario ar
 
 ```bash
 # Make sure the required dependencies are installed
-pip install "kenning[torch,anomaly_detection,auto_pytorch] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[torch,anomaly_detection,auto_pytorch] @ git+https://github.com/antmicro/kenning.git"
 # Run AutoML flow with new model
 PYTHONPATH="$(pwd):$PYTHONPATH" kenning automl --cfg ./fc-scenario.yml
 ```

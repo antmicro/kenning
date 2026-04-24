@@ -8,7 +8,7 @@ Runnable scripts in scenarios require implemented classes to be provided from th
 
 To run below examples it is required to install Kenning with dependencies as follows:
 ```bash
-pip install "kenning[tensorflow,tvm] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,tvm] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Command-line arguments for classes

@@ -9,7 +9,7 @@ It can be done using {{json_compilation_script}}.
 
 To run below examples it is required to install Kenning with dependencies as follows:
 ```bash
-pip install "kenning[tensorflow,tflite,tvm] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,tflite,tvm] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## JSON specification

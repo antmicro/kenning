@@ -36,7 +36,7 @@ Overview of Kenning Zephyr Runtime use-cases:
 
 To use Kenning Zephyr Runtime, first clone the repository:
 
-```bash
+```bash zephyr-init
 mkdir -p zephyr-workspace && cd zephyr-workspace
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
@@ -82,28 +82,15 @@ Using uv with Kenning Zephyr Runtime is encouraged for fast dependency installat
 
 Alternatively, you can do this manually (for example if you want to install a different set of toolchains):
 
-```
-python3 -m venv .venv --system-site-packages
-source .venv/bin/activate
-pip install pip setuptools west --upgrade
-west init -l .
-west update
-pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
-west zephyr-export
-west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
-```
-
-or when using uv:
-
-``` bash
+``` bash test-skip
 uv venv .venv --python=3.11
 source .venv/bin/activate
 uv pip install pip setuptools west --upgrade
-uv run west init -l .
-uv run west update
+west init -l .
+west update
 uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
-uv run west zephyr-export
-uv run west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
+west zephyr-export
+west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
 ```
 
 :::{note}
@@ -117,13 +104,7 @@ You can also install Kenning manually, for a different selection of additional d
 For example:
 
 ```bash
-pip install "kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git"
-```
-
-or when using uv:
-
-```
-uv pip install "kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tvm,tensorflow,reports,renode,uart,tflite,torch,zephyr] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 Eventually, run:
@@ -149,7 +130,7 @@ Kenning Zephyr Runtime comes with `<runtime>.conf` configuration files that set 
 `tflite.conf` config file can be used to run TFLite Micro - this extra configuration file can be added with `-DEXTRA_CONF_FILE` option:
 
 ```bash
-uv run west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=tflite.conf
+west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=tflite.conf
 ```
 
 Option `-p always` will force west to run a clean build.
@@ -159,7 +140,7 @@ Built application can be found at `build/zephyr/zephyr.elf` (`build` is the defa
 
 :::{warning}
 Due to a version conflict, Python dependencies for building with ExecuTorch runtime (`executorch.conf` configuration file) cannot be installed automatically.
-Therefore command `pip install executorch>=0.7.0` (or `uv pip install executorch>=0.7.0` if using uv) has to be ran before building.
+Therefore command `uv pip install executorch>=0.7.0` has to be ran before building.
 :::
 
 We could run the application on a physical `stm32f746g_disco` board, which would require running `west flash` command.
@@ -167,7 +148,7 @@ However in this example we will use the [Renode](https://renode.io/) to simulate
 For that, we need to generate a `.repl` file (a platform definition file for Renode - for details, please refer to [Renode documentation](https://renode.readthedocs.io/en/latest/host-integration/arduino.html#configuring-renode)):
 
 ```bash
-uv run west build -t board-repl
+west build -t board-repl
 ```
 
 This step will need to be repeated every time a clean build is ran or a different board is used.
@@ -241,7 +222,7 @@ It is also possible to run a standalone Renode simulation manually and have Kenn
 To do that you should run:
 
 ```
-uv run python ./scripts/run_renode.py
+python ./scripts/run_renode.py
 ```
 
 This script will run a Renode simulation of the application currently at `build/zephyr/zephyr.elf` and mount the UART port at `/tmp/uart`.
@@ -307,7 +288,7 @@ Zephelin supports TVM and TFLite.
 First, install Zephelin's Python dependencies:
 
 ```bash
-pip install -r ../zephelin/requirements.txt
+uv pip install -r ../zephelin/requirements.txt
 ```
 
 Then, you need to build Kenning Zephyr Runtime with Zephelin included, by adding extra configuration files.
@@ -315,13 +296,13 @@ Then, you need to build Kenning Zephyr Runtime with Zephelin included, by adding
 For tracing with UART:
 
 ```bash
-uv run west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_uart.conf"
+west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_uart.conf"
 ```
 
 For tracing with GDB:
 
 ```bash
-uv run west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_gdb.conf"
+west build -p -b stm32f746g_disco app -- -DEXTRA_CONF_FILE="tvm.conf;$(realpath ./zpl.conf);zpl_gdb.conf"
 ```
 
 For GDB tracing, you also need to install GDB with support for multiple architectures. On Linux Debian it can be done with:
@@ -361,7 +342,7 @@ optimizers:
 Since we will be running Kenning Zephyr Runtime in a Renode simulation, we need to prepare a `.repl` file:
 
 ```bash
-uv run west build -t board-repl
+west build -t board-repl
 ```
 
 To include traces in the report, you must specify it with `--report-types` option, as shown below:
@@ -390,7 +371,7 @@ Then Kenning will send built microTVM to Kenning Zephyr Runtime over Kenning Pro
 First, build Kenning Zephyr Runtime with LLEXT:
 
 ```bash
-uv run west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=llext.conf
+west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=llext.conf
 ```
 
 This will build `app` with no default runtime, and necessary logic to load necessary implementation of runtime from UART-delivered extension.
@@ -398,13 +379,13 @@ This will build `app` with no default runtime, and necessary logic to load neces
 If running with Renode, generate the `.repl` file:
 
 ```bash
-uv run west build -t board-repl
+west build -t board-repl
 ```
 
 Then, build the extension:
 
 ```bash
-uv run west build app -t llext-tvm -- -DEXTRA_CONF_FILE="llext.conf;llext_tvm.conf"
+west build app -t llext-tvm -- -DEXTRA_CONF_FILE="llext.conf;llext_tvm.conf"
 ```
 
 It will be placed in `build/llext` directory.
@@ -492,7 +473,7 @@ The example below shows how to build `demo_app` with IREE runtime in embedded_el
 In here we select `iree_embedded_elf.conf` config file to use IREE in embedded_elf mode - in Zephyr applications the default application config is in `prj.conf` file, but extra configuration files can be specified with `-DEXTRA_CONF_FILE` option.
 
 ```bash
-uv run west build -p always -b b_u585i_iot02a demo_app -- -DEXTRA_CONF_FILE=iree_embedded_elf.conf
+west build -p always -b b_u585i_iot02a demo_app -- -DEXTRA_CONF_FILE=iree_embedded_elf.conf
 ```
 
 Option `-p always` will force west to run a clean build.
@@ -503,7 +484,7 @@ Built application can be found at `build/zephyr/zephyr.elf` (`build` is the defa
 To run a Renode simulation, we also need to generate a [`.repl` file](https://renode.readthedocs.io/en/latest/host-integration/arduino.html#configuring-renode):
 
 ```bash
-uv run west build -t board-repl
+west build -t board-repl
 ```
 
 #### Running
@@ -519,7 +500,7 @@ This step has to be repeated every time a new shell is used, since the script ex
 Finally, we can use a Python script to run the demo:
 
 ```bash
-uv run python ./scripts/run_renode.py
+python ./scripts/run_renode.py
 ```
 
 The script will automatically capture output from the Zephyr UART console and print it to the terminal.
@@ -585,14 +566,14 @@ To do that, run normal build first.
 For example:
 
 ```
-uv run west build -p always -b 96b_nitrogen demo_app -- -DEXTRA_CONF_FILE=tvm.conf
+west build -p always -b 96b_nitrogen demo_app -- -DEXTRA_CONF_FILE=tvm.conf
 ```
 
 It should fail, due to insufficient memory.
 Then you can run:
 
 ```
-uv run west build -t increase-memory -- -DCONFIG_KENNING_INCREASE_MEMORY_SIZE=2048
+west build -t increase-memory -- -DCONFIG_KENNING_INCREASE_MEMORY_SIZE=2048
 ```
 
 This will generate board overlay with increased memory and save it in `<application>/boards/<board_name>_increased_memory.overlay`.
@@ -608,7 +589,7 @@ The new overlay file will remain there even after clean builds, so this step doe
 To use the overlay, run the build with `-CONFIG_KENNING_INCREASE_MEMORY=y` option:
 
 ```
-uv run west build -p always -b 96b_nitrogen demo_app -- -DEXTRA_CONF_FILE=tvm.conf -DCONFIG_KENNING_INCREASE_MEMORY=y
+west build -p always -b 96b_nitrogen demo_app -- -DEXTRA_CONF_FILE=tvm.conf -DCONFIG_KENNING_INCREASE_MEMORY=y
 ```
 
 From here you may proceed normally.

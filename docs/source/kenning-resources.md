@@ -10,7 +10,7 @@ It handles:
 
 To run below examples it is required to install Kenning as follows:
 ```bash
-pip install "kenning @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ## Accessing resources

@@ -26,10 +26,10 @@ MSG_SIZE_LEN = 4
 MSG_SIZE_BITS = MSG_SIZE_LEN * 8
 
 # Size in bytes of the combined fields 'message_type' and 'flow_control_flags'.
-MSG_ID_SIZE = 1
+MSG_ID_SIZE = 5
 
 # Size in bits of the 'message_type' field.
-MSG_TYPE_BITS = 6
+MSG_TYPE_BITS = 38
 
 # Size in bits of the 'flow_control_flags' field.
 FLOW_CONTROL_FLAG_COUNT = 2

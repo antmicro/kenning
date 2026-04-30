@@ -69,7 +69,7 @@ class TestMessage:
         [
             # Valid transmission message with byte payload.
             (
-                b"\xC7\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
@@ -88,12 +88,12 @@ class TestMessage:
                         }
                     ),
                 ),
-                13,
+                17,
                 True,
             ),
             # Transmission message with byte payload, with invalid checksum.
             (
-                b"\xC7\x47\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xC0\x47\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
@@ -112,12 +112,12 @@ class TestMessage:
                         }
                     ),
                 ),
-                13,
+                17,
                 False,
             ),
             # Transmission message with a single bit error in the payload
             (
-                b"\xC7\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x02\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x02\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x02\x04\x05",  # Error in the 3rd byte
@@ -136,12 +136,12 @@ class TestMessage:
                         }
                     ),
                 ),
-                13,
+                17,
                 False,
             ),
             # Transmission message with an error in message identifier
             (
-                b"\xCF\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x0F\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     None,  # Error in message type
                     b"\x01\x02\x03\x04\x05",
@@ -160,12 +160,12 @@ class TestMessage:
                         }
                     ),
                 ),
-                13,
+                17,
                 False,
             ),
             # Transmission message with an error in flags
             (
-                b"\xC7\x45\x2C\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xC0\x45\x2C\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
@@ -184,12 +184,12 @@ class TestMessage:
                         }
                     ),
                 ),
-                13,
+                17,
                 False,
             ),
             # Transmission message with an error in the size field
             (
-                b"\xC7\x45\x2D\xE0\x07\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x07\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05\x44\x40",
@@ -208,19 +208,19 @@ class TestMessage:
                         }
                     ),
                 ),
-                15,
+                19,
                 False,
             ),
             # Too short bytestream - message with payload
             (
-                b"\xC7\x45\x2D\xE0\x05\x00\x00\x00\x01\x02",
+                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02",
                 None,
                 0,
                 None,
             ),
             # Too short bytestream - message without
             (
-                b"\xC5\xCF\x21\x60\x00\x00\x00",
+                b"\x05\x00\x00\x00\xC0\xCF\x21\x60\x00\x00\x00",
                 None,
                 0,
                 None,
@@ -267,7 +267,7 @@ class TestMessage:
                         FlagName.SPEC_FLAG_4: 1,
                     }
                 ),
-                b"\xC7\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05",
+                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05",
                 does_not_raise(),
             ),
             # Valid TRANSMISSION message without payload
@@ -288,7 +288,7 @@ class TestMessage:
                         FlagName.SPEC_FLAG_4: 0,
                     }
                 ),
-                b"\xC5\xCF\x21\x60\x00\x00\x00\x00",
+                b"\x05\x00\x00\x00\xC0\xCF\x21\x60\x00\x00\x00\x00",
                 does_not_raise(),
             ),
             # Invalid message (non-serialized payload)
@@ -309,7 +309,7 @@ class TestMessage:
                         FlagName.SPEC_FLAG_4: 1,
                     }
                 ),
-                b"\x45\xD0\x21\xE0\x1F\x00\x00\x00",
+                b"\x05\x00\x00\x00\x40\xD0\x21\xE0\x1F\x00\x00\x00",
                 pytest.raises(ValueError),
             ),
         ],

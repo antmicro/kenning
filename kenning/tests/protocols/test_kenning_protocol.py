@@ -983,7 +983,7 @@ class TestOutgoingRequest:
 
     def test_init(self, message_type: MessageType, random_byte_data: bytes):
         mock = Mock()
-        mock.max_message_size = 10
+        mock.max_message_size = 14
         request = OutgoingRequest(
             message_type,
             mock,

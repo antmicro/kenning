@@ -63,9 +63,21 @@ apt install -y --no-install-recommends ccache curl device-tree-compiler dfu-util
 ```
 :::
 
-After installing necessary dependencies, run:
+After that, Python packages can be installed and `west` workspace can be configured:
 
 ```bash
+pip install west
+west init -l .
+west update
+west zephyr-export
+pip install --upgrade pip setuptools
+pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
+```
+
+Alternatively, you can use a script provided with `kenning-zephyr-runtime` to create a Python virtual environment with all dependencies installed:
+
+```
 ./scripts/prepare_zephyr_env.sh
 source .venv/bin/activate
 ```

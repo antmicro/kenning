@@ -172,3 +172,43 @@ class TestPipeProtocol(TestCoreProtocol):
         server.disconnect()
         with pytest.raises(ProtocolNotStartedError):
             server.receive_data(None)
+
+    def test_receive_data_data_sent(
+        self,
+        server_and_client: Tuple[PipeProtocol, PipeProtocol],
+        random_byte_data: bytes,
+    ):
+        """
+        Tests the `receive_data()` method with data being sent.
+        """
+        server, client = server_and_client
+        server.stop()
+        assert client.send_data(random_byte_data)
+        received_data = bytearray()
+
+        for _ in random_byte_data:
+            received_data += server.receive_data(None)
+        assert random_byte_data == received_data
+
+        server.disconnect()
+
+    def test_receive_client_disconnect(
+        self, server_and_client: Tuple[PipeProtocol, PipeProtocol]
+    ):
+        """
+        Tests the `receive_data()` method with client being disconnected.
+        """
+        server, client = server_and_client
+        server.stop()
+
+        mock_client_disconnected_callback_call_count = 0
+
+        def mock_client_disconnected_callback():
+            nonlocal mock_client_disconnected_callback_call_count
+            mock_client_disconnected_callback_call_count += 1
+
+        server.client_disconnected_callback = mock_client_disconnected_callback
+        client.disconnect()
+        received_data = server.receive_data(None)
+        assert received_data is None
+        assert 1 == mock_client_disconnected_callback_call_count

@@ -190,8 +190,6 @@ class TestPipeProtocol(TestCoreProtocol):
             received_data += server.receive_data(None)
         assert random_byte_data == received_data
 
-        server.disconnect()
-
     def test_receive_client_disconnect(
         self, server_and_client: Tuple[PipeProtocol, PipeProtocol]
     ):
@@ -212,3 +210,21 @@ class TestPipeProtocol(TestCoreProtocol):
         received_data = server.receive_data(None)
         assert received_data is None
         assert 1 == mock_client_disconnected_callback_call_count
+
+    def test_send_message(
+        self,
+        server_and_client: Tuple[PipeProtocol, PipeProtocol],
+        random_byte_data: bytes,
+    ):
+        """
+        Tests the `send_message(Message())` method.
+        """
+        server, client = server_and_client
+        server.stop()
+        client.stop()
+        assert client.send_message(Message(MessageType.DATA, random_byte_data))
+        assert server.send_message(Message(MessageType.DATA, random_byte_data))
+
+        client.disconnect()
+        with pytest.raises(ConnectionResetError):
+            server.send_message(Message(MessageType.DATA))

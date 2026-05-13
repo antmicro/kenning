@@ -12,6 +12,7 @@ from typing import Any, Dict, Tuple
 import numpy as np
 import pytest
 
+from kenning.core.exceptions import ProtocolNotStartedError
 from kenning.core.model import ModelWrapper
 from kenning.protocols.message import Message, MessageType
 from kenning.protocols.pipe_protocol import PipeProtocol
@@ -147,3 +148,27 @@ class TestPipeProtocol(TestCoreProtocol):
         client.send_message(EmptyMessage())
         message = server.receive_message(timeout=1)
         assert message is None
+
+    def test_send_data(
+        self,
+        server_and_client: Tuple[PipeProtocol, PipeProtocol],
+        random_byte_data: bytes,
+    ):
+        """
+        Tests the `send_data()` method.
+        """
+        server, client = server_and_client
+        server.stop()
+        assert client.send_data(random_byte_data)
+
+    def test_receive_data(
+        self, server_and_client: Tuple[PipeProtocol, PipeProtocol]
+    ):
+        """
+        Tests the `receive_data()` method with not initialized server.
+        """
+        server, client = server_and_client
+        server.stop()
+        server.disconnect()
+        with pytest.raises(ProtocolNotStartedError):
+            server.receive_data(None)

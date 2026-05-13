@@ -7,12 +7,13 @@ import struct
 import uuid
 from random import choices, randint
 from string import ascii_lowercase
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import pytest
 
 from kenning.core.model import ModelWrapper
+from kenning.protocols.message import Message, MessageType
 from kenning.protocols.pipe_protocol import PipeProtocol
 from kenning.protocols.uart import (
     RUNTIME_STAT_NAME_MAX_LEN,
@@ -107,3 +108,42 @@ class TestPipeProtocol(TestCoreProtocol):
         assert client.initialize_client()
         client.disconnect()
         server.disconnect()
+
+    def test_receive_message(
+        self,
+        server_and_client: Tuple[PipeProtocol, PipeProtocol],
+        random_byte_data: bytes,
+    ):
+        """
+        Tests the `receive_message()` method by sending data.
+        """
+        server, client = server_and_client
+        server.stop()
+        message = server.receive_message(timeout=1)
+        assert message is None, "Message not received."
+
+        # Send data
+        client.send_message(Message(MessageType.OUTPUT, random_byte_data))
+        message = server.receive_message(timeout=1)
+        assert (
+            message.payload == random_byte_data
+            and message.message_type == MessageType.OUTPUT
+        ), "Received message is incorrect."
+
+    def test_receive_message_send_empty(
+        self, server_and_client: Tuple[PipeProtocol, PipeProtocol]
+    ):
+        """
+        Tests the `receive_message()` method by sending empty message.
+        """
+        server, client = server_and_client
+        server.stop()
+
+        # Send empty message
+        class EmptyMessage(object):
+            def to_bytes(self, verify_checksum: bool):
+                return b""
+
+        client.send_message(EmptyMessage())
+        message = server.receive_message(timeout=1)
+        assert message is None

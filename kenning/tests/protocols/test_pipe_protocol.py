@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import multiprocessing
 import struct
 import uuid
 from random import choices, randint
@@ -14,6 +15,8 @@ import pytest
 
 from kenning.core.exceptions import ProtocolNotStartedError
 from kenning.core.model import ModelWrapper
+from kenning.core.protocol import ServerAction
+from kenning.protocols.bytes_based_protocol import TransmissionFlag
 from kenning.protocols.message import Message, MessageType
 from kenning.protocols.pipe_protocol import PipeProtocol
 from kenning.protocols.uart import (
@@ -23,6 +26,7 @@ from kenning.tests.protocols.test_core_protocol import (
     TestCoreProtocol,
 )
 from kenning.utils.class_loader import get_all_subclasses
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 MODEL_WRAPPER_SUBCLASSES = get_all_subclasses(
@@ -228,3 +232,65 @@ class TestPipeProtocol(TestCoreProtocol):
         client.disconnect()
         with pytest.raises(ConnectionResetError):
             server.send_message(Message(MessageType.DATA))
+
+    def _receive_request(
+        self,
+        response_payload: bytes,
+        method: str,
+        argument: Any,
+        message_type: MessageType,
+    ) -> bytes:
+        def receive(
+            pipe_path: str,
+            response_payload: bytes,
+            server_started_event: multiprocessing.Event,
+            queue: multiprocessing.Queue,
+        ):
+            server = PipeProtocol(pipe_path)
+            server.initialize_server()
+            server_started_event.set()
+            type, message_type, data, flags = server.listen_blocking(
+                None, None, None, None
+            )
+            queue.put(data)
+            server.transmit_blocking(
+                message_type,
+                response_payload,
+                [TransmissionFlag.SUCCESS, TransmissionFlag.IS_KENNING],
+            )
+            server.disconnect()
+
+        queue = multiprocessing.Queue()
+        server_started_event = multiprocessing.Event()
+        thread = multiprocessing.Process(
+            target=receive,
+            args=(
+                self.pipe_path,
+                response_payload,
+                server_started_event,
+                queue,
+            ),
+        )
+        thread.start()
+        server_started_event.wait()
+        client = PipeProtocol(self.pipe_path)
+        assert client.initialize_client()
+        KLogger.debug("Client started for receive event.")
+        if argument is not None:
+            return_value = getattr(client, method)(argument)
+        else:
+            return_value = getattr(client, method)()
+        client.disconnect()
+        thread.join()
+        return queue.get(), return_value
+
+    def test_upload_input(self, random_byte_data: bytes):
+        """
+        Tests the `upload_input()` method.
+        """
+        assert (random_byte_data, True) == self._receive_request(
+            ServerAction.UPLOADING_INPUT.to_bytes(),
+            "upload_input",
+            random_byte_data,
+            MessageType.DATA,
+        )

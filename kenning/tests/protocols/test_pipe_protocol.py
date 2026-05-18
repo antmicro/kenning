@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import struct
 import uuid
+from pathlib import Path
 from random import choices, randint
 from string import ascii_lowercase
 from typing import Any, Dict, Tuple
@@ -14,6 +15,7 @@ import numpy as np
 import pytest
 
 from kenning.core.exceptions import ProtocolNotStartedError
+from kenning.core.measurements import Measurements
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import ServerAction
 from kenning.protocols.bytes_based_protocol import TransmissionFlag
@@ -294,3 +296,99 @@ class TestPipeProtocol(TestCoreProtocol):
             random_byte_data,
             MessageType.DATA,
         )
+
+    @pytest.mark.parametrize(
+        "method, action, message_type",
+        [
+            ("upload_model", ServerAction.UPLOADING_MODEL, MessageType.MODEL),
+            (
+                "upload_io_specification",
+                ServerAction.UPLOADING_IOSPEC,
+                MessageType.IO_SPEC,
+            ),
+        ],
+    )
+    def test_upload_with_path(
+        self,
+        tmpfolder: Path,
+        random_byte_data: bytes,
+        method: str,
+        action: ServerAction,
+        message_type: MessageType,
+    ):
+        """
+        Tests the `upload_model()` method.
+        """
+        path = tmpfolder / uuid.uuid4().hex
+        with open(path, "wb") as file:
+            file.write(random_byte_data)
+
+        assert (random_byte_data, True) == self._receive_request(
+            action.to_bytes(),
+            method,
+            path,
+            message_type,
+        )
+
+    def test_upload_runtime(self, tmpfolder: Path, random_byte_data: bytes):
+        path = tmpfolder / uuid.uuid4().hex
+        with open(path, "wb") as file:
+            file.write(random_byte_data)
+
+        assert (
+            len(random_byte_data).to_bytes(4, "little") + random_byte_data,
+            True,
+        ) == self._receive_request(
+            ServerAction.UPLOADING_RUNTIME.to_bytes(),
+            "upload_runtime",
+            path,
+            MessageType.RUNTIME,
+        )
+
+    def test_download_output(
+        self,
+        random_byte_data: bytes,
+    ):
+        """
+        Tests the `download_output()` method.
+        """
+        assert (b"", (True, random_byte_data)) == self._receive_request(
+            random_byte_data,
+            "download_output",
+            None,
+            MessageType.OUTPUT,
+        )
+
+    def test_download_statistics(self):
+        """
+        Tests the `download_statistics()` method.
+        """
+        data = {"1": "one", "2": "two", "3": "three"}
+        to_send = json.dumps(data).encode()
+        sent_bytes, downloaded_stats = self._receive_request(
+            to_send,
+            "download_statistics",
+            True,
+            MessageType.STATS,
+        )
+        assert b"" == sent_bytes
+        assert isinstance(downloaded_stats, Measurements)
+        assert downloaded_stats.data == data
+
+    def test_disconnect(self, server_and_client):
+        """
+        Tests the `disconnect()` method.
+        """
+        server, client = server_and_client
+        server.stop()
+        client.stop()
+        assert client.send_message(Message(MessageType.MODEL))
+        assert server.send_message(Message(MessageType.MODEL))
+        client.disconnect()
+        with pytest.raises(ProtocolNotStartedError):
+            client.send_message(Message(MessageType.MODEL))
+        with pytest.raises(ConnectionResetError):
+            server.send_message(Message(MessageType.MODEL))
+        server.disconnect()
+        with pytest.raises(ProtocolNotStartedError):
+            server.send_message(Message(MessageType.MODEL))

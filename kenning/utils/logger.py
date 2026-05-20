@@ -312,7 +312,9 @@ class LoggerProgressBar(io.StringIO):
         )
         # Take tqdm-wrapped handler
         self.format = KLogger.handlers[-1].formatter.format(record)
-        self.disable = self.verbosity < KLogger.level
+        self.disable = self.verbosity < KLogger.level or bool(
+            os.getenv("TQDM_DISABLE")
+        )
 
         if self.redirect_stdout:
             self.redirect_stdout.__enter__()

@@ -103,6 +103,31 @@ class AmbiguousModuleError(ConfigurationError):
 
 
 """
+Errors raised by the Kenning dispatcher (subsystem responsible for environment
+preparation and startup of Kenning modules).
+"""
+
+
+class KenningDispatcherError(KenningError):
+    """
+    Generic error in the dispatcher.
+    """
+
+
+class KenningUVError(KenningDispatcherError):
+    """
+    Raised when a call to the 'uv' tool failed.
+    """
+
+
+class KenningRequirementsError(KenningDispatcherError):
+    """
+    Raised when requirements for a Kenning module are missing, invalid or
+    incomplete.
+    """
+
+
+"""
 Errors raised in implementations of the kenning.core.modelwrapper module.
 """
 

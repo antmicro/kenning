@@ -115,7 +115,7 @@ tvm = [
 ]
 tinygrad = [
     "tinygrad==0.11.0 ; python_version<'3.12'",
-    "tinygrad>0.11.0,<=0.12.0 ; python_version>='3.12'",
+    "tinygrad==0.12.0 ; python_version>='3.12'", # Fixing version, because of a bug in 0.13.0.
 ]
 iree = [
     "iree-base-compiler[onnx]==3.6.0",

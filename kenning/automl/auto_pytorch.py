@@ -6,6 +6,7 @@
 Provides an API for AutoML flow with AutoPyTorch framework.
 """
 
+import ast
 from collections import defaultdict
 from logging import Logger
 from multiprocessing import cpu_count
@@ -885,36 +886,10 @@ class AutoPyTorchML(AutoML):
         training_epochs = defaultdict(list)
         model_params = defaultdict(lambda: defaultdict(dict))
         model_prefix = "Model/"
-        EVENT_TO_NAME = {
-            "Train/loss": "training",
-            "Train/epoch/avg_loss": "training_epoch",
-            "Val/loss": "validation",
-            "Val/epoch/avg_loss": "validation_epoch",
-            "Test/loss": "test",
-            "Test/epoch/avg_loss": "test_epoch",
-        }
-        PIPELINE_EVENT_TO_NAME = {
-            "Pipeline/Loss": "opt_loss",
-            "Pipeline/Train/Loss": "train_loss",
-            "Pipeline/Val/Loss": "validation_loss",
-            "Pipeline/Test/Loss": "test_loss",
-            "Pipeline/Config": "configuration",
-            "Pipeline/Budget": "budget",
-            "Pipeline/Status": "status",
-        }
-
-        def strip_metric_name(tag):
-            for e_name, e_key in PIPELINE_EVENT_TO_NAME.items():
-                if tag.startswith(e_name + "/"):
-                    if e_key not in run_infos[num_run]:
-                        run_infos[num_run][e_key] = {}
-                    return e_key, tag.replace(e_name + "/", "")
-            return None, None
 
         run_infos: Dict[Dict] = {}
         try:
-            import ast
-
+            from autoPyTorch.pipeline.event import PipelineEvent, TrainingEvent
             from tensorflow.core.util import event_pb2
             from tensorflow.data import TFRecordDataset
             from tensorflow.python.framework.errors_impl import DataLossError
@@ -966,7 +941,7 @@ class AutoPyTorchML(AutoML):
                                     ] = v
                                 else:
                                     training_data[num_run][
-                                        EVENT_TO_NAME[e_val.tag]
+                                        TrainingEvent.from_tag(e_val.tag).value
                                     ][event.wall_time] = e_val.simple_value
                             # Add missing epoch range
                             # if the end_epoch was not received
@@ -1013,16 +988,15 @@ class AutoPyTorchML(AutoML):
                                     name = e_val.tag.replace(
                                         "/text_summary", ""
                                     )
-                                    if (
-                                        PIPELINE_EVENT_TO_NAME[name]
-                                        == "configuration"
-                                    ):
+
+                                    pipeline_event = PipelineEvent.from_tag(
+                                        name
+                                    )
+
+                                    if pipeline_event == PipelineEvent.CONFIG:
                                         # convert to dict
                                         val = ast.literal_eval(val)
-                                    if (
-                                        PIPELINE_EVENT_TO_NAME[name]
-                                        == "status"
-                                    ):
+                                    if pipeline_event == PipelineEvent.STATUS:
                                         val = eval(val)
                                         if val in (
                                             StatusType.SUCCESS,
@@ -1031,22 +1005,39 @@ class AutoPyTorchML(AutoML):
                                             successful_models.add(num_run)
                                             continue
                                     run_infos[num_run][
-                                        PIPELINE_EVENT_TO_NAME[name]
+                                        pipeline_event.value
                                     ] = val
-                                elif e_val.tag in PIPELINE_EVENT_TO_NAME:
-                                    run_infos[num_run][
-                                        PIPELINE_EVENT_TO_NAME[e_val.tag]
-                                    ] = e_val.simple_value
                                 else:
-                                    key, metric = strip_metric_name(e_val.tag)
-                                    if metric:
-                                        run_infos[num_run][key][
-                                            metric
-                                        ] = e_val.simple_value
-                                    else:
-                                        raise RuntimeError(
-                                            f"Unknown log tag: {e_val.tag}"
+                                    try:
+                                        event_name = PipelineEvent.from_tag(
+                                            e_val.tag
                                         )
+                                        run_infos[num_run][
+                                            event_name.value
+                                        ] = e_val.simple_value
+
+                                    except KeyError:
+                                        (
+                                            event_name,
+                                            metric,
+                                        ) = PipelineEvent.from_metric(
+                                            e_val.tag
+                                        )
+                                        if metric:
+                                            if (
+                                                event_name.value
+                                                not in run_infos[num_run]
+                                            ):
+                                                run_infos[num_run][
+                                                    event_name.value
+                                                ] = {}
+                                            run_infos[num_run][
+                                                event_name.value
+                                            ][metric] = e_val.simple_value
+                                        else:
+                                            raise RuntimeError(
+                                                f"Unknown log tag: {e_val.tag}"
+                                            )
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
                     continue

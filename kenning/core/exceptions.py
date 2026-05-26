@@ -109,6 +109,13 @@ class AmbiguousModuleError(ConfigurationError):
     """
 
 
+class ClassProxyError(ConfigurationError):
+    """
+    Exception raised by the Class Proxy mechanism (used to intercept method
+    calls to objects).
+    """
+
+
 """
 Errors raised by the Kenning dispatcher (subsystem responsible for environment
 preparation and startup of Kenning modules).

@@ -102,6 +102,44 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]) -> float:
     )
 
 
+def hausdorff_distance_metric(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Computes Hausdorff distance metrics.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, a set of 2D points.
+    y : np.ndarray
+        Ground truth, a set of 2D points.
+
+    Returns
+    -------
+    float
+        Hausdorff distance between two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch length.
+    """
+    if not x.ndim == 2 and y.ndim == 2:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    def _d(a, b) -> float:
+        d = np.sqrt(np.sum((b - a) ** 2, axis=1))
+        return np.min(d)
+
+    max_dxY = max(_d(_x, y) for _x in x)
+
+    max_dyX = max(_d(_y, x) for _y in y)
+
+    return float(max(max_dxY, max_dyX))
+
+
 def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
     Computes performance metrics based on `measurementsdata` argument.
@@ -226,6 +264,7 @@ class Metric(str, Enum):
     mAP = "mAP"
     MAX_mAP = "max_mAP"
     MAX_mAP_ID = "max_mAP_index"
+    Hausdorff = "hausdorff"
 
 
 # List of metrics used for classification
@@ -240,6 +279,8 @@ CLASSIFICATION_METRICS = [
     Metric.F1,
     Metric.F1_WEIGHTED,
 ]
+
+ANOMALY_DETECTION_METRICS = [Metric.Hausdorff]
 
 
 def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:

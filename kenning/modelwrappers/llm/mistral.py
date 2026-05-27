@@ -23,7 +23,7 @@ class MistralInstruct(LLM):
     https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1
     """
 
-    pretrained_model_uri = "hf://mistralai/Mistral-7B-Instruct-v0.1"
+    pretrained_model_uri = "hf://ministral/Ministral-3b-instruct"
 
     @override
     def message_to_instruction(self, prompt_config: Dict | str):

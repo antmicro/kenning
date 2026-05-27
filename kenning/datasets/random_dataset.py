@@ -570,6 +570,18 @@ class RandomizedTextDataset(Dataset):
     def evaluate(self, predictions, truth):
         return Measurements()
 
+    def calib_data(self) -> List[str]:
+        """
+        Returns calibration data in quantization-compatible format.
+        """
+        samples = []
+
+        for txt_path in self.dataX:
+            with open(txt_path, "r") as f:
+                samples.append(f.read())
+
+        return samples
+
 
 class RandomizedAnomalyDetectionDataset(RandomizedImageClassificationDataset):
     """

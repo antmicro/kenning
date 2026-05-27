@@ -210,7 +210,6 @@ EXPECTED_FAIL = [
 
 SKIP = (
     [
-
         # For now we don't have support for emlearn format
         ("StubEmlearnModel", "Ai8xCompiler"),
         ("StubEmlearnModel", "ExecuTorchOptimizer"),
@@ -235,17 +234,16 @@ SKIP = (
     ]
 )
 
-USE_GPU = (
-    [
-        ("MistralInstruct", "AWQOptimizer"),
-        ("MistralInstruct", "GPTQOptimizer"),
-        ("MistralInstruct", "GPTQSparseGPTOptimizer"),
-    ]
-)
+USE_GPU = [
+    ("MistralInstruct", "AWQOptimizer"),
+    ("MistralInstruct", "GPTQOptimizer"),
+    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+]
 
 expect_fail = pytest.mark.xfail(reason="Expected incompatible")
 skip = pytest.mark.skip(reason="Time or resource intensive")
 gpu = pytest.mark.gpu(reason="Requires GPU")
+
 
 def prepare_objects(
     model_cls: Type[ModelWrapper],
@@ -437,7 +435,6 @@ class TestOptimizerModelWrapper:
             for cls2 in OPTIMIZER_SUBCLASSES
         ],
     )
-
     def test_matrix(
         self,
         model_cls: Type[ModelWrapper],

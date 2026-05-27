@@ -137,7 +137,17 @@ class AWQOptimizer(Optimizer):
             "version": self.mm_version,
         }
 
-        model.quantize(tokenizer, quantization_config)
+        if hasattr(self.dataset, "calib_data") and callable(
+            getattr(self.dataset, "calib_data")
+        ):
+            model.quantize(
+                tokenizer,
+                quantization_config,
+                calib_data=self.dataset.calib_data(),
+            )
+        else:
+            model.quantize(tokenizer, quantization_config)
+
         tokenizer.save_pretrained(str(self.compiled_model_path))
         model.save_quantized(str(self.compiled_model_path))
 

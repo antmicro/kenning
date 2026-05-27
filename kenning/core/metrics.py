@@ -102,6 +102,36 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]) -> float:
     )
 
 
+def mean_signed_difference(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Computes Mean Signed Difference.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, a set of 2D points with value and time.
+    y : np.ndarray
+        Ground truth, a set of 2D points with value and time.
+
+    Returns
+    -------
+    float
+        Mean signed difference for two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch length.
+    """
+    if not x.shape == y.shape and x.ndim == 1:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    return float(np.mean(x - y))
+
+
 def hausdorff_distance_metric(
     x: np.ndarray,
     y: np.ndarray,

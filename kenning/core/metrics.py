@@ -132,6 +132,216 @@ def mean_signed_difference(
     return float(np.mean(x - y))
 
 
+def nab_metric_raw(
+    x: np.ndarray,
+    y: np.ndarray,
+    atp: float = 2.0,
+    atn: float = 0.0,
+    afp: float = 0.25,
+    afn: float = -0.25,
+) -> float:
+    """
+    Computes raw NAB ( Numenta Anomaly Benchmark ) score.
+
+    Found in https://arxiv.org/pdf/1510.03336
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, a set of predicted anomalies.
+    y : np.ndarray
+        Ground truth, a set of ground truth anomalies.
+    atp : float
+        Weight for true positive, must greater than or equal 0.
+    atn : float
+        Weight for true negative, must be less than or equal 1.
+    afp : float
+        Weight for false positive, must be greater than or equal -1.
+    afn : float
+        Weight for false negative, must be lower than or equal 0.
+
+    Returns
+    -------
+    float
+        Raw Numenta Anomaly Benchmark score.
+    """
+    # 1. We use anomaly windows with a size equal of 10 % of data length
+    # 2. We takes into account earliest detection within the window
+    # 3. Each window is centered around ground truth anomaly label
+    # 4. Scoring function gives higher positive scores to
+    # True-positive detection earlier in the windows and negative
+    # Scores to the detections outside the window ( false positive )
+    # 5. We give weights for True-Positive, False-Positive,
+    # False-Negative, True-Negative
+
+    def scoring_function(y):
+        return (atp - afp) * (1 / (1 + np.exp(5 * y))) - 1
+
+    # We take a window of size which is 10 % of input data size
+    window_size = int(len(y) * 0.1)
+
+    # Found windows
+    windows_centers = np.where(y == 1)[0].flatten()
+    # Found indexes with true positive and false positives
+
+    all_detections = np.where(x == 1)[0].flatten()
+
+    score = 0.0
+
+    # Count true negative
+    true_negatives = np.where((y == x) & (y == 0))[0]
+    score += len(true_negatives) * atn
+
+    # Number of windows with zero detections
+    fd = 0
+
+    if len(windows_centers) == 0:
+        return score + afp * len(all_detections)
+
+    # Validate points inside windows
+    for center in windows_centers:
+        # Find earliest detection in the window and give it a positive score
+        lower_index = max(center - window_size, 0)
+        upper_index = min(center + window_size, len(y))
+
+        window_ids = np.where(
+            (all_detections >= lower_index) & (all_detections <= upper_index)
+        )[0]
+        window_ids = all_detections[window_ids]
+
+        if len(window_ids) > 0:
+            earliest_anomaly_index = np.min(window_ids)
+
+            anomaly_relative_position = earliest_anomaly_index - upper_index
+
+            score += scoring_function(anomaly_relative_position) * atp
+
+            # For false positive outside the window on the left,
+            # we assign coefficient of -1.0 to them
+
+        else:
+            fd += 1
+
+    # Windows without detections are counted as false negatives
+    score += fd * afn
+
+    # Validate points outside detection windows
+    # Between beginning of the set and first window
+    lower_index = max(windows_centers[0] - window_size, 0)
+
+    on_far_left = np.where(all_detections < lower_index)[0]
+    on_far_left = all_detections[on_far_left]
+
+    score -= len(on_far_left) * afp
+
+    # Validate points between windows
+    for c1, c2 in zip(windows_centers[:-1], windows_centers[1:]):
+        window_left_boundary = min(c1 + window_size, len(y))
+        window_right_boundary = max(c2 - window_size, 0)
+
+        outside_window = np.where(
+            (all_detections > window_left_boundary)
+            & (all_detections < window_right_boundary)
+        )[0]
+        outside_window = all_detections[outside_window]
+
+        score += (
+            np.sum(scoring_function(outside_window - window_left_boundary))
+            * afp
+        )
+
+    # Validate points between last window and end of the set
+    upper_index = min(windows_centers[-1] + window_size, len(y))
+    on_far_right = np.where(all_detections > upper_index)[0]
+    on_far_right = all_detections[on_far_right]
+
+    score += np.sum(scoring_function(on_far_right - upper_index)) * afp
+
+    return score
+
+
+def nab_metric(
+    x: np.ndarray,
+    y: np.ndarray,
+    atp: float = 2.0,
+    atn: float = 0.0,
+    afp: float = 0.25,
+    afn: float = -0.25,
+) -> float:
+    """
+    Computes NAB ( Numenta Anomaly Benchmark ) score in range from 0 to 100.
+    Found in https://arxiv.org/pdf/1510.03336.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, a set of predicted anomalies.
+    y : np.ndarray
+        Ground truth, a set of ground truth anomalies.
+    atp : float
+        Weight for true positive, must greater than or equal 0.
+    atn : float
+        Weight for true negative, must be less or equal 1.
+    afp : float
+        Weight for false positive, must be greater than or equal -1.
+    afn : float
+        Weight for false negative, must be lower than or equal 0.
+
+    Returns
+    -------
+    float
+        Numenta Anomaly Benchmark score.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch length, or weights parameters
+        doesn't mean their conditions.
+    """
+    if not x.shape == y.shape and x.ndim == 1:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    if atp < 0:
+        raise ValueError(
+            "True positive coefficient should be greater "
+            f"or equal than 0, got {atp}"
+        )
+    if atn > 1:
+        raise ValueError(
+            "True negative coefficient should be less "
+            f"or equal than 1, got {atn}"
+        )
+    if afp < -1:
+        raise ValueError(
+            "False positive coefficient should be greater "
+            f"or equal than -1, got {afp}"
+        )
+    if afn > 0:
+        raise ValueError(
+            "False negative coefficient should be less "
+            f"or equal 0, got {afn}"
+        )
+
+    # score from current detections
+    score = nab_metric_raw(x, y, atp, atn, afp, afn)
+    # score from perfect detections
+    score_perfect_detector = nab_metric_raw(y, y, atp, atn, afp, afn)
+    # score from no detections
+    _x = np.zeros(x.shape)
+    score_null_detector = nab_metric_raw(_x, y, atp, atn, afp, afn)
+
+    # avoid division by zero
+    if score_null_detector == score_perfect_detector:
+        score_null_detector += 10e-36
+
+    output = 100.0 * (
+        (score - score_null_detector)
+        / (score_perfect_detector - score_null_detector)
+    )
+
+    return np.floor(output)
+
+
 def hausdorff_distance_metric(
     x: np.ndarray,
     y: np.ndarray,

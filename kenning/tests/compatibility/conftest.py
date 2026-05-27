@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 from collections import defaultdict
@@ -44,6 +45,11 @@ STATUS_MAPPING = {
 STATUS_MAPPING = defaultdict(lambda: "Unknown", STATUS_MAPPING)
 
 
+def _test_on_gpu():
+    on_gpu = os.getenv("GPU_ONLY")
+    return on_gpu is not None and on_gpu == "y"
+
+
 def pair_to_str(cls1: Type, cls2: Type) -> str:
     return f"{cls1.__name__}-{cls2.__name__}"
 
@@ -52,6 +58,19 @@ def pair_to_str(cls1: Type, cls2: Type) -> str:
 def pytest_collection_modifyitems(
     session: pytest.Session, config: pytest.Config, items: List[pytest.Item]
 ):
+    if _test_on_gpu():
+        skip_non_gpu = pytest.mark.skip(
+            reason="Skipped on GPU-enabled machines"
+        )
+        for item in items:
+            if not item.get_closest_marker("gpu"):
+                item.add_marker(skip_non_gpu)
+    else:
+        skip_requires_gpu = pytest.mark.skip(reason="Requires GPU")
+        for item in items:
+            if item.get_closest_marker("gpu"):
+                item.add_marker(skip_requires_gpu)
+
     cls_to_path = {cls: path for path, cls in get_base_classes_dict().values()}
 
     for item in items:

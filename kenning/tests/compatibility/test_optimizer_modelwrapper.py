@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import gc
 import os
 import uuid
 from pathlib import Path
@@ -59,7 +60,7 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 LLM_OPTIMIZERS = [
     optimizer
     for optimizer in OPTIMIZER_SUBCLASSES
-    if getattr(optimizer, "inputtypes", []) == {"safetensors-native"}
+    if getattr(optimizer, "inputtypes", []) == ["safetensors-native"]
 ]
 
 LLM_MODELWRAPPERS = get_all_subclasses(
@@ -209,9 +210,7 @@ EXPECTED_FAIL = [
 
 SKIP = (
     [
-        ("MistralInstruct", "AWQOptimizer"),
-        ("MistralInstruct", "GPTQOptimizer"),
-        ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+
         # For now we don't have support for emlearn format
         ("StubEmlearnModel", "Ai8xCompiler"),
         ("StubEmlearnModel", "ExecuTorchOptimizer"),
@@ -236,9 +235,17 @@ SKIP = (
     ]
 )
 
+USE_GPU = (
+    [
+        ("MistralInstruct", "AWQOptimizer"),
+        ("MistralInstruct", "GPTQOptimizer"),
+        ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+    ]
+)
+
 expect_fail = pytest.mark.xfail(reason="Expected incompatible")
 skip = pytest.mark.skip(reason="Time or resource intensive")
-
+gpu = pytest.mark.gpu(reason="Requires GPU")
 
 def prepare_objects(
     model_cls: Type[ModelWrapper],
@@ -423,11 +430,14 @@ class TestOptimizerModelWrapper:
             if (cls1.__name__, cls2.__name__) in EXPECTED_FAIL
             else pytest.param(cls1, cls2, marks=[skip])
             if (cls1.__name__, cls2.__name__) in SKIP
+            else pytest.param(cls1, cls2, marks=[gpu])
+            if (cls1.__name__, cls2.__name__) in USE_GPU
             else (cls1, cls2)
             for cls1 in MODELWRAPPER_SUBCLASSES
             for cls2 in OPTIMIZER_SUBCLASSES
         ],
     )
+
     def test_matrix(
         self,
         model_cls: Type[ModelWrapper],
@@ -450,3 +460,11 @@ class TestOptimizerModelWrapper:
         finally:
             remove_file_or_dir(optimizer.compiled_model_path)
             remove_file_or_dir(model.model_path)
+
+    @pytest.fixture(autouse=True)
+    def memory_cleanup(self):
+        """
+        Clean the memory after run.
+        """
+        yield
+        gc.collect()

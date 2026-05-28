@@ -12,7 +12,7 @@ mkdir -p workspace
 python3 -m kenning automl optimize test report \
   --cfg $AUTOML_SCENARIO_CONFIG \
   --report-path $DOCS_DIR/source/generated/$REPORT_NAME \
-  --allow-failures --to-html --verbosity DEBUG \
+  --allow-failures --to-html \
   --root-dir $DOCS_DIR/source \
   --img-dir $DOCS_DIR/source/generated/img \
   --comparison-only \

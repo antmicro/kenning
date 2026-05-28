@@ -22,7 +22,7 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
@@ -31,7 +31,7 @@ jobs:
           sudo apt-get install -y \
              gcc g++ build-essential cmake llvm protobuf-compiler \
              libprotoc-dev libtinfo-dev zlib1g-dev libedit-dev libxml2-dev \
-             llvm curl wget
+             llvm curl wget fonts-lato
           python -m pip install .[tensorflow,docs,tvm,reports]
       - name: Run sample compilation and inference
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
@@ -70,7 +70,11 @@ jobs:
           sudo apt-get install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
             g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make cmake ninja-build \
             python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
-            mono-complete wget xxd xz-utils patch
+            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler
+          FLATC_URL=https://github.com/google/flatbuffers/releases/download/v25.2.10/Linux.flatc.binary.g++-13.zip
+          wget ${FLATC_URL} -O flatc.zip
+          sudo unzip flatc.zip -d /usr/bin
+          rm flatc.zip
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
           source ./scripts/prepare-kenning-zephyr-runtime.sh
@@ -94,14 +98,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y texlive-full pandoc
           python -m pip install .[docs]
+          sudo apt-get install -y texlive-full pandoc fonts-lato
       - name: Generate documentation
         run: |
           cp -r inferencetest docs/source/generated

@@ -136,6 +136,11 @@ class ConverterRegistry(metaclass=Singleton):
         dst_format = self._resolve_format(dst_format)
 
         if src_format not in self._graph or dst_format not in self._graph:
+            # Temporary Fix: LLM Route
+            if src_format == dst_format and src_format.startswith(
+                "safetensors"
+            ):
+                return [src_format]
             return []
 
         all_paths = []

@@ -27,6 +27,7 @@ from kenning.cli.command_template import (
     OPTIMIZE,
     REPORT,
     ROS,
+    RUN_MODULE,
     SEARCH,
     SERVER,
     TEST,
@@ -50,6 +51,7 @@ from kenning.scenarios import (
     list_classes,
     manage_cache,
     model_training,
+    module_runner,
     optimization_runner,
     pipeline_manager_client,
     render_report,
@@ -108,6 +110,7 @@ BASIC_COMMANDS = (
     COMPLETION,
     GENERATE_PLATFORMS,
     DOWNLOAD_RESOURCES,
+    RUN_MODULE,
 )
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (
@@ -140,6 +143,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     AVAILABLE_PLATFORMS: available_platforms.AvailablePlatformsCommand,
     ROS: ros2.ROS2Initializer,
     DOWNLOAD_RESOURCES: download_resources.DownloadResources,
+    RUN_MODULE: module_runner.ModuleRunner,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

@@ -269,8 +269,8 @@ class CannotDownloadDatasetError(KenningDatasetError):
 
 
 """
-Errors raised by implementations of the kenning.core.onnxconversion module,
-related to the process of converting models in ONNX format to other formats.
+Errors raised related to the process of converting models in ONNX format
+to other formats.
 """
 
 

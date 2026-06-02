@@ -454,7 +454,7 @@ def get_dataset_random_mock(
 
 
 @pytest.fixture(scope="module", autouse=True)
-def define_anomaly_detection_csv_file():
+def define_anomaly_detection_csv_file(tmp_path_factory):
     """
     Creates random CSV file for AnomalyDetectionDataset
     and overrides init.
@@ -467,23 +467,24 @@ def define_anomaly_detection_csv_file():
         data.append([random.random() for _ in range(columns)])
 
     # Save data to tmp file
-    cwd = Path(".").resolve()
-    os.makedirs(cwd / "tmp", exist_ok=True)
-    tmp_dir = cwd / "tmp"
+    tmp_dir = tmp_path_factory.mktemp("anomaly_detection_tmp")
     tmp_file = tmp_dir / "data.csv"
     with tmp_file.open("w") as fd:
         writer = csv.writer(fd)
         writer.writerows(data)
 
     # Specify csv_file param for AnomalyDetectionDataset
-    default_anomaly_init = AnomalyDetectionDataset.__init__
+    default_init = AnomalyDetectionDataset.__init__
 
-    def mock_anomaly_init(*args, **kwargs):
-        kwargs["csv_file"] = str(tmp_file)
-        return default_anomaly_init(*args, **kwargs)
+    def mock_init(self, *args, **kwargs):
+        kwargs.setdefault("csv_file", tmp_file)
+        default_init(self, *args, **kwargs)
 
-    AnomalyDetectionDataset.__init__ = mock_anomaly_init
+    AnomalyDetectionDataset.__init__ = mock_init
+
     yield
+
+    AnomalyDetectionDataset.__init__ = default_init
 
 
 class UnknownFramework(ValueError):

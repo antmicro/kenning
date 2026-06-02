@@ -50,6 +50,7 @@ ROS = "ros"
 DOWNLOAD_RESOURCES = "download-resources"
 GENERATE_PLATFORMS = "generate-platforms"
 AVAILABLE_PLATFORMS = "available-platforms"
+RUN_MODULE = "run-module"
 HELP = {
     "flags": HELP_FLAGS,
     "msg": "show this help message and exit",

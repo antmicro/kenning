@@ -277,9 +277,6 @@ class TestGetAllSubclasses:
             pytest.param(
                 module_path,
                 cls,
-                marks=(
-                    pytest.mark.skip() if module == "onnxconversions" else ()
-                ),
             )
             for module, (module_path, cls) in get_base_classes_dict().items()
         ],

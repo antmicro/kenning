@@ -64,6 +64,11 @@ SKIP = [
     ("IREECompiler", "IREECompiler"),
     ("NNIPruningOptimizer", "NNIPruningOptimizer"),
     ("TinygradOptimizer", "TinygradOptimizer"),
+    # Not yet supported.
+    ("GPTQOptimizer", "GPTQOptimizer"),
+    ("GPTQOptimizer", "AWQOptimizer"),
+    ("AWQOptimizer", "GPTQOptimizer"),
+    ("AWQOptimizer", "AWQOptimizer"),
 ]
 
 for optimizer in OPTIMIZER_SUBCLASSES:

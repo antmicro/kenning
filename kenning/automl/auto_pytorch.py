@@ -14,6 +14,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -560,7 +561,7 @@ class AutoPyTorchML(AutoML):
         "show_progress_bar": {
             "description": "Show the training and search progress bars",
             "type": bool,
-            "default": True,
+            "default": False,
         },
     }
 
@@ -887,12 +888,22 @@ class AutoPyTorchML(AutoML):
         model_params = defaultdict(lambda: defaultdict(dict))
         model_prefix = "Model/"
 
-        run_infos: Dict[Dict] = {}
+        run_infos: Dict[int, Dict] = {}
         try:
             from autoPyTorch.pipeline.event import PipelineEvent, TrainingEvent
             from tensorflow.core.util import event_pb2
             from tensorflow.data import TFRecordDataset
             from tensorflow.python.framework.errors_impl import DataLossError
+
+            def retrieve_num_run(
+                num_run: Optional[int], event: event_pb2.Event, cb: Callable
+            ) -> int:
+                for e_val in event.summary.value:
+                    if e_val.tag == "num_run":
+                        num_run = int(e_val.simple_value)
+                        cb(num_run, event)
+                        break
+                return num_run
 
             for events_file in Path(self._api._temporary_directory).glob(
                 "events.out.tfevents.*"
@@ -900,61 +911,60 @@ class AutoPyTorchML(AutoML):
                 num_run = None
                 start_epoch = None
                 try:
+
+                    def cb(num_run, event):
+                        training_start_time[num_run].append(event.wall_time)
+
                     for event in TFRecordDataset(str(events_file)):
                         event = event_pb2.Event.FromString(event.numpy())
                         # Retrieve num_run as a model ID
                         if num_run is None:
-                            for e_val in event.summary.value:
-                                if e_val.tag == "num_run":
-                                    num_run = int(e_val.simple_value)
-                                    training_start_time[num_run].append(
-                                        event.wall_time
-                                    )
-                                    break
+                            num_run = retrieve_num_run(num_run, event, cb)
+                            continue
+
                         # Gather metadata and data from training
-                        else:
-                            for e_val in event.summary.value:
-                                if e_val.tag == "start_epoch":
-                                    start_epoch = int(e_val.simple_value)
-                                elif e_val.tag == "end_epoch":
-                                    if start_epoch is None:
-                                        KLogger.warning(
-                                            "`end_epoch` received before `start_epoch`"  # noqa: E501
-                                        )
-                                        continue
-                                    training_epochs[num_run].append(
-                                        {
-                                            "epoch_range": (
-                                                start_epoch,
-                                                int(e_val.simple_value),
-                                            ),
-                                            "end_time": event.wall_time,
-                                        }
+                        for e_val in event.summary.value:
+                            if e_val.tag == "start_epoch":
+                                start_epoch = int(e_val.simple_value)
+                            elif e_val.tag == "end_epoch":
+                                if start_epoch is None:
+                                    KLogger.warning(
+                                        "`end_epoch` received before `start_epoch`"  # noqa: E501
                                     )
-                                    start_epoch = None
-                                elif e_val.tag.startswith(model_prefix):
-                                    v = e_val.simple_value
-                                    if abs(v - int(v)) < 1e-8:
-                                        v = int(v)
-                                    model_params[num_run][
-                                        e_val.tag[len(model_prefix) :]
-                                    ] = v
-                                else:
-                                    training_data[num_run][
-                                        TrainingEvent.from_tag(e_val.tag).value
-                                    ][event.wall_time] = e_val.simple_value
-                            # Add missing epoch range
-                            # if the end_epoch was not received
-                            if start_epoch:
+                                    continue
                                 training_epochs[num_run].append(
                                     {
                                         "epoch_range": (
                                             start_epoch,
-                                            float("inf"),
+                                            int(e_val.simple_value),
                                         ),
-                                        "end_time": float("inf"),
+                                        "end_time": event.wall_time,
                                     }
                                 )
+                                start_epoch = None
+                            elif e_val.tag.startswith(model_prefix):
+                                v = e_val.simple_value
+                                if abs(v - int(v)) < 1e-8:
+                                    v = int(v)
+                                model_params[num_run][
+                                    e_val.tag[len(model_prefix) :]
+                                ] = v
+                            else:
+                                training_data[num_run][
+                                    TrainingEvent.from_tag(e_val.tag).value
+                                ][event.wall_time] = e_val.simple_value
+                        # Add missing epoch range
+                        # if the end_epoch was not received
+                        if start_epoch:
+                            training_epochs[num_run].append(
+                                {
+                                    "epoch_range": (
+                                        start_epoch,
+                                        float("inf"),
+                                    ),
+                                    "end_time": float("inf"),
+                                }
+                            )
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
                     continue
@@ -969,83 +979,68 @@ class AutoPyTorchML(AutoML):
                 num_run = None
                 start_epoch = None
                 try:
+
+                    def cb(num_run, _event):
+                        run_infos[num_run] = {}
+
                     for event in TFRecordDataset(str(events_file)):
                         event = event_pb2.Event.FromString(event.numpy())
                         # Retrieve num_run as a model ID
                         if num_run is None:
-                            for e_val in event.summary.value:
-                                if e_val.tag == "num_run":
-                                    num_run = int(e_val.simple_value)
-                                    run_infos[num_run] = {}
-                                    break
+                            num_run = retrieve_num_run(num_run, event, cb)
+                            continue
                         # Gather metadata and data from training
-                        else:
-                            for e_val in event.summary.value:
-                                if e_val.tag.endswith("text_summary"):
-                                    val = e_val.tensor.string_val[0].decode(
-                                        "utf-8"
-                                    )
-                                    name = e_val.tag.replace(
-                                        "/text_summary", ""
+                        for e_val in event.summary.value:
+                            if e_val.tag.endswith("text_summary"):
+                                val = e_val.tensor.string_val[0].decode(
+                                    "utf-8"
+                                )
+                                name = e_val.tag.replace("/text_summary", "")
+
+                                pipeline_event = PipelineEvent.from_tag(name)
+
+                                if pipeline_event == PipelineEvent.CONFIG:
+                                    # convert to dict
+                                    val = ast.literal_eval(val)
+                                if pipeline_event == PipelineEvent.STATUS:
+                                    val = eval(val)
+                                    if val in (
+                                        StatusType.SUCCESS,
+                                        StatusType.DONOTADVANCE,
+                                    ):
+                                        successful_models.add(num_run)
+                                        continue
+                                run_infos[num_run][pipeline_event.value] = val
+                                continue
+
+                            try:
+                                event_name = PipelineEvent.from_tag(e_val.tag)
+                                run_infos[num_run][
+                                    event_name.value
+                                ] = e_val.simple_value
+
+                            except KeyError:
+                                (
+                                    event_name,
+                                    metric,
+                                ) = PipelineEvent.from_metric(e_val.tag)
+
+                                if not metric:
+                                    raise RuntimeError(
+                                        f"Unknown log tag: {e_val.tag}"
                                     )
 
-                                    pipeline_event = PipelineEvent.from_tag(
-                                        name
-                                    )
-
-                                    if pipeline_event == PipelineEvent.CONFIG:
-                                        # convert to dict
-                                        val = ast.literal_eval(val)
-                                    if pipeline_event == PipelineEvent.STATUS:
-                                        val = eval(val)
-                                        if val in (
-                                            StatusType.SUCCESS,
-                                            StatusType.DONOTADVANCE,
-                                        ):
-                                            successful_models.add(num_run)
-                                            continue
-                                    run_infos[num_run][
-                                        pipeline_event.value
-                                    ] = val
-                                else:
-                                    try:
-                                        event_name = PipelineEvent.from_tag(
-                                            e_val.tag
-                                        )
-                                        run_infos[num_run][
-                                            event_name.value
-                                        ] = e_val.simple_value
-
-                                    except KeyError:
-                                        (
-                                            event_name,
-                                            metric,
-                                        ) = PipelineEvent.from_metric(
-                                            e_val.tag
-                                        )
-                                        if metric:
-                                            if (
-                                                event_name.value
-                                                not in run_infos[num_run]
-                                            ):
-                                                run_infos[num_run][
-                                                    event_name.value
-                                                ] = {}
-                                            run_infos[num_run][
-                                                event_name.value
-                                            ][metric] = e_val.simple_value
-                                        else:
-                                            raise RuntimeError(
-                                                f"Unknown log tag: {e_val.tag}"
-                                            )
+                                if event_name.value not in run_infos[num_run]:
+                                    run_infos[num_run][event_name.value] = {}
+                                run_infos[num_run][event_name.value][
+                                    metric
+                                ] = e_val.simple_value
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
-                    continue
                 except RuntimeError as e:
                     KLogger.warning(
                         f"Couldin't read all data from {events_file}: {e}"
                     )
-                    continue
         except ImportError:
             KLogger.warning(
                 "Cannot import data from tensorboard,"
@@ -1201,7 +1196,6 @@ class AutoPyTorchML(AutoML):
                     component.__name__ for component in self._components
                 ],
             },
-            # search_space_updates=search_space_updates,
             n_jobs=self.jobs,
             n_threads=n_threads,
             # Do not ensemble models

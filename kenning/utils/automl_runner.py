@@ -28,8 +28,7 @@ from kenning.utils.logger import KLogger
 
 class AutoMLJSONEncoder(json.JSONEncoder):
     """
-    Class that handles JSON encoding of types
-    coming from AutoPyTorch.
+    Class that handles JSON encoding of types coming from AutoPyTorch.
     """
 
     def default(self, obj):

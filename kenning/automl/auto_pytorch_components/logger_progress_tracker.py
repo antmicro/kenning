@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -111,7 +111,6 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
         """
         self.richlogger = richlogger
 
-        # self.total_time_passed = 0
         self.lowest_cost = MAXINT
         self.best_metrics = {}
 
@@ -140,8 +139,8 @@ class RichTrainingProgressTracker(TrainingProgressTracker):
         super().__exit__(exc_type, exc_val, exc_tb)
 
     def report_time(self, time_passed: Optional[float] = None):
-        # Currently broken. Resets the progress bar to 0 when used
-        # from within `RichEpochStepLogger`.
+        # TODO: Currently broken. Resets the progress bar
+        #       to 0 when used from within `RichEpochStepLogger`.
         cur_time = time.time()
 
         if not time_passed:

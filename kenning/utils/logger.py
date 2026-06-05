@@ -565,7 +565,7 @@ class BaseProgressBar(ABC):
 
         Parameters
         ----------
-        amount: Union[int, float]
+        amount : Union[int, float]
             How many units to advance.
         """
 
@@ -576,9 +576,9 @@ class BaseProgressBar(ABC):
 
         Parameters
         ----------
-        title: str
+        title : str
             New title of the progress bar.
-        total: Union[int, float]
+        total : Union[int, float]
             New total of the progress bar.
         """
 
@@ -616,11 +616,11 @@ class DelegatedProgressBar(BaseProgressBar):
 
         Parameters
         ----------
-        richstatus: RichStatus
+        richstatus : RichStatus
             The RichStatus instance to interact with.
-        title: str
+        title : str
             Title of the progress bar.
-        total: Optional[Union[int, float]]
+        total : Optional[Union[int, float]]
             Total of the progress bar. If None, the progress bar
             is indeterminate.
         """
@@ -642,7 +642,7 @@ class DelegatedProgressBar(BaseProgressBar):
 
         Parameters
         ----------
-        total: Union[int, float]
+        total : Union[int, float]
             Total of the progress bar.
         """
         self._prog().update(self.task_id, total=total)
@@ -709,13 +709,13 @@ class RichStatus:
 
         Parameters
         ----------
-        console: Optional[Console]
+        console : Optional[Console]
             Optional Console instance to use (injected for testability).
-        progress: Optional[Progress]
+        progress : Optional[Progress]
             Optional Progress instance to use (injected for testability).
-        enable_live: bool
+        enable_live : bool
             If False, live rendering is disabled (headless mode).
-        refresh_per_second: int
+        refresh_per_second : int
             Live refresh rate when live rendering is enabled.
         """
         self.console = console or Console()
@@ -750,7 +750,7 @@ class RichStatus:
 
         Parameters
         ----------
-        val: Any
+        val : Any
             The value to add to the table.
 
         Returns
@@ -780,7 +780,6 @@ class RichStatus:
         """
         Internal function for creating the `rich` layout.
         """
-        # return self._make_table()
         return Group(self.progress, self._make_table())
 
     def add_progress_bar(
@@ -792,9 +791,9 @@ class RichStatus:
 
         Parameters
         ----------
-        title: str
+        title : str
             Title or description for the given progress bar
-        total: Optional[Union[int, float]]
+        total : Optional[Union[int, float]]
             Total number of units for the progress bar.
 
         Returns
@@ -857,7 +856,7 @@ class RichStatus:
 
         Parameters
         ----------
-        new_table: Optional[dict]
+        new_table : Optional[dict]
             The new table of values to render. This can be any subclass
             of `dict`such as `OrderedDict`. If the value is None, the
             `self.extra_info` property is reused and rerendered. One
@@ -885,8 +884,5 @@ class RichStatus:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
-        try:
-            self.stop()
-        except Exception:
-            raise
+        self.stop()
         return False

@@ -200,6 +200,7 @@ llm = [
     "rouge-score",
     "transformers==4.40.2 ; python_version<'3.12'",  # version fixed for sparsegpt+gptq optimization
     "transformers ; python_version=='3.12'",  # version fixed for sparsegpt+gptq optimization
+    "peft==0.10.0",
     # "vllm; python_version<'3.12'",
 ]
 

@@ -1,11 +1,10 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
 import multiprocessing
 from math import ceil
-from multiprocessing.pool import ThreadPool
 from threading import Event, Lock, Thread
 from typing import Any, Callable, List, Optional, Tuple
 from unittest.mock import Mock, patch
@@ -394,6 +393,8 @@ class TestProtocolEvent:
         message_type: MessageType,
         event_success: bool,
     ):
+        protocol.start()
+
         example_object = IncomingRequest(message_type, protocol)
         callback_finished_event = Event()
 
@@ -410,6 +411,7 @@ class TestProtocolEvent:
         protocol_event.start(test_success_callback, test_deny_callback)
         protocol_event.signal_callback(event_success, example_object)
         callback_finished_event.wait()
+        protocol.stop()
 
 
 class TestOutgoingTransmission:
@@ -1805,9 +1807,6 @@ class TestKenningProtocol:
 
         protocol.stop()
         other_device.terminate()
-        ProtocolEvent.callback_runner.close()
-        ProtocolEvent.callback_runner.join()
-        ProtocolEvent.callback_runner = ThreadPool(1)
         if accepted:
             assert 1 == success_callback_called
             assert not failure_callback_called
@@ -1979,9 +1978,6 @@ class TestKenningProtocol:
 
         other_device.join()
         protocol.stop()
-        ProtocolEvent.callback_runner.close()
-        ProtocolEvent.callback_runner.join()
-        ProtocolEvent.callback_runner = ThreadPool(1)
 
         assert limit == transmission_callback_called + request_callback_called
         assert transmission_count == transmission_callback_called

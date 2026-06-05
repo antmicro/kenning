@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -73,9 +73,6 @@ class ProtocolEvent(ABC):
     a case, methods like 'receive_message' and 'messages_sent' are called on
     the main event, which then should call it on its child events.
     """
-
-    # Using 1 thread to prevent race conditions between callbacks.
-    callback_runner = ThreadPool(1)
 
     class State(Enum):
         """
@@ -236,7 +233,7 @@ class ProtocolEvent(ABC):
         # To see whether we are in blocking or non-blocking mode, we check the
         # value that is set by 'start' and 'start_blocking' methods.
         if self.run_callback_on_thread:
-            self.callback_runner.apply_async(
+            self.protocol.callback_runner.apply_async(
                 self.success_callback if is_successful else self.deny_callback,
                 (callback_argument,),
             )
@@ -1149,6 +1146,74 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         },
     }
 
+    class _ParallelRunner(ThreadPool):
+        """
+        Universal single-thread runner for pseudo-parallel execution. Allows
+        multiple owners at once (it keeps track of the number of times 'start'
+        and 'stop' methods were called, so it knows when to deactivate).
+        """
+
+        def __init__(self):
+            # Using 1 thread because we wand a single, easily-stopped thread
+            # (we do not want concurrent execution within the same runner).
+            super().__init__(1)
+            self.user_counter = 0
+            self.started = False
+
+        def start(self):
+            """
+            Increments the reference counter.
+            """
+            self.user_counter += 1
+            self.started = True
+
+        def stop(self):
+            """
+            Decrements the reference counter and deactivates, if it's not
+            needed anymore.
+            """
+            self.user_counter -= 1
+            if self.user_counter == 0:
+                self.started = False
+                super().close()
+                super().terminate()
+
+        def apply_async(self, *args: Tuple, **kwargs: Dict):
+            """
+            A wrapper for the underlying ThreadPool's 'apply_async' method,
+            that checks whether the `start` method has been called. Normally
+            'ThreadPool' does not have it, and is started immediately upon
+            creation, so we need to enforce it artificially - and ensure
+            integrity of the internal ownership/reference counter.
+
+            Parameters
+            ----------
+            *args: Tuple
+                Unspecified arguments that will be passed to the parent class.
+            **kwargs: Dict
+                Unspecified keyword arguments that will be passed to the parent
+                class.
+
+            Raises
+            ------
+            ValueError
+                Method 'start' has not been called before attempted usage of
+                the runner.
+            """
+            if not self.started:
+                raise ValueError("Method 'start' must be called before usage.")
+            super().apply_async(*args, **kwargs)
+
+        def close(self):
+            KLogger.error(
+                "Method 'close' is not to be used on _ParallelRunner."
+            )
+
+        def terminate(self):
+            KLogger.error(
+                "Method 'terminate' is not to be used on _ParallelRunner."
+            )
+
     def __init__(
         self,
         timeout: int = -1,
@@ -1180,6 +1245,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self.event_lock = Lock()
         self.receiver_thread = None
         self.transmitter = None
+        self.callback_runner = None
         self.protocol_running = False
         self.error_recovery = error_recovery
         # Mimumum max_message_size is size of the header plus 1 byte for
@@ -1195,10 +1261,56 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self.max_message_size = max_message_size
         super().__init__(timeout)
 
-    def start(self):
+    def start(
+        self,
+        callback_runner_sharing_protocol: Optional["KenningProtocol"] = None,
+    ):
         """
         Starts the protocol, creates and runs threads for receiving and
-        transmitting messages.
+        transmitting messages, as well as a thread for execution of callback
+        functions in non-blocking protocol events.
+
+        KenningProtocol normally creates a thread for executing callback
+        functions (so called 'callback runner'). Optionally, multiple
+        KenningProtocol instances can share that thread (for example to make
+        sure that their callbacks are not executed concurrently, if they're
+        not thread-safe). To do that, the `start` method should be called
+        on instance 1 with `callback_runner_sharing_protocol` argument set
+        to None, and then the method should be called on other instances,
+        with instance 1 passed as `callback_runner_sharing_protocol`.
+
+        Example:
+
+        ```
+        kp1 = KenningProtocol()
+        kp2 = KenningProtocol()
+        kp3 = KenningProtocol()
+
+        # These three instances will share the same callback runnner:
+        kp1.start()
+        kp2.start(kp1)
+        kp3.start(kp2)
+
+        # Instances do stuff here...
+
+        # This will not affect kp1 or kp3:
+        kp2.stop()
+
+        # This will also not affect kp3:
+        kp1.stop()
+        ```
+
+        Parameters
+        ----------
+        callback_runner_sharing_protocol: Optional[KenningProtocol]
+            The other protocol instance, that the callback runner is to be
+            shared with. The other instance must already be running.
+
+        Raises
+        ------
+        ProtocolNotStartedError
+            A KenningProtocol instance was passed to share the callback
+            runner with, but it was not running.
         """
         if self.receiver_thread is None:
             self.input_buffer = b""
@@ -1206,7 +1318,20 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             self.protocol_running = True
             self.receiver_thread = Thread(target=self.receiver, args=())
             self.receiver_thread.start()
-            self.transmitter = ThreadPool(1)
+            self.transmitter = self._ParallelRunner()
+            self.transmitter.start()
+            if callback_runner_sharing_protocol:
+                if not callback_runner_sharing_protocol.protocol_running:
+                    raise ProtocolNotStartedError(
+                        "To share the callback execution thread, the other"
+                        " KenningProtocol instance must already be running."
+                    )
+                self.callback_runner = (
+                    callback_runner_sharing_protocol.callback_runner
+                )
+            else:
+                self.callback_runner = self._ParallelRunner()
+            self.callback_runner.start()
         else:
             ValueError("Protocol already started.")
 
@@ -1222,9 +1347,11 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             self.receiver_thread.join()
         self.receiver_thread = None
         if self.transmitter is not None:
-            self.transmitter.close()
-            self.transmitter.terminate()
+            self.transmitter.stop()
             self.transmitter = None
+        if self.callback_runner is not None:
+            self.callback_runner.stop()
+            self.callback_runner = None
 
     def __del__(self):
         self.stop()

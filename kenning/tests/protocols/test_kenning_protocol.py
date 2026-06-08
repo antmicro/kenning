@@ -44,6 +44,11 @@ def protocol():
     return protocol
 
 
+# Used in tests, that require multiple instances of the protocol.
+protocol2 = protocol
+protocol3 = protocol
+
+
 @pytest.fixture
 @patch.multiple(ProtocolEvent, __abstractmethods__=set())
 def protocol_event(message_type: MessageType, protocol: KenningProtocol):
@@ -1426,6 +1431,35 @@ class TestKenningProtocol:
         self._assert_message_lists_equal(
             expected_dump_buffer, event_mock.rec_messages
         )
+
+    def test_callback_runner_sharing(
+        self,
+        protocol: KenningProtocol,
+        protocol2: KenningProtocol,
+        protocol3: KenningProtocol,
+    ):
+        protocol.start()
+        protocol2.start()
+        assert protocol.callback_runner != protocol2.callback_runner
+        protocol2.stop()
+        assert protocol2.callback_runner is None
+        protocol2.start(protocol)
+        protocol3.start(protocol)
+        assert protocol.callback_runner == protocol2.callback_runner
+        assert protocol.callback_runner == protocol3.callback_runner
+        protocol2.stop()
+        assert protocol2.callback_runner is None
+        # Shutting down one instance, should not affect the threadpool in the
+        # original instance
+        assert "RUN" == protocol.callback_runner._state
+        assert protocol.callback_runner.started
+        protocol.stop()
+        assert protocol.callback_runner is None
+        # Shutting down the original instance, should not affect the threadpool
+        # in other instances
+        assert "RUN" == protocol3.callback_runner._state
+        assert protocol3.callback_runner.started
+        protocol3.stop()
 
     def test_send_messages(self, protocol: KenningProtocol):
         message_dump_buffer = []

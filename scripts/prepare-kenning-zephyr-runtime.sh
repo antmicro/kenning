@@ -8,16 +8,18 @@
 # scripts with this option might cause the shell to break).
 
 mkdir -p $ZEPHYR_WORKSPACE && pushd $ZEPHYR_WORKSPACE
+
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
 
-python3 -m venv .venv --system-site-packages
+uv venv -p 3.11
 source .venv/bin/activate
-pip install pip setuptools west --upgrade
+
+uv pip install pip setuptools west --upgrade
 west init -l .
 west update
 west zephyr-export
-pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
 west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
 ./scripts/prepare_modules.sh
 source ./scripts/prepare_renode.sh

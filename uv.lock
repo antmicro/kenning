@@ -247,26 +247,6 @@ wheels = [
 ]
 
 [[package]]
-name = "apache-tvm"
-version = "0.14.dev273"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "attrs", marker = "python_full_version < '3.12'" },
-    { name = "cloudpickle", marker = "python_full_version < '3.12'" },
-    { name = "decorator", marker = "python_full_version < '3.12'" },
-    { name = "ml-dtypes", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", marker = "python_full_version < '3.12'" },
-    { name = "psutil", marker = "python_full_version < '3.12'" },
-    { name = "scipy", marker = "python_full_version < '3.12'" },
-    { name = "tornado", marker = "python_full_version < '3.12'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/a7/c1f41dbda8e76c11a9eb94c1af639472f48d5677ac1eec913734681f0f03/apache_tvm-0.14.dev273-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7f3175ebc333485637ab76a97f2cc602be9321e4ebf9ba8590fa58c030074e2b", size = 69224598, upload-time = "2023-11-01T05:51:02.403Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/b2/adb56267ba6b6f05204407a7745e0c188e39589b7e33f490d4aa406d84e8/apache_tvm-0.14.dev273-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:01155d38cbce458607694d5c619a685fc745baa9744a563b58e791702da05ef5", size = 69139264, upload-time = "2023-11-01T05:51:09.874Z" },
-]
-
-[[package]]
 name = "appdirs"
 version = "1.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2173,7 +2153,6 @@ all = [
     { name = "albumentations" },
     { name = "antmicro-sphinx-utils" },
     { name = "anytree" },
-    { name = "apache-tvm", marker = "python_full_version < '3.12'" },
     { name = "auto-gptq", marker = "python_full_version < '3.12'" },
     { name = "autoawq", version = "0.2.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "autoawq", version = "0.2.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2273,7 +2252,9 @@ all = [
     { name = "transformers", version = "4.40.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "transformers", version = "5.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "tuttest" },
-    { name = "tvm", marker = "python_full_version >= '3.12'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version < '3.11'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version == '3.11.*'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version >= '3.12'" },
     { name = "west" },
 ]
 anomaly-detection = [
@@ -2491,8 +2472,9 @@ torch = [
     { name = "torchvision" },
 ]
 tvm = [
-    { name = "apache-tvm", marker = "python_full_version < '3.12'" },
-    { name = "tvm", marker = "python_full_version >= '3.12'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version < '3.11'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version == '3.11.*'" },
+    { name = "tvm", version = "0.18.0", source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }, marker = "python_full_version >= '3.12'" },
 ]
 uart = [
     { name = "pyserial" },
@@ -2514,7 +2496,6 @@ requires-dist = [
     { name = "albumentations", marker = "extra == 'albumentations'" },
     { name = "antmicro-sphinx-utils", marker = "extra == 'docs'", git = "https://github.com/antmicro/antmicro-sphinx-utils.git" },
     { name = "anytree", marker = "extra == 'zephyr'" },
-    { name = "apache-tvm", marker = "python_full_version < '3.12' and extra == 'tvm'", specifier = "==0.14.dev273" },
     { name = "argcomplete", specifier = ">=3.0" },
     { name = "astunparse", specifier = ">=1.6.3" },
     { name = "auto-gptq", marker = "python_full_version < '3.12' and extra == 'llm'" },
@@ -2654,6 +2635,8 @@ requires-dist = [
     { name = "transformers", marker = "python_full_version == '3.12.*' and extra == 'llm'" },
     { name = "transformers", marker = "python_full_version < '3.12' and extra == 'llm'", specifier = "==4.40.2" },
     { name = "tuttest", marker = "extra == 'test'", git = "https://github.com/antmicro/tuttest.git" },
+    { name = "tvm", marker = "python_full_version == '3.10.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
+    { name = "tvm", marker = "python_full_version == '3.11.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "tvm", marker = "python_full_version == '3.12.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "west", marker = "extra == 'zephyr'" },
 ]
@@ -7145,7 +7128,262 @@ dependencies = [
 [[package]]
 name = "tvm"
 version = "0.18.0"
+source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }
+resolution-markers = [
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "attrs", marker = "python_full_version < '3.11'" },
+    { name = "cloudpickle", marker = "python_full_version < '3.11'" },
+    { name = "decorator", marker = "python_full_version < '3.11'" },
+    { name = "ml-dtypes", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", marker = "python_full_version < '3.11'" },
+    { name = "packaging", marker = "python_full_version < '3.11'" },
+    { name = "psutil", marker = "python_full_version < '3.11'" },
+    { name = "scipy", marker = "python_full_version < '3.11'" },
+    { name = "tornado", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+wheels = [
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:792ca0f919560d137bb97c96e19de5b1607a54aafd39902278f930db9fa8bf42" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "astroid", marker = "extra == 'dev'" },
+    { name = "attrs" },
+    { name = "attrs", marker = "extra == 'all-prod'" },
+    { name = "autodocsumm", marker = "extra == 'dev'" },
+    { name = "black", marker = "extra == 'dev'", specifier = "==20.8b1" },
+    { name = "cloudpickle" },
+    { name = "cloudpickle", marker = "extra == 'all-prod'" },
+    { name = "commonmark", marker = "extra == 'dev'", specifier = ">=0.7.3" },
+    { name = "coremltools", marker = "extra == 'all-prod'" },
+    { name = "coremltools", marker = "extra == 'importer-coreml'" },
+    { name = "cpplint", marker = "extra == 'dev'" },
+    { name = "decorator" },
+    { name = "decorator", marker = "extra == 'all-prod'" },
+    { name = "docutils", marker = "extra == 'dev'", specifier = "<0.17" },
+    { name = "ethos-u-vela", marker = "extra == 'all-prod'", specifier = "==3.8.0" },
+    { name = "ethos-u-vela", marker = "extra == 'ethosu'", specifier = "==3.8.0" },
+    { name = "ethos-u-vela", marker = "extra == 'tvmc'", specifier = "==3.8.0" },
+    { name = "future", marker = "extra == 'all-prod'" },
+    { name = "future", marker = "extra == 'importer-caffe2'" },
+    { name = "future", marker = "extra == 'importer-onnx'" },
+    { name = "future", marker = "extra == 'importer-pytorch'" },
+    { name = "future", marker = "extra == 'tvmc'" },
+    { name = "future", marker = "extra == 'xgboost'" },
+    { name = "h5py", marker = "extra == 'all-prod'", specifier = "==2.10.0" },
+    { name = "h5py", marker = "extra == 'vitis-ai'", specifier = "==2.10.0" },
+    { name = "image", marker = "extra == 'dev'" },
+    { name = "matplotlib", marker = "extra == 'dev'" },
+    { name = "ml-dtypes" },
+    { name = "ml-dtypes", marker = "extra == 'all-prod'" },
+    { name = "numpy" },
+    { name = "numpy", marker = "extra == 'all-prod'" },
+    { name = "numpy", marker = "extra == 'importer-caffe'" },
+    { name = "onnx", marker = "extra == 'all-prod'" },
+    { name = "onnx", marker = "extra == 'importer-onnx'" },
+    { name = "onnx", marker = "extra == 'tvmc'" },
+    { name = "onnxoptimizer", marker = "extra == 'all-prod'" },
+    { name = "onnxoptimizer", marker = "extra == 'importer-onnx'" },
+    { name = "onnxoptimizer", marker = "extra == 'tvmc'" },
+    { name = "onnxruntime", marker = "extra == 'all-prod'" },
+    { name = "onnxruntime", marker = "extra == 'importer-onnx'" },
+    { name = "onnxruntime", marker = "extra == 'tvmc'" },
+    { name = "opencv-python", marker = "extra == 'all-prod'" },
+    { name = "opencv-python", marker = "extra == 'importer-darknet'" },
+    { name = "packaging" },
+    { name = "packaging", marker = "extra == 'all-prod'" },
+    { name = "paddlepaddle", marker = "extra == 'all-prod'" },
+    { name = "paddlepaddle", marker = "extra == 'importer-paddle'" },
+    { name = "paddlepaddle", marker = "extra == 'tvmc'" },
+    { name = "pillow", marker = "extra == 'dev'" },
+    { name = "progressbar", marker = "extra == 'all-prod'" },
+    { name = "progressbar", marker = "extra == 'vitis-ai'" },
+    { name = "protobuf", marker = "extra == 'all-prod'" },
+    { name = "protobuf", marker = "extra == 'importer-caffe'" },
+    { name = "psutil" },
+    { name = "psutil", marker = "extra == 'all-prod'" },
+    { name = "pylint", marker = "extra == 'dev'" },
+    { name = "scikit-image", marker = "extra == 'all-prod'" },
+    { name = "scikit-image", marker = "extra == 'importer-caffe'" },
+    { name = "scipy" },
+    { name = "scipy", marker = "extra == 'all-prod'" },
+    { name = "six", marker = "extra == 'all-prod'" },
+    { name = "six", marker = "extra == 'importer-caffe'" },
+    { name = "sphinx", marker = "extra == 'dev'" },
+    { name = "sphinx-autodoc-annotation", marker = "extra == 'dev'" },
+    { name = "sphinx-gallery", marker = "extra == 'dev'" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'" },
+    { name = "tensorflow", marker = "extra == 'all-prod'" },
+    { name = "tensorflow", marker = "extra == 'importer-keras'" },
+    { name = "tensorflow", marker = "extra == 'importer-tensorflow'" },
+    { name = "tensorflow", marker = "extra == 'importer-tflite'" },
+    { name = "tensorflow", marker = "extra == 'tvmc'" },
+    { name = "tensorflow-estimator", marker = "extra == 'all-prod'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-keras'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-tensorflow'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-tflite'" },
+    { name = "tflite", marker = "extra == 'all-prod'" },
+    { name = "tflite", marker = "extra == 'importer-tflite'" },
+    { name = "tflite", marker = "extra == 'tvmc'" },
+    { name = "torch", marker = "extra == 'all-prod'" },
+    { name = "torch", marker = "extra == 'importer-caffe2'" },
+    { name = "torch", marker = "extra == 'importer-onnx'" },
+    { name = "torch", marker = "extra == 'importer-pytorch'" },
+    { name = "torch", marker = "extra == 'tvmc'" },
+    { name = "torch", marker = "extra == 'xgboost'" },
+    { name = "torchvision", marker = "extra == 'all-prod'" },
+    { name = "torchvision", marker = "extra == 'importer-onnx'" },
+    { name = "torchvision", marker = "extra == 'importer-pytorch'" },
+    { name = "torchvision", marker = "extra == 'tvmc'" },
+    { name = "tornado" },
+    { name = "tornado", marker = "extra == 'all-prod'" },
+    { name = "types-psutil", marker = "extra == 'dev'" },
+    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "extra == 'all-prod'" },
+    { name = "xgboost", marker = "extra == 'all-prod'", specifier = ">=1.1.0" },
+    { name = "xgboost", marker = "extra == 'tvmc'", specifier = ">=1.1.0" },
+    { name = "xgboost", marker = "extra == 'xgboost'", specifier = ">=1.1.0" },
+]
+provides-extras = ["ethosu", "importer-caffe", "importer-caffe2", "importer-coreml", "importer-darknet", "importer-keras", "importer-onnx", "importer-paddle", "importer-pytorch", "importer-tensorflow", "importer-tflite", "tvmc", "vitis-ai", "xgboost", "dev", "all-prod"]
+
+[[package]]
+name = "tvm"
+version = "0.18.0"
+source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }
+resolution-markers = [
+    "python_full_version == '3.11.*' and sys_platform == 'win32'",
+    "python_full_version == '3.11.*' and sys_platform == 'emscripten'",
+    "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+dependencies = [
+    { name = "attrs", marker = "python_full_version == '3.11.*'" },
+    { name = "cloudpickle", marker = "python_full_version == '3.11.*'" },
+    { name = "decorator", marker = "python_full_version == '3.11.*'" },
+    { name = "ml-dtypes", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "numpy", marker = "python_full_version == '3.11.*'" },
+    { name = "packaging", marker = "python_full_version == '3.11.*'" },
+    { name = "psutil", marker = "python_full_version == '3.11.*'" },
+    { name = "scipy", marker = "python_full_version == '3.11.*'" },
+    { name = "tornado", marker = "python_full_version == '3.11.*'" },
+    { name = "typing-extensions", marker = "python_full_version == '3.11.*'" },
+]
+wheels = [
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bc82053726ef89c9342e9e04358205bc2d2de8532efb47f30277dc9c77fefb37" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "astroid", marker = "extra == 'dev'" },
+    { name = "attrs" },
+    { name = "attrs", marker = "extra == 'all-prod'" },
+    { name = "autodocsumm", marker = "extra == 'dev'" },
+    { name = "black", marker = "extra == 'dev'", specifier = "==20.8b1" },
+    { name = "cloudpickle" },
+    { name = "cloudpickle", marker = "extra == 'all-prod'" },
+    { name = "commonmark", marker = "extra == 'dev'", specifier = ">=0.7.3" },
+    { name = "coremltools", marker = "extra == 'all-prod'" },
+    { name = "coremltools", marker = "extra == 'importer-coreml'" },
+    { name = "cpplint", marker = "extra == 'dev'" },
+    { name = "decorator" },
+    { name = "decorator", marker = "extra == 'all-prod'" },
+    { name = "docutils", marker = "extra == 'dev'", specifier = "<0.17" },
+    { name = "ethos-u-vela", marker = "extra == 'all-prod'", specifier = "==3.8.0" },
+    { name = "ethos-u-vela", marker = "extra == 'ethosu'", specifier = "==3.8.0" },
+    { name = "ethos-u-vela", marker = "extra == 'tvmc'", specifier = "==3.8.0" },
+    { name = "future", marker = "extra == 'all-prod'" },
+    { name = "future", marker = "extra == 'importer-caffe2'" },
+    { name = "future", marker = "extra == 'importer-onnx'" },
+    { name = "future", marker = "extra == 'importer-pytorch'" },
+    { name = "future", marker = "extra == 'tvmc'" },
+    { name = "future", marker = "extra == 'xgboost'" },
+    { name = "h5py", marker = "extra == 'all-prod'", specifier = "==2.10.0" },
+    { name = "h5py", marker = "extra == 'vitis-ai'", specifier = "==2.10.0" },
+    { name = "image", marker = "extra == 'dev'" },
+    { name = "matplotlib", marker = "extra == 'dev'" },
+    { name = "ml-dtypes" },
+    { name = "ml-dtypes", marker = "extra == 'all-prod'" },
+    { name = "numpy" },
+    { name = "numpy", marker = "extra == 'all-prod'" },
+    { name = "numpy", marker = "extra == 'importer-caffe'" },
+    { name = "onnx", marker = "extra == 'all-prod'" },
+    { name = "onnx", marker = "extra == 'importer-onnx'" },
+    { name = "onnx", marker = "extra == 'tvmc'" },
+    { name = "onnxoptimizer", marker = "extra == 'all-prod'" },
+    { name = "onnxoptimizer", marker = "extra == 'importer-onnx'" },
+    { name = "onnxoptimizer", marker = "extra == 'tvmc'" },
+    { name = "onnxruntime", marker = "extra == 'all-prod'" },
+    { name = "onnxruntime", marker = "extra == 'importer-onnx'" },
+    { name = "onnxruntime", marker = "extra == 'tvmc'" },
+    { name = "opencv-python", marker = "extra == 'all-prod'" },
+    { name = "opencv-python", marker = "extra == 'importer-darknet'" },
+    { name = "packaging" },
+    { name = "packaging", marker = "extra == 'all-prod'" },
+    { name = "paddlepaddle", marker = "extra == 'all-prod'" },
+    { name = "paddlepaddle", marker = "extra == 'importer-paddle'" },
+    { name = "paddlepaddle", marker = "extra == 'tvmc'" },
+    { name = "pillow", marker = "extra == 'dev'" },
+    { name = "progressbar", marker = "extra == 'all-prod'" },
+    { name = "progressbar", marker = "extra == 'vitis-ai'" },
+    { name = "protobuf", marker = "extra == 'all-prod'" },
+    { name = "protobuf", marker = "extra == 'importer-caffe'" },
+    { name = "psutil" },
+    { name = "psutil", marker = "extra == 'all-prod'" },
+    { name = "pylint", marker = "extra == 'dev'" },
+    { name = "scikit-image", marker = "extra == 'all-prod'" },
+    { name = "scikit-image", marker = "extra == 'importer-caffe'" },
+    { name = "scipy" },
+    { name = "scipy", marker = "extra == 'all-prod'" },
+    { name = "six", marker = "extra == 'all-prod'" },
+    { name = "six", marker = "extra == 'importer-caffe'" },
+    { name = "sphinx", marker = "extra == 'dev'" },
+    { name = "sphinx-autodoc-annotation", marker = "extra == 'dev'" },
+    { name = "sphinx-gallery", marker = "extra == 'dev'" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'" },
+    { name = "tensorflow", marker = "extra == 'all-prod'" },
+    { name = "tensorflow", marker = "extra == 'importer-keras'" },
+    { name = "tensorflow", marker = "extra == 'importer-tensorflow'" },
+    { name = "tensorflow", marker = "extra == 'importer-tflite'" },
+    { name = "tensorflow", marker = "extra == 'tvmc'" },
+    { name = "tensorflow-estimator", marker = "extra == 'all-prod'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-keras'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-tensorflow'" },
+    { name = "tensorflow-estimator", marker = "extra == 'importer-tflite'" },
+    { name = "tflite", marker = "extra == 'all-prod'" },
+    { name = "tflite", marker = "extra == 'importer-tflite'" },
+    { name = "tflite", marker = "extra == 'tvmc'" },
+    { name = "torch", marker = "extra == 'all-prod'" },
+    { name = "torch", marker = "extra == 'importer-caffe2'" },
+    { name = "torch", marker = "extra == 'importer-onnx'" },
+    { name = "torch", marker = "extra == 'importer-pytorch'" },
+    { name = "torch", marker = "extra == 'tvmc'" },
+    { name = "torch", marker = "extra == 'xgboost'" },
+    { name = "torchvision", marker = "extra == 'all-prod'" },
+    { name = "torchvision", marker = "extra == 'importer-onnx'" },
+    { name = "torchvision", marker = "extra == 'importer-pytorch'" },
+    { name = "torchvision", marker = "extra == 'tvmc'" },
+    { name = "tornado" },
+    { name = "tornado", marker = "extra == 'all-prod'" },
+    { name = "types-psutil", marker = "extra == 'dev'" },
+    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "extra == 'all-prod'" },
+    { name = "xgboost", marker = "extra == 'all-prod'", specifier = ">=1.1.0" },
+    { name = "xgboost", marker = "extra == 'tvmc'", specifier = ">=1.1.0" },
+    { name = "xgboost", marker = "extra == 'xgboost'", specifier = ">=1.1.0" },
+]
+provides-extras = ["ethosu", "importer-caffe", "importer-caffe2", "importer-coreml", "importer-darknet", "importer-keras", "importer-onnx", "importer-paddle", "importer-pytorch", "importer-tensorflow", "importer-tflite", "tvmc", "vitis-ai", "xgboost", "dev", "all-prod"]
+
+[[package]]
+name = "tvm"
+version = "0.18.0"
 source = { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }
+resolution-markers = [
+    "python_full_version >= '3.12' and sys_platform == 'win32'",
+    "python_full_version >= '3.12' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
 dependencies = [
     { name = "attrs", marker = "python_full_version >= '3.12'" },
     { name = "cloudpickle", marker = "python_full_version >= '3.12'" },

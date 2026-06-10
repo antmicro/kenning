@@ -22,7 +22,6 @@ RE_KENNING_DEP = r"kenning\[[a-zA-Z]+\]"
 # Mapping of names used for import and oficiall package names
 KNOWN_PYPI_NAMES = {
     "cv2": "opencv_python",
-    "tvm": "apache-tvm",
 }
 
 

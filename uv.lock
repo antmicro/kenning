@@ -418,7 +418,7 @@ wheels = [
 [[package]]
 name = "autopytorch"
 version = "0.2.1"
-source = { git = "https://github.com/antmicro/auto-pytorch.git#c8b34cfecf7cb918f17d24c847c8395b23a5d719" }
+source = { git = "https://github.com/antmicro/auto-pytorch.git#e2c7ec388913e6272e30e58cc1a0d6c45ae855c2" }
 dependencies = [
     { name = "catboost" },
     { name = "configspace" },

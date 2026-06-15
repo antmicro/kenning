@@ -74,11 +74,11 @@ class OnnxConverter(ModelConverter):
         """
         import onnx
 
-        from kenning.onnxconverters.onnx2torch import convert
+        import kenning.converters.onnx2torch_wrapper as onnx2torch
 
         if not model:
             model = onnx.load(str(self.source_model_path))
-        return convert(model)
+        return onnx2torch.convert(model)
 
     def to_tflite(
         self,

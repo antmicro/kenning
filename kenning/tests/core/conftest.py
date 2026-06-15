@@ -43,10 +43,6 @@ from kenning.modelwrappers.object_detection.darknet_coco import (
 from kenning.modelwrappers.object_detection.yolov4 import (
     ONNXYOLOV4,
 )
-
-# Do not remove onnx2torch import as it redefines some ONNX operations
-# and removing it makes tests fail.
-from kenning.onnxconverters import onnx2torch  # noqa: F401
 from kenning.optimizers.iree import IREECompiler
 from kenning.optimizers.onnx import ONNXCompiler
 from kenning.optimizers.tvm import TVMCompiler

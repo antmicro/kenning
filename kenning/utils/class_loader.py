@@ -37,7 +37,6 @@ from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
 from kenning.core.inferenceloop import InferenceLoop
 from kenning.core.model import ModelWrapper
-from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
 from kenning.core.platform import Platform
@@ -109,7 +108,6 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         DATA_CONVERTERS: ("kenning.dataconverters", DataConverter),
         DATASETS: ("kenning.datasets", Dataset),
         MODEL_WRAPPERS: ("kenning.modelwrappers", ModelWrapper),
-        ONNX_CONVERSIONS: ("kenning.onnxconverters", ONNXConversion),
         OUTPUT_COLLECTORS: ("kenning.outputcollectors", OutputCollector),
         PLATFORMS: ("kenning.platforms", Platform),
         RUNTIME_BUILDERS: ("kenning.runtimebuilders", RuntimeBuilder),

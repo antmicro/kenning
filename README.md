@@ -118,7 +118,6 @@ The `kenning` module consists of the following submodules:
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
 * `dataconverters` - provides implementations for data converters for various data types
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
-* `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
 * `runners` - provide implementations for runners that can be used in runtime,
 * `drawing` - provides methods for rendering plots for reports,
 * `resources` - contains project's resources, like RST templates, or trained models,

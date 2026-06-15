@@ -367,18 +367,6 @@ The dictionary held by `Measurements` requires serializable data, since most scr
    :members:
 ```
 
-(onnxconversion-api)=
-## ONNXConversion
-
-The `ONNXConversion` object contains methods for model conversion in various frameworks to ONNX and vice versa.
-It also provides methods for testing the conversion process empirically on a list of deep learning models implemented in the tested frameworks.
-
-```{eval-rst}
-.. autoclass:: kenning.core.onnxconversion.ONNXConversion
-   :show-inheritance:
-   :members:
-```
-
 (dataprovider-api)=
 ## DataProvider
 

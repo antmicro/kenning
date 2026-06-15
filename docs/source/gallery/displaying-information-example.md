@@ -74,7 +74,6 @@ The output of the command can be limited by providing one or more positional arg
 * `dataproviders`,
 * `datasets`,
 * `modelwrappers`,
-* `onnxconversions`,
 * `outputcollectors`,
 * `runtimes`.
 
@@ -223,4 +222,3 @@ Arguments specification:
   * description: Path to the model
   * required: True
 ```
-

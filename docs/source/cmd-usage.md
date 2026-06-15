@@ -477,7 +477,7 @@ As for now, the available report types are:
 
 `kenning.scenarios.list_classes` and `kenning.scenarios.class_info` provide useful information about classes and can help in creating JSON scenarios.
 
-`kenning.scenarios.list_classes` will list all available classes by default, though the output can be limited by providing positional arguments representing groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`, `modelwrappers`, `onnxconversions`, `outputcollectors`, `runtimes`.
+`kenning.scenarios.list_classes` will list all available classes by default, though the output can be limited by providing positional arguments representing groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`, `modelwrappers`, `outputcollectors`, `runtimes`.
 The amount of information displayed can be controlled using `-v` and `-vv` flags.
 
 To print available arguments run `python -m kenning.scenarios.list_classes -h`.

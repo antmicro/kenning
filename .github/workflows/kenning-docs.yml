@@ -75,6 +75,7 @@ jobs:
           wget ${FLATC_URL} -O flatc.zip
           sudo unzip flatc.zip -d /usr/bin
           rm flatc.zip
+          wget -qO- https://astral.sh/uv/install.sh | sh
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
           source ./scripts/prepare-kenning-zephyr-runtime.sh

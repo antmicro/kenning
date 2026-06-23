@@ -6,7 +6,8 @@ Copyright (c) 2020-2026 [Antmicro](https://www.antmicro.com)
 
 Kenning is a framework for creating deployment flows and runtimes for Deep Neural Network applications on various target hardware.
 
-[Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning) | [Tutorials](https://antmicro.github.io/kenning/kenning-gallery.html)
+[Website](https://antmicro.com/kenning/) | [Documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [Tutorials](https://antmicro.github.io/kenning/kenning-gallery.html)
+
 ![](img/report-mosaic.png)
 
 Contents:

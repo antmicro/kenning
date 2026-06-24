@@ -324,6 +324,8 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         x = np.array(x, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
+        x_scores = np.array(x_scores, dtype=np.float32)
+
         output = {}
 
         if Metric.Hausdorff.name.lower() in self.use_metrics:

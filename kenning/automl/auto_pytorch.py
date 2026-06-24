@@ -28,6 +28,7 @@ from typing import (
 import numpy as np
 import psutil
 from autoPyTorch.api.base_task import BaseTask
+from autoPyTorch.utils.logging_ import PicklableClientLogger
 from sklearn.pipeline import Pipeline
 
 from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
@@ -505,6 +506,31 @@ class AutoPyTorchModel(AutoMLModel):
                 "parameters": model_wrapper_params,
             },
         }
+
+
+class AutoPyTorchLogger(PicklableClientLogger):
+    """
+    A mock class for internal AutoPytorch logger,
+    which allows to use KLogger in AutoPytorch task.
+    """
+
+    def __init__(self, name: str, host: str = "", port: int = 0):
+        self.name = name
+        self.host = host
+        self.port = port
+        self.logger = KLogger
+
+    def __getstate__(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "host": self.host,
+            "port": self.port,
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.name = state["name"]
+        self.host = state["host"]
+        self.port = state["port"]
 
 
 class AutoPyTorchML(AutoML):
@@ -1206,6 +1232,7 @@ class AutoPyTorchML(AutoML):
             temporary_directory=str(autoPyTorch_tmp_dir),
             delete_tmp_folder_after_terminate=False,
         )
+        task._get_logger = lambda name: AutoPyTorchLogger(name)
 
         # For now, only TabularClassificationTask
         return task

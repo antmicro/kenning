@@ -435,7 +435,7 @@ class NNIPruningOptimizer(Optimizer):
         KLogger.info(f"Model before pruning\n{model}")
 
         dummy_input = self.generate_dummy_input(io_spec)
-        criterion = load_class(self.criterion_modulepath)()
+        criterion = load_class(self.criterion_modulepath)(dataset=self.dataset)
         optimizer_cls = load_class(self.optimizer_modulepath)
         evaluator = self.create_evaluator(
             model, criterion, optimizer_cls, dummy_input

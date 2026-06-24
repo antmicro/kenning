@@ -105,9 +105,9 @@ class YOLOWrapper(ModelWrapper, ABC):
 
     def load_model(self, model_path: PathOrURI):
         self.keyparams, self.perlayerparams = self.load_config_file(
-            self.model_path.with_suffix(".cfg")
+            model_path.with_suffix(".cfg")
         )
-        self.save_io_specification(self.model_path)
+        self.save_io_specification(model_path)
 
     def prepare_model(self):
         if self.model_prepared:

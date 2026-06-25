@@ -1232,7 +1232,7 @@ wheels = [
 [[package]]
 name = "dts2repl"
 version = "0.0.0"
-source = { git = "https://github.com/antmicro/dts2repl?rev=main#eb2150b5d2c5bdbebbc2b15a0db702481641cc25" }
+source = { git = "https://github.com/antmicro/dts2repl?rev=main#ac3c1b8b0c030adadfcb266af39d7dc7379ceaf9" }
 
 [[package]]
 name = "email-validator"

@@ -1,0 +1,1451 @@
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="">
+    
+    
+      
+        <title>Kenning Zephyr Runtime - Kenning</title>
+      
+    
+    
+      
+        
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+        <link rel="stylesheet" type="text/css" href="_static/sphinx_immaterial_theme.c5589c0bd87d933a4.min.css?v=eeeb54bc" />
+        <link rel="stylesheet" type="text/css" href="_static/css/bokeh.css?v=8bee089c" />
+        <link rel="stylesheet" type="text/css" href="_static/css/compatibility.css?v=5eb45fba" />
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="Kenning" class="md-header__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="_static/white.svg" alt="logo">
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kenning
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Kenning Zephyr Runtime
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <div class="md-header__button">
+        <a href="kenning.pdf" title="PDF - kenning.pdf">
+          <div class="md-icon">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M64 0C28.7 0 0 28.7 0 64v384c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zm192 0v128h128L256 0zM64 224h24c30.9 0 56 25.1 56 56s-25.1 56-56 56h-8v32c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16zm24 80c13.3 0 24-10.7 24-24s-10.7-24-24-24h-8v48h8zm72-64c0-8.8 7.2-16 16-16h24c26.5 0 48 21.5 48 48v64c0 26.5-21.5 48-48 48h-24c-8.8 0-16-7.2-16-16V240zm32 112h8c8.8 0 16-7.2 16-16v-64c0-8.8-7.2-16-16-16h-8v96zm96-128h48c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v32h32c8.8 0 16 7.2 16 16s-7.2 16-16 16h-32v48c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16z"/></svg>
+          </div>
+        </a>
+      </div>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="Kenning" class="md-nav__button md-logo" aria-label="Kenning" data-md-component="logo">
+      <img src="_static/white.svg" alt="logo">
+    </a>
+    Kenning
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/antmicro/kenning" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    antmicro/kenning
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="introduction.html" class="md-nav__link">
+        <span class="md-ellipsis">Introduction</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="project-readme.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dl-deployment-stack.html" class="md-nav__link">
+        <span class="md-ellipsis">Deep Learning deployment stack</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="json-scenarios.html" class="md-nav__link">
+        <span class="md-ellipsis">Defining optimization pipelines in Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd-usage.html" class="md-nav__link">
+        <span class="md-ellipsis">Using Kenning via command line arguments</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-gallery.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning gallery of use cases</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-variables.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning environment variables</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-measurements.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning measurements</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pipeline-optimizer.html" class="md-nav__link">
+        <span class="md-ellipsis">Choosing optimal optimization pipeline</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sample-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample autogenerated report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sample-automl-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample Auto<wbr>ML report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sample-zephyr-tracing-report.html" class="md-nav__link">
+        <span class="md-ellipsis">Sample Zephyr Tracing Report</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sample-zephyr-tracing-report.html#id1" class="md-nav__link">
+        <span class="md-ellipsis"></span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-flow.html" class="md-nav__link">
+        <span class="md-ellipsis">Creating applications with Kenning</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          <span class="md-ellipsis">Kenning Zephyr Runtime</span>
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="#" class="md-nav__link md-nav__link--active">
+        <span class="md-ellipsis">Kenning Zephyr Runtime</span>
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">Usage</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-environment" class="md-nav__link">
+    <span title="preparing-the-environment (reference label)" class="md-ellipsis">Preparing the environment</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-evaluation-with-kenning-using-app" class="md-nav__link">
+    <span class="md-ellipsis">Model evaluation with Kenning <wbr>(using app)</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model evaluation with Kenning (using app)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-evaluation-scenario" class="md-nav__link">
+    <span class="md-ellipsis">Basic evaluation scenario</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-building-of-kenning-zephyr-runtime" class="md-nav__link">
+    <span class="md-ellipsis">Automatic building of Kenning Zephyr Runtime</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tracing-with-zephelin" class="md-nav__link">
+    <span class="md-ellipsis">Tracing with Zephelin</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-linkable-loadable-extensions-for-switching-entire-ai-runtimes-in-running-app" class="md-nav__link">
+    <span class="md-ellipsis">Using Linkable Loadable Extensions for switching entire AI runtimes in running app</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uart-configuration-adding-support-for-a-new-board" class="md-nav__link">
+    <span class="md-ellipsis">UART configuration -<wbr> adding support for a new board</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-and-running-the-demo-app" class="md-nav__link">
+    <span class="md-ellipsis">Building and running the demo_<wbr>app</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Building and running the demo_app">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building" class="md-nav__link">
+    <span class="md-ellipsis">Building</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running" class="md-nav__link">
+    <span class="md-ellipsis">Running</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debugging" class="md-nav__link">
+    <span class="md-ellipsis">Debugging</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-with-artificially-increased-memory-size-for-simulation" class="md-nav__link">
+    <span class="md-ellipsis">Building with artificially increased memory size for simulation</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-code-structure" class="md-nav__link">
+    <span class="md-ellipsis">General code structure</span>
+  </a>
+  
+    <nav class="md-nav" aria-label="General code structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtimes" class="md-nav__link">
+    <span title="runtimes (reference label)" class="md-ellipsis">Runtimes</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-model-api-and-loaders" class="md-nav__link">
+    <span class="md-ellipsis">The model API and loaders</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#communication-stack" class="md-nav__link">
+    <span class="md-ellipsis">Communication stack</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inference-server-and-callbacks" class="md-nav__link">
+    <span class="md-ellipsis">Inference server and callbacks</span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logger" class="md-nav__link">
+    <span title="logger (reference label)" class="md-ellipsis">Logger</span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-development.html" class="md-nav__link">
+        <span class="md-ellipsis">Developing Kenning blocks</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-resources.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning resources</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-protocols.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning protocols</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-platforms.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning platforms</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ros2-integration.html" class="md-nav__link">
+        <span class="md-ellipsis">Integration with ROS 2</span>
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kenning-api.html" class="md-nav__link">
+        <span class="md-ellipsis">Kenning API</span>
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset" role="main">
+                  
+
+
+  <a href="https://github.com/antmicro/kenning/blob/main/docs/source/kenning-zephyr-runtime.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+<h1 id="kenning-zephyr-runtime">Kenning Zephyr Runtime<a class="headerlink" href="#kenning-zephyr-runtime" title="Link to this heading">¶</a></h1>
+<p>This chapter describes <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime">Kenning Zephyr Runtime</a> - a set of tools for deploying and evaluating models optimized with Kenning on <a class="reference external" href="https://www.zephyrproject.org/">Zephyr RTOS</a>.</p>
+<p>Kenning Zephyr Runtime is a C library that consists of:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kenning_inference_lib</span></code> provides an implementation of <a class="reference internal" href="kenning-protocols.html#kenning-protocol"><span class="std std-ref">Kenning Protocol</span></a> (for communication with Kenning) and <a class="reference internal" href="kenning-api.html#runtime-api"><span class="std std-ref">Kenning Runtime</span></a>-like unified API allowing easy preparation and execution of ML models with the following frameworks:</p>
+<ul>
+<li><p><a class="reference external" href="https://github.com/tensorflow/tflite-micro">TFLite Micro</a></p></li>
+<li><p><a class="reference external" href="https://tvm.apache.org/">microTVM</a></p></li>
+<li><p><a class="reference external" href="https://iree.dev/">IREE</a></p></li>
+<li><p><a class="reference external" href="https://docs.pytorch.org/executorch/stable/index.html">ExecuTorch</a></p></li>
+<li><p><a class="reference external" href="https://github.com/analogdevicesinc/ai8x-synthesis">AI8X</a> for Analog Devices MAX78xxx platforms</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">app</span></code> is a server-like application using <code class="docutils literal notranslate"><span class="pre">kenning_inference_lib</span></code> to evaluate models with Kenning running on host using <a class="reference internal" href="kenning-protocols.html#kenning-protocol"><span class="std std-ref">Kenning Protocol</span></a> to send and receive models, outputs and runtime statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">demo_app</span></code> is an example application, showcasing how <code class="docutils literal notranslate"><span class="pre">kenning_inference_lib</span></code> can be used without Kenning as a library to run model inference on production regardless of underlying framework</p></li>
+</ul>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>To check support for various runtimes on various boards, see <a class="reference external" href="https://zephyr-dashboard.renode.io/">Renode Zephyr Dashboard</a>.</p>
+<p>It provides coverage details of Kenning Zephyr Runtime across boards supported by Zephyr RTOS on an example of <code class="docutils literal notranslate"><span class="pre">demo_app</span></code>.</p>
+<p>Each demo is prefixed with <code class="docutils literal notranslate"><span class="pre">KENNING</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">KENNING</span> <span class="pre">MICROTVM</span></code>).</p>
+</div>
+<p>Overview of Kenning Zephyr Runtime use-cases:</p>
+<ul class="simple">
+<li><p>Running Kenning evaluation examples - see <a class="reference internal" href="#preparing-the-environment"><span class="std std-ref">instructions on preparing the environment</span></a> and then <a class="reference internal" href="#model-evaluation"><span class="std std-ref">running a simple <code class="docutils literal notranslate"><span class="pre">app</span></code> example</span></a>.</p></li>
+<li><p>Adding support for a new runtime (ML framework) - see <a class="reference internal" href="#runtimes"><span class="std std-ref">information on <code class="docutils literal notranslate"><span class="pre">runtime_wrapper</span></code></span></a> and <a class="reference internal" href="#model"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">loaders</span></code></span></a>.</p></li>
+<li><p>Adding support for Kenning evaluation on a new board  - see <a class="reference internal" href="#uart-configuration"><span class="std std-ref">instructions on configuring Kenning Zephyr Runtime for a new board</span></a>.</p></li>
+<li><p>Using Kenning Zephyr Runtime as a library for model inference - see <a class="reference internal" href="#model"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">model</span></code> API</span></a>.</p></li>
+</ul>
+<h2 id="usage"><span id="kenning-zephyr-runtime-usage"></span>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
+<h3 id="preparing-the-environment"><span id="id1"></span>Preparing the environment<a class="headerlink" href="#preparing-the-environment" title="Link to this heading">¶</a></h3>
+<p>To use Kenning Zephyr Runtime, first clone the repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>zephyr-workspace<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>zephyr-workspace
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/antmicro/kenning-zephyr-runtime.git
+<span class="nb">cd</span><span class="w"> </span>kenning-zephyr-runtime
+</code></pre></div>
+</div>
+<p>Install the following dependencies:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-dependencies">Zephyr dependencies</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jq</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">curl</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">west</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMake</span></code></p></li>
+</ul>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>On Debian-based distributions, it can be done with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>apt<span class="w"> </span>update
+
+apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span>ccache<span class="w"> </span>curl<span class="w"> </span>device-tree-compiler<span class="w"> </span>dfu-util<span class="w"> </span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>g++-multilib<span class="w"> </span>gcc<span class="w"> </span>gcc-multilib<span class="w"> </span>git<span class="w"> </span>jq<span class="w"> </span>libmagic1<span class="w"> </span>libsdl2-dev<span class="w"> </span>make<span class="w"> </span>ninja-build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>python3-dev<span class="w"> </span>python3-pip<span class="w"> </span>python3-setuptools<span class="w"> </span>python3-tk<span class="w"> </span>python3-wheel<span class="w"> </span>python3-venv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>mono-complete<span class="w"> </span>wget<span class="w"> </span>xxd<span class="w"> </span>xz-utils<span class="w"> </span>patch
+</code></pre></div>
+</div>
+</div>
+<p>After that, Python packages can be installed and <code class="docutils literal notranslate"><span class="pre">west</span></code> workspace can be configured:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>west
+west<span class="w"> </span>init<span class="w"> </span>-l<span class="w"> </span>.
+west<span class="w"> </span>update
+west<span class="w"> </span>zephyr-export
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip<span class="w"> </span>setuptools
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w"> </span>-r<span class="w"> </span>../zephyr/scripts/requirements-base.txt
+west<span class="w"> </span>sdk<span class="w"> </span>install<span class="w"> </span>--toolchains<span class="w"> </span>x86_64-zephyr-elf<span class="w"> </span>aarch64-zephyr-elf<span class="w"> </span>arm-zephyr-eabi<span class="w"> </span>riscv64-zephyr-elf
+</code></pre></div>
+</div>
+<p>Alternatively, you can use a script provided with <code class="docutils literal notranslate"><span class="pre">kenning-zephyr-runtime</span></code> to create a Python virtual environment with all dependencies installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="o">./</span><span class="n">scripts</span><span class="o">/</span><span class="n">prepare_zephyr_env</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</code></pre></div>
+</div>
+<p>This will:</p>
+<ul class="simple">
+<li><p>Create a Python virtual environment</p></li>
+<li><p>Install Python dependencies of Kenning and Kenning Zephyr Runtime</p></li>
+<li><p>Create a Zephyr workspace and download all modules</p></li>
+<li><p>Install Zephyr SDK, with toolchains for: x86, RISCV-64, ARM and ARM64 (Aarch64)</p></li>
+</ul>
+<p>The script will also detect if <a class="reference external" href="https://docs.astral.sh/uv/concepts/tools/">uv</a> tool is present in your system and if so, use it instead of pip.
+Using uv with Kenning Zephyr Runtime is encouraged for fast dependency installation.</p>
+<p>Alternatively, you can do this manually (for example if you want to install a different set of toolchains):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="o">.</span><span class="n">venv</span> <span class="o">--</span><span class="n">system</span><span class="o">-</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span>
+<span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">pip</span> <span class="n">setuptools</span> <span class="n">west</span> <span class="o">--</span><span class="n">upgrade</span>
+<span class="n">west</span> <span class="n">init</span> <span class="o">-</span><span class="n">l</span> <span class="o">.</span>
+<span class="n">west</span> <span class="n">update</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">r</span> <span class="o">../</span><span class="n">zephyr</span><span class="o">/</span><span class="n">scripts</span><span class="o">/</span><span class="n">requirements</span><span class="o">-</span><span class="n">base</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">west</span> <span class="n">zephyr</span><span class="o">-</span><span class="n">export</span>
+<span class="n">west</span> <span class="n">sdk</span> <span class="n">install</span> <span class="o">--</span><span class="n">toolchains</span> <span class="n">x86_64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span> <span class="n">arm</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">eabi</span> <span class="n">riscv64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span> <span class="n">aarch64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span>
+</code></pre></div>
+</div>
+<p>or when using uv:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">uv</span> <span class="n">venv</span> <span class="o">.</span><span class="n">venv</span> <span class="o">--</span><span class="n">python</span><span class="o">=</span><span class="mf">3.11</span>
+<span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">pip</span> <span class="n">setuptools</span> <span class="n">west</span> <span class="o">--</span><span class="n">upgrade</span>
+<span class="n">west</span> <span class="n">init</span> <span class="o">-</span><span class="n">l</span> <span class="o">.</span>
+<span class="n">west</span> <span class="n">update</span>
+<span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">r</span> <span class="o">../</span><span class="n">zephyr</span><span class="o">/</span><span class="n">scripts</span><span class="o">/</span><span class="n">requirements</span><span class="o">-</span><span class="n">base</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">west</span> <span class="n">zephyr</span><span class="o">-</span><span class="n">export</span>
+<span class="n">west</span> <span class="n">sdk</span> <span class="n">install</span> <span class="o">--</span><span class="n">toolchains</span> <span class="n">x86_64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span> <span class="n">arm</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">eabi</span> <span class="n">riscv64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span> <span class="n">aarch64</span><span class="o">-</span><span class="n">zephyr</span><span class="o">-</span><span class="n">elf</span>
+</code></pre></div>
+</div>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>By default, the Zephyr workspace will be created in a directory containing Kenning Zephyr Runtime repository.
+Therefore modules will be installed in <code class="docutils literal notranslate"><span class="pre">../tvm</span></code>, <code class="docutils literal notranslate"><span class="pre">../zephyr</span></code> etc.
+For that reason it is advised to clone the repository into a dedicated folder (as shown above).</p>
+</div>
+<p>One of the Python dependencies installed will be Kenning.
+You can also install Kenning manually, for a different selection of additional dependencies.
+For example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git&quot;</span>
+</code></pre></div>
+</div>
+<p>or when using uv:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git&quot;</span>
+</code></pre></div>
+</div>
+<p>Eventually, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>./scripts/prepare_modules.sh
+</code></pre></div>
+</div>
+<p>Some C/C++ dependencies of Kenning Zephyr Runtime are not packaged as Zephyr modules out-of-the-box.
+This script will add necessary files to Zephyr and to the modules themselves.
+Those files are stored in <code class="docutils literal notranslate"><span class="pre">modules</span></code> directory in Kenning Zephyr Runtime.</p>
+<h3 id="model-evaluation-with-kenning-using-app"><span id="app"></span>Model evaluation with Kenning (using <code class="docutils literal notranslate"><span class="pre">app</span></code>)<a class="headerlink" href="#model-evaluation-with-kenning-using-app" title="Link to this heading">¶</a></h3>
+<h4 id="basic-evaluation-scenario"><span id="model-evaluation"></span>Basic evaluation scenario<a class="headerlink" href="#basic-evaluation-scenario" title="Link to this heading">¶</a></h4>
+<p>As an example we will generate a report for a simple <a class="reference external" href="https://cs231n.github.io/convolutional-networks/">CNN</a> model trained on a Magic Wand dataset (recognizing movements based on accelerometer data), ran with TFLite Runtime on <code class="docutils literal notranslate"><span class="pre">stm32f746g_disco</span></code> board.</p>
+<p>First, build <code class="docutils literal notranslate"><span class="pre">app</span></code> on <code class="docutils literal notranslate"><span class="pre">stm32f746g_disco</span></code>, using <a class="reference external" href="https://docs.zephyrproject.org/latest/develop/west/index.html">west</a>.
+Kenning Zephyr Runtime comes with <code class="docutils literal notranslate"><span class="pre">&lt;runtime&gt;.conf</span></code> configuration files that set up inference with a specified <code class="docutils literal notranslate"><span class="pre">&lt;runtime&gt;</span></code>.
+<code class="docutils literal notranslate"><span class="pre">tflite.conf</span></code> config file can be used to run TFLite Micro - this extra configuration file can be added with <code class="docutils literal notranslate"><span class="pre">-DEXTRA_CONF_FILE</span></code> option:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>always<span class="w"> </span>-b<span class="w"> </span>stm32f746g_disco<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span>tflite.conf
+</code></pre></div>
+</div>
+<p>Option <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">always</span></code> will force west to run a clean build.
+Drop the option to run incremental builds.</p>
+<p>Built application can be found at <code class="docutils literal notranslate"><span class="pre">build/zephyr/zephyr.elf</span></code> (<code class="docutils literal notranslate"><span class="pre">build</span></code> is the default build directory).</p>
+<div class="warning admonition">
+<p class="admonition-title">Warning</p>
+<p>Due to a version conflict, Python dependencies for building with ExecuTorch runtime (<code class="docutils literal notranslate"><span class="pre">executorch.conf</span></code> configuration file) cannot be installed automatically.
+Therefore command <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">executorch&gt;=0.7.0</span></code> (or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">executorch&gt;=0.7.0</span></code> if using uv) has to be ran before building.</p>
+</div>
+<p>We could run the application on a physical <code class="docutils literal notranslate"><span class="pre">stm32f746g_disco</span></code> board, which would require running <code class="docutils literal notranslate"><span class="pre">west</span> <span class="pre">flash</span></code> command.
+However in this example we will use the <a class="reference external" href="https://renode.io/">Renode</a> to simulate the board.
+For that, we need to generate a <code class="docutils literal notranslate"><span class="pre">.repl</span></code> file (a platform definition file for Renode - for details, please refer to <a class="reference external" href="https://renode.readthedocs.io/en/latest/host-integration/arduino.html#configuring-renode">Renode documentation</a>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<p>This step will need to be repeated every time a clean build is ran or a different board is used.</p>
+<p>Before running the simulation we need to install Renode, which can be done with a script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>./scripts/prepare_renode.sh
+</code></pre></div>
+</div>
+<p>This will:</p>
+<ul class="simple">
+<li><p>Download the latest Renode release (if missing)</p></li>
+<li><p>Export environmental variables, that will allow Kenning to find Renode (for that reason the script has to be ran with <code class="docutils literal notranslate"><span class="pre">source</span></code> and needs to be re-ran every time a new shell is used)</p></li>
+</ul>
+<p>Finally, we can run Kenning with one of the example <a class="reference internal" href="json-scenarios.html"><span class="doc std std-doc">scenarios</span></a> provided with Kenning Zephyr Runtime:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>kenning-scenarios/magic-wand-inference/tflite/renode-stm32f746g.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>results.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/stm32-renode-tflite-magic-wand/report.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--to-html
+</code></pre></div>
+</div>
+<p>This example scenario looks as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="c1"># platform definition, telling where the model will be deployed</span>
+<span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stm32f746g_disco</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">zephyr_build_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build</span>
+
+<span class="c1"># dataset to use for evaluation of the model (dataset will be downloaded automatically)</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/MagicWandDataset</span>
+
+<span class="c1"># model that will be executed on device, in here we use trained Keras model</span>
+<span class="c1"># for gesture recognition</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandModelWrapper</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/classification/magic_wand.h5</span>
+
+<span class="c1"># list of optimizations to apply on a model before deployment</span>
+<span class="c1"># the final runtime is derived from the last Optimizer</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TFLiteCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/magic-wand.tflite</span>
+<span class="w">    </span><span class="nt">inference_input_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">    </span><span class="nt">inference_output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+</code></pre></div>
+</div>
+<p>When running this, Kenning will:</p>
+<ul class="simple">
+<li><p>Optimize the model with <code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code>, creating <code class="docutils literal notranslate"><span class="pre">./output/magic-wand.tflite</span></code> model.</p></li>
+<li><p>Automatically run Renode simulation of the built app, finding ELF in <code class="docutils literal notranslate"><span class="pre">zephyr_build_path</span></code> directory (<code class="docutils literal notranslate"><span class="pre">simulated:</span> <span class="pre">true</span></code> option means that Kenning will run Renode simulation automatically).</p></li>
+<li><p>Connect over (virtual) UART and send model and data for evaluation to the simulated board.</p></li>
+<li><p>Receive evaluation results and save them under <code class="docutils literal notranslate"><span class="pre">results.json</span></code> (as specified with the <code class="docutils literal notranslate"><span class="pre">--measurements</span></code> CLI option).</p></li>
+<li><p>Generate a report and save it under <code class="docutils literal notranslate"><span class="pre">reports/stm32-renode-tflite-magic-wand/</span></code></p></li>
+</ul>
+<p>To run evaluation on a physical board (not one simulated in Renode) we would need to set <code class="docutils literal notranslate"><span class="pre">simulated</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> and provide a path to the correct <code class="docutils literal notranslate"><span class="pre">UART</span></code> port with <code class="docutils literal notranslate"><span class="pre">uart_port</span></code> (<a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/kenning-scenarios/magic-wand-inference/tflite/stm32f746g.yml">example</a>).</p>
+<p>It is also possible to run a standalone Renode simulation manually and have Kenning connect to the existing simulation.</p>
+<p>To do that you should run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">python</span> <span class="o">./</span><span class="n">scripts</span><span class="o">/</span><span class="n">run_renode</span><span class="o">.</span><span class="n">py</span>
+</code></pre></div>
+</div>
+<p>This script will run a Renode simulation of the application currently at <code class="docutils literal notranslate"><span class="pre">build/zephyr/zephyr.elf</span></code> and mount the UART port at <code class="docutils literal notranslate"><span class="pre">/tmp/uart</span></code>.
+You can then run Kenning separately with <code class="docutils literal notranslate"><span class="pre">platform</span></code> parameters: <code class="docutils literal notranslate"><span class="pre">simulation:</span> <span class="pre">false</span></code> and <code class="docutils literal notranslate"><span class="pre">uart_port:</span> <span class="pre">/tmp/uart</span></code>.
+You can run multiple inference sessions without restarting the simulation (just as you would with a physical board).</p>
+<h4 id="automatic-building-of-kenning-zephyr-runtime"><span id="runtime-builder"></span>Automatic building of Kenning Zephyr Runtime<a class="headerlink" href="#automatic-building-of-kenning-zephyr-runtime" title="Link to this heading">¶</a></h4>
+<p>Kenning itself can build Kenning Zephyr Runtime evaluation app and generate the <code class="docutils literal notranslate"><span class="pre">.repl</span></code> file, allowing you to skip manual steps.
+To do that, you need to add <code class="docutils literal notranslate"><span class="pre">runtime_builder</span></code> to the scenario, as shown below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stm32f746g_disco</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="c1"># new component responsible for automated build of Zephyr app</span>
+<span class="nt">runtime_builder</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrRuntimeBuilder</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">workspace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">run_west_update</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output</span>
+<span class="w">    </span><span class="nt">extra_targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">board-repl</span><span class="p p-Indicator">]</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/MagicWandDataset</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandModelWrapper</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/classification/magic_wand.h5</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TFLiteCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/magic-wand.tflite</span>
+<span class="w">    </span><span class="nt">inference_input_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">    </span><span class="nt">inference_output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+</code></pre></div>
+</div>
+<p>This example scenario can be ran without first building the <code class="docutils literal notranslate"><span class="pre">app</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>kenning-scenarios/magic-wand-inference/tflite/renode-auto-stm32f746g.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>results.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/stm32-renode-tflite-magic-wand/report.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--to-html
+</code></pre></div>
+</div>
+<h4 id="tracing-with-zephelin">Tracing with Zephelin<a class="headerlink" href="#tracing-with-zephelin" title="Link to this heading">¶</a></h4>
+<p>Kenning and Kenning Zephyr Runtime are integrated with <a class="reference external" href="https://antmicro.github.io/zephelin/">Zephelin</a> - <a class="reference external" href="https://antmicro.com/">Antmicro</a>’s tool for ML-aware tracing in Zephyr RTOS.</p>
+<p>You can use that tool to generate a report with detailed information about your model’s time and memory performance, broken down into individual layers.
+Zephelin allows for collecting traces either through an UART port, USB port or with GDB debugger.
+Zephelin supports TVM and TFLite.</p>
+<p>First, install Zephelin’s Python dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>../zephelin/requirements.txt
+</code></pre></div>
+</div>
+<p>Then, you need to build Kenning Zephyr Runtime with Zephelin included, by adding extra configuration files.</p>
+<p>For tracing with UART:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>-b<span class="w"> </span>stm32f746g_disco<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span><span class="s2">&quot;tvm.conf;</span><span class="k">$(</span>realpath<span class="w"> </span>./zpl.conf<span class="k">)</span><span class="s2">;zpl_uart.conf&quot;</span>
+</code></pre></div>
+</div>
+<p>For tracing with GDB:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>-b<span class="w"> </span>stm32f746g_disco<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span><span class="s2">&quot;tvm.conf;</span><span class="k">$(</span>realpath<span class="w"> </span>./zpl.conf<span class="k">)</span><span class="s2">;zpl_gdb.conf&quot;</span>
+</code></pre></div>
+</div>
+<p>For GDB tracing, you also need to install GDB with support for multiple architectures. On Linux Debian it can be done with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>gdb-multiarch
+</code></pre></div>
+</div>
+<p>Finally, you can run optimization, testing and report generation, using a scenario with platform parameter <code class="docutils literal notranslate"><span class="pre">enable_zephelin</span></code> set to <code class="docutils literal notranslate"><span class="pre">true</span></code> (or <code class="docutils literal notranslate"><span class="pre">enable_zephelin_gdb</span></code> for GDB tracing):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stm32f746g_disco</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># this line enables trace collection</span>
+<span class="w">    </span><span class="nt">enable_zephelin_gdb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">zephyr_build_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/</span>
+
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandModelWrapper</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/classification/magic_wand.h5</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/MagicWandDataset</span>
+
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TVMCompiler</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/compiled-model-magic-wand.graph_data</span>
+</code></pre></div>
+</div>
+<p>Since we will be running Kenning Zephyr Runtime in a Renode simulation, we need to prepare a <code class="docutils literal notranslate"><span class="pre">.repl</span></code> file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<p>To include traces in the report, you must specify it with <code class="docutils literal notranslate"><span class="pre">--report-types</span></code> option, as shown below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>kenning-scenarios/magic-wand-inference/tvm/renode-zephelin-gdb-stm32f746g.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>build/zephelin-zephyr-stm32-tvm-magic-wand.json<span class="w"> </span>--verbosity<span class="w"> </span>INFO<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>build/zephelin-zephyr-stm32-tvm.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-types<span class="w"> </span>zephyr_traces<span class="w"> </span>renode_stats<span class="w"> </span>performance<span class="w"> </span>classification<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--to-html
+</code></pre></div>
+</div>
+<p>A dedicated report section (<code class="docutils literal notranslate"><span class="pre">zephyr_traces</span></code>) will be generated, with an interactive window allowing you to analyze the traces with Zephelin Trace Viewer.
+A <a class="reference internal" href="sample-zephyr-tracing-report.html"><span class="doc std std-doc">sample Zephyr tracing report</span></a> has been included in this documentation.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>For more details on trace collection in Zephyr, check <a class="reference external" href="https://antmicro.github.io/zephelin/">Zephelin documentation</a>.</p>
+</div>
+<h4 id="using-linkable-loadable-extensions-for-switching-entire-ai-runtimes-in-running-app">Using Linkable Loadable Extensions for switching entire AI runtimes in running app<a class="headerlink" href="#using-linkable-loadable-extensions-for-switching-entire-ai-runtimes-in-running-app" title="Link to this heading">¶</a></h4>
+<p>In this example, we will build Kenning Zephyr Runtime and microTVM separately.
+Then Kenning will send built microTVM to Kenning Zephyr Runtime over Kenning Protocol and it will be dynamically linked with <a class="reference external" href="https://docs.zephyrproject.org/latest/services/llext/index.html">Zephyr’s LLEXT subsystem</a> as en extension.</p>
+<p>First, build Kenning Zephyr Runtime with LLEXT:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>always<span class="w"> </span>-b<span class="w"> </span>stm32f746g_disco<span class="w"> </span>app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span>llext.conf
+</code></pre></div>
+</div>
+<p>This will build <code class="docutils literal notranslate"><span class="pre">app</span></code> with no default runtime, and necessary logic to load necessary implementation of runtime from UART-delivered extension.</p>
+<p>If running with Renode, generate the <code class="docutils literal notranslate"><span class="pre">.repl</span></code> file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<p>Then, build the extension:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>app<span class="w"> </span>-t<span class="w"> </span>llext-tvm<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span><span class="s2">&quot;llext.conf;llext_tvm.conf&quot;</span>
+</code></pre></div>
+</div>
+<p>It will be placed in <code class="docutils literal notranslate"><span class="pre">build/llext</span></code> directory.</p>
+<p>Evaluation can be ran with the following scenario:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span class="nt">platform</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZephyrPlatform</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stm32f746g_disco</span>
+<span class="w">    </span><span class="nt">simulated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">zephyr_build_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build</span>
+<span class="w">    </span><span class="c1"># this option tells Kenning to upload following LLEXT to device before running evaluation</span>
+<span class="w">    </span><span class="nt">llext_binary_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./build/llext/tvm.llext</span>
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandDataset</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/MagicWandDataset</span>
+<span class="nt">model_wrapper</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MagicWandModelWrapper</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kenning:///models/classification/magic_wand.h5</span>
+<span class="nt">optimizers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TVMCompiler</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">compiled_model_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./output/microtvm-magic-wand.graph_data</span>
+</code></pre></div>
+</div>
+<p>You can see, that <code class="docutils literal notranslate"><span class="pre">llext_binary_path</span></code> was parameter added to <code class="docutils literal notranslate"><span class="pre">platform</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>kenning<span class="w"> </span>optimize<span class="w"> </span><span class="nb">test</span><span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cfg<span class="w"> </span>kenning-scenarios/magic-wand-inference/tvm/renode-llext-stm32f746g.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--measurements<span class="w"> </span>results.json<span class="w"> </span>--verbosity<span class="w"> </span>INFO<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--report-path<span class="w"> </span>reports/stm32-renode-tvm-llext-magic-wand/report.md<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--to-html<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--verbosity<span class="w"> </span>INFO
+</code></pre></div>
+</div>
+<p>LLEXT is also compatible with <a class="reference internal" href="#runtime-builder"><span class="std std-ref">runtime building by Kenning</span></a>.</p>
+<h4 id="uart-configuration-adding-support-for-a-new-board"><span id="uart-configuration"></span>UART configuration - adding support for a new board<a class="headerlink" href="#uart-configuration-adding-support-for-a-new-board" title="Link to this heading">¶</a></h4>
+<p>By default all Zephyr boards have 1 UART port dedicated to Zephyr console.
+Kenning Zephyr Runtime will print welcome message and logs to that console - when running Renode simulation Kenning will wait for the welcome message on that UART, before sending any requests (to make sure Kenning Zephyr Runtime booted successfully).</p>
+<p>Another UART port is needed for two-way communication with Kenning over Kenning Protocol (sending model data, inputs and outputs).
+To inform the app which UART port to use for that purpose we assign <code class="docutils literal notranslate"><span class="pre">kcomms</span></code> alias to the port, using <a class="reference external" href="https://docs.zephyrproject.org/latest/build/dts/howtos.html">Zephyr devicetree</a>.
+Overlay files adding the alias for various boards can be found in <code class="docutils literal notranslate"><span class="pre">app/boards</span></code>, for example <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/app/boards/stm32f746g_disco.overlay">the overlay file for <code class="docutils literal notranslate"><span class="pre">stm32f746g_disco</span></code></a>.</p>
+<p>To run Kenning evaluation with <code class="docutils literal notranslate"><span class="pre">app</span></code> on any given board, such a file has to be created.
+Overlay files should be placed at <code class="docutils literal notranslate"><span class="pre">app/boards/&lt;board_name&gt;.overlay</span></code> (where <code class="docutils literal notranslate"><span class="pre">&lt;board_name&gt;</span></code> is the name of the board in Zephyr, except if the board name contains any <code class="docutils literal notranslate"><span class="pre">/</span></code> characters, they should be changed to <code class="docutils literal notranslate"><span class="pre">_</span></code>) for west to find and use them.</p>
+<p>On some boards only one UART port is available, then <code class="docutils literal notranslate"><span class="pre">kcomms</span></code> can be set to the same port as Zephyr console.
+However in such a case printing logs and the welcome message to the console has to be disabled, by adding to the configuration file (<code class="docutils literal notranslate"><span class="pre">app/prj.conf</span></code> or another config file added with <code class="docutils literal notranslate"><span class="pre">-DEXTRA_CONF_FILE=tflite.conf</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">CONFIG_LOG_BACKEND_UART</span><span class="o">=</span><span class="n">n</span>
+<span class="n">CONFIG_BOOT_BANNER</span><span class="o">=</span><span class="n">n</span>
+<span class="n">CONFIG_PRINTK</span><span class="o">=</span><span class="n">n</span>
+</code></pre></div>
+</div>
+<p>Kenning will detect, that <code class="docutils literal notranslate"><span class="pre">kcomms</span></code> is set to the same port as Zephyr console and will wait for a set amount of time before sending any requests, instead of waiting for the welcome message.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>Kenning Zephyr Runtime also sends logs through Kenning Protocol, aside from printing them.
+Therefore after printing logs to the UART console is disabled, Kenning will still receive and display them.</p>
+</div>
+<p>Some boards may also require additional configuration.
+Those should be placed at <code class="docutils literal notranslate"><span class="pre">app/boards/&lt;board_name&gt;.conf</span></code>.</p>
+<h3 id="building-and-running-the-demo-app"><span id="demo-app"></span>Building and running the <code class="docutils literal notranslate"><span class="pre">demo_app</span></code><a class="headerlink" href="#building-and-running-the-demo-app" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">demo_app</span></code> is an example on how to use <code class="docutils literal notranslate"><span class="pre">kenning_inference_lib</span></code> for model inference.
+In can also be used for easy debugging of various runtimes.</p>
+<h4 id="building">Building<a class="headerlink" href="#building" title="Link to this heading">¶</a></h4>
+<p>The example below shows how to build <code class="docutils literal notranslate"><span class="pre">demo_app</span></code> with IREE runtime in embedded_elf mode and run it with Renode emulator.</p>
+<p>In here we select <code class="docutils literal notranslate"><span class="pre">iree_embedded_elf.conf</span></code> config file to use IREE in embedded_elf mode - in Zephyr applications the default application config is in <code class="docutils literal notranslate"><span class="pre">prj.conf</span></code> file, but extra configuration files can be specified with <code class="docutils literal notranslate"><span class="pre">-DEXTRA_CONF_FILE</span></code> option.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-p<span class="w"> </span>always<span class="w"> </span>-b<span class="w"> </span>b_u585i_iot02a<span class="w"> </span>demo_app<span class="w"> </span>--<span class="w"> </span>-DEXTRA_CONF_FILE<span class="o">=</span>iree_embedded_elf.conf
+</code></pre></div>
+</div>
+<p>Option <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">always</span></code> will force west to run a clean build.
+Drop the option to run incremental builds.</p>
+<p>Built application can be found at <code class="docutils literal notranslate"><span class="pre">build/zephyr/zephyr.elf</span></code> (<code class="docutils literal notranslate"><span class="pre">build</span></code> is the default build directory).</p>
+<p>To run a Renode simulation, we also need to generate a <a class="reference external" href="https://renode.readthedocs.io/en/latest/host-integration/arduino.html#configuring-renode"><code class="docutils literal notranslate"><span class="pre">.repl</span></code> file</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>west<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>board-repl
+</code></pre></div>
+</div>
+<h4 id="running">Running<a class="headerlink" href="#running" title="Link to this heading">¶</a></h4>
+<p>Before running the simulation, we need to install Renode, which can be done with a script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>./scripts/prepare_renode.sh
+</code></pre></div>
+</div>
+<p>This step has to be repeated every time a new shell is used, since the script exports environmental variables.</p>
+<p>Finally, we can use a Python script to run the demo:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code>python<span class="w"> </span>./scripts/run_renode.py
+</code></pre></div>
+</div>
+<p>The script will automatically capture output from the Zephyr UART console and print it to the terminal.
+Output should contain classification results for 10 inferences, along with some inference statistics.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="o">***</span> <span class="n">Booting</span> <span class="n">Zephyr</span> <span class="n">OS</span> <span class="n">build</span> <span class="n">cb93f97bd632</span> <span class="o">***</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">213.957581</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">80.423096</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">113.229347</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">158.669266</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">162.148727</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">140.959763</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">149.957077</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">236.156738</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">188.821167</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">250.954254</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">465.087280</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">329.155548</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">338.350281</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">124.087746</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">176.398376</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">253.115128</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="o">-</span><span class="mf">4.008125</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">17.447971</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="o">-</span><span class="mf">7.546308</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">11.472966</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">92.145882</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">120.856918</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">199.117325</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">148.276291</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">48.781986</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="o">-</span><span class="mf">10.816504</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">2.117259</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">8.108253</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">409.882965</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">152.557022</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">218.346588</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">307.647247</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">131.864807</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">56.820183</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">77.920113</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">98.029968</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">model</span> <span class="n">output</span><span class="p">:</span> <span class="p">[</span><span class="n">wing</span><span class="p">:</span> <span class="mf">111.868919</span><span class="p">,</span> <span class="n">ring</span><span class="p">:</span> <span class="mf">157.771622</span><span class="p">,</span> <span class="n">slope</span><span class="p">:</span> <span class="mf">303.319855</span><span class="p">,</span> <span class="n">negative</span><span class="p">:</span> <span class="mf">198.856461</span><span class="p">]</span>
+<span class="n">I</span><span class="p">:</span> <span class="n">inference</span> <span class="n">session</span> <span class="n">statistics</span><span class="p">:</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">total</span> <span class="n">inference</span> <span class="n">time</span><span class="p">:</span> <span class="mi">5644</span> <span class="n">ms</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">inference</span> <span class="n">time</span> <span class="n">per</span> <span class="n">batch</span><span class="p">:</span> <span class="mi">564</span> <span class="n">ms</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">device_bytes_allocated</span><span class="p">:</span> <span class="mi">256032</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">device_bytes_freed</span><span class="p">:</span> <span class="mi">224144</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">device_bytes_peak</span><span class="p">:</span> <span class="mi">54288</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">host_bytes_allocated</span><span class="p">:</span> <span class="mi">32384</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">host_bytes_freed</span><span class="p">:</span> <span class="mi">30848</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">host_bytes_peak</span><span class="p">:</span> <span class="mi">17024</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">total_allocated</span><span class="p">:</span> <span class="mi">473962</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">total_freed</span><span class="p">:</span> <span class="mi">369068</span>
+<span class="n">I</span><span class="p">:</span>      <span class="n">peak_allocated</span><span class="p">:</span> <span class="mi">132518</span>
+</code></pre></div>
+</div>
+<h4 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Link to this heading">¶</a></h4>
+<p>To run Renode simulation of the app with a debug server, use <code class="docutils literal notranslate"><span class="pre">--debug</span></code> option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">python</span> <span class="o">./</span><span class="n">scripts</span><span class="o">/</span><span class="n">run_renode</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">debug</span>
+</code></pre></div>
+</div>
+<p>A <a class="reference external" href="https://www.sourceware.org/gdb/">GDB</a> server will be started on port <code class="docutils literal notranslate"><span class="pre">3333</span></code>.
+Connection can be made in <code class="docutils literal notranslate"><span class="pre">gdb</span></code> by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">target</span> <span class="n">remote</span> <span class="p">:</span><span class="mi">3333</span>
+</code></pre></div>
+</div>
+<p>Debug symbols can be loaded from the built binary: <code class="docutils literal notranslate"><span class="pre">build/zephyr/zephyr.elf</span></code>.</p>
+<p>Please refer to <a class="reference external" href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/">GDB documentation</a> for further instructions on how to debug with GDB.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>Please remember to use version of GDB compatible with the architecture of the selected board.</p>
+</div>
+<h3 id="building-with-artificially-increased-memory-size-for-simulation">Building with artificially increased memory size for simulation<a class="headerlink" href="#building-with-artificially-increased-memory-size-for-simulation" title="Link to this heading">¶</a></h3>
+<p>In some cases we would like to evaluate a model that won’t fit in the board memory together with Kenning Zephyr Runtime, for example when target application is smaller than Kenning Zephyr Runtime, mostly for evaluation purposes.
+For such cases, there is a west target called <code class="docutils literal notranslate"><span class="pre">increase-memory</span></code>.</p>
+<p>To do that, run normal build first.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">west</span> <span class="n">build</span> <span class="o">-</span><span class="n">p</span> <span class="n">always</span> <span class="o">-</span><span class="n">b</span> <span class="mi">96</span><span class="n">b_nitrogen</span> <span class="n">demo_app</span> <span class="o">--</span> <span class="o">-</span><span class="n">DEXTRA_CONF_FILE</span><span class="o">=</span><span class="n">tvm</span><span class="o">.</span><span class="n">conf</span>
+</code></pre></div>
+</div>
+<p>It should fail, due to insufficient memory.
+Then you can run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">west</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">increase</span><span class="o">-</span><span class="n">memory</span> <span class="o">--</span> <span class="o">-</span><span class="n">DCONFIG_KENNING_INCREASE_MEMORY_SIZE</span><span class="o">=</span><span class="mi">2048</span>
+</code></pre></div>
+</div>
+<p>This will generate board overlay with increased memory and save it in <code class="docutils literal notranslate"><span class="pre">&lt;application&gt;/boards/&lt;board_name&gt;_increased_memory.overlay</span></code>.
+Example overlay looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="o">&amp;</span><span class="n">sram0</span> <span class="p">{</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mh">0x20000000</span> <span class="mh">0x200000</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+</div>
+<p>The new overlay file will remain there even after clean builds, so this step does not need to be repeated.
+To use the overlay, run the build with <code class="docutils literal notranslate"><span class="pre">-CONFIG_KENNING_INCREASE_MEMORY=y</span></code> option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span class="n">west</span> <span class="n">build</span> <span class="o">-</span><span class="n">p</span> <span class="n">always</span> <span class="o">-</span><span class="n">b</span> <span class="mi">96</span><span class="n">b_nitrogen</span> <span class="n">demo_app</span> <span class="o">--</span> <span class="o">-</span><span class="n">DEXTRA_CONF_FILE</span><span class="o">=</span><span class="n">tvm</span><span class="o">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">DCONFIG_KENNING_INCREASE_MEMORY</span><span class="o">=</span><span class="n">y</span>
+</code></pre></div>
+</div>
+<p>From here you may proceed normally.
+This option is available for both <code class="docutils literal notranslate"><span class="pre">app</span></code> and <code class="docutils literal notranslate"><span class="pre">demo_app</span></code>.</p>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>Increased memory will only work in a Renode simulation.</p>
+</div>
+<h2 id="general-code-structure">General code structure<a class="headerlink" href="#general-code-structure" title="Link to this heading">¶</a></h2>
+<p>Relationships between Kenning and various elements of Kenning Zephyr Runtime, as well as internal structure of <code class="docutils literal notranslate"><span class="pre">kenning_inference_lib</span></code> is displayed on the diagram below.
+<img alt="" src="_images/kenning-zephyr-runtime.png" /></p>
+<h3 id="runtimes"><span id="id2"></span>Runtimes<a class="headerlink" href="#runtimes" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">runtime_wrapper</span></code> serves as a common interface for various ML frameworks (runtimes).</p>
+<p><code class="docutils literal notranslate"><span class="pre">runtime_wrapper.h</span></code> is a header file, that contains the following function declarations:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_init</span></code> - Initialize the runtime (framework).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_init_weights</span></code> - Load an ML model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_init_input</span></code> - Load input into the model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_run_model</span></code> - Run inference.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_run_model_bench</span></code> - Run inference with a time benchmark (results can be downloaded with <code class="docutils literal notranslate"><span class="pre">runtime_get_statistics</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_get_model_output</span></code> - Get output from the model (after inference).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_get_statistics</span></code> - Get statistics (since the beginning of the current inference session, so since <code class="docutils literal notranslate"><span class="pre">runtime_init</span></code> was last called) - that includes inference time and possibly other framework-dependent statistics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime_deinit</span></code> - De-initialize the runtime.</p></li>
+</ul>
+<p>To add a new framework (runtime) to Kenning Zephyr Runtime, a source file needs to be created that implements all of these functions (<a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/lib/kenning_inference_lib/runtimes/tvm/tvm.c">example</a>), as well as creates loaders for model and model input (for details see the <a class="reference internal" href="#model"><span class="std std-ref">section about loaders</span></a>)</p>
+<p>Implementation is selected at build time, by <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/lib/kenning_inference_lib/CMakeLists.txt">linking the correct files with CMake</a>.</p>
+<p>Kenning Zephyr Runtime also supports dynamic linking of runtimes through <a class="reference external" href="https://docs.zephyrproject.org/latest/services/llext/index.html">Zephyr’s LLEXT subsystem</a>.</p>
+<h3 id="the-model-api-and-loaders"><span id="model"></span>The model API and loaders<a class="headerlink" href="#the-model-api-and-loaders" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">model</span></code> is an abstraction over <code class="docutils literal notranslate"><span class="pre">runtime_wrapper</span></code> and handles tasks such as data validation.
+It also stores model metadata (such as shapes of the model’s inputs and outputs), which it makes available to <code class="docutils literal notranslate"><span class="pre">runtime_wrapper</span></code> implementations.</p>
+<p>It declares and implements functions such as <code class="docutils literal notranslate"><span class="pre">model_load_input</span></code>, <code class="docutils literal notranslate"><span class="pre">model_run</span></code> or <code class="docutils literal notranslate"><span class="pre">model_load_struct</span></code> (for loading model metadata).
+For all function declarations see <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/include/kenning_inference_lib/core/model.h">model.h</a>.</p>
+<p>All <code class="docutils literal notranslate"><span class="pre">model</span></code> functions, that take data (model, input or model metadata) as input have 2 versions:</p>
+<ul class="simple">
+<li><p>Loading data from an array (<code class="docutils literal notranslate"><span class="pre">model_load_struct</span></code>, <code class="docutils literal notranslate"><span class="pre">model_load_weights</span></code>, <code class="docutils literal notranslate"><span class="pre">model_load_input</span></code>)</p></li>
+<li><p>Loading data using <code class="docutils literal notranslate"><span class="pre">loaders</span></code> (<code class="docutils literal notranslate"><span class="pre">model_load_struct_from_loader</span></code>, <code class="docutils literal notranslate"><span class="pre">model_load_weights_from_loader</span></code>, <code class="docutils literal notranslate"><span class="pre">model_load_input_from_loader</span></code>)</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">loaders</span></code> are a mechanism for loading data without large temporary buffers, therefore saving both execution time and memory.</p>
+<p>For example, assume we have a model with input size of 2kB, which we receive byte-by-byte over a serial interface.
+To load the input with <code class="docutils literal notranslate"><span class="pre">model_load_input</span></code> (which takes a pointer to an array and array size as arguments) we would need to create a 2kB temporary buffer to store the data arriving over the interface and only call <code class="docutils literal notranslate"><span class="pre">model_load_input</span></code> after all of the data has been received.</p>
+<p>To save that memory we can use <code class="docutils literal notranslate"><span class="pre">loaders</span></code> - structs stored in a global table (<code class="docutils literal notranslate"><span class="pre">g_ldr_tables</span></code>), that contain:</p>
+<ul class="simple">
+<li><p>pointer to the destination buffer (the final place, where the data is supposed to be loaded - in case of model input it would be an array in the <code class="docutils literal notranslate"><span class="pre">runtime_wrapper</span></code> implementation of the selected framework)</p></li>
+<li><p>number of bytes written</p></li>
+<li><p>maximum number of bytes, that can be written</p></li>
+<li><p>state of the loader</p></li>
+<li><p>pointer to a function for loading the data</p></li>
+<li><p>pointer to a function for resetting the loader</p></li>
+</ul>
+<p>Functions for loading data and resetting have default implementations and a macro is defined in <code class="docutils literal notranslate"><span class="pre">loaders.h</span></code> to create an instance of a loader with default functions at the given address and with the given size: <code class="docutils literal notranslate"><span class="pre">MSG_LOADER_BUF(_addr,</span> <span class="pre">_max_size)</span></code>.
+However a loader with custom implementations of these functions can also be created, to define a custom behaviour.</p>
+<p>Every implementation of <code class="docutils literal notranslate"><span class="pre">runtime_wrapper.h</span></code> creates it’s own loaders in <code class="docutils literal notranslate"><span class="pre">runtime_init</span></code> for model and model input.
+Pointers to these loaders should be placed in <code class="docutils literal notranslate"><span class="pre">g_ldr_tables</span></code> at indexes <code class="docutils literal notranslate"><span class="pre">[1][LOADER_TYPE_MODEL]</span></code> for model and <code class="docutils literal notranslate"><span class="pre">[1][LOADER_TYPE_DATA]</span></code> for input.</p>
+<p>Going back to our example - to avoid using a 2kB temporary buffer we can receive the data in batches, saving it into a smaller buffer and repeatedly calling <code class="docutils literal notranslate"><span class="pre">g_ldr_</span> <span class="pre">tables[1][LOADER_TYPE_DATA]-&gt;save</span></code> for each batch, then finally calling <code class="docutils literal notranslate"><span class="pre">model_load_input_from_loader</span></code>.
+An example of that use case can be seen in the <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/aefffa8969e4b79b10de8a05085143144eca974b/lib/kenning_inference_lib/core/kenning_protocol.c#L56"><code class="docutils literal notranslate"><span class="pre">receive_message_payload</span></code> function in <code class="docutils literal notranslate"><span class="pre">kenning_protocol.c</span></code></a>.</p>
+<h3 id="communication-stack"><span id="kcomms"></span>Communication stack<a class="headerlink" href="#communication-stack" title="Link to this heading">¶</a></h3>
+<p>The communication stack consists of 2 abstraction layers:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">protocol</span></code> - lower layer, provides functions <code class="docutils literal notranslate"><span class="pre">protocol_init</span></code>, <code class="docutils literal notranslate"><span class="pre">protocol_read_data</span></code> and <code class="docutils literal notranslate"><span class="pre">protocol_write_data</span></code>, allows for sending raw bytes over an interface</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kenning_protocol</span></code> - implementation of <a class="reference internal" href="kenning-protocols.html#kenning-protocol"><span class="std std-ref">Kenning Protocol</span></a>, using the data link provided by <code class="docutils literal notranslate"><span class="pre">protocol</span></code>, provides functions <code class="docutils literal notranslate"><span class="pre">protocol_transmit</span></code> and <code class="docutils literal notranslate"><span class="pre">protocol_listen</span></code> (requests are not supported). <code class="docutils literal notranslate"><span class="pre">protocol_listen</span></code> uses <code class="docutils literal notranslate"><span class="pre">loaders</span></code> to receive message payload, it takes as a callback function that returns the correct callback based on message type.</p></li>
+</ul>
+<p>Header file <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/include/kenning_inference_lib/core/protocol.h"><code class="docutils literal notranslate"><span class="pre">protocol.h</span></code></a> only serves as an interface and declares the functions.
+Function are defined by implementations.
+Currently 1 implementation is provided (<a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/main/lib/kenning_inference_lib/protocols/uart.c"><code class="docutils literal notranslate"><span class="pre">uart.c</span></code></a>).</p>
+<h3 id="inference-server-and-callbacks"><span id="inference-server"></span>Inference server and callbacks<a class="headerlink" href="#inference-server-and-callbacks" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">inference_server</span></code> provides functions: <code class="docutils literal notranslate"><span class="pre">init_server</span></code>, <code class="docutils literal notranslate"><span class="pre">wait_for_protocol_event</span></code> and <code class="docutils literal notranslate"><span class="pre">handle_protocol_event</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">wait_for_protocol_event</span></code> receives a request from Kenning by calling <code class="docutils literal notranslate"><span class="pre">protocol_listen</span></code>, while <code class="docutils literal notranslate"><span class="pre">handle_protocol_event</span></code> calls the correct callback function from <code class="docutils literal notranslate"><span class="pre">callbacks</span></code> (selected based on message type) and sends response to the request based on on values returned by the callback.</p>
+<p>Callback functions from <code class="docutils literal notranslate"><span class="pre">callbacks</span></code> translate requests from Kenning to proper actions by calling functions from <code class="docutils literal notranslate"><span class="pre">model</span></code>.
+For example <a class="reference external" href="https://github.com/antmicro/kenning-zephyr-runtime/blob/aefffa8969e4b79b10de8a05085143144eca974b/lib/kenning_inference_lib/core/callbacks.c#L179"><code class="docutils literal notranslate"><span class="pre">output_callback</span></code></a> calls <code class="docutils literal notranslate"><span class="pre">model_get_output</span></code>.</p>
+<h3 id="logger"><span id="id3"></span>Logger<a class="headerlink" href="#logger" title="Link to this heading">¶</a></h3>
+<p>Kenning Zephyr Runtime uses built-in logging framework from Zephyr RTOS.
+However it defines it’s own <a class="reference external" href="https://docs.zephyrproject.org/latest/services/logging/index.html#logging-backends">logging backend</a> to send log messages back to Kenning over <a class="reference internal" href="kenning-protocols.html#kenning-protocol"><span class="std std-ref">Kenning Protocol</span></a>.</p>
+
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      2026-06-25
+    
+  </small>
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="kenning-flow.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Creating applications with Kenning" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Creating applications with Kenning
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="kenning-development.html" class="md-footer__link md-footer__link--next" aria-label="Next: Developing Kenning blocks" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Developing Kenning blocks
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  
+  
+  <div class="md-footer-meta md-typeset">
+    
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-footer-copyright__highlight">
+        Copyright &#169; 2020-2026, Antmicro.
+        
+    </div>
+  
+      <a href="https://github.com/antmicro/kenning/tree/c5ee79ef2f2412e1cc1a803b87b88373098397e7">c5ee79ef</a>
+        @ <a href="https://github.com/antmicro/kenning/tree/main">main</a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/antmicro" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/antmicro" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+    
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["toc.integrate"], "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+      
+        <script src="_static/sphinx_immaterial_theme.f9d9eeeb247ace16c.min.js?v=8ec58cb5"></script>
+    
+  </body>
+</html>

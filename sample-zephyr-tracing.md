@@ -1,0 +1,175 @@
+
+#
+
+
+### Commands used
+
+````{note}
+
+This section was generated using:
+
+```bash
+kenning test report \
+    --cfg \
+        /tmp/scenario-vae-tflite.yml \
+    --measurements \
+        results.json \
+    --report-types \
+        zephyr_traces \
+    --report-path \
+        /home/runner/work/kenning/kenning/docs/source/generated/sample-zephyr-tracing.md \
+    --report-name \
+    --to-html
+
+
+```
+````
+
+
+### General information for results.json
+
+*Model framework*:
+
+* torch ver. 2.8.0+cu128
+
+*Input JSON*:
+
+```json
+{
+    "dataset": {
+        "type": "kenning.datasets.anomaly_detection_dataset.AnomalyDetectionDataset",
+        "parameters": {
+            "csv_file": "kenning:///datasets/anomaly_detection/cats_nano.csv",
+            "window_size": 5,
+            "gather_predictions": true,
+            "dataset_root": "workspace/DATA",
+            "inference_batch_size": 1,
+            "download_dataset": true,
+            "force_download_dataset": false,
+            "external_calibration_dataset": null,
+            "split_fraction_test": 0.1,
+            "split_fraction_val": null,
+            "split_seed": 12345,
+            "reduce_dataset": 1.0
+        }
+    },
+    "dataconverter": {
+        "type": "kenning.dataconverters.modelwrapper_dataconverter.ModelWrapperDataConverter",
+        "parameters": {}
+    },
+    "optimizers": [
+        {
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
+            "parameters": {
+                "model_framework": "any",
+                "target": "default",
+                "inference_input_type": "float32",
+                "inference_output_type": "float32",
+                "dataset_percentage": 0.25,
+                "quantization_aware_training": false,
+                "use_tf_select_ops": false,
+                "resolver_template_path": null,
+                "resolver_output_path": null,
+                "epochs": 3,
+                "batch_size": 32,
+                "optimizer": "adam",
+                "disable_from_logits": false,
+                "save_to_zip": false,
+                "compiled_model_path": "vae.tflite",
+                "location": "host"
+            }
+        }
+    ],
+    "platform": {
+        "type": "kenning.platforms.zephyr.ZephyrPlatform",
+        "parameters": {
+            "zephyr_build_path": "build",
+            "llext_binary_path": null,
+            "sensors": null,
+            "sensors_frequency": null,
+            "enable_zephelin_gdb": false,
+            "enable_zephelin": true,
+            "zephyr_base": null,
+            "uart_port": "/tmp/renode_uart_2e3c2zq2/uart",
+            "uart_baudrate": 115200,
+            "uart_log_port": "/tmp/renode_uart_2e3c2zq2/uart_log",
+            "uart_log_baudrate": 115200,
+            "auto_flash": false,
+            "openocd_path": "openocd",
+            "sensor": null,
+            "number_of_batches": 16,
+            "simulated": true,
+            "runtime_binary_path": null,
+            "platform_resc_path": "gh://antmicro:kenning-zephyr-runtime/renode/scripts/stm32f746g_disco.resc;branch=main",
+            "resc_dependencies": [],
+            "post_start_commands": [],
+            "disable_opcode_counters": false,
+            "disable_profiler": false,
+            "profiler_dump_path": "/tmp/renode_profiler_pyi3xxc2.dump",
+            "profiler_interval_step": 10.0,
+            "runtime_init_log_msg": "Inference server started",
+            "runtime_init_timeout": 30,
+            "gdb_port": 3333,
+            "name": "stm32f746g_disco",
+            "platforms_definitions": [
+                "kenning:///platforms/platforms.yml",
+                "/home/runner/work/kenning/kenning/kenning/resources/platforms/platforms.yml"
+            ]
+        }
+    },
+    "protocol": {
+        "type": "kenning.protocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/tmp/renode_uart_2e3c2zq2/uart",
+            "baudrate": 115200,
+            "error_recovery": true,
+            "timeout": 30
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.anomaly_detection.vae.PyTorchAnomalyDetectionVAE",
+        "parameters": {
+            "encoder_neuron_list": [
+                16,
+                8
+            ],
+            "decoder_neuron_list": [
+                16,
+                32
+            ],
+            "latent_dim": 2,
+            "hidden_activation": "relu",
+            "output_activation": "sigmoid",
+            "batch_norm": false,
+            "dropout_rate": 0.0,
+            "loss_beta": 1.0,
+            "loss_capacity": 0.0,
+            "clip_grad_max_norm": 2.0,
+            "batch_size": null,
+            "learning_rate": null,
+            "num_epochs": null,
+            "evaluate": true,
+            "export_dict": true,
+            "model_path": "_",
+            "model_name": null
+        }
+    },
+    "runtime": {
+        "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "parameters": {
+            "save_model_path": "vae.tflite",
+            "delegates_list": null,
+            "num_threads": 4,
+            "llext_binary_path": null,
+            "batch_size": 1,
+            "disable_performance_measurements": false
+        }
+    }
+}
+
+```
+### Zephyr traces
+
+<a target="blank" href="zephyr_traces_report.html">(open in a new tab)</a>
+<iframe allowfullscreen="true" id="embedded_zephyr_traces" name="Zephyr Traces Report" src="zephyr_traces_report.html" width="100%" height="1200px" frameborder="0"></iframe>
+

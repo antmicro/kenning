@@ -4725,7 +4725,7 @@ wheels = [
 [[package]]
 name = "pyrenode3"
 version = "0.0.1"
-source = { git = "https://github.com/antmicro/pyrenode3.git#c08f0c7ea869c90bee98e4eeb92658c0edef3409" }
+source = { git = "https://github.com/antmicro/pyrenode3.git#a80d3643934d471f290f049fc50f4973969a068a" }
 dependencies = [
     { name = "pythonnet" },
 ]

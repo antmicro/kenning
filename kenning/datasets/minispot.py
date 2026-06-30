@@ -7,12 +7,12 @@ Dataset wrapper for the minispot dataset.
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.utils.resource_manager import ResourceURI
 
-MINISPOT_URI = (
+MINISPOT_DEFAULT_URI = (
     "https://dl.antmicro.com/kenning/"
     "datasets/anomaly_detection/minispot.csv"
 )
@@ -24,18 +24,20 @@ class MinispotDataset(AnomalyDetectionDataset):
     """
 
     arguments_structure = {
-        "csv_file": {
-            "argparse_name": "--csv-file",
+        "minispot_csv": {
+            "argparse_name": "--minispot-csv",
             "description": "Location of the minispot CSV file",
             "type": ResourceURI,
             "required": False,
         },
+        # Turn off
+        "csv_file": {"required": False},
     }
 
     def __init__(
         self,
         root: Path,
-        csv_file: Union[str, ResourceURI] = MINISPOT_URI,
+        minispot_csv: Union[str, ResourceURI] = MINISPOT_DEFAULT_URI,
         batch_size: int = 1,
         download_dataset: bool = True,
         force_download_dataset: bool = False,
@@ -47,12 +49,11 @@ class MinispotDataset(AnomalyDetectionDataset):
         window_size: int = 8,
         gather_predictions: bool = True,
         label_type: str = "last_timestep",
-        drop_columns: List[str] = [],
         timestamp_column=None,
     ):
         super().__init__(
-            root=root,
-            csv_file=csv_file,
+            root,
+            minispot_csv,
             batch_size=batch_size,
             download_dataset=download_dataset,
             force_download_dataset=force_download_dataset,
@@ -64,6 +65,5 @@ class MinispotDataset(AnomalyDetectionDataset):
             window_size=window_size,
             gather_predictions=gather_predictions,
             label_type=label_type,
-            drop_columns=drop_columns,
             timestamp_column=timestamp_column,
         )

@@ -442,6 +442,7 @@ def define_anomaly_detection_csv_file():
     and overrides init.
     """
     # Generate random data
+
     columns = 10
     data = [["a"] * columns]
     for _ in range(1000):
@@ -455,15 +456,15 @@ def define_anomaly_detection_csv_file():
         writer.writerows(data)
 
     # Specify csv_file param for AnomalyDetectionDataset
-    default_init = AnomalyDetectionDataset.__init__
-    AnomalyDetectionDataset.__init__ = lambda *args, **kwargs: default_init(
-        *args, **kwargs, csv_file=str(tmp_file)
-    )
+    default_anomaly_init = AnomalyDetectionDataset.__init__
 
-    yield
+    def mock_anomaly_init(*args, **kwargs):
+        kwargs["csv_file"] = str(tmp_file)
+        return default_anomaly_init(*args, **kwargs)
 
     shutil.rmtree(tmp_dir)
-    AnomalyDetectionDataset.__init__ = default_init
+    AnomalyDetectionDataset.__init__ = mock_anomaly_init
+    yield
 
 
 class UnknownFramework(ValueError):

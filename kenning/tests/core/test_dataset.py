@@ -88,6 +88,12 @@ class TestDataset:
             kwargs["colsX"] = ["x1", "x2"]
             kwargs["colY"] = "y"
 
+        if "MinispotDataset" in dataset_cls.__name__:
+            pytest.skip(
+                "Minispot dataset is skipped to avoid injecting "
+                "csv_file twice to AnomalyDetectionDataset twice."
+            )
+
         dataset_download_dir = get_dataset_download_path(dataset_cls)
         dataset_download_dir = dataset_download_dir.with_name(
             dataset_download_dir.name + "_none"
@@ -402,6 +408,8 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         elif "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "MinispotDataset" in dataset_cls.__name__:
+            pytest.skip("Minispot dataset does not have files downloaded")
         if "VideoDataset" in dataset_cls.__name__:
             pytest.skip("Video dataset does not have any files")
         elif "TabularDataset" in dataset_cls.__name__:
@@ -491,6 +499,8 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "MinispotDataset" in dataset_cls.__name__:
+            pytest.skip("Minispot dataset does not have files downloaded")
         if "VideoDataset" in dataset_cls.__name__:
             pytest.skip("Video dataset does not have any files")
         elif "TabularDataset" in dataset_cls.__name__:
@@ -551,6 +561,8 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "MinispotDataset" in dataset_cls.__name__:
+            pytest.skip("Minispot dataset does not have files downloaded")
         if "VideoDataset" in dataset_cls.__name__:
             pytest.skip("Video dataset does not have any files")
         elif "TabularDataset" in dataset_cls.__name__:
@@ -611,6 +623,8 @@ class TestDataset:
             pytest.skip("random dataset does not have files")
         if "Lindenthal" in dataset_cls.__name__:
             pytest.xfail("Lindenthal dataset does not have files downloaded")
+        elif "MinispotDataset" in dataset_cls.__name__:
+            pytest.skip("Minispot dataset does not have files downloaded")
         if "VideoDataset" in dataset_cls.__name__:
             pytest.skip("Video dataset does not have any files")
         elif "TabularDataset" in dataset_cls.__name__:

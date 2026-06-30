@@ -26,7 +26,7 @@ class AnomalyDetectionANN(nn.Module):
         dropout: Optional[float] = None,
     ):
         super().__init__()
-        layers = []
+        layers = [nn.Flatten(start_dim=1)]
         in_features = num_features
 
         for h in num_hidden:
@@ -36,13 +36,16 @@ class AnomalyDetectionANN(nn.Module):
                 layers.append(nn.Dropout(dropout))
             in_features = h
 
-        layers.append(nn.Linear(in_features, num_classes))
+        layers.extend(
+            [
+                nn.Linear(in_features, num_classes),
+                nn.Flatten(start_dim=0),
+            ]
+        )
         self.net = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        b, t, f = x.shape
-        x = x.view(b, t * f)
-        return self.net(x).flatten()
+        return self.net(x)
 
     def to_pure_torch(self) -> nn.Sequential:
         """

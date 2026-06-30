@@ -85,7 +85,7 @@ class AnomalyDetectionDataset(Dataset):
         },
         "timestamp_column": {
             "argparse_name": "--timestamp_column",
-            "description": "Name of the timestamp column. Set to 'n' if the CSV has no timestamps",  # noqa: E501
+            "description": "Name of the timestamp column.",
             "type": str,
             "default": "timestamp",
         },
@@ -142,9 +142,15 @@ class AnomalyDetectionDataset(Dataset):
             Whether returned measurements should include target
             and predicted sentences.
         label_type : str
-            Determines how each window is labeled. Valid values are
-            'last_timestep', 'any_timestep',
-            or 'per_timestep' (no aggregation).
+            Determines how each window is labeled. Options include:
+            * ``last_timestep``: The window are labeled with the
+              last timestep's label.
+            * ``any_timestep``: The window is labeled as an anomaly
+              if any timestep in the window is anomalous.
+            * ``per_timestep``: The window is labeled without any
+              preprocessing. Each timestep has its own label.
+
+
         timestamp_column: Optional[str]
             The name of the timestamp column. None if it is not present.
         """

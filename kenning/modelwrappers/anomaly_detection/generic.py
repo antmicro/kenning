@@ -399,6 +399,8 @@ class PyTorchAnomalyDetectionWrapper(PyTorchWrapper, ABC):
         """
         # By default, we only have the f1 score.
         f1 = metrics.f1_score(true, predicted)
+        # Fixed threshold for now
+        threshold = 0.5
         return {
             "f1": f1,
-        }
+        }, threshold

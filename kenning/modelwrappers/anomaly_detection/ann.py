@@ -15,15 +15,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from sklearn import metrics
-from tqdm import tqdm
 
+from kenning.cli.command_template import TRAIN
+from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.anomaly_detection.generic import (
     PyTorchAnomalyDetectionWrapper,
 )
-from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
-from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
-from kenning.cli.command_template import TRAIN
+
 
 class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
     """
@@ -33,7 +32,7 @@ class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
 
     default_dataset = AnomalyDetectionDataset
 
-    model_class = "kenning.modelwrappers.anomaly_detection.models.ann.AnomalyDetectionANN" # noqa: E501
+    model_class = "kenning.modelwrappers.anomaly_detection.models.ann.AnomalyDetectionANN"  # noqa: E501
 
     arguments_structure = {
         "threshold": {
@@ -61,7 +60,7 @@ class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
         self,
         model_path: PathOrURI,
         dataset: AnomalyDetectionDataset,
-        hidden_layers: List[int],
+        hidden_layers: List[int] = [],
         threshold: float = 0.5,
         from_file: bool = True,
         dropout: Optional[float] = None,
@@ -73,13 +72,13 @@ class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
         evaluate: bool = True,
         logdir: Optional[Path] = None,
         export_dict: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             model_path,
             dataset,
             num_epochs,
-            False, # trainset should not be clean.
+            False,  # trainset should not be clean.
             metric,
             learning_rate,
             from_file,
@@ -96,14 +95,17 @@ class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
         self.evaluate = evaluate
 
     def create_model_structure(self, **kwargs):
-        from kenning.modelwrappers.anomaly_detection.models.ann import AnomalyDetectionANN
+        from kenning.modelwrappers.anomaly_detection.models.ann import (
+            AnomalyDetectionANN,
+        )
+
         num_features = self.dataset.num_features
         window_size = self.dataset.window_size
         self.model = AnomalyDetectionANN(
-            num_features * window_size, # Input will be flatteened.
+            num_features * window_size,  # Input will be flatteened.
             self.hidden_layers,
-            1, # Binary Classification
-            self.dropout
+            1,  # Binary Classification
+            self.dropout,
         )
 
     def prepare_criterion(self) -> nn.Module:
@@ -129,7 +131,7 @@ class PyTorchAnomalyDetectionANN(PyTorchAnomalyDetectionWrapper):
         criterion: nn.Module,
         inputs: Any,
         labels: Any,
-        is_validation: bool = False
+        is_validation: bool = False,
     ) -> (torch.Tensor, Any):
         outputs = self.model(inputs)
         loss = criterion(outputs, labels.to(outputs.dtype))

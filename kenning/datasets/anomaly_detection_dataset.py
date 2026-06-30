@@ -79,7 +79,7 @@ class AnomalyDetectionDataset(Dataset):
         },
         "label_type": {
             "argparse_name": "--label-type",
-            "description": "Determines how each window is labeled. Valid values are 'last_timestep', 'any_timestep', or 'per_timestep' (no aggregation)", # noqa: E501
+            "description": "Determines how each window is labeled. Valid values are 'last_timestep', 'any_timestep', or 'per_timestep' (no aggregation)",  # noqa: E501
             "type": str,
             "default": "last_timestep",
         },
@@ -105,7 +105,7 @@ class AnomalyDetectionDataset(Dataset):
         dataset_percentage: float = 1,
         window_size: int = 5,
         gather_predictions: bool = True,
-        label_type: str = 'last_timestep',
+        label_type: str = "last_timestep",
         timestamp_column: Optional[str] = "timestamp",
     ):
         """
@@ -143,15 +143,15 @@ class AnomalyDetectionDataset(Dataset):
             and predicted sentences.
         label_type : str
             Determines how each window is labeled. Valid values are
-            'last_timestep', 'any_timestep', or 'per_timestep' (no aggregation).
+            'last_timestep', 'any_timestep',
+            or 'per_timestep' (no aggregation).
         timestamp_column: Optional[str]
             The name of the timestamp column. None if it is not present.
         """
+        assert (
+            label_type in ["last_timestep", "any_timestep", "per_timestep"]
+        ), "label_type must be one of last_timestep, any_timestep, per_timestep."  # noqa: E501
 
-        assert label_type in ["last_timestep", "any_timestep", "per_timestep"], (
-            "label_type must be one of last_timestep, any_timestep, per_timestep."
-        )
-        
         self.csv_file = csv_file
         if not isinstance(self.csv_file, ResourceURI):
             self.csv_file = ResourceURI(self.csv_file)
@@ -159,7 +159,6 @@ class AnomalyDetectionDataset(Dataset):
         self.window_size = window_size
 
         self.timestamp_column = timestamp_column
-
 
         self.label_type = label_type
 

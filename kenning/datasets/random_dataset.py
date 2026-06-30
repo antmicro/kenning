@@ -657,6 +657,7 @@ class RandomizedAnomalyDetectionDataset(RandomizedImageClassificationDataset):
         """
         self.num_features = num_features
         self.window_size = window_size
+        self.label_type = "last_timestep"
         super().__init__(
             root=root,
             batch_size=batch_size,

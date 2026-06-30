@@ -188,14 +188,6 @@ def get_all_snippets(
             if snippet.meta.get("test-skip", False):
                 continue
 
-            # Append values to snippet's content
-            if "append_before" in snippet.meta:
-                snippet.text = (
-                    f"{snippet.meta['append_before']} {snippet.text}"
-                )
-            if "append_after" in snippet.meta:
-                snippet.text = f"{snippet.text} {snippet.meta['append_after']}"
-
             # Snippet is executable -- yield it
             if snippet.lang in EXECUTABLE_TYPES:
                 # Split multiline snippet

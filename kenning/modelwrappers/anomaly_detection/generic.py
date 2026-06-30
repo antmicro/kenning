@@ -319,7 +319,7 @@ class PyTorchAnomalyDetectionWrapper(PyTorchWrapper, ABC):
                     loss_count += 1
 
                     bar.set_description(
-                        f"train epoch: {epoch:3d} loss: "
+                        f"training epoch: {epoch:3d} loss: "
                         f"{loss_sum.data.cpu().numpy().sum() / loss_count:.5f}"
                     )
 
@@ -350,7 +350,7 @@ class PyTorchAnomalyDetectionWrapper(PyTorchWrapper, ABC):
                     loss_count += 1
 
                     bar.set_description(
-                        f"train epoch: {epoch:3d} loss: "
+                        f"evaluation epoch: {epoch:3d} loss: "
                         f"{loss_sum.data.cpu().numpy().sum() / loss_count:.5f}"
                     )
 

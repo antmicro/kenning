@@ -154,7 +154,6 @@ def get_all_snippets(
         python_snippet = None
         last_snippet_name = None
         for name, snippet in get_snippets(str(markdown)).items():
-            snippet.meta["depends"] = []
             snippet.meta["terminal"] = int(snippet.meta.get("terminal", 0))
 
             # Parse args from language
@@ -171,8 +170,6 @@ def get_all_snippets(
                     snippet.meta[SNIPPET_MARKDOWN_PARENT] = Path(
                         *from_docs[::-1]
                     )
-                if last_snippet_name:
-                    snippet.meta["depends"].append(last_snippet_name)
                 last_snippet_name = name
                 yield (
                     markdown.with_suffix("").name,
@@ -197,9 +194,6 @@ def get_all_snippets(
                         continue
                     line_snippet = copy.deepcopy(snippet)
                     line_snippet.text = line
-                    # Set previous snippet as dependency
-                    if last_snippet_name:
-                        line_snippet.meta["depends"].append(last_snippet_name)
                     last_snippet_name = f"{name}_{id}"
                     yield (
                         markdown.stem,
@@ -520,13 +514,6 @@ class TestDocsSnippets:
                 id=f"{markdown}_{snippet_name}",
                 marks=[
                     pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
-                    pytest.mark.dependency(
-                        name=f"_{markdown}_{snippet_name}",
-                        depends=[
-                            f"_{markdown}_{dep}"
-                            for dep in snippet.meta["depends"]
-                        ],
-                    ),
                     pytest.mark.snippets,
                 ]
                 + ([pytest.mark.gpu] if uses_gpu else [])

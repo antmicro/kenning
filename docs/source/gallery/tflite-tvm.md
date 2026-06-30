@@ -99,7 +99,7 @@ The available `--report-types` will be derived from measurements in the `build/n
 
 Conveniently, `kenning test` and `kenning report` commands can be reduced to a single `kenning` run:
 
-```bash name=native
+```bash
 kenning test report \
   --json-cfg mobilenetv2-tensorflow-native.json \
   --measurements build/native.json \
@@ -142,7 +142,7 @@ Usually, each `Optimizer` has a corresponding `Runtime` capable of running its r
 
 To compile the scenario (called `tflite-fp32.json`), run:
 
-```bash name=tflite-fp32
+```bash
 kenning optimize test report \
   --json-cfg mobilenetv2-tensorflow-tflite-f32.json \
   --measurements build/tflite-fp32.json \
@@ -172,7 +172,7 @@ Then, in the background, `TFLiteCompiler` fetches a subset of images from the `P
 
 Let's run the scenario above (`tflite-int8.json`):
 
-```bash name=tflite-int8
+```bash
 kenning optimize test report \
   --json-cfg mobilenetv2-tensorflow-tflite-int8.json \
   --measurements build/tflite-int8.json \
@@ -199,7 +199,7 @@ The final result is a `.tar` file containing a shared library that implements th
 
 Let's compile the scenario (`tvm-avx2-int8.json`):
 
-```bash name=tvm-avx2-int8
+```bash
 kenning optimize test report \
   --json-cfg mobilenetv2-tensorflow-tvm-avx-int8.json \
   --measurements build/tvm-avx2-int8.json \

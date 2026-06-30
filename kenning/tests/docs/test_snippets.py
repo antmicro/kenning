@@ -68,7 +68,7 @@ DEFAULT_TIMEOUT = 60 * 120  # 120 min
 # Directory with datasets (relative to Kenning)
 DATASET_DIR = "build"
 # Possible arguments for snippet
-SNIPPET_ARGUMENTS = ("test-skip", "timeout", "name", "terminal", "save-as")
+SNIPPET_ARGUMENTS = ("test-skip", "timeout", "terminal", "save-as")
 # Key of the snippet's positional arguments
 SNIPPET_POSITIONAL_ARG = "__arg"
 # Key of the snippet's metadata containing markdown directory

@@ -77,6 +77,18 @@ class AnomalyDetectionDataset(Dataset):
             "type": bool,
             "default": True,
         },
+        "label_type": {
+            "argparse_name": "--label-type",
+            "description": "Determines how each window is labeled. Valid values are 'last_timestep', 'any_timestep', or 'per_timestep' (no aggregation)", # noqa: E501
+            "type": str,
+            "default": "last_timestep",
+        },
+        "timestamp_column": {
+            "argparse_name": "--timestamp_column",
+            "description": "Name of the timestamp column. Set to 'n' if the CSV has no timestamps",  # noqa: E501
+            "type": str,
+            "default": "timestamp",
+        },
     }
 
     def __init__(
@@ -93,6 +105,8 @@ class AnomalyDetectionDataset(Dataset):
         dataset_percentage: float = 1,
         window_size: int = 5,
         gather_predictions: bool = True,
+        label_type: str = 'last_timestep',
+        timestamp_column: Optional[str] = "timestamp",
     ):
         """
         Representation of dataset for anomaly detection.
@@ -127,12 +141,28 @@ class AnomalyDetectionDataset(Dataset):
         gather_predictions : bool
             Whether returned measurements should include target
             and predicted sentences.
+        label_type : str
+            Determines how each window is labeled. Valid values are
+            'last_timestep', 'any_timestep', or 'per_timestep' (no aggregation).
+        timestamp_column: Optional[str]
+            The name of the timestamp column. None if it is not present.
         """
+
+        assert label_type in ["last_timestep", "any_timestep", "per_timestep"], (
+            "label_type must be one of last_timestep, any_timestep, per_timestep."
+        )
+        
         self.csv_file = csv_file
         if not isinstance(self.csv_file, ResourceURI):
             self.csv_file = ResourceURI(self.csv_file)
         self.num_features = None
         self.window_size = window_size
+
+        self.timestamp_column = timestamp_column
+
+
+        self.label_type = label_type
+
         super().__init__(
             root,
             batch_size,
@@ -156,8 +186,9 @@ class AnomalyDetectionDataset(Dataset):
     def prepare(self):
         data_path = self.root / self.csv_file.stem
         data = pd.read_csv(data_path)
-        # Remove timestamps (first column)
-        data = data.drop(columns=[data.columns[0]])
+
+        if self.timestamp_column in data.columns:
+            data = data.drop(columns=[self.timestamp_column])
         data = data.to_numpy(np.float32)
         self.dataX = data[:, :-1]
         self.dataY = data[:, -1].astype(np.int_)
@@ -167,12 +198,25 @@ class AnomalyDetectionDataset(Dataset):
         self.num_features = self.dataX.shape[1]
 
         # Prepare data in format (window_size, num_features)
-        self.dataX = [
-            self.dataX[i : i + self.window_size]
-            for i in range(0, self.dataX.shape[0] - self.window_size)
-        ]
-        self.dataX = np.asarray(self.dataX)
-        self.dataY = self.dataY[self.window_size :]
+        self.dataX = self.make_windows(self.dataX)
+        self.dataY = self.make_windows(self.dataY)
+
+        if self.label_type == "last_timestep":
+            self.dataY = self.dataY[:, -1].astype(int)
+        elif self.label_type == "any_timestep":
+            self.dataY = (self.dataY == 1).any(axis=1).astype(int)
+        elif self.label_type == "per_timestep":
+            self.dataY = self.dataY.astype(int)
+        else:
+            raise ValueError(f"Unknown label: {self.label_type}")
+
+    def make_windows(self, arr: np.ndarray) -> np.ndarray:
+        """Return rolling windows of shape (num_windows, window_size)."""
+        seq = np.asarray(arr)
+        n = seq.shape[0] - self.window_size + 1
+        if n <= 0:
+            return np.empty((0, self.window_size), dtype=seq.dtype)
+        return np.array([seq[i : i + self.window_size] for i in range(n)])
 
     def evaluate(self, predictions, truth) -> Measurements:
         confusion_matrix = metrics.confusion_matrix(

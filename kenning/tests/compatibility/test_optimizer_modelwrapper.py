@@ -55,7 +55,7 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 LLM_OPTIMIZERS = [
     optimizer
     for optimizer in OPTIMIZER_SUBCLASSES
-    if getattr(optimizer, "inputtypes", []) == ["safetensors-native"]
+    if getattr(optimizer, "inputtypes", []) == ["safetensors"]
 ]
 
 LLM_MODELWRAPPERS = get_all_subclasses(
@@ -125,6 +125,7 @@ EXPECTED_FAIL = [
     ("PersonDetectionModelWrapper", "NNIPruningOptimizer"),
     ("PersonDetectionModelWrapper", "TensorFlowClusteringOptimizer"),
     ("PersonDetectionModelWrapper", "TensorFlowPruningOptimizer"),
+    ("PHI2", "AWQOptimizer"),
     ("PyTorchAnomalyDetectionVAE", "Ai8xCompiler"),
     ("PyTorchAnomalyDetectionVAE", "NNIPruningOptimizer"),
     ("PyTorchAnomalyDetectionVAE", "TensorFlowClusteringOptimizer"),

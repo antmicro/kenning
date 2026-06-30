@@ -216,3 +216,25 @@ class OnnxConverter(ModelConverter):
         return relay.frontend.from_onnx(
             model, shape=input_shapes, freeze_params=True, dtype=dtype
         )
+
+    def to_tinygrad(
+        self,
+        model: Optional["onnx.ModelProto"] = None,
+        **kwargs,
+    ) -> "onnx.ModelProto":
+        """
+        Converts ONNX model to Tinygrad OnnxRunner.
+
+        Parameters
+        ----------
+        model : Optional["onnx.ModelProto"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
+
+        Returns
+        -------
+        onnx.ModelProto
+            Loaded ONNX model.
+        """
+        return self.to_onnx(model, **kwargs)

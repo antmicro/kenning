@@ -11,9 +11,34 @@ https://github.com/casper-hansen/AutoAWQ
 from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.resource_manager import PathOrURI
+
+
+def _get_awq_model(model: AutoModelForCausalLM):
+    """
+    Finds the appropriate AWQ class given a huggingface
+    transformer model. This function is required because
+    there is no straightforward way to quantize an in-memory
+    safetensors model.
+    """
+    from awq.models.auto import AWQ_CAUSAL_LM_MODEL_MAP
+
+    model_type = model.config.model_type
+    awq_class = AWQ_CAUSAL_LM_MODEL_MAP.get(model_type)
+    if awq_class is None:
+        raise NotSupportedError(f"{model_type} is not supported by AWQ")
+
+    return awq_class(
+        model=model,
+        model_type=model_type,
+        is_quantized=False,
+        config=model.config,
+        quant_config={},
+        processor=None,
+    )
 
 
 class AWQOptimizer(Optimizer):
@@ -22,15 +47,15 @@ class AWQOptimizer(Optimizer):
     for quantizing LLMs using AutoAWQ optimizer.
     """
 
-    inputtypes = ["safetensors-native"]
+    inputtypes = ["safetensors"]
 
-    outputtypes = ["safetensors-awq"]
+    outputtypes = ["safetensors"]
 
     arguments_structure = {
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "safetensors-native",
+            "default": "safetensors",
             "enum": inputtypes,
         },
         # AWQ supports only 4bit quantization for now,
@@ -69,7 +94,7 @@ class AWQOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
-        model_framework: str = "safetensors-native",
+        model_framework: str = "safetensors",
         target_precision: int = 4,
         use_zero_point: bool = True,
         group_size: int = 128,
@@ -124,9 +149,8 @@ class AWQOptimizer(Optimizer):
             trust_remote_code=True,
         )
 
-        model = AutoAWQForCausalLM.from_pretrained(
-            str(input_model_path),
-            safetensors=True,
+        model = converter_registry.convert(
+            input_model_path, "safetensors", "safetensors"
         )
 
         quantization_config = {
@@ -135,6 +159,9 @@ class AWQOptimizer(Optimizer):
             "q_group_size": self.group_size,
             "version": self.mm_version,
         }
+
+        # Convert the hf safetensors model to AWQ
+        model = _get_awq_model(model)
 
         if hasattr(self.dataset, "calib_data") and callable(
             getattr(self.dataset, "calib_data")

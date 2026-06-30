@@ -25,11 +25,12 @@ except ImportError:
 
 
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
+import onnx
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import IOSpecificationNotFoundError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.logger import KLogger
@@ -90,6 +91,26 @@ class TinygradOptimizer(Optimizer):
 
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
+    def _save_model_weights(self, model: Any, target_path: Path):
+        """
+        Helper to save the loaded model object's weights to the target path.
+
+        Parameters
+        ----------
+        model : Any
+            The loaded model object.
+        target_path : Path
+            The file path where weights should be saved.
+        """
+        import onnx
+        from tinygrad.nn.state import get_state_dict, safe_save
+
+        if isinstance(model, onnx.ModelProto):
+            onnx.save(model, str(target_path))
+        else:
+            state_dict = get_state_dict(model)
+            safe_save(state_dict, str(target_path))
+
     def get_complete_model_structure_info(self) -> Tuple[str, str, str]:
         """
         Get info needed to load this model's structure.
@@ -129,8 +150,6 @@ class TinygradOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
-        import onnx
-
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
@@ -138,19 +157,21 @@ class TinygradOptimizer(Optimizer):
             from copy import deepcopy
 
             io_spec = deepcopy(io_spec)
-
             io_spec["input"] = (
                 io_spec["processed_input"]
                 if "processed_input" in io_spec
                 else io_spec["input"]
             )
-
         except (TypeError, KeyError):
+            from kenning.core.exceptions import IOSpecificationNotFoundError
+
             raise IOSpecificationNotFoundError(
                 "No input/output specification found"
             )
 
+        model = None
         input_type = self.get_input_type(input_model_path)
+
         if input_type != "safetensors" and input_type != "tinygrad":
             model_cls = self.get_model_class()
 
@@ -169,9 +190,9 @@ class TinygradOptimizer(Optimizer):
                 **conversion_kwargs,
                 **kwargs,
             )
+
             onnx_path = self.compiled_model_path.with_suffix(".onnx")
             onnx.save(model, onnx_path)
-
             input_model_path = onnx_path
 
             for spec, input in zip(io_spec["input"], model.graph.input):
@@ -186,18 +207,21 @@ class TinygradOptimizer(Optimizer):
             modelcls_name,
             model_type,
         ) = self.get_complete_model_structure_info()
+
         model_module_path = ResourceManager().get_resource(
             uri=model_module_path
         )
 
         model_weights_filename = "model_weights"
         model_implementation_filename = "implementation.py"
+
         metadata = {
             TinygradMetadata.MODELCLS: modelcls_name,
             TinygradMetadata.MODELCLS_FILENAME: model_implementation_filename,
             TinygradMetadata.MODELWEIGHTS_FILENAME: model_weights_filename,
             TinygradMetadata.MODEL_TYPE: model_type,
         }
+
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmpdir_path = Path(tmpdirname)
             metadata_filename = (
@@ -206,12 +230,22 @@ class TinygradOptimizer(Optimizer):
 
             with open(metadata_filename, "w") as f:
                 json.dump(metadata, f)
-            shutil.copy(input_model_path, tmpdir_path / model_weights_filename)
+
+            if model is not None:
+                self._save_model_weights(
+                    model, tmpdir_path / model_weights_filename
+                )
+            else:
+                shutil.copy(
+                    input_model_path, tmpdir_path / model_weights_filename
+                )
+
             shutil.copy(
                 model_module_path,
                 tmpdir_path / model_implementation_filename,
             )
             create_tar(self.model_path, tmpdirname)
+
         self.save_io_specification(input_model_path, io_spec)
 
     def get_framework(self) -> str:

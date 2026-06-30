@@ -302,15 +302,14 @@ class DatasetModelRegistry:
             model = Ai8xAnomalyDetectionCNN(
                 model_path, dataset, from_file=True
             )
+        elif framework == "safetensors":
+            from kenning.modelwrappers.llm.mistral import MistralInstruct
 
-        elif framework in [
-            "safetensors-native",
-            "safetensors-awq",
-            "safetensors-gptq",
-        ]:
-            raise UnknownFramework(
-                f"LLM frameworks are not supported yet - {framework}"
+            dataset = get_dataset_random_mock(MistralInstruct.default_dataset)
+            model = MistralInstruct(
+                MistralInstruct.pretrained_model_uri, dataset
             )
+
         else:
             raise UnknownFramework(f"Unknown framework: {framework}")
 

@@ -22,7 +22,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
     into format that is compliant with sparsity_aware_kernel.
     """
 
-    inputtypes = ["safetensors-native"]
+    inputtypes = ["safetensors"]
     outputtypes = ["safetensors-sparsity-aware-kernel"]
 
     arguments_structure = {
@@ -50,7 +50,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         group_size: int = 128,
-        context_length: int = 2048,
+        context_length: int = 4096,
         calibration_samples: int = 128,
         model_wrapper: Optional[ModelWrapper] = None,
     ):

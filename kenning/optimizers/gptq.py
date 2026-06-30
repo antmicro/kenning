@@ -22,7 +22,7 @@ class GPTQOptimizer(Optimizer):
     for quantizing LLMs using AutoGPTQ optimizer.
     """
 
-    inputtypes = ["safetensors-native"]
+    inputtypes = ["safetensors"]
 
     outputtypes = ["safetensors-gptq"]
 
@@ -103,7 +103,10 @@ class GPTQOptimizer(Optimizer):
             str(input_model_path), quantization_config
         )
 
-        calibration_samples = get_c4(self.calibration_samples, tokenizer)
+        calibration_samples = get_c4(
+            n_samples=self.calibration_samples,
+            tokenizer=tokenizer,
+        )
 
         model.quantize(calibration_samples)
         tokenizer.save_pretrained(str(self.compiled_model_path))

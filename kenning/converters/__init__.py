@@ -19,5 +19,5 @@ for converter in converters:
     converter_registry.register(converter)
 
 converter_registry.add_alias("executorch", "torch")
-converter_registry.add_alias("tinygrad", "onnx")
 converter_registry.add_alias("iree", "onnx")
+converter_registry.add_alias("kenning", "safetensors")

@@ -47,6 +47,7 @@ def _prepare_pyrenode(session: nox.Session):
 
         session.log(f"Using Renode from: '{renode_bin}'.")
 
+
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
@@ -135,6 +136,10 @@ def run_gallery_tests(session: nox.Session, specification):
     """
     name = _fix_name(session.name)
 
+    # unset UV_PYTHON and VIRTUAL_ENV to
+    # allow usage of session venv
+    envs = {"UV_PYTHON": None, "VIRTUAL_ENV": None}
+
     pattern_md = (
         "docs/source/gallery/*.md"
         if not session.posargs
@@ -167,6 +172,7 @@ def run_gallery_tests(session: nox.Session, specification):
         "-n=4",
         f"--report-log={report_path}",
         f"--test-docs-log-dir={test_docs_log_dir}",
+        env=envs,
     )
 
 

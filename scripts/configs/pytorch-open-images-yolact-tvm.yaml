@@ -1,0 +1,57 @@
+platform:
+  type: kenning.platforms.local.LocalPlatform
+
+model_wrapper:
+  type: kenning.modelwrappers.instance_segmentation.pytorch_yolact.YOLACTOpenImages
+  parameters:
+    # Output of fine-tuning; also used as input for the optimize stage
+    model_path: ./build/yolact_finetuned.pth
+    # Starting checkpoint (backbone frozen, only heads are trained)
+    pretrained_weights_path: kenning:///models/instance_segmentation/yolact_resnet50.pth
+    freeze_backbone: true
+    learning_rate: 0.0004
+    batch_size: 32
+    num_epochs: 10
+    logdir: ./build/logs
+
+dataset:
+  type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+  parameters:
+    dataset_root: ./build/OpenImagesDatasetV6
+    inference_batch_size: 1
+    task: instance_segmentation
+    classes: coco
+    download_annotations_type: train
+    image_width: 550
+    image_height: 550
+
+optimizers:
+  - type: kenning.optimizers.onnx.ONNXCompiler
+    parameters:
+      compiled_model_path: ./build/yolact.onnx
+
+  - type: kenning.optimizers.tvm.TVMCompiler
+    parameters:
+      model_framework: onnx
+      # Add more CPU-specific flags depending on what processor you have. For example: llvm -mcpu=core-avx2.
+      # This can speed things up by almost 4x.
+      target: llvm
+      opt_level: 3
+      use_int8_precision: true
+      # Small calibration slice to keep quantization fast and avoid out-of-memory error
+      dataset_percentage: 0.001
+      compiled_model_path: ./build/yolact_tvm_int8.tar
+
+runtime:
+  type: kenning.runtimes.tvm.TVMRuntime
+  parameters:
+    save_model_path: ./build/yolact_tvm_int8.tar
+    target_device_context: cpu
+
+report:
+  type: kenning.report.markdown_report.MarkdownReport
+  parameters:
+    measurements: ./build/pytorch_yolact_results.json
+    report_path: ./build/yolact-report/yolact_report.md
+    report_name: YOLACT | Transfer Learning | Quantization | TVM
+    to_html: true

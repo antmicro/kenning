@@ -32,7 +32,7 @@ git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
 ```
 
-Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, and install Python dependencies with:
+Then, initialize Zephyr workspace, and install Python dependencies with:
 
 ```bash
 uv venv .venv
@@ -42,6 +42,10 @@ west init -l .
 west update
 west zephyr-export
 uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
+```
+
+Install latest Zephyr SDK with:
+```bash test-skip
 west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf
 ```
 

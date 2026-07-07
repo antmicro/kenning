@@ -17,7 +17,7 @@ from kenning.resources.pyproject.dependencies import get_all_dependencies
 # Regexes for comparing dependencies
 END_CHARS = " >=<@~"
 RE_NAME = f"^[^{END_CHARS}]+(?=[{END_CHARS}]?)"
-RE_KENNING_DEP = r"kenning\[[a-zA-Z]+\]"
+RE_KENNING_DEP = r"kenning\[[a-zA-Z0-9_]+\]"
 
 # Mapping of names used for import and oficiall package names
 KNOWN_PYPI_NAMES = {
@@ -78,7 +78,7 @@ def kenning_missing_import_excepthook(
         last_tb = last_tb.tb_next
     # If exception is raised in Kenning try to find
     # which optional dependency should be installed
-    if type_ == ModuleNotFoundError and last_tb.tb_frame.f_globals.get(
+    if type_ is ModuleNotFoundError and last_tb.tb_frame.f_globals.get(
         "__package__", ""
     ).startswith("kenning."):
         extras = find_missing_optional_dependency(value.name)
@@ -127,7 +127,7 @@ def _normalize(name: str) -> str:
 
 
 def find_missing_optional_dependency(
-    module_name: Optional[str]
+    module_name: Optional[str],
 ) -> Optional[str]:
     """
     Checks which group of optional dependencies contains missing module.

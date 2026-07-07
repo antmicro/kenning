@@ -36,7 +36,7 @@ Overview of Kenning Zephyr Runtime use-cases:
 
 To use Kenning Zephyr Runtime, first clone the repository:
 
-```bash zephyr-init
+```bash
 mkdir -p zephyr-workspace && cd zephyr-workspace
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
@@ -82,7 +82,7 @@ Using uv with Kenning Zephyr Runtime is encouraged for fast dependency installat
 
 Alternatively, you can do this manually (for example if you want to install a different set of toolchains):
 
-``` bash test-skip
+``` bash
 uv venv .venv --python=3.11
 source .venv/bin/activate
 uv pip install pip setuptools west --upgrade
@@ -90,6 +90,11 @@ west init -l .
 west update
 uv pip install -r requirements.txt -r ../zephyr/scripts/requirements-base.txt
 west zephyr-export
+```
+
+Install latest Zephyr SDK with:
+
+``` bash test-skip
 west sdk install --toolchains x86_64-zephyr-elf arm-zephyr-eabi riscv64-zephyr-elf aarch64-zephyr-elf
 ```
 

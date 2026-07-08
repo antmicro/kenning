@@ -7,13 +7,13 @@
 # Not using 'set -e', because this script is meant to be sourced (sourcing
 # scripts with this option might cause the shell to break).
 
+uv venv -p 3.11
+source .venv/bin/activate
+
 mkdir -p $ZEPHYR_WORKSPACE && pushd $ZEPHYR_WORKSPACE
 
 git clone https://github.com/antmicro/kenning-zephyr-runtime.git
 cd kenning-zephyr-runtime
-
-uv venv -p 3.11
-source .venv/bin/activate
 
 uv pip install pip setuptools west --upgrade
 west init -l .

@@ -556,7 +556,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         for sample in samples:
             img = cv2.imread(self.get_sample_image_path(sample))
             img = cv2.resize(img, (self.image_width, self.image_height))
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.crop_input_to_bboxes:
                 minx, miny, maxx, maxy = self.crop_dict[sample]

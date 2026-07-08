@@ -166,7 +166,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         for imgpath in samples:
             img = cv2.imread(str(imgpath))
             img = cv2.resize(img, (self.image_width, self.image_height))
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))

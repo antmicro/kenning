@@ -120,7 +120,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
 
 ```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json save-as=mobilenetv2-tensorflow-tflite-f32.json
 :language: json
-:lines: 15-24
+:lines: 15-31
 ```
 
 The configuration of the already existing blocks does not change, and the dataset will not be downloaded again since the files are already present.

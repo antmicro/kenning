@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -427,6 +427,9 @@ class PipelineRunner(object):
                 self.model_wrapper.io_specification = final_io_spec
 
             self.platform.last_optimizer = self.optimizers[-1]
+
+            if self.report:
+                self.report.last_optimizer = self.optimizers[-1]
 
         if self.protocol:
             self.platform.protocol = self.protocol

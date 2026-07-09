@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -224,6 +224,8 @@ class MarkdownReport(Report):
         self.zephyr_trace_file_tef = zephyr_trace_file_tef
         self.zephyr_base = zephyr_base
         self.zephyr_build_path = zephyr_build_path
+        # This is set directly by the PipelineRunner
+        self.last_optimizer = None
 
         KLogger.debug(f"Report measurements: {self.measurements}")
 
@@ -403,6 +405,7 @@ class MarkdownReport(Report):
                         zephyr_trace_file_tef=self.zephyr_trace_file_tef,
                         zephyr_build_path=self.zephyr_build_path,
                         zephyr_base=self.zephyr_base,
+                        last_optimizer=self.last_optimizer,
                         cfg=self.cfg_name,
                     )
                     if metrics:

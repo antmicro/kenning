@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Set, Tuple
 
 from kenning.core.exceptions import KenningReportError
+from kenning.core.optimizer import Optimizer
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
 )
@@ -37,6 +38,7 @@ def zephyr_traces_report(
     zephyr_trace_file_tef: Optional[Path] = None,
     zephyr_build_path: Optional[Path] = None,
     zephyr_base: Optional[Path] = None,
+    last_optimizer: Optional[Optimizer] = None,
     cfg: Optional[str] = None,
     **kwargs: Any,
 ) -> Tuple[str, Dict]:
@@ -71,6 +73,8 @@ def zephyr_traces_report(
         CTF->TEF conversion)
     zephyr_base: Optional[Path]
         Path to Zephyr repository (used for CTF->TEF conversion).
+    last_optimizer: Optional[Optimizer]
+        Last optimizer used in the pipeline.
     cfg: Optional[str]
         Name of the config file used to generate the report. Will be used to
         infer the HTML page title for Zephyr Traces Report. Set to None if no
@@ -126,14 +130,8 @@ def zephyr_traces_report(
                 )
 
     if convert_needed:
-        optimizer = measurementsdata["optimizers"][-1]["compiler_framework"]
-        from kenning.optimizers.tflite import TFLiteCompiler
-        from kenning.optimizers.tvm import TVMCompiler
-
         _prepare_traces(
-            TVMCompiler
-            if optimizer == "tvm"
-            else (TFLiteCompiler if optimizer == "tflite" else None),
+            last_optimizer,
             path_ctf,
             path_tef,
             zephyr_build_path,
@@ -154,7 +152,7 @@ def zephyr_traces_report(
     # The app automatically detects if window.initialTraces tag is present
     # and if so, automatically parses and uses them.
     # Therefore all we need to do is paste a <script> into the HTML, that
-    # creates the tag and updsbase64-encoded trace data into it.
+    # creates the tag and put base64-encoded trace data into it.
 
     with open(ztv_path) as ztv:
         with open(path_tef) as tracefile:

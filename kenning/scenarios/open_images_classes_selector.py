@@ -6,7 +6,8 @@
 A tool for generating a file with class names for Open Images Dataset V6.
 
 Usage:
-uv run kenning/scenarios/open_images_classes_selector.py build/wanted_classes build/OpenImagesClasses.csv
+uv run kenning/scenarios/open_images_classes_selector.py \
+    build/wanted_classes build/OpenImagesClasses.csv
 
 where build/wanted_classes is just a file with class names that you want:
 ```
@@ -35,7 +36,7 @@ def main():  # noqa: D103
     )
     parser.add_argument(
         "output",
-        help="Output path containing csv file with desired classes, ready to be used for OpenImagesDatsetV6",  # noqa: E501
+        help="Output path containing csv file with desired classes, ready to be used for OpenImagesDatasetV6",  # noqa: E501
         nargs="?",
         const="output.csv",
         default="output.csv",

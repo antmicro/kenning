@@ -112,6 +112,7 @@ class ONNXYOLOV4(YOLOWrapper):
         self,
         outputs: List,
         target: List[List[DetectObject]],
+        scale_obj: float = 5,
         scale_noobj: float = 0.5,
         eps: float = 1e-7,
     ) -> float:
@@ -126,6 +127,8 @@ class ONNXYOLOV4(YOLOWrapper):
             One batch of YOLO network output of type torch.Tensor
         target : List[List[DetectObject]]
             True bounding boxes of object on precessed image
+        scale_obj : float
+            Scaling factor of bounding boxes with object error
         scale_noobj : float
             Scaling factor of bounding boxes without object error
         eps : float
@@ -201,8 +204,8 @@ class ONNXYOLOV4(YOLOWrapper):
             target_batch_torch = torch.tensor(
                 [
                     [
-                        (_target.xmin - _target.xmin) / 2,
-                        (_target.ymin - _target.ymin) / 2,
+                        (_target.xmax + _target.xmin) / 2,
+                        (_target.ymax + _target.ymin) / 2,
                         _target.xmax - _target.xmin,
                         _target.ymax - _target.ymin,
                         *[
@@ -221,7 +224,12 @@ class ONNXYOLOV4(YOLOWrapper):
         return torch.mean(loss)
 
     def _loss_one_batch_torch(
-        self, detect_batch, target_batch, scale_noobj=0.5, eps=1e-7
+        self,
+        detect_batch,
+        target_batch,
+        scale_obj=5.0,
+        scale_noobj=0.5,
+        eps=1e-7,
     ):
         import torch
         import torch.nn.functional as F
@@ -315,15 +323,25 @@ class ONNXYOLOV4(YOLOWrapper):
             )
 
         # Objectness + No Objectness
-        obj = F.binary_cross_entropy_with_logits(
-            detect_batch[:, 4],
-            ten(
-                [
-                    1.0 if id in best_detect_ids else 0.0
-                    for id in range(detect_batch.shape[0])
-                ]
-            ),
+        obj_mask = torch.zeros(
+            detect_batch.shape[0],
+            dtype=torch.bool,
+            device=detect_batch.device,
         )
+        for idx in best_detect_ids:
+            obj_mask[idx] = True
+
+        obj_loss = F.binary_cross_entropy_with_logits(
+            detect_batch[obj_mask, 4],
+            torch.ones_like(detect_batch[obj_mask, 4]),
+        )
+
+        noobj_loss = F.binary_cross_entropy_with_logits(
+            detect_batch[~obj_mask, 4],
+            torch.zeros_like(detect_batch[~obj_mask, 4]),
+        )
+
+        obj = scale_obj * obj_loss + scale_noobj * noobj_loss
 
         return ciou + obj + clf
 

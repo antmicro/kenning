@@ -1,8 +1,20 @@
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Wrapper for YOLOv4 model.
 
 Allows for transfer learning of models based on 'OpenImageDatasetV6' for
 selected classes only.
+
+This wrapper uses PyTorch implementation of YOLOv4:
+kenning/modelwrappers/frameworks/helpers/pytorch_yolov4_impl.py
+which is based on implementation in this repository:
+https://github.com/Tianxiaomo/pytorch-YOLOv4
+
+If you want to use pretrained model weights you have to download
+yolov4.pth from repository above.
 """
 
 import copy
@@ -15,11 +27,14 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from kenning.cli.command_template import TRAIN
+from kenning.cli.command_template import TEST, TRAIN
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import TrainingParametersMissingError
+from kenning.core.exceptions import (
+    TrainingParametersMissingError,
+)
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
+from kenning.modelwrappers.frameworks.helpers.pytorch_yolov4_impl import Yolov4
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -41,6 +56,13 @@ class YOLOV4TL(ONNXYOLOV4):
             "type": ResourceURI,
             "default": None,
             "subcommands": [TRAIN],
+        },
+        "pretrained": {
+            "argparse_name": "--pretrained",
+            "description": "dupa",
+            "type": bool,
+            "default": False,
+            "subcommands": [TRAIN, TEST],
         },
         "batch_size": {
             "argparse_name": "--batch-size",
@@ -71,7 +93,11 @@ class YOLOV4TL(ONNXYOLOV4):
         },
     }
 
-    custom_conv_names = ["Conv_393", "Conv_611", "Conv_829"]
+    layer_names_to_change = [
+        "head.conv2",
+        "head.conv10",
+        "head.conv18",
+    ]
 
     def __init__(
         self,
@@ -81,7 +107,8 @@ class YOLOV4TL(ONNXYOLOV4):
         model_name: Optional[str] = None,
         class_names: str = "coco",
         save_model_path: Optional[PathOrURI] = None,
-        batch_size: Optional[int] = None,
+        pretrained: Optional[bool] = None,
+        batch_size: int = 1,
         learning_rate: Optional[float] = None,
         num_epochs: Optional[int] = None,
         logdir: Optional[Path] = None,
@@ -91,6 +118,7 @@ class YOLOV4TL(ONNXYOLOV4):
             self.save_model_path = save_model_path
         else:
             self.save_model_path = model_path
+        self.pretrained = pretrained
 
         super().__init__(
             model_path,
@@ -104,7 +132,6 @@ class YOLOV4TL(ONNXYOLOV4):
             self.classnames = list(
                 map(lambda n: n.split(",")[1], self.classnames)
             )
-
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
@@ -118,17 +145,15 @@ class YOLOV4TL(ONNXYOLOV4):
             )
         return self._device
 
-    def freeze(self):
+    def freeze_backbone(self):
         """
-        Freezes pretrained part of the model.
+        Freezes backbone of the model.
         """
-        for parameter in self.model.parameters():
-            parameter.requires_grad = False
-
-        for layer_name in self.custom_conv_names:
+        backbone_layers = [f"down{i}" for i in range(1, 6)]
+        for layer_name in backbone_layers:
             layer = getattr(self.model, layer_name)
             for param in layer.parameters():
-                param.requires_grad = True
+                param.requires_grad = False
 
     def unfreeze(self):
         """
@@ -138,36 +163,32 @@ class YOLOV4TL(ONNXYOLOV4):
             parameter.requires_grad = True
 
     def create_model_structure(self, model_path: Optional[ResourceURI] = None):
-        """
-        Recreates the model structure from saved ONNX model.
-        Replaces certain Conv2D layers to accommodate for different
-        number of classes.
-        """
-        import torch.nn as nn
+        self.model = Yolov4(n_classes=self.numclasses)
 
-        from kenning.onnxconverters.onnx2torch import convert
+    def load_pretrained_torch_model(self, model_path: PathOrURI):
+        weights = torch.load(
+            model_path, map_location=self.device, weights_only=False
+        )
 
-        if model_path is None:
-            model_path = ResourceURI(self.pretrained_model_uri)
+        dst_sd = self.model.state_dict()
+        new_sd = dst_sd.copy()
 
-        self.model = convert(model_path)
+        used = set()
 
-        N = len(self.classnames)
-        for layer_name in self.custom_conv_names:
-            old = getattr(self.model, layer_name)
+        for dst_name, dst_tensor in dst_sd.items():
+            for src_name, src_tensor in weights.items():
+                if src_name in used or any(
+                    src_name.startswith(layer)
+                    for layer in self.layer_names_to_change
+                ):
+                    continue
 
-            new = nn.Conv2d(
-                old.in_channels,
-                3 * (N + 5),
-                kernel_size=old.kernel_size,
-                stride=old.stride,
-                padding=old.padding,
-                dilation=old.dilation,
-                groups=old.groups,
-                bias=(old.bias is not None),
-            )
+                if src_tensor.shape == dst_tensor.shape:
+                    new_sd[dst_name] = src_tensor
+                    used.add(src_name)
+                    break
 
-            setattr(self.model, layer_name, new)
+        self.model.load_state_dict(new_sd, strict=False)
 
     def load_torch_model(self, model_path: PathOrURI):
         weights = torch.load(
@@ -180,18 +201,26 @@ class YOLOV4TL(ONNXYOLOV4):
     def prepare_model(self):
         if self.model_prepared:
             return None
-        onnx_path = ResourceURI(self.pretrained_model_uri)
-        super().load_model(onnx_path)
-        self.create_model_structure(onnx_path)
-        try:
-            self.load_torch_model(self.model_path)
-        except FileNotFoundError:
-            pass
+        # Load parameters from ONNX model, still needed for data processing
+        super().load_model(ResourceURI(self.pretrained_model_uri))
+        self.create_model_structure()
+
+        if self.pretrained:
+            self.load_pretrained_torch_model(self.model_path)
+        else:
+            try:
+                self.load_torch_model(self.model_path)
+            except FileNotFoundError:
+                # todo: add downloading pretrained pytorch weights
+                self.load_pretrained_torch_model(self.model_path)
         self.model.to(self.device)
         self.model_prepared = True
 
     def preprocess_input(self, X: List[Any]) -> List[np.array]:
         def _preprocess(img):
+            """
+            Conversion between BGR and RGB.
+            """
             img = (img.transpose(0, 2, 3, 1) * 255).astype(np.uint8)
             img = img[..., ::-1]
             img = img.astype(np.float32) / 255.0
@@ -201,9 +230,8 @@ class YOLOV4TL(ONNXYOLOV4):
         return [_preprocess(x) for x in X]
 
     def run_inference(self, X: List) -> Any:
-        self.prepare_model()
         res = self.model(*X)
-        return [x.detach().cpu().numpy() for x in res]
+        return [r.detach().cpu().numpy() for r in res]
 
     def save_model(
         self, model_path: PathOrURI, export_dict: Optional[bool] = None
@@ -220,6 +248,26 @@ class YOLOV4TL(ONNXYOLOV4):
                 self._get_io_specification(self.keyparams, self.batch_size), f
             )
 
+    def visualize_image(self, visualizer, input, outputs):
+        outputs_np = [o.detach().numpy() for o in outputs]
+        postPreds = self.postprocess_outputs(outputs_np)
+
+        objects = postPreds[0][0]
+
+        img = input[0].detach().numpy()
+        KLogger.info(f"{img.shape}")
+        img = (np.transpose(img, (1, 2, 0)) * 255).astype(np.uint8)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        result = visualizer.visualize_data(img, objects)
+
+        cv2.imshow("OpenImages", result)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        KLogger.info(f"{img.shape}")
+
     def _train_model(
         self,
         num_epochs: int,
@@ -227,6 +275,7 @@ class YOLOV4TL(ONNXYOLOV4):
         criterion: Callable[[torch.Tensor], torch.Tensor],
         train_loader: DataLoader,
         val_loader: DataLoader,
+        lr_scheduler: Optional[torch.optim.lr_scheduler],
     ):
         """
         General training loop for YOLOv4.
@@ -243,7 +292,11 @@ class YOLOV4TL(ONNXYOLOV4):
             Train dataset DataLoader
         val_loader : DataLoader
             Validation dataset DataLoader
+        lr_scheduler: Optional[torch.optim.lr_scheduler]
+            Scheduler for learning rate.
         """
+        best_loss = float("inf")
+
         for epoch in range(num_epochs):
             self.model.train()
             loss_sum = torch.zeros(1).to(self.device)
@@ -256,9 +309,15 @@ class YOLOV4TL(ONNXYOLOV4):
 
                     outputs = self.model(input)
                     loss = criterion(outputs, labels[0])
-
                     loss.backward()
+
+                    torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(), 10.0
+                    )
+
                     opt.step()
+                    if lr_scheduler:
+                        lr_scheduler.step()
 
                     loss_sum += loss
                     loss_count += 1
@@ -282,6 +341,9 @@ class YOLOV4TL(ONNXYOLOV4):
                             f"Evaluating model after epoch: {epoch:3d} loss: "
                             f"{eval_loss / eval_loss_count:.3f}"
                         )
+                if eval_loss < best_loss:
+                    best_loss = eval_loss
+                    self.save_model(self.save_model_path)
 
         self.model.eval()
 
@@ -290,9 +352,8 @@ class YOLOV4TL(ONNXYOLOV4):
         Fine-tunes the YOLOv4 model.
         """
         import torch.optim as optim
+        from torch.optim.lr_scheduler import CosineAnnealingLR
         from torch.utils.data import Dataset
-
-        KLogger.info("training model")
 
         if not self.batch_size:
             self.batch_size = self.dataset.batch_size
@@ -369,18 +430,40 @@ class YOLOV4TL(ONNXYOLOV4):
             shuffle=True,
         )
 
-        opt = optim.Adam(
+        detector_epochs = 10
+
+        opt = optim.SGD(
             self.model.parameters(),
             lr=self.learning_rate,
-            weight_decay=1e-4,
+            weight_decay=1e-5,
+            momentum=0.9,
         )
+        self.freeze_backbone()
+        lr_scheduler = CosineAnnealingLR(opt, T_max=self.num_epochs)
 
-        self.freeze()
+        KLogger.info("Train only neck and head")
         self._train_model(
-            self.num_epochs, opt, self.loss_torch, train_loader, val_loader
+            detector_epochs,
+            opt,
+            self.loss_torch,
+            train_loader,
+            val_loader,
+            # lr_scheduler=lr_scheduler,
         )
 
-        self.save_model(self.save_model_path)
+        KLogger.info("Training the whole model")
+        # Reduce learning rate by factor of 10
+        for g in opt.param_groups:
+            g["lr"] *= 0.1
+        self.unfreeze()
+        self._train_model(
+            self.num_epochs,
+            opt,
+            self.loss_torch,
+            train_loader,
+            val_loader,
+            lr_scheduler=lr_scheduler,
+        )
 
     def _get_io_specification(self, keyparams, batch_size):
         filters = (len(self.classnames) + 5) * 3

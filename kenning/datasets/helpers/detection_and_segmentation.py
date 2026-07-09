@@ -474,12 +474,14 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         for idx, (pred, gt) in enumerate(zip(predictions, truth)):
             img_idx = self._dataindices[self._dataindex - len(truth) + idx]
             img = self.prepare_input_samples([self.dataX[img_idx]])[0]
+            if img.ndim == 4:
+                img = img[0]
             if self.image_memory_layout == "NCHW":
                 img = img.transpose(1, 2, 0)
             int_img = np.multiply(img, 255).astype("uint8")
             int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
             int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
-            int_img = self.apply_predictions(int_img, pred, gt)
+            int_img = self.apply_predictions(int_img, pred[0], gt[0])
 
             cv2.imshow("evaluatedimage", int_img)
             while True:

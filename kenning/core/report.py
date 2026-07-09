@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -211,9 +211,14 @@ class Report(ArgumentsHandler, ABC):
         _append_type_if(
             ReportTypes.ZEPHYR_TRACES,
             lambda data: measurementspath is not None
-            and ZplSuffix.TRACE_JSON._get_path_with_suffix(
-                Path(measurementspath)
-            ).is_file(),
+            and (
+                ZplSuffix.TRACE_JSON._get_path_with_suffix(
+                    Path(measurementspath)
+                ).is_file()
+                or ZplSuffix.CTF._get_path_with_suffix(
+                    Path(measurementspath)
+                ).is_file()
+            ),
         )
 
         if len(report_types) == 0:

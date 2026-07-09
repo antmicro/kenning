@@ -24,7 +24,7 @@ from kenning.utils.zpl_suffix import ZplSuffix
 
 
 def _prepare_traces(
-    last_optimizer: Optimizer,
+    last_optimizer: Optional[Optimizer],
     prepare_input_path: Path,
     prepare_output_path: Path,
     zephyr_build_path: Optional[Path],
@@ -35,8 +35,9 @@ def _prepare_traces(
 
     Parameters
     ----------
-    last_optimizer : Optimizer
-        The last optimizer from the optimization pipeline.
+    last_optimizer : Optional[Optimizer]
+        The last optimizer from the optimization pipeline. If set to None,
+        model metadata will not be available in the traces.
     prepare_input_path : Path
         Input path in prepare command.
     prepare_output_path : Path
@@ -56,7 +57,8 @@ def _prepare_traces(
     if zephyr_base:
         prepare_cmd.extend(["--zephyr-base", str(zephyr_base)])
 
-    prepare_cmd.extend(last_optimizer.zpl_prepare_cmd_flags())
+    if last_optimizer:
+        prepare_cmd.extend(last_optimizer.zpl_prepare_cmd_flags())
 
     prepare_cmd.extend(
         [

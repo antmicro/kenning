@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -270,11 +270,6 @@ class SimulatablePlatform(Platform, ABC):
         """
         Captures log from Renode console.
         """
-        # capture Renode console logs
-        from Antmicro.Renode.Logging import Logger
-
-        Logger.Flush()
-
         if not self.renode_log_file.closed and self.renode_log_file.readable():
             while True:
                 logs = self.renode_log_file.read()
@@ -337,6 +332,10 @@ class SimulatablePlatform(Platform, ABC):
 
         monitor.execute(f"logFile @{self.log_file_path.resolve()}")
         self.renode_log_file = open(self.log_file_path, "r")
+        # We use synchronous logging now. Previously we flushed the logger each
+        # time we were reading it, but that caused Renode to hang-up when
+        # the number of logs was too large.
+        emu.CurrentLogger.SynchronousLogging = True
 
         self._prepare_renode_platform()
 

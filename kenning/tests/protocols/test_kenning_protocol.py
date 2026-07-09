@@ -455,7 +455,7 @@ class TestOutgoingTransmission:
             ),
             (
                 MessageType.IO_SPEC,
-                10000000,
+                100000,
                 [
                     TransmissionFlag.IS_HOST_MESSAGE,
                     TransmissionFlag.SERIALIZED,

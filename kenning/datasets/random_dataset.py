@@ -66,6 +66,7 @@ class RandomizedImageClassificationDataset(Dataset):
         batch_size: int = 1,
         download_dataset: bool = False,
         force_download_dataset: bool = False,
+        shuffle_data: bool = True,
         samplescount: int = 100,
         numclasses: int = 3,
         integer_classes: bool = False,
@@ -89,6 +90,8 @@ class RandomizedImageClassificationDataset(Dataset):
             files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
             Forces dataset download.
+        shuffle_data : bool
+            Shuffle dataset data when loading.
         samplescount : int
             The number of samples in the dataset.
         numclasses : int
@@ -123,6 +126,7 @@ class RandomizedImageClassificationDataset(Dataset):
             force_download_dataset,
             download_dataset,
             dataset_percentage=1,
+            shuffle_data=shuffle_data,
         )
 
     def get_class_names(self):

@@ -352,6 +352,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
         dataset_percentage: float = 1,
+        shuffle_data: bool = True,
         task: str = "object_detection",
         image_memory_layout: str = "NCHW",
         show_on_eval: bool = False,
@@ -380,6 +381,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            shuffle_data=shuffle_data,
         )
 
     def train_test_split_representations(

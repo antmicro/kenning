@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -168,6 +168,7 @@ class ZephyrPlatform(BareMetalPlatform):
         number_of_batches: int = 16,
         sensors: Optional[list[str]] = None,
         sensors_frequency: Optional[float] = None,
+        renode_logs_single_read_warning_threshold: int = 5000,
     ):
         """
         Constructs Zephyr platform.
@@ -242,6 +243,10 @@ class ZephyrPlatform(BareMetalPlatform):
             List of sensors used for feeding data
         sensors_frequency: Optional[float]
             Sensor data feeding frequency
+        renode_logs_single_read_warning_threshold: int
+            How many Renode logs can be processed and printed in a single log
+            read (if a greater number of logs is received, then only a handful
+            will be printed and a warning will be emitted)
         """
         self.zephyr_build_path = zephyr_build_path
         self.llext_binary_path = llext_binary_path
@@ -287,6 +292,7 @@ class ZephyrPlatform(BareMetalPlatform):
             openocd_path=openocd_path,
             sensor=sensor,
             number_of_batches=number_of_batches,
+            renode_logs_single_read_warning_threshold=renode_logs_single_read_warning_threshold,
         )
 
     def post_init(self):

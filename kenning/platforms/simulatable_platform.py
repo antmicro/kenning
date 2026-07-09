@@ -23,6 +23,10 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 KLogger.add_custom_level(logging.INFO + 1, "RENODE")
 
+# How many Renode logs will be printed when the maximum log number threshold is
+# crossed.
+RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE = 5
+
 
 class SimulatablePlatform(Platform, ABC):
     """
@@ -106,6 +110,13 @@ class SimulatablePlatform(Platform, ABC):
             "type": int,
             "default": 3333,
         },
+        "renode_logs_single_read_warning_threshold": {
+            "description": """How many Renode logs can be processed and printed
+            in a single log read (if a greater number of logs is received, then
+            only a handful will be printed and a warning will be emitted).""",
+            "type": int,
+            "default": 5000,
+        },
     }
 
     platform_defaults = dict(
@@ -133,6 +144,7 @@ class SimulatablePlatform(Platform, ABC):
         runtime_init_timeout: Optional[int] = None,
         gdb_port: int = 3333,
         enable_zephelin_gdb: bool = False,
+        renode_logs_single_read_warning_threshold: int = 5000,
     ):
         """
         Constructs simulatable platform.
@@ -172,6 +184,10 @@ class SimulatablePlatform(Platform, ABC):
             Port number for collecting traces from GDB server.
         enable_zephelin_gdb : bool
             If true, run GDB server.
+        renode_logs_single_read_warning_threshold: int
+            How many Renode logs can be processed and printed in a single log
+            read (if a greater number of logs is received, then only a handful
+            will be printed and a warning will be emitted)
         """
         self.simulated = simulated
         self.runtime_binary_path = runtime_binary_path
@@ -186,6 +202,9 @@ class SimulatablePlatform(Platform, ABC):
         self.runtime_init_timeout = runtime_init_timeout
         self.gdb_port = gdb_port
         self.enable_zephelin_gdb = enable_zephelin_gdb
+        self.renode_logs_single_read_warning_threshold = (
+            renode_logs_single_read_warning_threshold
+        )
 
         self.machine = None
         self.opcode_counters = None
@@ -286,6 +305,24 @@ class SimulatablePlatform(Platform, ABC):
                 if "Unhandled" not in log and "non existing" not in log
             ]
             self.renode_logs.extend(new_logs)
+
+            if len(new_logs) > self.renode_logs_single_read_warning_threshold:
+                KLogger.warning(
+                    f"Received {len(new_logs)} logs from Renode in a single"
+                    " read, which is above the set threshold ("
+                    f"{self.renode_logs_single_read_warning_threshold}). Only"
+                    f" the first {RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE}"
+                    " logs will be printed. All logs will still be registered"
+                    " by internal elements that use them, but not printed."
+                    " Most likely this is caused by a noisy Renode peripheral,"
+                    " which can be solved by adding 'logLevel 3 [peripheral]'"
+                    " to 'post_start_commands' parameter in the platform."
+                    " You can increase the threshold for this warning with the"
+                    " 'renode_logs_single_read_warning_threshold' parameter."
+                )
+                new_logs = new_logs[
+                    :RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE
+                ]
             for new_log in new_logs:
                 KLogger.renode(new_log)
 

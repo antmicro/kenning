@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -106,6 +106,7 @@ class BareMetalPlatform(SimulatablePlatform):
         openocd_path: Path = "openocd",
         sensor: Optional[str] = None,
         number_of_batches: int = 16,
+        renode_logs_single_read_warning_threshold: int = 5000,
     ):
         """
         Constructs bare-metal platform.
@@ -162,6 +163,10 @@ class BareMetalPlatform(SimulatablePlatform):
             Name of the sensor.
         number_of_batches : int
             Batch size determining the number of samples per batch.
+        renode_logs_single_read_warning_threshold: int
+            How many Renode logs can be processed and printed in a single log
+            read (if a greater number of logs is received, then only a handful
+            will be printed and a warning will be emitted)
         """
         self.uart_port = uart_port
         self.uart_baudrate = uart_baudrate
@@ -199,6 +204,7 @@ class BareMetalPlatform(SimulatablePlatform):
             runtime_init_timeout=runtime_init_timeout,
             gdb_port=gdb_port,
             enable_zephelin_gdb=enable_zephelin_gdb,
+            renode_logs_single_read_warning_threshold=renode_logs_single_read_warning_threshold,
         )
 
         if self.simulated:

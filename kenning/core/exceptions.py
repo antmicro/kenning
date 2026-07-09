@@ -330,6 +330,12 @@ class KenningPlatformError(KenningError):
     """
 
 
+class PlatformFileNotFound(KenningPlatformError):
+    """
+    Renode platform file not found.
+    """
+
+
 class TargetPlatformCommunicationError(KenningPlatformError):
     """
     A remote target device was selected as platform, but communications in the

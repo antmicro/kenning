@@ -11,7 +11,10 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional
 
-from kenning.core.exceptions import TargetPlatformCommunicationError
+from kenning.core.exceptions import (
+    PlatformFileNotFound,
+    TargetPlatformCommunicationError,
+)
 from kenning.core.measurements import Measurements
 from kenning.core.optimizer import Optimizer
 from kenning.platforms.bare_metal import BareMetalPlatform
@@ -439,24 +442,28 @@ class ZephyrPlatform(BareMetalPlatform):
         emu = Emulation()
 
         # find dts, repl and runtime binary
-        try:
-            dts_path = self.zephyr_build_path / "zephyr" / "zephyr.dts"
-        except StopIteration:
-            KLogger.error(
+        dts_path = self.zephyr_build_path / "zephyr" / "zephyr.dts"
+        if not dts_path.exists():
+            raise PlatformFileNotFound(
                 f"Devicetree file not found in {self.zephyr_build_path}"
+                "Please build Kenning Zephyr Runtime app with "
+                "`west build -p -b {BOARD} app ...`"
             )
-            return False
         try:
             repl_path = next(self.zephyr_build_path.glob("*.repl"))
-        except StopIteration:
-            KLogger.error(f"repl file not found in {self.zephyr_build_path}")
-            return False
+        except StopIteration as ex:
+            raise PlatformFileNotFound(
+                f".repl file not found in {self.zephyr_build_path}. "
+                "Please generate Renode platform file with "
+                "`west build -t board-repl`"
+            ) from ex
         bin_path = self.zephyr_build_path / "zephyr" / "zephyr.elf"
         if not bin_path.exists():
-            KLogger.error(
-                f"Runtime binary not found in {self.zephyr_build_path}"
+            raise PlatformFileNotFound(
+                f"Runtime binary not found in {self.zephyr_build_path}. "
+                "Please build Kenning Zephyr Runtime app with "
+                "`west build -p -b {BOARD} app ...`"
             )
-            return False
 
         board = repl_path.stem
 

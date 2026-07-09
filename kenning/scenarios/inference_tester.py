@@ -424,9 +424,6 @@ class InferenceTester(CommandTemplate):
                 f"Validation error: {ex}", exc_info=ex, stack_info=True
             )
             raise
-        except Exception as ex:
-            KLogger.error(ex, exc_info=ex, stack_info=True)
-            raise
 
         if ret is None:
             return 1

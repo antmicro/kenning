@@ -182,7 +182,7 @@ def main():
             except argparse.ArgumentError as er:
                 parser.error(er.message)
                 return 2
-            except Exception as exp:
+            except (Exception, FileNotFoundError) as exp:
                 trace = ""
                 log_level_number = logging.getLevelNamesMapping()
 
@@ -190,9 +190,7 @@ def main():
                 if log_level_number[verbosity] <= log_level_number["DEBUG"]:
                     trace = "\n" + traceback.format_exc()
                 else:
-                    error_msg += (
-                        "(set higher verbosity level to see traceback)"
-                    )
+                    trace = " (set DEBUG verbosity level to see traceback)"
 
                 if str(exp) != "":
                     error_msg = f"error msg: {exp}"

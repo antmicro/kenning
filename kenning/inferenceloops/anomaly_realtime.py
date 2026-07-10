@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -340,7 +340,7 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             output[Metric.MSD] = mean_signed_difference(x, y)
 
         if Metric.NAB.name.lower() in self.use_metrics:
-            output[Metric.NAB] = nab_metric(
+            output[Metric.NAB()] = nab_metric(
                 x,
                 y,
                 self.nab_true_positive,

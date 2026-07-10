@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +31,9 @@ from kenning.report.markdown_components.comp_renode_stats_report import (
 from kenning.report.markdown_components.comp_text_summarization_report import (
     comparison_text_summarization_report,
 )
+from kenning.report.markdown_components.depth_estimation import (
+    depth_estimation_report,
+)
 from kenning.report.markdown_components.detection_report import (
     detection_report,
 )
@@ -44,6 +47,9 @@ from kenning.report.markdown_components.llm_performance_report import (
 )
 from kenning.report.markdown_components.performance_report import (
     performance_report,
+)
+from kenning.report.markdown_components.regression_report import (
+    regression_report,
 )
 from kenning.report.markdown_components.renode_stats_report import (
     renode_stats_report,
@@ -71,6 +77,8 @@ __all__ = [
     "comparison_performance_report",
     "comparison_renode_stats_report",
     "comparison_text_summarization_report",
+    "regression_report",
+    "depth_estimation_report",
     "generate_html_report",
     "anomaly_detection_report",
     "zephyr_traces_report",

@@ -14,6 +14,7 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
+from kenning.datasets.helpers.depth_estimation import calculate_partial_metrics
 from kenning.utils.resource_manager import Resources
 
 
@@ -197,12 +198,18 @@ class NYUDepthDatasetV2(Dataset):
         self.dataY = np.arange(self._depths.shape[0])
 
     def evaluate(self, predictions: List, truth: List) -> Measurements:
-        measurements = Measurements()
+        # If the images resolution or dataset count are too big, storing
+        # raw predictions can easily fill the whole memory, so we must
+        # calculate the partial metrics here
 
-        # TODO: implement after adding depth estimation
-        # metrics and reports
+        unpacked_preds = predictions[0]
 
-        return measurements
+        if not isinstance(unpacked_preds, np.ndarray):
+            unpacked_preds = np.asarray(unpacked_preds)
+
+        unpacked_truth = truth[0]
+
+        return calculate_partial_metrics(unpacked_preds, unpacked_truth)
 
     def get_class_names(self):
         return NotSupportedError(

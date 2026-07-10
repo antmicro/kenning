@@ -7,10 +7,16 @@ import numpy as np
 import pytest
 
 from kenning.core.metrics import (
+    EPS,
     hausdorff_distance_metric,
+    mean_absolute_error,
+    mean_absolute_relative_error,
     mean_signed_difference,
+    mean_squared_error,
     nab_metric,
     prob_auc_metric,
+    regression_threshold_accuracy,
+    root_mean_squared_error,
     z_score_detection,
 )
 
@@ -82,6 +88,23 @@ class TestMetrics:
             (mean_signed_difference, PARAMETERS_FOR_MISMATCH_TEST),
             (prob_auc_metric, PARAMETERS_FOR_MISMATCH_TEST_WITH_SCORE),
             (z_score_detection, PARAMETERS_FOR_MISMATCH_TEST),
+            (mean_absolute_error, PARAMETERS_FOR_MISMATCH_AND_DIMENSION_TEST),
+            (
+                root_mean_squared_error,
+                PARAMETERS_FOR_MISMATCH_AND_DIMENSION_TEST,
+            ),
+            (
+                mean_absolute_relative_error,
+                PARAMETERS_FOR_MISMATCH_AND_DIMENSION_TEST,
+            ),
+            (
+                mean_absolute_relative_error,
+                PARAMETERS_FOR_MISMATCH_AND_DIMENSION_TEST,
+            ),
+            (
+                regression_threshold_accuracy,
+                PARAMETERS_FOR_MISMATCH_AND_DIMENSION_TEST,
+            ),
         ],
     )
     @convert_to_numpy
@@ -201,6 +224,123 @@ class TestMetrics:
         e = np.random.randint(-100, 100)
 
         assert mean_signed_difference(x + e, y) == e
+
+    def test_mean_absolute_error(self):
+        """
+        Test for Mean Absolute Error for simple data.
+        """
+        x = np.random.randint(-100, 100, 100)
+        y = np.copy(x)
+
+        assert mean_absolute_error(x, y) == 0.0
+
+        e = np.random.randint(-100, 100)
+        e_abs = np.abs(e)
+
+        assert -0.001 < mean_absolute_error(x, y + e) - e_abs < 0.001
+        assert -0.001 < mean_absolute_error(x, y - e) - e_abs < 0.001
+
+        x = np.random.randint(-100, 100, (11, 3, 2))
+        y = np.copy(x)
+
+        delta = np.random.randint(-100, 100, (11, 3, 2))
+        delta_mean = np.mean(np.abs(delta))
+
+        assert -0.001 < mean_absolute_error(x, y + delta) - delta_mean < 0.001
+        assert -0.001 < mean_absolute_error(x, y - delta) - delta_mean < 0.001
+
+    def test_mean_squared_error(self):
+        """
+        Test for Mean Square Error for simple data.
+        """
+        x = np.random.randint(-100, 100, 100)
+        y = np.copy(x)
+
+        assert mean_squared_error(x, y) == 0.0
+
+        e = np.random.randint(-100, 100)
+        e_squared = e**2
+
+        assert -0.001 < mean_squared_error(x, y + e) - e_squared < 0.001
+        assert -0.001 < mean_squared_error(x, y - e) - e_squared < 0.001
+
+        x = np.array([1, 7, 30])
+        y = np.array([21, 8, 17])
+        expected = 190
+
+        assert -0.001 < mean_squared_error(x, y) - expected < 0.001
+
+    def test_root_mean_squared_error(self):
+        """
+        Test for Root Mean Square Error for simple data.
+        """
+        x = np.random.randint(-100, 100, 100)
+        y = np.copy(x)
+
+        assert root_mean_squared_error(x, y) == 0.0
+
+        e = np.random.randint(-100, 100)
+
+        assert -0.001 < root_mean_squared_error(x, y + e) - np.abs(e) < 0.001
+        assert -0.001 < root_mean_squared_error(x, y - e) - np.abs(e) < 0.001
+
+        x = np.array([1, 7, 30])
+        y = np.array([21, 8, 17])
+        expected = 13.784
+
+        assert -0.001 < root_mean_squared_error(x, y) - expected < 0.001
+
+    def test_mean_absolute_relative_error(self):
+        """
+        Test for Mean Absolute Relative Error for simple data.
+        """
+        x = np.random.randint(-100, 100, 100)
+        x[x == 0] = 1
+        y = np.copy(x)
+
+        assert mean_absolute_relative_error(x, y) == 0.0
+
+        y[:] = 0
+
+        assert mean_absolute_relative_error(x, y) >= 1 / EPS
+        assert np.isnan(mean_absolute_relative_error(x, y, use_epsilon=False))
+
+        x = np.array([1, 7, 30])
+        y = np.array([21, 8, 17])
+        expected = 0.614
+
+        assert -0.001 < mean_absolute_relative_error(x, y) - expected < 0.001
+
+    def test_regression_threshold_accuracy(self):
+        """
+        Test for Regression Threshold Accuracy for simple data.
+        """
+        x = np.random.randint(-100, 100, 100)
+        x[0] = 0
+        y = np.copy(x)
+
+        assert regression_threshold_accuracy(x, y) == 1
+
+        x[x == 0] = 1
+        y = np.copy(x)
+
+        y = x * 1.2
+        assert regression_threshold_accuracy(x, y) == 1
+
+        y = x * 1.3
+        assert regression_threshold_accuracy(x, y) == 0
+
+        y = x * 1.5
+        assert regression_threshold_accuracy(x, y, 2) == 1
+
+        y = x * 1.6
+        assert regression_threshold_accuracy(x, y) == 0
+
+        x = np.array([1, 7, 30])
+        y = np.array([21, 8, 17])
+        expected = 1 / 3
+
+        assert -0.001 < regression_threshold_accuracy(x, y) - expected < 0.001
 
     def test_p_auc_metric(self):
         """

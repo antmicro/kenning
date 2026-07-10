@@ -30,6 +30,8 @@ class ReportTypes(str, Enum):
     CLASSIFICATION = "classification"
     DETECTION = "detection"
     TEXT_SUMMARIZATION = "text_summarization"
+    REGRESSION = "regression"
+    DEPTH_ESTIMATION = "depth_estimation"
     RENODE = "renode_stats"
     LLM_PERFORMANCE = "llm_performance"
     ANOMALY = "anomaly"
@@ -193,6 +195,16 @@ class Report(ArgumentsHandler, ABC):
         _append_type_if(
             ReportTypes.TEXT_SUMMARIZATION,
             lambda data: any([key.startswith("rouge") for key in data.keys()]),
+        )
+        _append_type_if(
+            ReportTypes.REGRESSION,
+            lambda data: all(
+                key in data for key in ("regression_true", "regression_pred")
+            ),
+        )
+        _append_type_if(
+            ReportTypes.DEPTH_ESTIMATION,
+            lambda data: any(key.startswith("depth_") for key in data),
         )
         _append_type_if(
             ReportTypes.PERFORMANCE,

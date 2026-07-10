@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -6,9 +6,12 @@
 A collection of methods for computing benchmark and quality metrics.
 """
 
+import re
+from abc import ABC, abstractmethod
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import ClassVar, Dict, List, Optional, Union
 
 import numpy as np
 from sklearn.metrics import f1_score, roc_auc_score
@@ -130,6 +133,182 @@ def mean_signed_difference(
         raise ValueError("Shapes of input tensors are not equal")
 
     return float(np.mean(x - y))
+
+
+def mean_absolute_error(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Computes Mean Absolute Error.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, an N-D numerical array.
+    y : np.ndarray
+        Ground truth, an N-D array of the same shape as x.
+
+    Returns
+    -------
+    float
+        Mean absolute error for two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch shape.
+    """
+    if not x.shape == y.shape:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    return float(np.mean(np.abs(x - y)))
+
+
+def mean_squared_error(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Computes Mean Squared Error.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, an N-D numerical array.
+    y : np.ndarray
+        Ground truth, an N-D array of the same shape as x
+
+    Returns
+    -------
+    float
+        Mean squared error for two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch shape.
+    """
+    if not x.shape == y.shape:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    return float(np.mean((x - y) ** 2))
+
+
+def root_mean_squared_error(
+    x: np.ndarray,
+    y: np.ndarray,
+) -> float:
+    """
+    Computes Root Mean Squared Error.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, an N-D numerical array.
+    y : np.ndarray
+        Ground truth, an N-D array of the same shape as x
+
+    Returns
+    -------
+    float
+        Root mean squared error for two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch shape.
+    """
+    if not x.shape == y.shape:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    return float(np.sqrt(np.mean((x - y) ** 2)))
+
+
+def mean_absolute_relative_error(
+    x: np.ndarray, y: np.ndarray, use_epsilon: bool = True
+) -> float:
+    """
+    Computes Mean Absolute Relative Error.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, an N-D numerical array.
+    y : np.ndarray
+        Ground truth, an N-D array of the same shape as x.
+    use_epsilon : bool
+        Whether to use epsilon epsilon to smooth out division by zero. If set
+        to zero, the function will return NaN if ground truth contains any
+        zeros.
+
+    Returns
+    -------
+    float
+        Mean absolute relative error for two tensors. Will be NaN if
+        use_epsilon is False and ground truth contains any zeros.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch shape.
+    """
+    if not x.shape == y.shape:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    if use_epsilon:
+        return float(np.mean(np.abs(x - y) / (np.abs(y) + EPS)))
+
+    if np.any(y == 0):
+        return float("NaN")
+
+    return float(np.mean(np.abs((x - y) / y)))
+
+
+def regression_threshold_accuracy(
+    x: np.ndarray,
+    y: np.ndarray,
+    power_coefficient: int = 1,
+) -> float:
+    """
+    Computes Threshold Accuracy, defined as a fraction of pixels such that
+    max(predicted / true, true / predicted) < 1.25 ** power_coefficient.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Predictions, an N-D numerical array.
+    y : np.ndarray
+        Ground truth, an N-D array of the same shape as x.
+    power_coefficient : int
+        Power coefficient used for scaling the threshold.
+
+    Returns
+    -------
+    float
+        Threshold accuracy for two tensors.
+
+    Raises
+    ------
+    ValueError
+        When inputs have mismatch shape.
+    """
+    if not x.shape == y.shape:
+        raise ValueError("Shapes of input tensors are not equal")
+
+    threshold = 1.25**power_coefficient
+
+    old_settings = np.seterr(all="ignore")
+
+    correct_preds = np.maximum(x / y, y / x) < threshold
+
+    # Handle zero division edge cases
+    correct_preds[(x == 0) & (y == 0)] = True
+    correct_preds[(x == 0) ^ (y == 0)] = False
+
+    np.seterr(**old_settings)
+
+    return float(np.sum(correct_preds) / np.size(x))
 
 
 def nab_metric_raw(
@@ -591,7 +770,14 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
 class Metric(str, Enum):
     """
     The collection of available metrics.
+
+    Please note that using __members__, __contains__ and other default methods
+    won't include parametrized metrics (which probably need special handling
+    anyway). Please explicitly create your own collection if you want to check
+    for presence of parametrized metrics.
     """
+
+    _ignore_ = "REG_THRESH_ACC"
 
     ACC = "Accuracy"
     ADD = "Average detection delay"
@@ -608,7 +794,10 @@ class Metric(str, Enum):
     MEAN_PREC = "Mean precision"
     MEAN_SENS = "Mean sensitivity"
     MSD = "Mean Signed Difference"
-    NAB = "NAB scoring"
+    MAE = "Mean Average Error"
+    MSE = "Meas Squared Error"
+    RMSE = "Root Mean Squared Error"
+    MARE = "Mean Absolute Relative Error"
     P_AUC = "pAUC"
     ROC_AUC = "ROC AUC"
     ROC_AUC_CLASS = "ROC AUC"
@@ -616,6 +805,62 @@ class Metric(str, Enum):
     TOP_5 = "Top-5 accuracy"
     Z_SCORE = "Z score"
 
+    # Autocomplete for parametrized metrics
+    _ignore_ = ("NAB", "REG_THRESH_ACC")
+    NAB = ""
+    REG_THRESH_ACC = ""
+
+
+class ParametrizedMetric(ABC):
+    """
+    Abstrack base class for parametrized metrics. The subclasses should
+    implement the value property for compatibility with str enum entry.
+    """
+
+    @property
+    @abstractmethod
+    def value(self):
+        pass
+
+    def __str__(self):
+        return self.value
+
+
+@dataclass(frozen=True)
+class REG_THRESH_ACC(ParametrizedMetric):
+    """
+    Regression Threshold Accuracy metric.
+    """
+
+    name: ClassVar[str] = "REG_THRESH_ACC"
+
+    power_coefficient: float = 1.0
+
+    @property
+    def value(self):
+        return f"δ^{self.power_coefficient}"
+
+
+@dataclass(frozen=True)
+class NAB(ParametrizedMetric):
+    """
+    NAB (Numenta Anomaly Benchmark) metric.
+    """
+
+    name: ClassVar[str] = "NAB"
+
+    atp: float = 2.0
+    atn: float = 0.0
+    afp: float = 0.25
+    afn: float = -0.25
+
+    @property
+    def value(self):
+        return self.__repr__()
+
+
+Metric.REG_THRESH_ACC = REG_THRESH_ACC
+Metric.NAB = NAB
 
 # List of metrics used for classification
 CLASSIFICATION_METRICS = [
@@ -641,6 +886,14 @@ ANOMALY_DETECTION_METRICS = [
     Metric.P_AUC,
     Metric.ROC_AUC,
     Metric.Z_SCORE,
+]
+
+BASIC_REGRESSION_METRICS = [Metric.MAE, Metric.RMSE]
+
+DEPTH_ESTIMATION_METRICS = BASIC_REGRESSION_METRICS + [
+    Metric.MARE
+    # We don't add threshold accuracy here, because it must be evaluated
+    # at many different thresholds
 ]
 
 
@@ -910,4 +1163,151 @@ def compute_text_summarization_metrics(
         metrics[metric] = (
             measurementsdata[metric] / measurementsdata["total"] * 100
         )
+    return metrics
+
+
+def compute_regression_metrics(
+    measurementsdata: Dict[str, List],
+) -> Dict:
+    """
+    Computes regression metrics based on `measurementsdata` argument.
+    If there is no regression metrics returns an empty dictionary.
+
+    Computes mean absolute error and root mean squared error.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class.
+
+    Returns
+    -------
+    Dict
+        Gathered computed metrics.
+    """
+    return _compute_regression_metrics(
+        measurementsdata=measurementsdata,
+        metric_types=BASIC_REGRESSION_METRICS,
+        metric_prefix="regression",
+    )
+
+
+def compute_depth_estimation_metrics(
+    measurementsdata: Dict[str, List],
+) -> Dict:
+    """
+    Computes regression metrics based on `measurementsdata` argument.
+    If there is no regression metrics returns an empty dictionary.
+
+    Computes mean absolute error, root mean squared error, mean absolute
+    average error and threshold accuracy.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class.
+
+    Returns
+    -------
+    Dict
+        Gathered computed metrics.
+    """
+    metrics = _compute_regression_metrics(
+        measurementsdata=measurementsdata,
+        metric_types=DEPTH_ESTIMATION_METRICS,
+        metric_prefix="depth",
+    )
+
+    if metrics:  # If necessary keys were found in measurementsdata
+        for power_coeff in (0.125, 1, 2, 3):
+            metric = Metric.REG_THRESH_ACC(power_coeff)
+
+            metrics[metric] = regression_threshold_accuracy(
+                np.asarray(measurementsdata["depth_pred"]),
+                np.asarray(measurementsdata["depth_true"]),
+                power_coeff,
+            )
+
+    partial_prefix = "depth_part"
+
+    for key, values in measurementsdata.items():
+        if not key.startswith(partial_prefix):
+            continue
+
+        metric_name = key[len(partial_prefix) + 1 :]
+
+        if m := re.match(r"^reg_thresh_acc_([\d\.]+)$", metric_name):
+            metric = Metric.REG_THRESH_ACC(float(m.group(1)))
+        else:
+            try:
+                metric = next(
+                    metric
+                    for metric in DEPTH_ESTIMATION_METRICS + [Metric.MSE]
+                    if metric.name == metric_name
+                )
+            except StopIteration:
+                continue
+
+        if metric == Metric.MSE:
+            metrics[Metric.RMSE] = float(np.sqrt(np.mean(values)))
+        else:
+            metrics[metric] = float(np.mean(values))
+
+    return metrics
+
+
+def _compute_regression_metrics(
+    measurementsdata: Dict[str, List],
+    metric_types: List[Metric],
+    metric_prefix: str,
+) -> Dict:
+    """
+    Shared function for calculating regression metrics, understood as any
+    metrics that can be calculated on numerical array of any matching shape.
+
+    The arrays containing predictions and true values are expected to be called
+    "{metric_prefix}_pred" and "{metric_prefix}_true".
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class.
+    metric_types : List[Metric]
+        List of metric types to compute.
+    metric_prefix : str
+        Prefix used to find predicted and true values.
+
+    Returns
+    -------
+    Dict
+        Gathered computed metrics.
+
+    Raises
+    ------
+    ValueError
+        When unsupported metric type is passed
+    """
+    metrics = {}
+
+    pred_key = metric_prefix + "_pred"
+    true_key = metric_prefix + "_true"
+
+    if pred_key not in measurementsdata or true_key not in measurementsdata:
+        return metrics
+
+    metric_funs = {
+        Metric.MAE: mean_absolute_error,
+        Metric.RMSE: root_mean_squared_error,
+        Metric.MARE: mean_absolute_relative_error,
+    }
+
+    for metric_type in metric_types:
+        if metric_type not in metric_funs:
+            raise ValueError(f"Metric {metric_type} is not supported")
+
+        metrics[metric_type] = metric_funs[metric_type](
+            np.asarray(measurementsdata[pred_key]),
+            np.asarray(measurementsdata[true_key]),
+        )
+
     return metrics

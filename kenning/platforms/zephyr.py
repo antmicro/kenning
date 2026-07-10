@@ -126,9 +126,11 @@ class ZephyrPlatform(BareMetalPlatform):
             "default": False,
         },
         "zpl_use_debug_server": {
-            "description": "Optionally force debug server to be switched"
-            " on or off. When None, debug server is on when simulated=true"
-            " and off otherwise",
+            "description": "Controls whether Zephelin should spawn its own GDB"
+            " debug server using West, when collecting traces using GDB. This"
+            " only works for physical boards, not for emulations, therefore"
+            " setting parameter 'simulated' to true overrides this and keeps"
+            " the GDB server off.",
             "type": bool,
             "default": False,
         },
@@ -218,9 +220,10 @@ class ZephyrPlatform(BareMetalPlatform):
         gdb_binary_name : str
             Name of system gdb binary.
         zpl_use_debug_server: bool
-            Optionally force debug server to be switched
-            on or off. When False, debug server is on when simulated=true
-            and off otherwise.
+            Controls whether Zephelin should spawn its own GDB debug server
+            using West, when collecting traces using GDB. This only works for
+            physical boards, not for emulations, therefore setting parameter
+            'simulated' to true overrides this and keeps the GDB server off.
         zephyr_base : Optional[Path]
             Path to Zephyr Base directory.
         uart_port : Optional[Path]
@@ -266,9 +269,22 @@ class ZephyrPlatform(BareMetalPlatform):
 
         self.zephyr_base = zephyr_base
 
-        self.no_dbg_server = (
-            simulated if not zpl_use_debug_server else not zpl_use_debug_server
-        )
+        # When 'simulated' parameter is set - we know for sure we are using a
+        # Renode simulation, therefore debug server should be turned off.
+        if simulated:
+            if zpl_use_debug_server:
+                KLogger.warning(
+                    "Parameter `zpl_use_debug_server` is set to True, while"
+                    " parameter 'simulated' is also set to True. The option"
+                    " 'zpl_use_debug_server' does not work for simulated"
+                    " boards and is therefore being overridden."
+                )
+            self.no_dbg_server = True
+        # Otherwise, it's impossible to detect if we're using a physical board
+        # or connecting to an external simulation, therefore this parameter has
+        # to be set manually by the user.
+        else:
+            self.no_dbg_server = not zpl_use_debug_server
 
         self.sensors = sensors
         self.sensors_frequency = sensors_frequency

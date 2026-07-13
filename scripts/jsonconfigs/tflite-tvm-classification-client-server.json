@@ -41,6 +41,11 @@
         }
     },
     "protocol": {
-        "type": "NetworkProtocol"
+        "type": "NetworkProtocol",
+        "parameters": {
+                "host": "localhost",
+                "port": 12345,
+                "packet_size": 4096
+        }
     }
 }

@@ -1,0 +1,22 @@
+dataset:
+  type: NYUDepthDatasetV2
+  parameters:
+    dataset_root: build
+    split_fraction_test: 1
+model_wrapper:
+  type: kenning.modelwrappers.depth_estimation.dinov2ONNX.Dinov2ONNX
+  parameters:
+    model_path: kenning:///models/depth_estimation/dinov2.onnx
+    input_width: 640
+    input_height: 480
+optimizers:
+- type: kenning.optimizers.onnx.ONNXCompiler
+  parameters:
+    compiled_model_path: ./build/compiled_model.onnx
+runtime:
+  type: kenning.runtimes.onnx.ONNXRuntime
+  parameters:
+    save_model_path: ./build/compiled_model.onnx
+    execution_providers:
+    - CUDAExecutionProvider
+    - CPUExecutionProvider

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -29,15 +29,22 @@ class Dinov2ONNX(ModelWrapper):
             "argparse_name": "--input-width",
             "description": "Input width",
             "type": int,
-            "default": 244,
+            "default": 224,
         },
         "input_height": {
             "argparse_name": "--input-height",
             "description": "Input height",
             "type": int,
-            "default": 244,
+            "default": 224,
         },
     }
+
+    # Parameters of the dinov2.onnx this class is wrapping
+    processed_input_size = 224
+    raw_output_size = 256
+
+    input_means = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    input_stds = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
     def __init__(
         self,
@@ -61,14 +68,33 @@ class Dinov2ONNX(ModelWrapper):
             "input": [
                 {
                     "name": "input",
-                    "shape": [1, 3, width, height],
+                    "shape": [1, 3, height, width],
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input",
+                    "shape": [
+                        1,
+                        3,
+                        cls.processed_input_size,
+                        cls.processed_input_size,
+                    ],
                     "dtype": "float32",
                 }
             ],
             "output": [
                 {
                     "name": "output",
-                    "shape": [1, -1, -1],
+                    "shape": [1, cls.raw_output_size, cls.raw_output_size],
+                    "dtype": "float32",
+                }
+            ],
+            "processed_output": [
+                {
+                    "name": "output",
+                    "shape": [1, height, width],
                     "dtype": "float32",
                 }
             ],
@@ -90,6 +116,57 @@ class Dinov2ONNX(ModelWrapper):
             )
         self.load_model(self.original_model_path)
         self.model_prepared = True
+
+    def preprocess_input(self, X: List[Any]) -> List[Any]:
+        import cv2
+
+        in_images = X[0]
+
+        result = np.empty(
+            (
+                len(in_images),
+                3,
+                self.processed_input_size,
+                self.processed_input_size,
+            ),
+            dtype=np.float32,
+        )
+
+        for idx, original_image in enumerate(in_images):
+            for channel_idx in range(3):
+                cv2.resize(
+                    src=original_image[channel_idx],
+                    dsize=(
+                        self.processed_input_size,
+                        self.processed_input_size,
+                    ),
+                    dst=result[idx, channel_idx, :, :],
+                )
+
+        result = (result - self.input_means[:, None, None]) / self.input_stds[
+            :, None, None
+        ]
+
+        return [result]
+
+    def postprocess_outputs(self, y: List[Any]) -> List[Any]:
+        import cv2
+
+        predictions = y[0]
+
+        result = np.empty(
+            (len(predictions), self.input_height, self.input_width),
+            dtype=np.float32,
+        )
+
+        for idx, prediction in enumerate(predictions):
+            cv2.resize(
+                src=prediction,
+                dsize=(self.input_width, self.input_height),
+                dst=result[idx],
+            )
+
+        return [result]
 
     @classmethod
     def get_framework(cls) -> str:

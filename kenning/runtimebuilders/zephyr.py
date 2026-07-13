@@ -179,36 +179,102 @@ class WestRun:
         if self._venv_dir is None:
             self._venv_dir = self._zephyr_base.parent / ".west-venv"
 
+        self._prepare_venv()
+
         if (self._venv_dir / "bin/west").exists():
             return
 
-        self._prepare_venv()
+    def _get_pip_path(self):
+        pip_paths = [
+            Path(self._venv_dir / "bin/pip"),
+            Path(self._venv_dir / "bin/pip3"),
+        ]
 
-    @_ensure_zephyr_base
-    def _prepare_venv(self):
-        if not self._venv_dir.exists():
-            venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
+        pip_path = None
+
+        for path in pip_paths:
+            if path.exists():
+                pip_path = path
+                break
+
+        return pip_path
+
+    def _install_with_pip(self):
+        pip_path = self._get_pip_path()
 
         pip_upgrade = [
-            str(self._venv_dir / "bin/pip"),
+            str(pip_path),
             "install",
             "--upgrade",
             "pip",
             "setuptools",
         ]
         install_requirements = [
-            str(self._venv_dir / "bin/pip"),
+            str(pip_path),
             "install",
             "-r",
             str(self._zephyr_base / "scripts/requirements.txt"),
         ]
+
+        cmds = [pip_upgrade, install_requirements]
+
+        return cmds
+
+    def _install_with_uv(self):
+        pip_upgrade = [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(self._venv_dir / "bin/python"),
+            "--upgrade",
+            "pip",
+            "setuptools",
+        ]
+        install_requirements = [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(self._venv_dir / "bin/python"),
+            "-r",
+            str(self._zephyr_base / "scripts/requirements.txt"),
+        ]
+
+        cmds = [pip_upgrade, install_requirements]
+
+        cmds.append(pip_upgrade)
+        cmds.append(install_requirements)
+
+        return cmds
+
+    @_ensure_zephyr_base
+    def _prepare_venv(self):
+        if not self._venv_dir.exists():
+            venv.EnvBuilder(clear=True, with_pip=False).create(self._venv_dir)
+
+        # Check for west presents
         try:
             subprocess.run(
-                pip_upgrade, **self._subprocess_cfg
+                ["python", "-m", "west", "help"], **self._subprocess_cfg
             ).check_returncode()
-            subprocess.run(
-                install_requirements, **self._subprocess_cfg
-            ).check_returncode()
+            return
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            KLogger.info("West command not found processing with installation")
+
+        cmds = []
+
+        # Check for uv pip presence
+        try:
+            subprocess.run(["uv", "pip"], **self._subprocess_cfg)
+            cmds = self._install_with_uv()
+        except FileNotFoundError:
+            KLogger.info("UV not found, using pip.")
+            cmds = self._install_with_pip()
+
+        try:
+            for cmd in cmds:
+                subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError:
             msg = "Setting up virtual environment for west failed."
             raise KenningRuntimeBuilderError(msg)

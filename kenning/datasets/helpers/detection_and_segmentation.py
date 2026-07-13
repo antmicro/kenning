@@ -481,7 +481,9 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             int_img = np.multiply(img, 255).astype("uint8")
             int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
             int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
-            int_img = self.apply_predictions(int_img, pred[0], gt[0])
+            gts = gt if isinstance(gt[0], DetectObject) else gt[0]
+            preds = pred if isinstance(pred[0], DetectObject) else pred[0]
+            int_img = self.apply_predictions(int_img, preds, gts)
 
             cv2.imshow("evaluatedimage", int_img)
             while True:

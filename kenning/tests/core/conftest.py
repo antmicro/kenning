@@ -40,6 +40,9 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (
 from kenning.modelwrappers.object_detection.darknet_coco import (
     TVMDarknetCOCOYOLOV3,
 )
+from kenning.modelwrappers.object_detection.yolo_transfer_learning import (
+    YOLOV4TL,
+)
 from kenning.modelwrappers.object_detection.yolov4 import (
     ONNXYOLOV4,
 )
@@ -394,7 +397,7 @@ def get_dataset_random_mock(
         )
         return dataset
     if dataset_cls is COCODataset2017:
-        if modelwrapper_cls is ONNXYOLOV4:
+        if modelwrapper_cls in [ONNXYOLOV4, YOLOV4TL]:
             inputdims = (3, 608, 608)
         else:
             inputdims = (3, 416, 416)

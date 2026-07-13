@@ -520,7 +520,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
                     for spec in io_spec[key]
                     if det["name"] == spec["name"]
                 ][0]
-                spec["shape"] = tuple(map(int, det["shape"]))
+                # Remember batch_size (dimension 0) from spec and take format
+                # (NHWC or NCHW) from det
+                spec["shape"] = [spec["shape"][0]] + [
+                    int(dim) for dim in det["shape"][1:]
+                ]
 
                 if quantized:
                     scale, zero_point = det["quantization"]

@@ -34,6 +34,9 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.core.platform import Platform
 from kenning.modelwrappers.llm.llm import LLM
+from kenning.modelwrappers.object_detection.yolo_transfer_learning import (
+    YOLOV4TL,
+)
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 from kenning.optimizers.gptq import GPTQOptimizer
 from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
@@ -321,7 +324,7 @@ def prepare_objects(
 
     if optimizer_cls is NNIPruningOptimizer:
         kwargs["finetuning_epochs"] = 0
-        if model_cls is ONNXYOLOV4:
+        if model_cls in [ONNXYOLOV4, YOLOV4TL]:
             kwargs["criterion"] = "kenning.utils.yolov4_loss.YOLOv4Loss"
             kwargs["confidence"] = 2
 

@@ -179,7 +179,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     def evaluate(self, predictions, truth):
         measurements = super().evaluate(predictions, truth)
         currindex = self._dataindex - len(predictions)
-        for pred, groundtruth in zip(predictions[0], truth):
+        for pred, groundtruth in zip(predictions[0], truth[0]):
             for p in pred:
                 cocoid = self.imgstokeys[
                     self.dataX[self._dataindices[currindex]]

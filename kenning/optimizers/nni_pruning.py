@@ -6,6 +6,7 @@
 Pruning optimizer implementation with Neural Network Intelligence.
 """
 import copy
+import inspect
 import logging
 from enum import Enum
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type
@@ -435,7 +436,12 @@ class NNIPruningOptimizer(Optimizer):
         KLogger.info(f"Model before pruning\n{model}")
 
         dummy_input = self.generate_dummy_input(io_spec)
-        criterion = load_class(self.criterion_modulepath)(dataset=self.dataset)
+        # Some criterions need information about the dataset to compute loss
+        criterion_cls = load_class(self.criterion_modulepath)
+        kwargs = {}
+        if "dataset" in inspect.signature(criterion_cls).parameters:
+            kwargs["dataset"] = self.dataset
+        criterion = criterion_cls(**kwargs)
         optimizer_cls = load_class(self.optimizer_modulepath)
         evaluator = self.create_evaluator(
             model, criterion, optimizer_cls, dummy_input

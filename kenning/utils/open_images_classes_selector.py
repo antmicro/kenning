@@ -27,7 +27,6 @@ from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
 
 
 def main():  # noqa: D103
-    # print(f"path to openimages classes {}")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "detectorclasses",

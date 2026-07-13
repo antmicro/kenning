@@ -2,36 +2,32 @@ model_wrapper:
   type: kenning.modelwrappers.object_detection.yolo_transfer_learning.YOLOV4TL
   parameters:
     model_path: ./build/yolov4.pth
+    save_model_path: ./build/yolov4.pth
     model_name: yolov4
-    pretrained: true
-    # classes: ./build/oid_classes
-    batch_size: 1
+    # if this is set to true the wrapper will download pre-trained weights
+    reset_last_layers: true
+    classes: ./build/oid_classes
+    backbone_layers_to_freeze:
+      - down[1-5]
+    batch_size: 8
     learning_rate: 0.001
-    num_epochs: 10
+    head_num_epochs: 2
+    full_num_epochs: 10
     logdir: build/logs
 dataset:
-  type: kenning.datasets.coco_dataset.COCODataset2017
+  type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
   parameters:
-    dataset_root: ./build/COCODataset2017
-    dataset_type: val2017
+    dataset_root: ./build/OpenImagesDatasetV6
+    task: object_detection
+    classes: ./build/oid_classes
     show_predictions_on_eval: true
     image_width: 608
     image_height: 608
-# dataset:
-#   type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
-#   parameters:
-#     dataset_root: ./build/OpenImagesDatasetV6
-#     task: object_detection
-#     classes: ./build/oid_classes
-#     show_predictions_on_eval: true
-#     image_width: 608
-#     image_height: 608
 optimizers:
   - type: kenning.optimizers.tvm.TVMCompiler
     parameters:
       target: llvm -mcpu=core-avx2
-      use_fp16_precision: true
-      opt_level: 1
+      opt_level: 3
       conv2d_data_layout: NCHW
       conv2d_kernel_layout: OIHW
       compiled_model_path: ./build/int8_tvm.tar

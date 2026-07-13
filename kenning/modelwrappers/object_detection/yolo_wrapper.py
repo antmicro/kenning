@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -22,6 +22,7 @@ from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     compute_detect_iou,
 )
+from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
 from kenning.resources import coco_detection
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -74,11 +75,22 @@ class YOLOWrapper(ModelWrapper, ABC):
                 with open(p, "r") as f:
                     for line in f:
                         self.classnames.append(line.strip())
+        if isinstance(self.dataset, OpenImagesDatasetV6):
+            self.classnames = list(
+                map(lambda n: n.split(",")[1], self.classnames)
+            )
         self.numclasses = len(self.classnames)
         self.batch_size = 1
         if dataset:
             self.batch_size = dataset.batch_size
+            self.classnames = dataset.get_class_names()
             assert self.numclasses == len(dataset.get_class_names())
+        self.classnames_to_index = {
+            clsname: i for i, clsname in enumerate(self.classnames)
+        }
+        self.index_to_classnames = {
+            v: k for k, v in self.classnames_to_index.items()
+        }
         self.prepare_model()
         self.model_prepared = True
 
@@ -152,7 +164,6 @@ class YOLOWrapper(ModelWrapper, ABC):
 
         if len(boxdata) > 0:
             boxdata = np.concatenate(boxdata)
-
         # each entry in boxdata contains:
         # - layer id
         # - det id

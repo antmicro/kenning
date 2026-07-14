@@ -175,7 +175,7 @@ class ZephyrPlatform(BareMetalPlatform):
         number_of_batches: int = 16,
         sensors: Optional[list[str]] = None,
         sensors_frequency: Optional[float] = None,
-        renode_logs_single_read_warning_threshold: int = 5000,
+        renode_log_lines_single_read_limit: int = 5000,
     ):
         """
         Constructs Zephyr platform.
@@ -251,8 +251,8 @@ class ZephyrPlatform(BareMetalPlatform):
             List of sensors used for feeding data
         sensors_frequency: Optional[float]
             Sensor data feeding frequency
-        renode_logs_single_read_warning_threshold: int
-            How many Renode logs can be processed and printed in a single log
+        renode_log_lines_single_read_limit: int
+            How many Renode logs can be registered and printed in a single log
             read (if a greater number of logs is received, then only a handful
             will be printed and a warning will be emitted)
         """
@@ -319,7 +319,7 @@ class ZephyrPlatform(BareMetalPlatform):
             openocd_path=openocd_path,
             sensor=sensor,
             number_of_batches=number_of_batches,
-            renode_logs_single_read_warning_threshold=renode_logs_single_read_warning_threshold,
+            renode_log_lines_single_read_limit=renode_log_lines_single_read_limit,
         )
 
     def post_init(self):

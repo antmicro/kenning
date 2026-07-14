@@ -25,7 +25,7 @@ KLogger.add_custom_level(logging.INFO + 1, "RENODE")
 
 # How many Renode logs will be printed when the maximum log number threshold is
 # crossed.
-RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE = 5
+RENODE_LOG_OVERFLOW_SNIPPET_LINE_COUNT = 5
 
 
 class SimulatablePlatform(Platform, ABC):
@@ -110,10 +110,11 @@ class SimulatablePlatform(Platform, ABC):
             "type": int,
             "default": 3333,
         },
-        "renode_logs_single_read_warning_threshold": {
-            "description": """How many Renode logs can be processed and printed
-            in a single log read (if a greater number of logs is received, then
-            only a handful will be printed and a warning will be emitted).""",
+        "renode_log_lines_single_read_limit": {
+            "description": """How many Renode logs can be registered and
+            printed in a single log read (if a greater number of logs is
+            received, then only a handful will be printed and a warning will be
+            emitted).""",
             "type": int,
             "default": 5000,
         },
@@ -144,7 +145,7 @@ class SimulatablePlatform(Platform, ABC):
         runtime_init_timeout: Optional[int] = None,
         gdb_port: int = 3333,
         enable_zephelin_gdb: bool = False,
-        renode_logs_single_read_warning_threshold: int = 5000,
+        renode_log_lines_single_read_limit: int = 5000,
     ):
         """
         Constructs simulatable platform.
@@ -184,8 +185,8 @@ class SimulatablePlatform(Platform, ABC):
             Port number for collecting traces from GDB server.
         enable_zephelin_gdb : bool
             If true, run GDB server.
-        renode_logs_single_read_warning_threshold: int
-            How many Renode logs can be processed and printed in a single log
+        renode_log_lines_single_read_limit: int
+            How many Renode logs can be registered and printed in a single log
             read (if a greater number of logs is received, then only a handful
             will be printed and a warning will be emitted)
         """
@@ -202,8 +203,8 @@ class SimulatablePlatform(Platform, ABC):
         self.runtime_init_timeout = runtime_init_timeout
         self.gdb_port = gdb_port
         self.enable_zephelin_gdb = enable_zephelin_gdb
-        self.renode_logs_single_read_warning_threshold = (
-            renode_logs_single_read_warning_threshold
+        self.renode_log_lines_single_read_limit = (
+            renode_log_lines_single_read_limit
         )
 
         self.machine = None
@@ -286,46 +287,76 @@ class SimulatablePlatform(Platform, ABC):
         """
         ...
 
+    def _begin_to_nth_newline_substr(self, string: str, n: int) -> str:
+        i = -1
+        for _ in range(n):
+            i = string.find("\n", i + 1)
+            if i == -1:
+                return string
+        return string[: i + 1]
+
+    def _last_newline_to_end_substr(self, string: str) -> str:
+        i = string.rfind("\n")
+        if i == -1:
+            return ""
+        else:
+            return string[i + 1 :]
+
     def handle_renode_logs(self):
         """
         Captures log from Renode console.
         """
-        if not self.renode_log_file.closed and self.renode_log_file.readable():
-            while True:
-                logs = self.renode_log_file.read()
-                if not len(logs):
-                    break
-                self.renode_log_buffer += logs
+        if self.renode_log_file.closed or not self.renode_log_file.readable():
+            return
 
-            *new_logs, self.renode_log_buffer = self.renode_log_buffer.split(
-                "\n"
-            )
-            new_logs = [
-                log
-                for log in new_logs
-                if "Unhandled" not in log and "non existing" not in log
-            ]
-            self.renode_logs.extend(new_logs)
+        log_overflow = False
+        newline_count = self.renode_log_buffer.count("\n")
 
-            if len(new_logs) > self.renode_logs_single_read_warning_threshold:
-                KLogger.warning(
-                    f"Received {len(new_logs)} logs from Renode in a single"
-                    " read, which is above the set threshold ("
-                    f"{self.renode_logs_single_read_warning_threshold}). Only"
-                    f" the first {RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE}"
-                    " logs will be printed. All logs will still be registered"
-                    " by internal elements that use them, but not printed."
-                    " Most likely this is caused by a noisy Renode peripheral,"
-                    " which can be solved by adding 'logLevel 3 [peripheral]'"
-                    " to 'post_start_commands' parameter in the platform."
-                    " You can increase the threshold for this warning with the"
-                    " 'renode_logs_single_read_warning_threshold' parameter."
+        while not log_overflow:
+            logs = self.renode_log_file.read()
+            if not len(logs):
+                break
+
+            newline_count += logs.count("\n")
+
+            if newline_count > self.renode_log_lines_single_read_limit:
+                log_overflow = True
+                remaining_entries = max(
+                    self.renode_log_lines_single_read_limit
+                    - self.renode_log_buffer.count("\n"),
+                    0,
                 )
-                new_logs = new_logs[
-                    :RENODE_SINGLE_READ_LOG_WARNING_SNIPPET_SIZE
-                ]
-            for new_log in new_logs:
-                KLogger.renode(new_log)
+
+                logs = self._begin_to_nth_newline_substr(
+                    logs, remaining_entries
+                ) + self._last_newline_to_end_substr(logs)
+
+            self.renode_log_buffer += logs
+
+        *new_logs, self.renode_log_buffer = self.renode_log_buffer.split("\n")
+        new_logs = [
+            log
+            for log in new_logs
+            if "Unhandled" not in log and "non existing" not in log
+        ]
+        self.renode_logs.extend(new_logs)
+
+        if log_overflow:
+            KLogger.warning(
+                f"Received logs count from Renode in a single read exceeds"
+                f" the set limit ({self.renode_log_lines_single_read_limit})"
+                ". Only the first {RENODE_LOG_OVERFLOW_SNIPPET_LINE_COUNT}"
+                f" logs lines will be printed and registered. All remaining"
+                " logs will not be printed nor registered. Most likely this is"
+                " caused by a noisy Renode peripheral, which can be solved by"
+                " solved by adding 'logLevel 3 [peripheral]' to"
+                " 'post_start_commands' parameter in the platform. You can"
+                " increase the limit for this warning with the"
+                " 'renode_log_lines_single_read_limit' parameter."
+            )
+            new_logs = new_logs[:RENODE_LOG_OVERFLOW_SNIPPET_LINE_COUNT]
+        for new_log in new_logs:
+            KLogger.renode(new_log)
 
     def inference_step_callback(self):
         if self.simulated:

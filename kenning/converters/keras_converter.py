@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -128,10 +128,10 @@ class KerasConverter(ModelConverter):
             output_names = None
 
         signature = None
-        if io_spec["input"]:
+        if io_spec["processed_input"]:
             signature = [
                 tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])
-                for spec in io_spec["input"]
+                for spec in io_spec["processed_input"]
             ]
 
         from_keras_kwargs = {}
@@ -178,7 +178,7 @@ class KerasConverter(ModelConverter):
         import tvm.relay as relay
 
         input_shapes = {
-            spec["name"]: spec["shape"] for spec in io_spec["input"]
+            spec["name"]: spec["shape"] for spec in io_spec["processed_input"]
         }
         if not input_shapes:
             raise ValueError("No shapes in the input specification")

@@ -25,7 +25,6 @@ from kenning.core.optimizer import (
 )
 from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -176,10 +175,8 @@ class IREECompiler(Optimizer):
         if model_cls is None:
             KLogger.warning("Cannot get model class from model wrapper.")
 
-        io_spec_processed = check_io_spec(io_spec)
-
         conversion_kwargs = {
-            "io_spec": io_spec_processed,
+            "io_spec": io_spec,
             "model_cls": model_cls,
         }
 

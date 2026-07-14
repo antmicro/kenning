@@ -24,7 +24,6 @@ from kenning.core.optimizer import (
 from kenning.core.platform import Platform
 from kenning.utils.compiler_flag import merge_compiler_flags
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 from kenning.utils.zpl_suffix import ZplSuffix
 
@@ -535,7 +534,6 @@ class TVMCompiler(Optimizer):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
-        io_spec_processed = check_io_spec(io_spec)
         input_type = self.get_input_type(input_model_path)
 
         if self.target_microtvm_board and (
@@ -556,7 +554,7 @@ class TVMCompiler(Optimizer):
             KLogger.warning("Cannot get model class from model wrapper.")
 
         conversion_kwargs = {
-            "io_spec": io_spec_processed,
+            "io_spec": io_spec,
             "model_cls": model_cls,
             "conversion_func": self.conversion_func,
             "libdarknet_path": self.libdarknet_path,

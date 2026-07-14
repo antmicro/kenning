@@ -551,7 +551,6 @@ class TensorFlowLiteCompiler(Optimizer):
         else:
             # We need to find the converter somewhere else.
             inputtype = self.get_input_type(inputmodelpath)
-            io_spec_processed = check_io_spec(io_spec)
             conversion_kwargs = {
                 'io_spec': io_spec_processed,
                 'target': self.target,

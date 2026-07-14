@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +14,7 @@ from kenning.core.exceptions import (
     CompilationError,
     ConversionError,
 )
+from kenning.utils.converter_registry import ensure_processed_input
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
@@ -135,7 +136,7 @@ class TorchConverter(ModelConverter):
 
         sample_input = tuple(
             torch.randn(spec["shape"], device=_DEFAULT_DEVICE)
-            for spec in io_spec["input"]
+            for spec in io_spec["processed_input"]
         )
 
         try:
@@ -144,7 +145,7 @@ class TorchConverter(ModelConverter):
             output_names = None
 
         try:
-            input_names = [spec["name"] for spec in io_spec["input"]]
+            input_names = [spec["name"] for spec in io_spec["processed_input"]]
         except KeyError:
             input_names = None
 
@@ -167,6 +168,7 @@ class TorchConverter(ModelConverter):
         ai8x_model_path: Path,
         ai8x_tools: "Ai8xTools",
         device_id: int,
+        io_spec: Optional[Dict] = None,
         model: Optional["torch.nn.Module"] = None,
         **kwargs,
     ) -> None:
@@ -181,7 +183,10 @@ class TorchConverter(ModelConverter):
             Ai8X tools wrapper.
         device_id : int
             Ai8X device ID.
-        model : Optional["torch.nn.Module"]
+        io_spec : Optional[Dict]
+            Optional model io specification. If not provided, it will
+            be loaded from the model JSON config
+        model : Optional[torch.nn.Module]
             Optional model object.
         **kwargs:
             Keyword arguments passed between conversions.
@@ -248,11 +253,13 @@ class TorchConverter(ModelConverter):
         )
         torch.save(ai8x_model, ai8x_model_tmp_path)
 
-        io_spec = json.loads(
-            self.source_model_path.with_suffix(
-                self.source_model_path.suffix + ".json"
-            ).read_text()
-        )
+        if not io_spec:
+            io_spec = json.loads(
+                self.source_model_path.with_suffix(
+                    self.source_model_path.suffix + ".json"
+                ).read_text()
+            )
+            io_spec = ensure_processed_input(io_spec)
 
         yaml_cfg_path = ai8x_model_path.resolve().with_suffix(
             ai8x_model_path.suffix + ".yaml"
@@ -260,7 +267,7 @@ class TorchConverter(ModelConverter):
 
         ai8x_tools.yamlwriter(
             ai8x_model_tmp_path,
-            io_spec.get("processed_input", io_spec["input"])[0]["shape"],
+            io_spec["processed_input"][0]["shape"],
             device_id,
             yaml_cfg_path,
         )

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,7 +21,6 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.modelwrappers.frameworks.pytorch import Tensor
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 # PyTorch-specific type hints.
@@ -258,15 +257,13 @@ class ExecuTorchOptimizer(Optimizer):
             )
         io_spec["entry_func"] = "forward"
 
-        io_spec_processed = check_io_spec(io_spec)
-
         model_cls = self.get_model_class()
 
         if model_cls is None:
             KLogger.warning("Cannot get model class from model wrapper.")
 
         conversion_kwargs = {
-            "io_spec": io_spec_processed,
+            "io_spec": io_spec,
             "model_cls": model_cls,
         }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -20,7 +20,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.utils.logger import KLogger, LoggerProgressBar
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 DataLoader = TypeVar("torch.utils.data.DataLoader")
@@ -111,7 +110,6 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
         io_spec = self.get_io_specification()
 
-        io_spec = check_io_spec(io_spec)
         conversion_kwargs = {
             "io_spec": io_spec,
         }

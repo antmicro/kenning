@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -6,49 +6,11 @@
 Module for ONNX related functions.
 """
 __all__ = ["try_extracting_input_shape_from_onnx"]
-from copy import deepcopy
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import onnx
 
-from kenning.core.exceptions import IOSpecificationNotFoundError
 from kenning.utils.logger import KLogger
-
-
-def check_io_spec(io_spec: Optional[Dict[str, List[Dict]]]) -> Dict:
-    """
-    Function for checking io specification,
-    when processed_input is defined in io spec
-    it is used as input definition.
-
-    Parameters
-    ----------
-    io_spec : Optional[Dict[str, List[Dict]]]
-        Loaded ONNX model
-
-    Returns
-    -------
-    Dict
-        Processed io specification
-
-    Raises
-    ------
-    IOSpecificationNotFoundError
-        It is raised when invalid specification
-        was provided.
-    """
-    try:
-        io_spec_processed = deepcopy(io_spec)
-
-        io_spec_processed["input"] = (
-            io_spec["processed_input"]
-            if "processed_input" in io_spec
-            else io_spec["input"]
-        )
-
-        return io_spec_processed
-    except (TypeError, KeyError):
-        raise IOSpecificationNotFoundError("No input specification found")
 
 
 def try_extracting_input_shape_from_onnx(

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -15,7 +15,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -146,8 +145,6 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
 
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
-
-        io_spec = check_io_spec(io_spec)
 
         conversion_kwargs = {
             "io_spec": io_spec,

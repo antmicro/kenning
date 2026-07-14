@@ -107,11 +107,7 @@ class SKLearnConverter(ModelConverter):
         options = {id(model): {"zipmap": False}}
         initial_types = [
             (input["name"], type_lookup(input["dtype"], input["shape"]))
-            for input in (
-                io_spec["processed_input"]
-                if "processed_input" in io_spec
-                else io_spec["input"]
-            )
+            for input in io_spec["processed_input"]
         ]
         onnx_model = to_onnx(
             model,

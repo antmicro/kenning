@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -119,12 +119,14 @@ class DarknetConverter(ModelConverter):
         import tvm.relay as relay
 
         input_shapes = {
-            spec["name"]: spec["shape"] for spec in io_spec["input"]
+            spec["name"]: spec["shape"] for spec in io_spec["processed_input"]
         }
         if not input_shapes:
             raise ValueError("No shapes in the input specification")
 
-        dtypes = {spec["name"]: spec["dtype"] for spec in io_spec["input"]}
+        dtypes = {
+            spec["name"]: spec["dtype"] for spec in io_spec["processed_input"]
+        }
         try:
             dtype = next(iter(dtypes.values()))
         except StopIteration:

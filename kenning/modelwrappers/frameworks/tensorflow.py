@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,7 +16,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.model import ModelWrapper
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -120,7 +119,6 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.prepare_model()
 
         io_spec = self.get_io_specification()
-        io_spec = check_io_spec(io_spec)
         conversion_kwargs = {
             "io_spec": io_spec,
         }

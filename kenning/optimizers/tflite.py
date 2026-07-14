@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -24,7 +24,6 @@ from kenning.core.exceptions import (
 from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
-from kenning.utils.onnx import check_io_spec
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 from kenning.utils.update_h5_file import update_h5_file
 from kenning.utils.zpl_suffix import ZplSuffix
@@ -421,10 +420,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         else:
             input_type = self.get_input_type(input_model_path)
 
-            io_spec_processed = check_io_spec(io_spec)
-
             conversion_kwargs = {
-                "io_spec": io_spec_processed,
+                "io_spec": io_spec,
                 "model_cls": model_cls,
                 "target": self.target,
                 "inferenceinputtype": self.inferenceinputtype,

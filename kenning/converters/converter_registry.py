@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,7 @@ from kenning.core.exceptions import (
     ConverterFormatNotSupported,
 )
 from kenning.core.model import ResourceURI
+from kenning.utils.converter_registry import ensure_processed_input
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 from kenning.utils.singleton import Singleton
@@ -207,6 +208,9 @@ class ConverterRegistry(metaclass=Singleton):
             model if not isinstance(model, (Path, ResourceURI)) else None
         )
         source_path = model if current_model is None else None
+
+        if "io_spec" in kwargs:
+            kwargs["io_spec"] = ensure_processed_input(kwargs["io_spec"])
 
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")

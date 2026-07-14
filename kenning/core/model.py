@@ -13,12 +13,14 @@ from typing import Any, Dict, List, Optional, Type
 from urllib.request import HTTPError
 
 import numpy as np
+from typing_extensions import override
 
 from kenning.core.dataset import Dataset
 from kenning.core.helpers.utils import _get_model_size
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
+    serverstatsmeasurements,
     systemstatsmeasurements,
     tagmeasurements,
     timemeasurements,
@@ -451,6 +453,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     @systemstatsmeasurements("session_utilization")
     @timemeasurements("inference")
     def test_inference(self) -> "Measurements":
+        return self.run_test_inference()
+
+    def run_test_inference(self) -> "Measurements":
         """
         Runs the inference on test split of the dataset.
 
@@ -660,3 +665,50 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             self.model_path,
             FileNotFoundError(f"Model path does not exist:{self.model_path}"),
         )
+
+
+class RemoteModelWrapper(ModelWrapper, ABC):
+    """
+    Wraps the model while fetching statistics from a remote machine.
+    """
+
+    def __init__(
+        self,
+        model_path: PathOrURI,
+        dataset: Optional[Dataset],
+        remote_host: str,
+        remote_port_measurements: int,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+    ):
+        """
+        Creates the model wrapper.
+
+        Parameters
+        ----------
+        model_path : PathOrURI
+            Path or URI to the model file.
+        dataset : Optional[Dataset]
+            The dataset to verify the inference.
+        remote_host : str
+            Hostname of the remote machine.
+        remote_port_measurements : int
+            Port of the probe on the remote machine.
+        from_file : bool
+            True if the model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
+        """
+        self.remote_host = remote_host
+        self.remote_port_measurements = remote_port_measurements
+        super().__init__(model_path, dataset, from_file, model_name)
+
+    @timemeasurements("inference")
+    @override
+    def test_inference(self) -> "Measurements":
+        perf = serverstatsmeasurements(
+            "session_utilization",
+            self.remote_host,
+            self.remote_port_measurements,
+        )(self.run_test_inference)
+        return perf()

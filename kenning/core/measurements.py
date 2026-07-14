@@ -769,3 +769,149 @@ def systemstatsmeasurements(
         return statistics_wrapper
 
     return statistics_decorator
+
+
+class RemoteSystemStatsCollector(Thread):
+    """
+    It is a separate thread used for collecting system statistics. From a
+    remote machine.
+
+    It collects, if provided:
+
+    * CPU utilization,
+    * RAM utilization,
+    * GPU utilization,
+    * GPU Memory utilization.
+
+    It can be executed in parallel to another function to check its
+    utilization of resources on the remote machine.
+    """
+
+    def __init__(
+        self,
+        prefix: str,
+        protocol: Any,
+        step: float = 0.1,
+    ):
+        """
+        Prepares thread for execution.
+
+        Parameters
+        ----------
+        prefix : str
+            The prefix used in measurements.
+        protocol : Any
+            Protocol used to fetch statistics.
+        step : float
+            The step for the measurements, in seconds.
+        """
+        Thread.__init__(self)
+        self.measurements = Measurements()
+        self.running = True
+        self.prefix = prefix
+        self.step = step
+        self.runningcondition = Condition()
+        self.protocol = protocol
+
+    def __enter__(self) -> "SystemStatsCollector":
+        self.protocol.initialize_client()
+        self.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> bool:
+        self.stop()
+        self.join()
+        return False
+
+    def get_measurements(self) -> Measurements:
+        """
+        Returns measurements from the remote machine.
+
+        Collected measurements names are prefixed by the prefix given in the
+        constructor.
+
+        The list of measurements:
+
+        * `<prefix>_cpus_percent`: gives per-core CPU utilization (%),
+        * `<prefix>_mem_percent`: gives overall memory usage (%),
+        * `<prefix>_gpu_utilization`: gives overall GPU utilization (%),
+        * `<prefix>_gpu_mem_utilization`: gives overall memory utilization (%),
+        * `<prefix>_timestamp`: gives the timestamp of above measurements (ns).
+
+        Returns
+        -------
+        Measurements
+            Measurements object.
+        """
+        return self.measurements
+
+    def run(self):
+        self.measurements = Measurements()
+        self.running = True
+
+        while self.running:
+            remote_meas = self.protocol.download_statistics(True)
+            self.measurements += remote_meas
+            with self.runningcondition:
+                self.runningcondition.wait(timeout=self.step)
+
+    def stop(self):
+        self.running = False
+        with self.runningcondition:
+            self.runningcondition.notify_all()
+        self.protocol.disconnect()
+
+
+def serverstatsmeasurements(
+    measurementname: str, host: str, port: int = 4371, step: float = 1.0
+) -> Callable:
+    """
+    Decorator for measuring memory usage of the function.
+
+    Check SystemStatsCollector.get_measurements for list of delivered
+    measurements.
+
+    Parameters
+    ----------
+    measurementname : str
+        The name of the measurement type.
+    host : str
+        Host to connect to to get measurements.
+    port : int
+        Port on which measurements will be served
+    step : float
+        The step for the measurements, in seconds.
+
+    Returns
+    -------
+    Callable
+        Decorated function.
+    """
+    from kenning.protocols.network import NetworkProtocol
+
+    def statistics_decorator(function):
+        @wraps(function)
+        def statistics_wrapper(*args):
+            protocol_args = {
+                "host": host,
+                "port": port,
+            }
+            with RemoteSystemStatsCollector(
+                measurementname,
+                NetworkProtocol(**protocol_args),
+                step,
+            ) as measurementsthread:
+                returnvalue = function(*args)
+                MeasurementsCollector.measurements += (
+                    measurementsthread.get_measurements()
+                )
+            return returnvalue
+
+        return statistics_wrapper
+
+    return statistics_decorator

@@ -229,6 +229,7 @@ class SimulatablePlatform(Platform, ABC):
 
     def deinit(self, measurements: Measurements):
         if self.simulated:
+            KLogger.info("Capturing remaining logs from device...")
             self.handle_renode_logs()
 
             if not self.disable_opcode_counters:

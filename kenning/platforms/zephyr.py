@@ -271,6 +271,12 @@ class ZephyrPlatform(BareMetalPlatform):
         self.sensors = sensors
         self.sensors_frequency = sensors_frequency
 
+        # Common Trace Format raw logs from Zephyr
+        self._ctf_file_path: Optional[Path] = None
+
+        # Trace Event Format, readable in Zephelin Trace Viewer
+        self._tef_file_path: Optional[Path] = None
+
         super().__init__(
             name=name,
             platforms_definitions=platforms_definitions,
@@ -301,48 +307,27 @@ class ZephyrPlatform(BareMetalPlatform):
     def post_init(self):
         super().post_init()
         # We remove old trace data, from the previous inference.
-        ctf_file_path = Path(
+        self._ctf_file_path = Path(
             ZplSuffix.CTF._get_path_with_suffix(Path(self.measurements_path))
         )
-        if ctf_file_path.is_file():
-            ctf_file_path.unlink()
-        tef_file_path = Path(
+        if self._ctf_file_path.is_file():
+            self._ctf_file_path.unlink()
+        self._tef_file_path = Path(
             ZplSuffix.TRACE_JSON._get_path_with_suffix(
                 Path(self.measurements_path)
             )
         )
-        if tef_file_path.is_file():
-            tef_file_path.unlink()
+        if self._tef_file_path.is_file():
+            self._tef_file_path.unlink()
         if self.protocol is not None and self.enable_zephelin:
 
             def dump(bytes):
-                with open(ctf_file_path, "ab") as ctf_file:
+                with open(self._ctf_file_path, "ab") as ctf_file:
                     ctf_file.write(bytes)
 
             self.protocol.listen_to_trace_data(dump)
 
-    def deinit(self, measurements: Measurements):
-        if self.enable_zephelin_gdb:
-            self._deinit_tracing()
-        if self.enable_zephelin:
-            _prepare_traces(
-                self.last_optimizer,
-                str(
-                    ZplSuffix.CTF._get_path_with_suffix(
-                        Path(self.measurements_path)
-                    )
-                ),
-                str(
-                    ZplSuffix.TRACE_JSON._get_path_with_suffix(
-                        Path(self.measurements_path)
-                    )
-                ),
-                self.zephyr_build_path,
-                self.zephyr_base,
-            )
-        super().deinit(measurements)
-
-    def _deinit_tracing(self):
+    def _gdb_capture_traces(self):
         if self.zephyr_build_path is None:
             KLogger.warning("No zephyr_build_path specified.")
             KLogger.warning("The trace will not be captured.")
@@ -353,26 +338,16 @@ class ZephyrPlatform(BareMetalPlatform):
             KLogger.warning("The trace will not be captured.")
             return None
 
-        prepare_input_path = str(
-            ZplSuffix.CTF._get_path_with_suffix(Path(self.measurements_path))
-        )
-
-        prepare_output_path = str(
-            ZplSuffix.TRACE_JSON._get_path_with_suffix(
-                Path(self.measurements_path)
-            )
-        )
-
         self.cmd = [
             "west",
             "zpl-gdb-capture",
-            prepare_input_path,
+            self._ctf_file_path,
             *(["--no-debug-server"] if self.no_dbg_server else []),
             f"--gdb={self.gdb_binary_name}",
             f"--gdb-port={self.gdb_port}",
             "--capture-once",
             "--elf-path="
-            f"{str(Path(self.zephyr_build_path / 'zephyr' / 'zephyr.elf'))}",
+            f"{str(self.zephyr_build_path / 'zephyr' / 'zephyr.elf')}",
         ]
 
         KLogger.info("Traces capture started.")
@@ -393,13 +368,20 @@ class ZephyrPlatform(BareMetalPlatform):
             KLogger.error(msg)
             return None
 
-        _prepare_traces(
-            self.last_optimizer,
-            prepare_input_path,
-            prepare_output_path,
-            self.zephyr_build_path,
-            self.zephyr_base,
-        )
+    def deinit(self, measurements: Measurements):
+        if self.enable_zephelin_gdb:
+            self._gdb_capture_traces()
+
+        super().deinit(measurements)
+
+        if self.enable_zephelin or self.enable_zephelin_gdb:
+            _prepare_traces(
+                self.last_optimizer,
+                self._ctf_file_path.resolve(),
+                self._tef_file_path.resolve(),
+                self.zephyr_build_path,
+                self.zephyr_base,
+            )
 
     def _init_hardware(self):
         if (

@@ -3,14 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module containing an implementation of the anomaly inference loop.
+Module containing a specialized inference loop, dedicated to the Zephyr Sensor
+Anomalies library.
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import sklearn
 import sklearn.metrics
 
+from kenning.core.exceptions import ConfigurationError
 from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
     ANOMALY_DETECTION_METRICS,
@@ -33,10 +35,14 @@ DEFAULT_METRICS = [
     Metric.ROC_AUC,
 ]
 
+ANOMALY_DETECTION_MODEL_OUTPUT_SHAPE = (1, 2)
+
 
 class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
     """
-    Implementation of infenrece loop used for anomaly detection.
+    Implementation of InferenceLoop used for evaluating models within the
+    Zephyr Sensor Anomalies library, and computing time-based metrics for the
+    anomaly detection problem.
     """
 
     arguments_structure = {
@@ -113,6 +119,18 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         self.nab_false_positive = nab_false_positive
         self.nab_false_negative = nab_false_negative
 
+    def _deserialize_output(self, payload: bytes) -> List[Any]:
+        shape = ANOMALY_DETECTION_MODEL_OUTPUT_SHAPE
+
+        arr = np.frombuffer(payload, dtype=np.float32)
+        result = [arr.reshape(shape)]
+
+        return result
+
+    def _postproces(self, y):
+        Y = np.argmax(np.asarray(y, dtype=np.float32), axis=-1).reshape(-1)
+        return [Y]
+
     def _compute_detections_and_scored_results(
         self, samples: List, results: List
     ) -> Tuple[List, List]:
@@ -133,8 +151,17 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
         for sample, n_sample in zip(samples, samples[1:]):
             sample_time, s = sample
             n_sample_time, _ = n_sample
-
-            c_anomaly = s[1][0] < s[1][1]  # e.g. [ [...], [0.0, 1.0] ]
+            y_true = s[1]
+            if len(y_true) == 2:
+                c_anomaly = y_true[0] < y_true[1]  # e.g. [0.0, 1.0]
+            elif len(y_true) == 1:
+                c_anomaly = y_true[0] == 1
+            else:
+                raise ConfigurationError(
+                    "Provided dataset has output tensor length of"
+                    f" {len(y_true)}, while only the following values are"
+                    f" supported with {self.__class__}: 1, 2."
+                )
 
             if anomaly != c_anomaly:
                 anomaly_time = sample_time

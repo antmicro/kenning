@@ -8,13 +8,14 @@ Module containing classes related to the inference loop.
 
 import threading
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 from tqdm import tqdm
 
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import ConfigurationError
 from kenning.core.measurements import Measurements, tagmeasurements
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
@@ -68,6 +69,37 @@ class InferenceLoop(ArgumentsHandler, ABC):
         """
         self._cleanup_completed = False
         self._prepare()
+
+    def _deserialize_output(self, payload: bytes) -> List[Any]:
+        """
+        Method for remote inference loops, to be called when model output is
+        received as a bytestream.
+
+        By default it simply wraps the deserialization function from the
+        modelwrapper, but it still exists here as a separate function, so that
+        specialized inference loops may override it.
+
+        Parameters
+        ----------
+        payload: bytes
+            Data to deserialize.
+
+        Returns
+        -------
+        List[Any]
+            Tensor or tensors (one for each model output) wrapped in a list.
+
+        Raises
+        ------
+        ConfigurationError
+            Deserialization couldn't be completed due to an incorrect
+            Kenning block configuration.
+        """
+        if self._model_wrapper is not None:
+            return self._model_wrapper.convert_output_from_bytes(payload)
+        raise ConfigurationError(
+            "Missing model wrapper in the inference loop."
+        )
 
     @abstractmethod
     def _prepare(self):
@@ -271,10 +303,7 @@ class RealtimeInferenceLoop(InferenceLoop):
             result_time = self._platform.get_time()
             KLogger.debug("Received output")
             try:
-                if self._model_wrapper is not None:
-                    output = self._model_wrapper.convert_output_from_bytes(
-                        payload
-                    )
+                output = self._deserialize_output(payload)
                 result = self._postproces(output)
 
             except Exception as e:

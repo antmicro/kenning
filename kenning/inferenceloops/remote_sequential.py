@@ -123,9 +123,8 @@ class RemoteSequentialInferenceLoop(SequentialInferenceLoop):
             self._protocol.download_output(), "receive output"
         )
         KLogger.debug("Received output")
-        if self._model_wrapper is not None:
-            preds = self._model_wrapper.convert_output_from_bytes(preds)
 
+        preds = self._deserialize_output(preds)
         measurements = self._protocol.download_statistics(final=False)
 
         return preds, measurements

@@ -6,8 +6,10 @@
 TCP-based inference communication protocol.
 """
 
+import selectors
 import socket
-from typing import Callable, Optional
+import threading
+from typing import Callable, Dict, Optional
 
 from kenning.protocols.kenning_protocol import (
     KenningProtocol,
@@ -39,6 +41,11 @@ class NetworkProtocol(KenningProtocol):
             "type": int,
             "default": 4096,
         },
+        "multi_client": {
+            "description": "Allow multiple clients to connect simultaneously.",
+            "type": bool,
+            "default": False,
+        },
     }
 
     def __init__(
@@ -49,6 +56,7 @@ class NetworkProtocol(KenningProtocol):
         error_recovery: bool = False,
         packet_size: int = 4096,
         max_message_size: int = 1024 * 1024,
+        multi_client: bool = False,
     ):
         """
         Initializes NetworkProtocol.
@@ -69,12 +77,22 @@ class NetworkProtocol(KenningProtocol):
             Receive packet sizes.
         max_message_size : int
             Maximum size of a single protocol message in bytes.
+        multi_client : bool
+            If True, server accepts multiple simultaneous client connections.
+            Data is received from any connected client and sent to all clients.
         """
         self.host = host
         self.port = port
         self.collecteddata = bytes()
         self.serversocket = None
         self.socket = None
+        self.multi_client = multi_client
+        # multi client components
+        self.sockets: Dict[str, socket.socket] = {}
+        self.selector = selectors.DefaultSelector()
+        self.acceptor_thread: Optional[threading.Thread] = None
+        self.acceptor_running = False
+
         self.packet_size = packet_size
         self.client_connected_callback = None
         self.client_disconnected_callback = None
@@ -105,10 +123,25 @@ class NetworkProtocol(KenningProtocol):
             raise ProtocolNotStartedError("Protocol not initialized.")
         self.serversocket.settimeout(timeout)
         try:
-            self.serversocket.listen(1)
+            if self.multi_client:
+                self.serversocket.listen()
+            else:
+                self.serversocket.listen(1)
             sock, addr = self.serversocket.accept()
         except TimeoutError:
             return False
+
+        if self.multi_client:
+            sock.setblocking(False)
+            addr_str = f"{addr[0]}:{addr[1]}"
+            self.sockets[addr_str] = sock
+            self.selector.register(sock, selectors.EVENT_READ, addr_str)
+            KLogger.info(f"Connected client {addr}")
+            sock.send(b"\x00")
+            if self.client_connected_callback is not None:
+                self.client_connected_callback()
+            return True
+
         if self.socket is not None:
             KLogger.debug(f"Connection already established, rejecting {addr}")
             sock.close()
@@ -120,6 +153,29 @@ class NetworkProtocol(KenningProtocol):
         if self.client_connected_callback is not None:
             self.client_connected_callback()
         return True
+
+    def _acceptor_loop(self):
+        """
+        Thread function that is responsible for accepting new clients if
+        multi_client is used.
+        """
+        while self.acceptor_running:
+            self.serversocket.settimeout(1.0)
+            try:
+                sock, addr = self.serversocket.accept()
+            except TimeoutError:
+                continue
+            except OSError:
+                break
+
+            sock.setblocking(False)
+            addr_str = f"{addr[0]}:{addr[1]}"
+            self.sockets[addr_str] = sock
+            self.selector.register(sock, selectors.EVENT_READ, addr_str)
+            KLogger.info(f"Connected client {addr}")
+            sock.send(b"\x00")
+            if self.client_connected_callback is not None:
+                self.client_connected_callback()
 
     def initialize_server(
         self,
@@ -144,6 +200,15 @@ class NetworkProtocol(KenningProtocol):
         self.client_connected_callback = client_connected_callback
         self.client_disconnected_callback = client_disconnected_callback
         self.start()
+
+        if self.multi_client:
+            self.acceptor_running = True
+            self.serversocket.listen()
+            self.acceptor_thread = threading.Thread(
+                target=self._acceptor_loop, daemon=True
+            )
+            self.acceptor_thread.start()
+
         return True
 
     def initialize_client(self) -> bool:
@@ -170,7 +235,40 @@ class NetworkProtocol(KenningProtocol):
         self.start()
         return True
 
+    def _handle_client_disconnect(self, sock: socket.socket, addr_str: str):
+        self.selector.unregister(sock)
+        del self.sockets[addr_str]
+        sock.close()
+        if self.client_disconnected_callback is not None:
+            self.client_disconnected_callback()
+        KLogger.info(f"Client {addr_str} disconnected from the server.")
+
     def receive_data(self, timeout: Optional[float]) -> Optional[bytes]:
+        if self.multi_client:
+            if self.serversocket is None:
+                raise ProtocolNotStartedError("Protocol not initialized.")
+
+            events = self.selector.select(timeout)
+            for key, mask in events:
+                sock = key.fileobj
+                addr_str = key.data
+                try:
+                    sock.settimeout(0)
+                    data = sock.recv(self.packet_size)
+                except TimeoutError:
+                    continue
+                except OSError:
+                    data = b""
+
+                if data == b"":
+                    self._handle_client_disconnect(sock, addr_str)
+                    continue
+
+                if type(data) is bytes and len(data) > 0:
+                    return data
+
+            return None
+
         if self.socket is None:
             if self.serversocket is None:
                 raise ProtocolNotStartedError("Protocol not initialized.")
@@ -205,6 +303,26 @@ class NetworkProtocol(KenningProtocol):
             return None
 
     def send_data(self, data: bytes) -> bool:
+        if self.multi_client:
+            if not self.sockets:
+                raise ProtocolNotStartedError("Protocol not initialized.")
+            success = True
+            for sock in self.sockets.values():
+                remaining = data
+                while remaining:
+                    try:
+                        ret = sock.send(remaining)
+                    except (TimeoutError, OSError):
+                        success = False
+                        break
+                    if ret <= 0:
+                        success = False
+                        break
+                    remaining = remaining[ret:]
+                if not success:
+                    break
+            return success
+
         if self.socket is None:
             raise ProtocolNotStartedError("Protocol not initialized.")
         while True:
@@ -221,9 +339,22 @@ class NetworkProtocol(KenningProtocol):
 
     def disconnect(self):
         self.stop()
+
+        if self.multi_client:
+            self.acceptor_running = False
+            if self.acceptor_thread and self.acceptor_thread.is_alive():
+                self.acceptor_thread.join(timeout=2)
+
         if self.serversocket:
             self.serversocket.close()
-        if self.socket:
+
+        if self.multi_client:
+            for sock in self.sockets.values():
+                sock.close()
+            self.sockets.clear()
+            self.selector.close()
+        elif self.socket:
             self.socket.close()
+
         self.socket = None
         self.serversocket = None

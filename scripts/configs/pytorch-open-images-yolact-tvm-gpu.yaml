@@ -1,8 +1,8 @@
 platform:
-  type: kenning.platforms.local.LocalPlatform
+  type: LocalPlatform
 
 model_wrapper:
-  type: kenning.modelwrappers.instance_segmentation.pytorch_yolact.YOLACTOpenImages
+  type: YOLACTOpenImages
   parameters:
     # Output of fine-tuning; also used as input for the optimize stage
     model_path: ./build/yolact_finetuned.pth
@@ -11,11 +11,11 @@ model_wrapper:
     freeze_backbone: true
     learning_rate: 0.0004
     batch_size: 32
-    num_epochs: 10
+    num_epochs: 1
     logdir: ./build/logs
 
 dataset:
-  type: kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+  type: OpenImagesDatasetV6
   parameters:
     dataset_root: ./build/OpenImagesDatasetV6
     inference_batch_size: 1
@@ -26,16 +26,16 @@ dataset:
     image_height: 550
 
 optimizers:
-  - type: kenning.optimizers.onnx.ONNXCompiler
+  - type: ONNXCompiler
     parameters:
       compiled_model_path: ./build/yolact.onnx
 
-  - type: kenning.optimizers.tvm.TVMCompiler
+  - type: TVMCompiler
     parameters:
       model_framework: onnx
-      # Add more CPU-specific flags depending on what processor you have. For example: llvm -mcpu=core-avx2.
+      # Add more CPU-specific (or GPU) flags depending on what processor you have. For example: llvm -mcpu=core-avx2.
       # This can speed things up by almost 4x.
-      target: llvm
+      target: cuda
       opt_level: 3
       use_int8_precision: true
       # Small calibration slice to keep quantization fast and avoid out-of-memory error
@@ -43,13 +43,13 @@ optimizers:
       compiled_model_path: ./build/yolact_tvm_int8.tar
 
 runtime:
-  type: kenning.runtimes.tvm.TVMRuntime
+  type: TVMRuntime
   parameters:
     save_model_path: ./build/yolact_tvm_int8.tar
-    target_device_context: cpu
+    target_device_context: cuda
 
 report:
-  type: kenning.report.markdown_report.MarkdownReport
+  type: MarkdownReport
   parameters:
     measurements: ./build/pytorch_yolact_results.json
     report_path: ./build/yolact-report/yolact_report.md

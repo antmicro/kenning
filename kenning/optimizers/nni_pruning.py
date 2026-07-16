@@ -377,6 +377,7 @@ class NNIPruningOptimizer(Optimizer):
                 "Concat": no_replace,
                 "LeakyRelu": no_replace,
                 "MaxPool": no_replace,
+                "Mish": no_replace,
             }
         )
 

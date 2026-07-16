@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from kenning.cli.command_template import TRAIN
+from kenning.cli.command_template import TEST, TRAIN
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     TrainingParametersMissingError,
@@ -81,6 +81,13 @@ class YOLOV4TL(ONNXYOLOV4):
             "default": [],
             "subcommands": [TRAIN],
         },
+        "native": {
+            "argparse_name": "--native",
+            "description": "Save the full model for the native PyTorchRuntime.",  # noqa: E501
+            "type": bool,
+            "default": False,
+            "subcommands": [TEST],
+        },
         "batch_size": {
             "argparse_name": "--batch-size",
             "description": "Batch size for training. If not assigned, dataset batch size will be used.",  # noqa: E501
@@ -127,6 +134,7 @@ class YOLOV4TL(ONNXYOLOV4):
         save_model_path: Optional[PathOrURI] = None,
         backbone_layers_to_freeze: List[str] = [],
         reset_last_layers: Optional[bool] = None,
+        native: bool = False,
         batch_size: int = 1,
         learning_rate: Optional[float] = None,
         head_num_epochs: int = 1,
@@ -139,6 +147,8 @@ class YOLOV4TL(ONNXYOLOV4):
         else:
             self.save_model_path = model_path
         self.reset_last_layers = reset_last_layers
+        # TODO: find a better name
+        self.is_training = False
 
         super().__init__(
             model_path,
@@ -154,6 +164,10 @@ class YOLOV4TL(ONNXYOLOV4):
         self.head_num_epochs = head_num_epochs
         self.full_num_epochs = full_num_epochs
         self.logdir = logdir
+
+        if native:
+            self.save_model(self.save_model_path, export_dict=False)
+            self.save_io_specification(self.save_model_path)
 
     @property
     def device(self):
@@ -192,6 +206,11 @@ class YOLOV4TL(ONNXYOLOV4):
         self.model = Yolov4(n_classes=self.numclasses)
 
     def load_pretrained_torch_model(self, model_path: PathOrURI):
+        """
+        Loads pre-trained model weights.
+        Because last layers (probably) have different shapes than in the
+        weights they won't get the pre-trained weights.
+        """
         import torch
 
         weights = torch.load(
@@ -199,21 +218,32 @@ class YOLOV4TL(ONNXYOLOV4):
         )
 
         dst_sd = self.model.state_dict()
-        new_sd = dst_sd.copy()
-
-        used = set()
+        loaded_count = 0
+        mismatched = []
+        missing = []
 
         for dst_name, dst_tensor in dst_sd.items():
-            for src_name, src_tensor in weights.items():
-                if src_name in used:
-                    continue
-
+            if dst_name in weights:
+                src_tensor = weights[dst_name]
                 if src_tensor.shape == dst_tensor.shape:
-                    new_sd[dst_name] = src_tensor
-                    used.add(src_name)
-                    break
+                    dst_sd[dst_name] = src_tensor
+                    loaded_count += 1
+                else:
+                    mismatched.append(
+                        f"{dst_name}: expected {dst_tensor.shape}, got {src_tensor.shape}",  # noqa: E501
+                    )
+            else:
+                missing.append(dst_name)
 
-        self.model.load_state_dict(new_sd, strict=False)
+        self.model.load_state_dict(dst_sd, strict=False)
+
+        KLogger.info(f"Loaded {loaded_count} / {len(dst_sd)} weights")
+        if mismatched:
+            KLogger.debug("Shape mismatches:")
+            for mismatch_msg in mismatched:
+                KLogger.debug(mismatch_msg)
+        if missing:
+            KLogger.debug(f"Missing in pretrained: {len(missing)} weights")
 
     def load_torch_model(self, model_path: PathOrURI):
         import torch
@@ -241,9 +271,9 @@ class YOLOV4TL(ONNXYOLOV4):
             try:
                 self.load_torch_model(self.model_path)
             except FileNotFoundError:
-                # TODO: add downloading pretrained pytorch weights
-                self.load_pretrained_torch_model(self.model_path)
+                self.load_torch_model(ResourceURI(self.pretrained_model_uri))
         self.model.to(self.device)
+        self.save_io_specification(self.model_path)
         self.model_prepared = True
 
     def preprocess_input(self, X: List[np.array]) -> List[np.array]:
@@ -254,10 +284,13 @@ class YOLOV4TL(ONNXYOLOV4):
     ):
         import torch
 
-        model = self.model
-        KLogger.info(f"saving model to {model_path}")
-
-        torch.save(model.state_dict(), model_path)
+        if not self.is_training:
+            if export_dict:
+                KLogger.info(f"Saving model state dict to {model_path}")
+                torch.save(self.model.state_dict(), model_path)
+            else:
+                KLogger.info(f"Saving full model to {model_path}")
+                torch.save(self.model, model_path)
 
     def _train_model(
         self,
@@ -269,7 +302,6 @@ class YOLOV4TL(ONNXYOLOV4):
         lr_scheduler: Optional[torch.optim.lr_scheduler],
         log_train: Optional[TextIOWrapper],
         log_eval: Optional[TextIOWrapper],
-        best_loss: float = float("inf"),
     ) -> float:
         """
         General training loop for YOLOv4.
@@ -283,17 +315,15 @@ class YOLOV4TL(ONNXYOLOV4):
         criterion : Callable[[torch.Tensor], torch.Tensor]
             The function calculation loss.
         train_loader : DataLoader
-            Train dataset DataLoader
+            Train dataset DataLoader.
         val_loader : DataLoader
-            Validation dataset DataLoader
+            Validation dataset DataLoader.
         lr_scheduler : Optional[torch.optim.lr_scheduler]
             Scheduler for learning rate.
         log_train : Optional[TextIOWrapper]
             File for logging training statistics
         log_eval : Optional[TextIOWrapper]
             File for logging validation statistics
-        best_loss : float
-            Best loss that was achieved previously.
 
         Returns
         -------
@@ -310,6 +340,7 @@ class YOLOV4TL(ONNXYOLOV4):
                     m.eval()
             epoch_loss = 0
             loss_count = 0
+            epoch_iou, epoch_cls, epoch_obj = 0, 0, 0
 
             with LoggerProgressBar() as logger_progress_bar:
                 bar = tqdm(train_loader, **logger_progress_bar.kwargs)
@@ -317,7 +348,9 @@ class YOLOV4TL(ONNXYOLOV4):
                     opt.zero_grad()
 
                     outputs = self.model(input)
-                    loss = criterion(outputs, labels)
+                    loss, loss_iou, loss_cls, loss_obj = criterion(
+                        outputs, labels
+                    )
                     loss.backward()
 
                     nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
@@ -325,10 +358,16 @@ class YOLOV4TL(ONNXYOLOV4):
                     opt.step()
 
                     epoch_loss += loss.item()
+                    epoch_iou += loss_iou.item()
+                    epoch_cls += loss_cls.item()
+                    epoch_obj += loss_obj.item()
                     loss_count += 1
                     bar.set_description(
                         f"train epoch: {epoch:3d} loss: "
-                        f"{epoch_loss / loss_count:.3f}"
+                        f"{epoch_loss / loss_count:.3f}, "
+                        f"iou: {epoch_iou / loss_count:.3f}, "
+                        f"cls: {epoch_cls / loss_count:.3f}, "
+                        f"obj: {epoch_obj / loss_count:.3f}"
                     )
             if log_train:
                 log_train.write(f"{epoch_loss / loss_count:.4f}\n")
@@ -340,14 +379,20 @@ class YOLOV4TL(ONNXYOLOV4):
             # Evaluate model on validation set
             eval_loss = 0
             eval_loss_count = 0
+            eval_iou, eval_cls, eval_obj = 0, 0, 0
             with torch.no_grad():
                 self.model.eval()
                 with LoggerProgressBar() as logger_progress_bar:
                     bar = tqdm(val_loader, **logger_progress_bar.kwargs)
                     for input, labels in bar:
                         outputs = self.model(input)
-                        loss = criterion(outputs, labels)
+                        loss, loss_iou, loss_cls, loss_obj = criterion(
+                            outputs, labels
+                        )
                         eval_loss += loss.item()
+                        eval_iou += loss_iou.item()
+                        eval_cls += loss_cls.item()
+                        eval_obj += loss_obj.item()
                         eval_loss_count += 1
                         # TODO: add mAP, currently this is impractical due to
                         # postprocess_outputs() taking too much time
@@ -361,15 +406,17 @@ class YOLOV4TL(ONNXYOLOV4):
 
                         bar.set_description(
                             f"Evaluating model after epoch: {epoch:3d} loss: "
-                            f"{eval_loss / eval_loss_count:.3f}"
+                            f"{eval_loss / eval_loss_count:.3f}, "
+                            f"iou: {eval_iou / loss_count:.3f}, "
+                            f"cls: {eval_cls / loss_count:.3f}, "
+                            f"obj: {eval_obj / loss_count:.3f}"
                         )
-                if eval_loss < best_loss:
-                    best_loss = eval_loss
+                if eval_loss < self.best_loss:
+                    self.best_loss = eval_loss
                     self.save_model(self.save_model_path)
             if log_eval:
                 log_eval.write(f"{eval_loss / eval_loss_count:.4f}\n")
                 log_eval.flush()
-        return best_loss
 
     def train_model(self):
         """
@@ -379,11 +426,11 @@ class YOLOV4TL(ONNXYOLOV4):
         import torch.optim as optim
         from torch.optim.lr_scheduler import CosineAnnealingLR
         from torch.utils.data import DataLoader
-        from torchvision.transforms import v2
 
         from kenning.modelwrappers.object_detection.pytorch_yolo_dataset import (  # noqa: E501
             YoloDataset,
         )
+        from kenning.modelwrappers.object_detection.yolo_loss import YoloLoss
 
         if not self.batch_size:
             self.batch_size = self.dataset.batch_size
@@ -410,15 +457,15 @@ class YOLOV4TL(ONNXYOLOV4):
             raise TrainingParametersMissingError(missing_params)
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(0.25)
-        train_transforms = v2.Compose(
-            [
-                v2.RandomHorizontalFlip(0.5),
-                v2.RandomPhotometricDistort(),
-                v2.SanitizeBoundingBoxes(),
-            ]
-        )
+        # train_transforms = v2.Compose(
+        #     [
+        #         v2.RandomHorizontalFlip(0.5),
+        #         v2.RandomPhotometricDistort(),
+        #         v2.SanitizeBoundingBoxes(),
+        #     ]
+        # )
         train_dataset = YoloDataset(
-            Xt, Yt, self.dataset, self, transforms=train_transforms
+            Xt, Yt, self.dataset, self, transforms=None
         )
 
         def detection_collate(batch):
@@ -457,11 +504,28 @@ class YOLOV4TL(ONNXYOLOV4):
         eval_path = self.logdir / Path("eval_loss")
         log_eval = open(eval_path, mode="w")
 
+        # Criterion
+        with torch.no_grad():
+            test_out = self.model(train_dataset[0][0].unsqueeze(0))
+            dtype = test_out[0].dtype
+
+        criterion = YoloLoss(
+            self.perlayerparams,
+            self.keyparams,
+            self.numclasses,
+            self.batch_size,
+            self.device,
+            dtype,
+            self.dataset,
+            return_all_losses=True,
+        )
+
         KLogger.info("Freezing backbone")
-        best_loss = self._train_model(
+        self.best_loss = float("inf")
+        self._train_model(
             self.head_num_epochs,
             opt,
-            self.loss_torch,
+            criterion,
             train_loader,
             val_loader,
             log_train=log_train,
@@ -478,14 +542,15 @@ class YOLOV4TL(ONNXYOLOV4):
         self._train_model(
             self.full_num_epochs,
             opt,
-            self.loss_torch,
+            criterion,
             train_loader,
             val_loader,
             lr_scheduler=lr_scheduler,
             log_train=log_train,
             log_eval=log_eval,
-            best_loss=best_loss,
         )
+
+        self.is_training = True
 
         if log_train:
             log_train.close()

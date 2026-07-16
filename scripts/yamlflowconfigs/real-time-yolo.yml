@@ -1,0 +1,38 @@
+- type: kenning.dataproviders.camera_dataprovider.CameraDataProvider
+  parameters:
+    video_file_path: /dev/video0
+    input_memory_layout: NCHW
+    input_width: 608
+    input_height: 608
+  outputs:
+    frame: cam_frame
+
+- type: kenning.runners.modelruntime_runner.ModelRuntimeRunner
+  parameters:
+    model_wrapper:
+      type: kenning.modelwrappers.object_detection.yolo_transfer_learning.YOLOV4TL
+      parameters:
+        model_path: ./build/yolov4_infer.pth
+        model_name: yolov4
+        pretrained: true
+        classes: ./build/irl_test_classes.csv
+        batch_size: 1
+    runtime:
+      type: kenning.runtimes.tvm.TVMRuntime
+      parameters:
+        save_model_path: ./build/int8_tvm.tar
+  inputs:
+    processed_input: cam_frame
+  outputs:
+    detection_output: predictions
+
+- type: kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer
+  parameters:
+    viewer_width: 608
+    viewer_height: 608
+    input_memory_layout: NCHW
+    input_color_format: BGR
+  inputs:
+    frame: cam_frame
+    detection_data: predictions
+

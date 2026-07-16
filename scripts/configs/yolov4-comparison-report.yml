@@ -1,0 +1,11 @@
+report:
+  parameters:
+    measurements:
+      - ./build/yolov4_onnx_native.json
+      - ./build/yolov4_pytorch_native.json
+      - ./build/yolov4_pytorch_pruning.json
+    root_dir: build/yolov4-report
+    img_dir: build/yolov4-report/imgs
+    report_path: build/yolov4-report/report.md
+    report_name: Yolov4 COCO comparison report
+    to_html: true

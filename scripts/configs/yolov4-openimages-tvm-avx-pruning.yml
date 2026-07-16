@@ -1,0 +1,56 @@
+model_wrapper:
+  type: kenning.modelwrappers.object_detection.yolo_transfer_learning.YOLOV4TL
+  parameters:
+    model_path: kenning:///models/object_detection/yolov4.pth
+    model_name: yolov4
+    # if this is set to true the wrapper will download pre-trained weights
+    reset_last_layers: true
+    classes: ./build/oid_classes
+    batch_size: 1
+dataset:
+  type: kenning.datasets.coco_dataset.COCODataset2017
+  parameters:
+    dataset_root: ./build/COCODataset2017
+    dataset_type: val2017
+    image_width: 608
+    image_height: 608
+platform:
+  type: LocalPlatform
+optimizers:
+  - type: kenning.optimizers.nni_pruning.NNIPruningOptimizer
+    parameters:
+      model_framework: torch
+      pruner_type: apoz
+      config_list:
+          - sparsity_per_layer: 0.1
+            op_types:
+              - Conv2d
+          - exclude: true
+            op_names:
+              - head.conv2.conv.0
+              - head.conv10.conv.0
+              - head.conv18.conv.0
+      training_steps: 256
+      activation: relu6
+      compiled_model_path: ./build/model-yolo.pth
+      mode: dependency_aware
+      finetuning_epochs: 1
+      finetuning_batch_size: 2
+      confidence: 2
+      criterion: kenning.utils.yolov4_loss.YOLOv4Loss
+      optimizer: torch.optim.SGD
+      pruning_on_cuda: true
+      finetuning_learning_rate: 0.0001
+      exclude_last_layer: false
+  - type: kenning.optimizers.tvm.TVMCompiler
+    parameters:
+      target: llvm -mcpu=core-avx2
+      use_fp16_precision: true
+      opt_level: 3
+      compiled_model_path: ./build/int8_tvm.tar
+      conv2d_data_layout: NCHW
+      conv2d_kernel_layout: OIHW
+runtime:
+  type: kenning.runtimes.tvm.TVMRuntime
+  parameters:
+    save_model_path: ./build/int8_tvm.tar

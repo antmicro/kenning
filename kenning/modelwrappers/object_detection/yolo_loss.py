@@ -208,9 +208,11 @@ class YoloLoss:
         device: torch.device,
         dtype: torch.dtype,
         dataset: Dataset,
+        return_all_losses: bool = False,
     ):
         import torch
 
+        self.return_all_losses = return_all_losses
         self.classnames = dataset.get_class_names()
         self.width = keyparams["width"]
         self.height = keyparams["height"]
@@ -549,9 +551,13 @@ class YoloLoss:
                     reduction="sum",
                 )
 
-            loss_obj += F.binary_cross_entropy_with_logits(
-                out[..., 4], target[..., 4], reduction="sum"
+            _loss_obj = F.binary_cross_entropy_with_logits(
+                out[..., 4], target[..., 4], reduction="none"
             )
+            _loss_obj *= obj_mask.float()
+            _loss_obj = _loss_obj.sum()
+
+            loss_obj += _loss_obj
 
         num_pos = total_pos.clamp(min=1)
         loss_iou = loss_iou / num_pos
@@ -559,4 +565,6 @@ class YoloLoss:
         loss_obj = loss_obj / batch_size
 
         loss = loss_iou + loss_cls + loss_obj
+        if self.return_all_losses:
+            return loss, loss_iou, loss_cls, loss_obj
         return loss

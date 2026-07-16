@@ -20,8 +20,6 @@ After this, to remove the embedded processing of outputs, run in Python shell::
 
 
     yolov4_remove_postprocessing('<input_onnx_path>', '<output_onnx_path>')
-
-Parts of loss function implementation were taken from https://d2l.ai/chapter_computer-vision/anchor.html
 """
 
 import shutil

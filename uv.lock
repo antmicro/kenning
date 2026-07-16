@@ -3735,6 +3735,7 @@ iree = [
 ]
 llm = [
     { name = "gptqmodel" },
+    { name = "huggingface-hub" },
     { name = "onnx2torch" },
     { name = "onnxscript" },
     { name = "peft" },
@@ -3832,6 +3833,7 @@ sklearn = [
 ]
 sparsity-aware-kernel = [
     { name = "gptqmodel" },
+    { name = "huggingface-hub" },
     { name = "kenning-sparsity-aware-kernel" },
     { name = "onnx2torch" },
     { name = "onnxscript" },
@@ -3955,6 +3957,7 @@ requires-dist = [
     { name = "flax", marker = "python_full_version < '3.12' and extra == 'coralnpu'" },
     { name = "gptqmodel", marker = "extra == 'llm'", specifier = ">=7.3.2" },
     { name = "h5py", marker = "extra == 'tensorflow'" },
+    { name = "huggingface-hub", marker = "extra == 'llm'" },
     { name = "importlib-resources" },
     { name = "importlib-resources", marker = "python_full_version < '3.9'", specifier = ">=5.1.4" },
     { name = "iree-base-compiler", extras = ["onnx"], marker = "extra == 'iree'", specifier = "==3.11.0" },

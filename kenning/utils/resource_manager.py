@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import tarfile
+from contextlib import contextmanager
 from inspect import getfullargspec
 from pathlib import Path
 from shutil import copy, rmtree
@@ -110,6 +111,24 @@ def _get_cache_dir(env_var: str) -> Path:
         cache_dir = Path.home() / ".kenning"
 
     return cache_dir.expanduser().resolve()
+
+
+@contextmanager
+def disable_hf_xet():
+    """
+    Disable Huggingface XET storage backend.
+    """
+    import huggingface_hub as hf_hub
+
+    prev_val = os.environ.get("HF_HUB_DISABLE_XET", "0")
+    prev_const = hf_hub.constants.HF_HUB_DISABLE_XET
+    os.environ["HF_HUB_DISABLE_XET"] = "1"
+    hf_hub.constants.HF_HUB_DISABLE_XET = True
+    try:
+        yield
+    finally:
+        os.environ["HF_HUB_DISABLE_XET"] = prev_val
+        hf_hub.constants.HF_HUB_DISABLE_XET = prev_const
 
 
 class ResourceManager(metaclass=Singleton):
@@ -298,6 +317,7 @@ class ResourceManager(metaclass=Singleton):
                 return output_path
 
             from huggingface_hub import snapshot_download
+            from huggingface_hub.errors import HfHubHTTPError
 
             if parsed_uri.netloc == "datasets":
                 repo_id = parsed_uri.path[1:]
@@ -310,12 +330,25 @@ class ResourceManager(metaclass=Singleton):
             # instead of being symlinked if the resource is
             # in huggingface's cache. If there are not, then the
             # files are directly downloaded to the local_dir.
-            snapshot_download(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                local_dir=output_path,
-                local_dir_use_symlinks=False,
-            )
+
+            try:
+                snapshot_download(
+                    repo_id=repo_id,
+                    repo_type=repo_type,
+                    local_dir=output_path,
+                    local_dir_use_symlinks=False,
+                )
+            except (ConnectionError, HfHubHTTPError):
+                # If the xet storage backend failed downloading the
+                # artifact, try http.
+                with disable_hf_xet():
+                    snapshot_download(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        local_dir=output_path,
+                        local_dir_use_symlinks=False,
+                    )
+
             return output_path
 
         # file already exists - check if its valid

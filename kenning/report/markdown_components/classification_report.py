@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -9,7 +9,7 @@ Module used for classification report generation.
 
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from kenning.core.metrics import compute_classification_metrics
 from kenning.report.markdown_components.general import (
@@ -30,7 +30,7 @@ def classification_report(
     colors: Optional[List] = None,
     draw_titles: bool = True,
     **kwargs: Any,
-) -> str:
+) -> Tuple[str, Dict]:
     """
     Creates classification quality section of the report.
 
@@ -43,8 +43,7 @@ def classification_report(
     imgprefix : str
         Prefix to the image file name.
     root_dir : Path
-        Path to the root of the documentation project
-        involving this report.
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
     cmap : Optional[Any]
@@ -59,8 +58,8 @@ def classification_report(
 
     Returns
     -------
-    str
-        Content of the report in MyST format.
+    Tuple[str, Dict]
+        Content of the report in MyST format, a dict of measurements.
     """
     from kenning.core.drawing import Barplot, ConfusionMatrixPlot
 

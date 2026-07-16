@@ -366,10 +366,10 @@ class MarkdownReport(Report):
         if len(self.measurementsdata) > 1:
             for _type in self.report_types:
                 content += comparereptypes[_type](
-                    self.measurementsdata,
-                    self.img_dir,
-                    self.root_dir,
-                    self.image_formats,
+                    measurementsdata=self.measurementsdata,
+                    imgdir=self.img_dir,
+                    root_dir=self.root_dir,
+                    image_formats=self.image_formats,
                     cmap=self.cmap,
                     colors=self.colors,
                     draw_titles=draw_titles,
@@ -390,11 +390,11 @@ class MarkdownReport(Report):
                     else:
                         imgprefix = ""
                     additional_content, metrics = reptypes[_type](
-                        model_data,
-                        self.img_dir,
-                        imgprefix,
-                        self.root_dir,
-                        self.image_formats,
+                        measurementsdata=model_data,
+                        imgdir=self.img_dir,
+                        imgprefix=imgprefix,
+                        root_dir=self.root_dir,
+                        image_formats=self.image_formats,
                         color_offset=i,
                         cmap=self.cmap,
                         colors=self.colors,

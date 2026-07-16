@@ -27,7 +27,6 @@ def comparison_renode_stats_report(
     imgdir: Path,
     root_dir: Path,
     image_formats: Set[str],
-    color_offset: int = 0,
     draw_titles: bool = True,
     colors: Optional[List] = None,
     **kwargs: Any,
@@ -46,8 +45,6 @@ def comparison_renode_stats_report(
         involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
-    color_offset : int
-        How many colors from default color list should be skipped.
     draw_titles : bool
         Should titles be drawn on the plot.
     colors : Optional[List]

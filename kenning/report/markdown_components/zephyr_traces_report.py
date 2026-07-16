@@ -11,7 +11,7 @@ import base64
 import tempfile
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from kenning.core.exceptions import KenningReportError
 from kenning.core.optimizer import Optimizer
@@ -27,13 +27,8 @@ ZEPHYR_TRACE_VIEWER_URL = (
 
 
 def zephyr_traces_report(
-    measurementsdata: Dict[str, Any],
-    imgdir: Path,
-    imgprefix: str,
     root_dir: Path,
-    image_formats: Set[str],
     measurements_path: Path,
-    compiled_model_path: Optional[Path] = None,
     zephyr_trace_file_ctf: Optional[Path] = None,
     zephyr_trace_file_tef: Optional[Path] = None,
     zephyr_build_path: Optional[Path] = None,
@@ -47,22 +42,11 @@ def zephyr_traces_report(
 
     Parameters
     ----------
-    measurementsdata : Dict[str, Any]
-        Not used in this function.
-    imgdir : Path
-        Not used in this function.
-    imgprefix : str
-        Not used in this function.
     root_dir : Path
         Path to the root of the documentation project involving this report.
-    image_formats : Set[str]
-        Not used in this function.
     measurements_path: Path
         Path to the measurements JSON file used to generate the report (used to
         retrieve the traces).
-    compiled_model_path: Optional[Path]
-        Path to the model used to generate the traces (used for CTF->TEF
-        conversion)
     zephyr_trace_file_ctf: Optional[Path]
         Path to a trace file from Zephyr in CTF format (will be converted to
         TEF)
@@ -188,4 +172,4 @@ def zephyr_traces_report(
     # Trace Viewer HTML
 
     with path(reports, "zephyr_traces.md") as reporttemplate:
-        return create_report_from_measurements(reporttemplate, {}), None
+        return create_report_from_measurements(reporttemplate, {}), {}

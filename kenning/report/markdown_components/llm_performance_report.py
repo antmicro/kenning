@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,8 +7,7 @@ Module used for LLM tokens per second report generation.
 """
 
 from importlib.resources import path
-from pathlib import Path
-from typing import Any, Dict, Set
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -20,12 +19,8 @@ from kenning.resources import reports
 
 def llm_performance_report(
     measurementsdata: Dict[str, Any],
-    imgdir: Path,
-    imgprefix: str,
-    root_dir: Path,
-    image_formats: Set[str],
     **kwargs: Any,
-) -> str:
+) -> Tuple[str, Dict]:
     """
     Creates tokens per second section of the report.
 
@@ -33,22 +28,13 @@ def llm_performance_report(
     ----------
     measurementsdata : Dict[str, Any]
         Statistics from the Measurements class.
-    imgdir : Path
-        Path to the directory for images.
-    imgprefix : str
-        Prefix to the image file name.
-    root_dir : Path
-        Path to the root of the documentation project
-        involving this report.
-    image_formats : Set[str]
-        Collection with formats which should be used to generate plots.
     **kwargs : Any
         Additional keyword arguments.
 
     Returns
     -------
-    str
-        Content of the report in MyST format.
+    Tuple[str, Dict]
+        Content of the report in MyST format, unused dict of measurements.
     """
     tokens_per_second = [
         token / time

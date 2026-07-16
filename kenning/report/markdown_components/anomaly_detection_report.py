@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 """
@@ -6,7 +6,7 @@ Module used for anomaly detection report generation stage.
 """
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from kenning.core.drawing import LinePlot
 from kenning.report.markdown_components.general import (
@@ -22,13 +22,34 @@ def anomaly_detection_report(
     imgprefix: str,
     root_dir: Path,
     image_formats: Set[str],
-    cmap: Optional[Any] = None,
     colors: Optional[List] = None,
-    draw_titles: bool = True,
     **kwargs: Any,
-) -> str:
+) -> Tuple[str, Dict]:
     """
     Creates Fault Detection Rate and False Alarm rate plots.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, Any]
+        Statistics from the Measurements class.
+    imgdir : Path
+        Path to the directory for images.
+    imgprefix : str
+        Prefix to the image file name.
+    root_dir : Path
+        Path to the root of the documentation project
+        involving this report.
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots.
+    colors : Optional[List]
+        Colors used for plots.
+    **kwargs : Any
+        Additional keyword arguments.
+
+    Returns
+    -------
+    Tuple[str, Dict]
+        Content of the report in MyST format, unused dict of measurements.
     """
     if "metrics_per_threshold" not in measurementsdata:
         return "", {}

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,7 @@ import copy
 from collections import defaultdict
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
@@ -33,7 +33,7 @@ def renode_stats_report(
     colors: Optional[List] = None,
     color_offset: int = 0,
     **kwargs: Any,
-) -> str:
+) -> Tuple[str, Dict]:
     """
     Creates Renode stats section of the report.
 
@@ -61,8 +61,8 @@ def renode_stats_report(
 
     Returns
     -------
-    str
-        Content of the report in MyST format.
+    Tuple[str, Dict]
+        Content of the report in MyST format, a dict of measurements.
     """
     from servis import render_time_series_plot_with_histogram
 

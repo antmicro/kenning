@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +8,7 @@ Module used for text summarization report generation.
 
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from kenning.core.metrics import compute_text_summarization_metrics
 from kenning.report.markdown_components.general import (
@@ -29,7 +29,7 @@ def text_summarization_report(
     color_offset: int = 0,
     draw_titles: bool = True,
     **kwargs: Any,
-) -> str:
+) -> Tuple[str, Dict]:
     """
     Creates text summarization section of the report.
 
@@ -42,8 +42,7 @@ def text_summarization_report(
     imgprefix : str
         Prefix to the image file name.
     root_dir : Path
-        Path to the root of the documentation project
-        involving this report.
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
     colors : Optional[List]
@@ -57,8 +56,8 @@ def text_summarization_report(
 
     Returns
     -------
-    str
-        Content of the report in MyST format.
+    Tuple[str, Dict]
+        Content of the report in MyST format, a dict of measurements.
     """
     from kenning.core.drawing import Barplot
 

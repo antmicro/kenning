@@ -36,6 +36,7 @@ class ReportTypes(str, Enum):
     LLM_PERFORMANCE = "llm_performance"
     ANOMALY = "anomaly"
     ZEPHYR_TRACES = "zephyr_traces"
+    MODEL = "model"
 
 
 class Report(ArgumentsHandler, ABC):

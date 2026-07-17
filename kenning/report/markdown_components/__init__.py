@@ -45,6 +45,9 @@ from kenning.report.markdown_components.general import (
 from kenning.report.markdown_components.llm_performance_report import (
     llm_performance_report,
 )
+from kenning.report.markdown_components.model_report import (
+    model_report,
+)
 from kenning.report.markdown_components.performance_report import (
     performance_report,
 )
@@ -82,4 +85,5 @@ __all__ = [
     "generate_html_report",
     "anomaly_detection_report",
     "zephyr_traces_report",
+    "model_report"
 ]

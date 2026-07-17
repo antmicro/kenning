@@ -38,6 +38,7 @@ from kenning.report.markdown_components import (
     renode_stats_report,
     text_summarization_report,
     zephyr_traces_report,
+    model_report,
 )
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
@@ -318,6 +319,7 @@ class MarkdownReport(Report):
             rep.LLM_PERFORMANCE: llm_performance_report,
             rep.ANOMALY: anomaly_detection_report,
             rep.ZEPHYR_TRACES: zephyr_traces_report,
+            rep.MODEL: model_report
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,

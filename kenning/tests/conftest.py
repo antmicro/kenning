@@ -647,3 +647,17 @@ def mock_configuration_file_contents_modelruntime_runner(tmp_path):
             }
         }"""
     )
+
+
+def pytest_configure(config):
+    """
+    Force pyximport to compile the cython extension sequentially in the master
+    process before xdist spawns workers.
+    """
+    if not hasattr(config, "workerinput"):
+        try:
+            from kenning.modelwrappers.instance_segmentation import (
+                cython_nms,  # noqa: F401
+            )
+        except ImportError:
+            pass

@@ -15,7 +15,6 @@ from typing import Any, Dict, List
 
 
 def model_report(
-    measurementsdata: Dict[str, Any],
     model_wrapper: ModelWrapper,
     **kwargs: Dict,
 ) -> str:
@@ -57,6 +56,7 @@ def model_report(
 
     dtypes_list = list()
 
+    measurementsdata = Dict(str, Any)
     from onnx import numpy_helper
     # TODO: weight type detection
     for node in onnx_model.graph.node:
@@ -89,4 +89,5 @@ def model_report(
     measurementsdata["data types"] = dtypes_list
 
     # TODO: return statistics in a sensible format
-    return "test"    
+    with path(reports, "model.md") as report_template:
+        return create_report_from_measurements(report_template, measurementsdata)        

@@ -27,6 +27,7 @@ except ImportError:
     )
 
 from itertools import product
+from typing import List, Set
 
 from kenning.converters import converter_registry
 from kenning.core.model import ModelWrapper
@@ -50,6 +51,11 @@ from kenning.tests.core.test_model import create_model
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.pipeline_runner import PipelineRunner
 
+
+def sort_by_classname(class_set: Set) -> List:
+    return sorted(class_set, key=lambda c: c.__name__)
+
+
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True
 )
@@ -67,8 +73,12 @@ LLM_MODELWRAPPERS = get_all_subclasses(
     "kenning.modelwrappers.llm", LLM, raise_exception=True
 )
 
-NON_LLM_MODELWRAPPERS = set(MODELWRAPPER_SUBCLASSES) - set(LLM_MODELWRAPPERS)
-NON_LLM_OPTIMIZERS = set(OPTIMIZER_SUBCLASSES) - set(LLM_OPTIMIZERS)
+NON_LLM_MODELWRAPPERS = sort_by_classname(
+    set(MODELWRAPPER_SUBCLASSES) - set(LLM_MODELWRAPPERS)
+)
+NON_LLM_OPTIMIZERS = sort_by_classname(
+    set(OPTIMIZER_SUBCLASSES) - set(LLM_OPTIMIZERS)
+)
 
 EXPECTED_FAIL = [
     # Skipping because these tests will fail if there is no dataset provided

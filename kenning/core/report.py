@@ -126,6 +126,8 @@ class Report(ArgumentsHandler, ABC):
             A list of arguments from command line.
         automl_stats : Optional[Path]
             Path to the JSON file with statistics during the AutoML run
+        model_wrapper: Optional[ModelWrapper]
+            ModelWrapper of the reported model
 
         Returns
         -------

@@ -293,9 +293,10 @@ class MarkdownReport(Report):
         self._report_types = report_types
 
     def generate_markdown_report(
-        self, command: List[str] = [],
+        self,
+        command: List[str] = [],
         draw_titles: bool = True,
-        model_wrapper: Optional[ModelWrapper] = None
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Generates an MyST report based on Measurements data.
@@ -308,6 +309,8 @@ class MarkdownReport(Report):
             Full command used to render this report, split into separate lines.
         draw_titles : bool
             Should titles be drawn on the plot.
+        model_wrapper: Optional[ModelWrapper]
+            ModelWrapper of the reported model
         """
         rep = ReportTypes
 
@@ -322,7 +325,7 @@ class MarkdownReport(Report):
             rep.LLM_PERFORMANCE: llm_performance_report,
             rep.ANOMALY: anomaly_detection_report,
             rep.ZEPHYR_TRACES: zephyr_traces_report,
-            rep.MODEL: model_report
+            rep.MODEL: model_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,
@@ -418,7 +421,6 @@ class MarkdownReport(Report):
                         last_optimizer=self.last_optimizer,
                         cfg=self.cfg_name,
                         model_wrapper=model_wrapper,
-                        
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():
@@ -462,7 +464,7 @@ class MarkdownReport(Report):
             Used subcommands from parsed arguments.
         command : Optional[List[str]]
             A list of arguments from command line.
-        model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper]
             Model wrapper object used for model report
 
         Raises
@@ -531,9 +533,9 @@ class MarkdownReport(Report):
                 custom_bokeh_theme=True,
                 custom_matplotlib_theme=True,
             ):
-                self.generate_markdown_report(command,
-                                              draw_titles=False,
-                                              model_wrapper=model_wrapper)
+                self.generate_markdown_report(
+                    command, draw_titles=False, model_wrapper=model_wrapper
+                )
 
         if self.to_html:
             generate_html_report(

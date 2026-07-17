@@ -7,12 +7,17 @@ Module used for basic model statistics report generation.
 """
 
 from importlib.resources import path
-from kenning.converters import converter_registry
-from kenning.core.model import ModelWrapper
-from kenning.report.markdown_components.general import create_report_from_measurements
-from kenning.resources import reports
-from typing import Any, Dict, List, Set, Optional
 from pathlib import Path
+from typing import Any, Dict, Set
+
+from kenning.converters import converter_registry
+from kenning.core.exceptions import ConversionError
+from kenning.core.model import ModelWrapper
+from kenning.report.markdown_components.general import (
+    create_report_from_measurements,
+)
+from kenning.resources import reports
+from kenning.utils.logger import KLogger
 
 
 def model_report(
@@ -29,15 +34,48 @@ def model_report(
 ) -> str:
     """
     Creates model section of the report.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, Any]
+        Statistics from the Measurements class.
+    imgdir : Path
+        Path to the directory for images.
+    imgprefix : str
+        Prefix to the image file name.
+    root_dir : Path
+        Path to the root of the documentation project
+        involving this report.
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots.
+    model_wrapper: ModelWrapper = None,
+        ModelWrapper of the reported model
+    **kwargs : Any
+        Additional keyword arguments.
+
+    Returns
+    -------
+    str
+        Content of the report in MyST format.
     """
+    KLogger.info(
+        f'Running model_report for {measurementsdata["model_name"]}'
+    )
+    if model_wrapper is None:
+        KLogger.warn(
+            "Cannot generate model specification report"
+            " - model_wrapper is not provided"
+        )
+        return "", {}
+
     io_spec = model_wrapper.get_io_specification()    
+    model_cls = None
 
     try:
         model_wrapper.create_model_structure()
         model_cls = model_wrapper.model
-        return model_cls
     except AttributeError:
-        return None
+        pass
 
     conversion_kwargs = {
         "io_spec": io_spec,
@@ -46,11 +84,14 @@ def model_report(
 
     input_type = model_wrapper.get_framework()
     input_model_path = model_wrapper.get_path()
-
-    onnx_model = converter_registry.convert(
-        input_model_path, input_type, "onnx", **conversion_kwargs, **kwargs
-    )
-
+    try:
+        onnx_model = converter_registry.convert(
+            input_model_path, input_type, "onnx", **conversion_kwargs, **kwargs
+        )
+    except ConversionError:
+        KLogger.warn("Cannot convert model to onnx")
+        return "", {}
+        
     initializer_map = {
         init.name: init for init in onnx_model.graph.initializer
     }
@@ -89,14 +130,16 @@ def model_report(
         bytes_list.append(layer_bytes)
         dtypes_list.append(dtype_str)
 
-    measurementsdata["layer count"] = [layer_count]
-    measurementsdata["total parameters"] = [total_params]
+    measurementsdata["layer count"] = layer_count
+    measurementsdata["total parameters"] = total_params
     measurementsdata["parameters"] = params_list
-    measurementsdata["total bytes"] = [total_bytes]
+    measurementsdata["total bytes"] = total_bytes
     measurementsdata["bytes"] = bytes_list
     measurementsdata["data types"] = dtypes_list
+    measurementsdata["name list"] = name_list
 
-    # TODO: return statistics in a sensible format
     with path(reports, "model.md") as report_template:
-        return create_report_from_measurements(report_template, measurementsdata)        
-    
+        report = create_report_from_measurements(
+            report_template, measurementsdata
+        )        
+        return report, {}

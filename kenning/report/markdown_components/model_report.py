@@ -11,12 +11,21 @@ from kenning.converters import converter_registry
 from kenning.core.model import ModelWrapper
 from kenning.report.markdown_components.general import create_report_from_measurements
 from kenning.resources import reports
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Optional
+from pathlib import Path
 
 
 def model_report(
-    model_wrapper: ModelWrapper,
-    **kwargs: Dict,
+    measurementsdata: Dict[str, Any],
+    imgdir: Path,
+    imgprefix: str,
+    root_dir: Path,
+    image_formats: Set[str],
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    model_wrapper: ModelWrapper = None,
+    **kwargs: Any,
+
 ) -> str:
     """
     Creates model section of the report.
@@ -56,7 +65,6 @@ def model_report(
 
     dtypes_list = list()
 
-    measurementsdata = Dict(str, Any)
     from onnx import numpy_helper
     # TODO: weight type detection
     for node in onnx_model.graph.node:
@@ -91,3 +99,4 @@ def model_report(
     # TODO: return statistics in a sensible format
     with path(reports, "model.md") as report_template:
         return create_report_from_measurements(report_template, measurementsdata)        
+    

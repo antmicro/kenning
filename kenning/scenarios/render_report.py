@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -34,6 +34,7 @@ from kenning.cli.command_template import (
     ParserHelpException,
     generate_command_type,
 )
+from kenning.core.model import ModelWrapper
 from kenning.core.report import Report
 from kenning.report.markdown_report import MarkdownReport
 from kenning.utils.class_loader import (
@@ -170,17 +171,22 @@ class RenderReport(CommandTemplate):
         KLogger.debug(f"Selected report type: {report_type}")
 
         objs = objs_from_json(
-            json_cfg, set([ConfigKey.report]), override=(args, not_parsed)
+            json_cfg, set([ConfigKey.report, ConfigKey.model_wrapper]), override=(args, not_parsed)
         )
 
         report = objs[ConfigKey.report]
 
+        model_wrapper = objs[ConfigKey.model_wrapper]
+
         subcommands = get_used_subcommands(args)
 
-        return report.generate_report(subcommands, command)
+        return report.generate_report(
+            subcommands, command, model_wrapper=model_wrapper
+        )
 
     @staticmethod
     def _run_from_flags(
+        # TODO: parsing command line args to get model_wrapper
         args: argparse.Namespace,
         command: List[str],
         not_parsed: List[str] = [],
@@ -190,6 +196,9 @@ class RenderReport(CommandTemplate):
 
         reportcls: Report = load_class_by_type(
             getattr(args, "report_cls", None), REPORT
+        )
+        model_wrapper_cls: ModelWrapper = load_class_by_type(
+            getattr(args, "model_wrapper_cls", None), MODEL_WRAPPER
         )
 
         if reportcls is None:
@@ -214,9 +223,15 @@ class RenderReport(CommandTemplate):
 
         report = reportcls.from_argparse(args)
 
+        model_wrapper = None
+        if model_wrapper_cls:
+            model_wrapper = model_wrapper_cls.from_argparse(args)
+
         subcommands = get_used_subcommands(args)
 
-        return report.generate_report(subcommands, command)
+        return report.generate_report(
+            subcommands, command, model_wrapper=model_wrapper
+        )
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):

@@ -18,6 +18,7 @@ from matplotlib.colors import to_hex
 
 from kenning.cli.command_template import AUTOML
 from kenning.core.metrics import Metric
+from kenning.core.model import ModelWrapper
 from kenning.report.markdown_components import (
     anomaly_detection_report,
     automl_report,
@@ -33,12 +34,12 @@ from kenning.report.markdown_components import (
     detection_report,
     generate_html_report,
     llm_performance_report,
+    model_report,
     performance_report,
     regression_report,
     renode_stats_report,
     text_summarization_report,
     zephyr_traces_report,
-    model_report,
 )
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
@@ -292,7 +293,9 @@ class MarkdownReport(Report):
         self._report_types = report_types
 
     def generate_markdown_report(
-        self, command: List[str] = [], draw_titles: bool = True
+        self, command: List[str] = [],
+        draw_titles: bool = True,
+        model_wrapper: Optional[ModelWrapper] = None
     ):
         """
         Generates an MyST report based on Measurements data.
@@ -381,6 +384,7 @@ class MarkdownReport(Report):
                     draw_titles=draw_titles,
                     main_quality_metric=self.main_quality_metric,
                 )
+
         if not self.comparison_only or self.save_summary:
             for _type in self.report_types:
                 for i, model_data in enumerate(self.measurementsdata):
@@ -413,6 +417,8 @@ class MarkdownReport(Report):
                         zephyr_base=self.zephyr_base,
                         last_optimizer=self.last_optimizer,
                         cfg=self.cfg_name,
+                        model_wrapper=model_wrapper,
+                        
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():
@@ -445,6 +451,7 @@ class MarkdownReport(Report):
         self,
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Generate report.
@@ -455,6 +462,8 @@ class MarkdownReport(Report):
             Used subcommands from parsed arguments.
         command : Optional[List[str]]
             A list of arguments from command line.
+        model_wrapper: Optional[ModelWrapper] = None,
+            Model wrapper object used for model report
 
         Raises
         ------
@@ -522,7 +531,9 @@ class MarkdownReport(Report):
                 custom_bokeh_theme=True,
                 custom_matplotlib_theme=True,
             ):
-                self.generate_markdown_report(command, draw_titles=False)
+                self.generate_markdown_report(command,
+                                              draw_titles=False,
+                                              model_wrapper=model_wrapper)
 
         if self.to_html:
             generate_html_report(

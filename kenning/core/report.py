@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 from kenning.core.measurements import Measurements
+from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 
@@ -112,6 +113,7 @@ class Report(ArgumentsHandler, ABC):
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
         automl_stats: Optional[Path] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ) -> None:
         """
         Generate report.

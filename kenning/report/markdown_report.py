@@ -209,8 +209,15 @@ class MarkdownReport(Report):
         zephyr_trace_file_tef: Optional[Path] = None,
         zephyr_build_path: Optional[Path] = None,
         zephyr_base: Optional[Path] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
-        super().__init__(measurements, report_name, report_types, automl_stats)
+        super().__init__(
+            measurements,
+            report_name,
+            report_types,
+            automl_stats,
+            model_wrapper,
+        )
 
         self.to_html = to_html
         self.report_path = report_path
@@ -296,7 +303,6 @@ class MarkdownReport(Report):
         self,
         command: List[str] = [],
         draw_titles: bool = True,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Generates an MyST report based on Measurements data.
@@ -309,8 +315,6 @@ class MarkdownReport(Report):
             Full command used to render this report, split into separate lines.
         draw_titles : bool
             Should titles be drawn on the plot.
-        model_wrapper: Optional[ModelWrapper]
-            ModelWrapper of the reported model
         """
         rep = ReportTypes
 
@@ -420,7 +424,7 @@ class MarkdownReport(Report):
                         zephyr_base=self.zephyr_base,
                         last_optimizer=self.last_optimizer,
                         cfg=self.cfg_name,
-                        model_wrapper=model_wrapper,
+                        model_wrapper=self.model_wrapper,
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():
@@ -453,7 +457,6 @@ class MarkdownReport(Report):
         self,
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Generate report.
@@ -464,8 +467,6 @@ class MarkdownReport(Report):
             Used subcommands from parsed arguments.
         command : Optional[List[str]]
             A list of arguments from command line.
-        model_wrapper: Optional[ModelWrapper]
-            Model wrapper object used for model report
 
         Raises
         ------
@@ -486,6 +487,30 @@ class MarkdownReport(Report):
                 report_types=self.report_types,
                 automl_stats_file=self.automl_stats,
             )
+
+        if "build_cfg" in self.measurementsdata[0]:
+            from kenning.utils.class_loader import (
+                ConfigKey,
+                obj_from_json,
+            )
+
+            json_cfg = json.loads(
+                "\n".join(self.measurementsdata[0]["build_cfg"])
+            )
+            if "model_wrapper" in json_cfg:
+                if "parameters" in json_cfg["model_wrapper"]:
+                    parameters = {
+                        k: v
+                        for k, v in json_cfg["model_wrapper"][
+                            "parameters"
+                        ].items()
+                        if v is not None
+                    }
+                    json_cfg["model_wrapper"]["parameters"] = parameters
+
+                self.model_wrapper = obj_from_json(
+                    json_cfg, ConfigKey.model_wrapper
+                )
 
         self.cfg_name = None
         if "cfg_path" in self.measurementsdata[0]:
@@ -534,7 +559,8 @@ class MarkdownReport(Report):
                 custom_matplotlib_theme=True,
             ):
                 self.generate_markdown_report(
-                    command, draw_titles=False, model_wrapper=model_wrapper
+                    command,
+                    draw_titles=False,
                 )
 
         if self.to_html:

@@ -18,22 +18,19 @@ from typing import List, Optional, Tuple
 import yaml
 from argcomplete import FilesCompleter
 
-from kenning.cli.completers import ClassPathCompleter
-from kenning.utils.resource_manager import ResourceURI
-
-if sys.version_info.minor < 9:
-    pass
-else:
-    pass
 from kenning.cli.command_template import (
     AUTOML,
     DEFAULT_GROUP,
+    OPTIMIZE,
     REPORT,
+    TEST,
+    TRAIN,
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
     generate_command_type,
 )
+from kenning.cli.completers import MODEL_WRAPPERS, ClassPathCompleter
 from kenning.core.model import ModelWrapper
 from kenning.core.report import Report
 from kenning.report.markdown_report import MarkdownReport
@@ -44,6 +41,7 @@ from kenning.utils.class_loader import (
     objs_from_json,
 )
 from kenning.utils.logger import KLogger
+from kenning.utils.resource_manager import ResourceURI
 
 FILE_CONFIG = "Inference configuration with JSON/YAML file"
 FLAG_CONFIG = "Inference configuration with flags"
@@ -95,6 +93,12 @@ class RenderReport(CommandTemplate):
                 type=Path,
                 default=None,
             )
+
+        if OPTIMIZE not in types and TEST not in types and TRAIN not in types:
+            groups[FILE_CONFIG].add_argument(
+                "--modelwrapper-cls",
+                help="Modelwrapper type that will be used in the report",
+            ).completer = ClassPathCompleter(MODEL_WRAPPERS)
 
         other_group = groups[FLAG_CONFIG]
         other_group.add_argument(
@@ -171,22 +175,22 @@ class RenderReport(CommandTemplate):
         KLogger.debug(f"Selected report type: {report_type}")
 
         objs = objs_from_json(
-            json_cfg, set([ConfigKey.report, ConfigKey.model_wrapper]), override=(args, not_parsed)
+            json_cfg,
+            set([ConfigKey.report, ConfigKey.model_wrapper]),
+            override=(args, not_parsed),
         )
 
         report = objs[ConfigKey.report]
 
         model_wrapper = objs[ConfigKey.model_wrapper]
+        report.model_wrapper = model_wrapper
 
         subcommands = get_used_subcommands(args)
 
-        return report.generate_report(
-            subcommands, command, model_wrapper=model_wrapper
-        )
+        return report.generate_report(subcommands, command)
 
     @staticmethod
     def _run_from_flags(
-        # TODO: parsing command line args to get model_wrapper
         args: argparse.Namespace,
         command: List[str],
         not_parsed: List[str] = [],
@@ -197,8 +201,9 @@ class RenderReport(CommandTemplate):
         reportcls: Report = load_class_by_type(
             getattr(args, "report_cls", None), REPORT
         )
+
         model_wrapper_cls: ModelWrapper = load_class_by_type(
-            getattr(args, "model_wrapper_cls", None), MODEL_WRAPPER
+            getattr(args, "modelwrapper_cls", None), MODEL_WRAPPERS
         )
 
         if reportcls is None:
@@ -209,7 +214,12 @@ class RenderReport(CommandTemplate):
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
             + "\n",
-            parents=[reportcls.form_argparse(args)[0]],
+            parents=[reportcls.form_argparse(args)[0]]
+            + (
+                [model_wrapper_cls.form_argparse(args)[0]]
+                if model_wrapper_cls
+                else []
+            ),
             add_help=False,
         )
 
@@ -225,13 +235,12 @@ class RenderReport(CommandTemplate):
 
         model_wrapper = None
         if model_wrapper_cls:
-            model_wrapper = model_wrapper_cls.from_argparse(args)
+            model_wrapper = model_wrapper_cls.from_argparse(None, args)
+            # Dataset is set to none because it is not needed for basic stats
+        report.model_wrapper = model_wrapper
 
         subcommands = get_used_subcommands(args)
-
-        return report.generate_report(
-            subcommands, command, model_wrapper=model_wrapper
-        )
+        return report.generate_report(subcommands, command)
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):

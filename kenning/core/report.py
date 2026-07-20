@@ -82,6 +82,7 @@ class Report(ArgumentsHandler, ABC):
         report_name: Optional[str] = None,
         report_types: Optional[List[str]] = None,
         automl_stats: Optional[Path] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Constructs report.
@@ -96,6 +97,8 @@ class Report(ArgumentsHandler, ABC):
             List of types that implement this report.
         automl_stats : Optional[Path]
             Path to the JSON file with statistics during the AutoML run
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper for the model report.
         """
         self.report_types = report_types
 
@@ -106,6 +109,7 @@ class Report(ArgumentsHandler, ABC):
 
         self.report_name = report_name
         self.automl_stats = automl_stats
+        self.model_wrapper = model_wrapper
 
     @abstractmethod
     def generate_report(
@@ -113,7 +117,6 @@ class Report(ArgumentsHandler, ABC):
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
         automl_stats: Optional[Path] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ) -> None:
         """
         Generate report.
@@ -126,8 +129,6 @@ class Report(ArgumentsHandler, ABC):
             A list of arguments from command line.
         automl_stats : Optional[Path]
             Path to the JSON file with statistics during the AutoML run
-        model_wrapper: Optional[ModelWrapper]
-            ModelWrapper of the reported model
 
         Returns
         -------

@@ -85,5 +85,5 @@ __all__ = [
     "generate_html_report",
     "anomaly_detection_report",
     "zephyr_traces_report",
-    "model_report"
+    "model_report",
 ]

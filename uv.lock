@@ -2197,6 +2197,7 @@ all = [
     { name = "opencv-python" },
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "peft" },
     { name = "pexpect" },
     { name = "pipeline-manager" },
     { name = "pipeline-manager-backend-communication" },
@@ -2305,6 +2306,7 @@ llm = [
     { name = "autoawq", version = "0.2.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "autoawq", version = "0.2.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "onnx2torch" },
+    { name = "peft" },
     { name = "rouge-score" },
     { name = "torch" },
     { name = "torchvision" },
@@ -2565,6 +2567,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'anomaly-detection'" },
     { name = "pandas", marker = "extra == 'object-detection'", specifier = ">=1.2.1" },
     { name = "pandoc" },
+    { name = "peft", marker = "extra == 'llm'", specifier = "==0.10.0" },
     { name = "pexpect", marker = "extra == 'test'" },
     { name = "pillow", specifier = ">=8.1.0" },
     { name = "pipeline-manager", marker = "extra == 'pipeline-manager'", git = "https://github.com/antmicro/kenning-pipeline-manager.git" },
@@ -2623,7 +2626,7 @@ requires-dist = [
     { name = "tf2onnx", marker = "extra == 'tensorflow'" },
     { name = "tf2onnx", marker = "extra == 'test'" },
     { name = "tflite", marker = "extra == 'tflite'" },
-    { name = "tinygrad", marker = "python_full_version >= '3.12' and extra == 'tinygrad'", specifier = ">0.11.0,<=0.12.0" },
+    { name = "tinygrad", marker = "python_full_version >= '3.12' and extra == 'tinygrad'", specifier = "==0.12.0" },
     { name = "tinygrad", marker = "python_full_version < '3.12' and extra == 'tinygrad'", specifier = "==0.11.0" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "torch", marker = "python_full_version == '3.12.*' and extra == 'llm'" },
@@ -4035,23 +4038,25 @@ wheels = [
 
 [[package]]
 name = "peft"
-version = "0.18.1"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "accelerate", marker = "python_full_version < '3.12'" },
+    { name = "accelerate" },
     { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", marker = "python_full_version < '3.12'" },
-    { name = "packaging", marker = "python_full_version < '3.12'" },
-    { name = "psutil", marker = "python_full_version < '3.12'" },
-    { name = "pyyaml", marker = "python_full_version < '3.12'" },
-    { name = "safetensors", marker = "python_full_version < '3.12'" },
-    { name = "torch", marker = "python_full_version < '3.12'" },
-    { name = "tqdm", marker = "python_full_version < '3.12'" },
+    { name = "huggingface-hub", version = "1.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "tqdm" },
     { name = "transformers", version = "4.40.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "transformers", version = "5.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/48/147b3ea999560b40a34fd78724c7777aa9d18409c2250bdcaf9c4f2db7fc/peft-0.18.1.tar.gz", hash = "sha256:2dd0d6bfce936d1850e48aaddbd250941c5c02fc8ef3237cd8fd5aac35e0bae2", size = 635030, upload-time = "2026-01-09T13:08:01.136Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/aa/e5637dbdfc300e64444275b6b4d61d6b2ae9c199c8f4666f28b7058f3a6e/peft-0.10.0.tar.gz", hash = "sha256:36a7628c15f88d37abb26cfc74c22468f9037ee02e9c9b65de943cfe7c672049", size = 210126, upload-time = "2024-03-21T10:17:52.29Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b3/14/b4e3f574acf349ae6f61f9c000a77f97a3b315b4bb6ad03791e79ae4a568/peft-0.18.1-py3-none-any.whl", hash = "sha256:0bf06847a3551e3019fc58c440cffc9a6b73e6e2962c95b52e224f77bbdb50f1", size = 556960, upload-time = "2026-01-09T13:07:55.865Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/5d/758c00ba637bc850f35fff7fad442c470ac3d606fe586d881b0bed7ef5a5/peft-0.10.0-py3-none-any.whl", hash = "sha256:d5249c97e818d3e31f92553c73c2953acd0ec12649b8b749afff7152cbc86cbb", size = 199070, upload-time = "2024-03-21T10:17:35.652Z" },
 ]
 
 [[package]]
@@ -7145,7 +7150,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:792ca0f919560d137bb97c96e19de5b1607a54aafd39902278f930db9fa8bf42" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:28e53a905270d1fd58197127c7d173463b133949c5edc8f574dd486cf987a485" },
 ]
 
 [package.metadata]
@@ -7271,7 +7276,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version == '3.11.*'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bc82053726ef89c9342e9e04358205bc2d2de8532efb47f30277dc9c77fefb37" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:847d7bbf0a706c149e6f974f1980210de586af0e04c515a75aa620f3c229027f" },
 ]
 
 [package.metadata]
@@ -7397,7 +7402,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version >= '3.12'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6e996a5a8bbc77f364846287091dc5cb0028be6ced34116491e5888c52b4357c" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c7f5790a5bd6b7c60fd6c304b8352eac6f44627c109c83730ed9c3ae9bcdf2b2" },
 ]
 
 [package.metadata]

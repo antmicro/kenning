@@ -16,6 +16,7 @@ from kenning.utils.class_loader import ConfigKey
 from kenning.utils.logger import KLogger
 
 # Subcommands:
+MODEL_WRAPPER = "modelwrapper"  # TODO: this is not the way to do this apparently
 OPTIMIZE = "optimize"
 TRAIN = "train"
 TEST = "test"

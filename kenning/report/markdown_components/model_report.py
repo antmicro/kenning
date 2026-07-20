@@ -26,8 +26,6 @@ def model_report(
     imgprefix: str,
     root_dir: Path,
     image_formats: Set[str],
-    colors: Optional[List] = None,
-    draw_titles: bool = True,
     model_wrapper: ModelWrapper = None,
     **kwargs: Any,
 
@@ -48,8 +46,8 @@ def model_report(
         involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
-    model_wrapper: ModelWrapper = None,
-        ModelWrapper of the reported model
+    model_wrapper : ModelWrapper
+        ModelWrapper of the reported model.
     **kwargs : Any
         Additional keyword arguments.
 
@@ -58,9 +56,7 @@ def model_report(
     str
         Content of the report in MyST format.
     """
-    KLogger.info(
-        f'Running model_report for {measurementsdata["model_name"]}'
-    )
+    KLogger.info(f'Running model_report for {measurementsdata["model_name"]}')
     if model_wrapper is None:
         KLogger.warn(
             "Cannot generate model specification report"
@@ -107,7 +103,6 @@ def model_report(
     dtypes_list = list()
 
     from onnx import numpy_helper
-    # TODO: weight type detection
     for node in onnx_model.graph.node:
         layer_params = 0
         layer_bytes = 0

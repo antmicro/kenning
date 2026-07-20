@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 import onnx
-import pyximport
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import KenningModelWrapperError, NotSupportedError
@@ -25,14 +24,10 @@ from kenning.core.model import ModelWrapper
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.resource_manager import PathOrURI
-
-pyximport.install(
-    setup_args={"include_dirs": np.get_include()}, reload_support=True
-)
-from kenning.modelwrappers.instance_segmentation.cython_nms import (  # noqa: E402
+from kenning.modelwrappers.instance_segmentation.cython_nms import (
     nms,
 )
+from kenning.utils.resource_manager import PathOrURI
 
 
 def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:

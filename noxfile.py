@@ -91,26 +91,6 @@ def _prepare_pip_params(session: nox.Session, device: str):
     return [*indices_strs, f".[{deps_str}]"]
 
 
-def _fix_pyximport(session: nox.Session):
-    """
-    Fixes pyximport related crashes by initializing `$HOME/.pyxbld`.
-    """
-    session.run(
-        "python",
-        "-c",
-        """
-import numpy as np
-import pyximport;
-pyximport.install(
-    setup_args={"include_dirs": np.get_include()}, reload_support=True
-);
-from kenning.modelwrappers.instance_segmentation.cython_nms import (
-    nms,
-);
-""",
-    )
-
-
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
@@ -187,6 +167,9 @@ def run_pytest(session: nox.Session, device):
     _prepare_kenning(session, device)
     _prepare_pyrenode(session)
 
+    # Build cython extensions in-place
+    session.run("python", "setup.py", "build_ext", "--inplace")
+
     name = _fix_name(session.name)
 
     requirements_path = Path("requirements") / f"{name}.txt"
@@ -196,8 +179,6 @@ def run_pytest(session: nox.Session, device):
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
         return
-
-    _fix_pyximport(session)
 
     report_path = Path("pytest-reports") / f"{name}.json"
 

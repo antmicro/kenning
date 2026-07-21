@@ -177,34 +177,45 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         return self.classnames
 
     def evaluate(self, predictions, truth):
+        def _list_depth(lst):
+            if not isinstance(lst, list):
+                return 0
+            return 1 + max(_list_depth(_l) for _l in lst)
+
+        if _list_depth(predictions) == 2:
+            predictions = [predictions]
+        if _list_depth(truth) == 2:
+            truth = [truth]
+
         measurements = super().evaluate(predictions, truth)
         currindex = self._dataindex - len(predictions)
-        for pred, groundtruth in zip(predictions[0], truth[0]):
-            for p in pred:
-                cocoid = self.imgstokeys[
-                    self.dataX[self._dataindices[currindex]]
-                ]
-                width = self.coco.imgs[cocoid]["width"]
-                height = self.coco.imgs[cocoid]["height"]
-                xmin = max(min(p.xmin * width, width), 0)
-                xmax = max(min(p.xmax * width, width), 0)
-                ymin = max(min(p.ymin * height, height), 0)
-                ymax = max(min(p.ymax * height, height), 0)
-                w = xmax - xmin
-                h = ymax - ymin
-                measurements.add_measurement(
-                    "predictions",
-                    [
-                        {
-                            "image_name": self.imgstokeys[
-                                self.dataX[self._dataindices[currindex]]
-                            ],
-                            "category": p.clsname,
-                            "bbox": [xmin, ymin, w, h],
-                            "score": p.score,
-                        }
-                    ],
-                )
+        for tmp_pred in predictions:
+            for pred in tmp_pred:
+                for p in pred:
+                    cocoid = self.imgstokeys[
+                        self.dataX[self._dataindices[currindex]]
+                    ]
+                    width = self.coco.imgs[cocoid]["width"]
+                    height = self.coco.imgs[cocoid]["height"]
+                    xmin = max(min(p.xmin * width, width), 0)
+                    xmax = max(min(p.xmax * width, width), 0)
+                    ymin = max(min(p.ymin * height, height), 0)
+                    ymax = max(min(p.ymax * height, height), 0)
+                    w = xmax - xmin
+                    h = ymax - ymin
+                    measurements.add_measurement(
+                        "predictions",
+                        [
+                            {
+                                "image_name": self.imgstokeys[
+                                    self.dataX[self._dataindices[currindex]]
+                                ],
+                                "category": p.clsname,
+                                "bbox": [xmin, ymin, w, h],
+                                "score": p.score,
+                            }
+                        ],
+                    )
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:

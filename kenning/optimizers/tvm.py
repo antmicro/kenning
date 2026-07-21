@@ -569,13 +569,6 @@ class TVMCompiler(Optimizer):
             self.module_name if type(self.module_name) is str else ""
         )
         self.compile_model(mod, params, self.compiled_model_path, io_spec)
-        if self.use_fp16_precision or self.use_int8_precision:
-            output_dtype = "float16" if self.use_fp16_precision else "int8"
-            for id in range(len(io_spec["output"])):
-                io_spec["output"][id]["prequantized_dtype"] = io_spec[
-                    "output"
-                ][id]["dtype"]
-                io_spec["output"][id]["dtype"] = output_dtype
         self.save_io_specification(input_model_path, io_spec)
 
     def read_platform(self, platform: Platform):

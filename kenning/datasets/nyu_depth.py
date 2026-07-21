@@ -52,6 +52,16 @@ class NYUDepthDatasetV2(Dataset):
             "default": "NCHW",
             "enum": ["NHWC", "NCHW"],
         },
+        "image_width": {
+            "description": "Width of the input images",
+            "type": int,
+            "default": 640,
+        },
+        "image_height": {
+            "description": "Height of the input images",
+            "type": int,
+            "default": 480,
+        },
     }
 
     def __init__(
@@ -67,10 +77,14 @@ class NYUDepthDatasetV2(Dataset):
         dataset_percentage: float = 1,
         shuffle_data: bool = True,
         image_memory_layout: str = "NCHW",
+        image_width: int = 640,
+        image_height: int = 480,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
 
         self.image_memory_layout = image_memory_layout
+        self.image_width = image_width
+        self.image_height = image_height
 
         self.dataset_path = root / "dataset.mat"
 
@@ -88,7 +102,30 @@ class NYUDepthDatasetV2(Dataset):
         )
 
     def prepare_input_samples(self, samples: List) -> List:
-        result = self._images[samples]
+        import cv2
+
+        original_images = self._images[samples]
+
+        result = np.empty(
+            (
+                original_images.shape[0],
+                3,
+                self.image_height,
+                self.image_width,
+            ),
+            dtype=np.float32,
+        )
+
+        for idx, original_image in enumerate(original_images):
+            for channel_idx in range(3):
+                cv2.resize(
+                    src=original_image[channel_idx],
+                    dsize=(
+                        self.image_width,
+                        self.image_height,
+                    ),
+                    dst=result[idx, channel_idx],
+                )
 
         if self.image_memory_layout == "NHWC":
             result = result.transpose((0, 2, 3, 1))
@@ -96,7 +133,28 @@ class NYUDepthDatasetV2(Dataset):
         return [result]
 
     def prepare_output_samples(self, samples: List) -> List:
-        result = self._depths[samples]
+        import cv2
+
+        original_depths = self._depths[samples]
+
+        result = np.empty(
+            (
+                original_depths.shape[0],
+                self.image_height,
+                self.image_width,
+            ),
+            dtype=np.float32,
+        )
+
+        for idx, original_depth in enumerate(original_depths):
+            cv2.resize(
+                src=original_depth,
+                dsize=(
+                    self.image_width,
+                    self.image_height,
+                ),
+                dst=result[idx],
+            )
 
         return [result]
 

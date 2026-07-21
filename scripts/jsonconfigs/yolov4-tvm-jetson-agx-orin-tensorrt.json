@@ -42,7 +42,7 @@
         "parameters":
         {
             "save_model_path": "./build/yolov4_tensorrt_fp32.tar",
-	    "target_device_context": "cuda"
+            "target_device_context": "cuda"
         }
     }
 }

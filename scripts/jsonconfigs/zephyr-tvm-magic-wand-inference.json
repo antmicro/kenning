@@ -26,7 +26,7 @@
     ],
     "runtime": {
         "type": "kenning.runtimes.tvm.TVMRuntime",
-		    "parameters": {}
+        "parameters": {}
     },
     "protocol": {
         "type": "kenning.protocols.uart.UARTProtocol",

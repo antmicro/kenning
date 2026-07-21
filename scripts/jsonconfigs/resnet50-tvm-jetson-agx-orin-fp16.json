@@ -55,7 +55,7 @@
         "parameters":
         {
             "save_model_path": "./build/resnet50-fp16.tar",
-	    "target_device_context": "cuda"
+            "target_device_context": "cuda"
         }
     }
 }

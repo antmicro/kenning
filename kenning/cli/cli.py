@@ -184,7 +184,10 @@ def main():
                 return 2
             except (Exception, FileNotFoundError) as exp:
                 trace = ""
-                log_level_number = logging.getLevelNamesMapping()
+                if hasattr(logging, "getLevelNamesMapping"):
+                    log_level_number = logging.getLevelNamesMapping()
+                else:
+                    log_level_number = logging._nameToLevel.copy()
 
                 error_msg = "no error msg"
                 if log_level_number[verbosity] <= log_level_number["DEBUG"]:

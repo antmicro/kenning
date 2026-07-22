@@ -338,6 +338,10 @@ class TVMCompiler(Optimizer):
                         "Currently only single-input models are supported "
                         + "during quantization"
                     )
+
+                    if self.model_wrapper:
+                        sample = self.model_wrapper.preprocess_input(sample)
+
                     yield {io_spec["input"][0]["name"]: tvm.nd.array(sample)}
 
             with relay.quantize.qconfig(

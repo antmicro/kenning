@@ -31,6 +31,36 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 )
 
 EXPECTED_FAIL = [
+    ("AWQOptimizer", "Ai8xCompiler"),
+    ("AWQOptimizer", "ExecuTorchOptimizer"),
+    ("AWQOptimizer", "GPTQOptimizer"),
+    ("AWQOptimizer", "GPTQSparseGPTOptimizer"),
+    ("AWQOptimizer", "IREECompiler"),
+    ("AWQOptimizer", "NNIPruningOptimizer"),
+    ("AWQOptimizer", "ONNXCompiler"),
+    ("AWQOptimizer", "TFLiteCompiler"),
+    ("AWQOptimizer", "TVMCompiler"),
+    ("AWQOptimizer", "TinygradOptimizer"),
+    ("GPTQOptimizer", "AWQOptimizer"),
+    ("GPTQOptimizer", "Ai8xCompiler"),
+    ("GPTQOptimizer", "ExecuTorchOptimizer"),
+    ("GPTQOptimizer", "GPTQSparseGPTOptimizer"),
+    ("GPTQOptimizer", "IREECompiler"),
+    ("GPTQOptimizer", "NNIPruningOptimizer"),
+    ("GPTQOptimizer", "ONNXCompiler"),
+    ("GPTQOptimizer", "TFLiteCompiler"),
+    ("GPTQOptimizer", "TVMCompiler"),
+    ("GPTQOptimizer", "TinygradOptimizer"),
+    ("GPTQSparseGPTOptimizer", "AWQOptimizer"),
+    ("GPTQSparseGPTOptimizer", "Ai8xCompiler"),
+    ("GPTQSparseGPTOptimizer", "ExecuTorchOptimizer"),
+    ("GPTQSparseGPTOptimizer", "GPTQOptimizer"),
+    ("GPTQSparseGPTOptimizer", "IREECompiler"),
+    ("GPTQSparseGPTOptimizer", "NNIPruningOptimizer"),
+    ("GPTQSparseGPTOptimizer", "ONNXCompiler"),
+    ("GPTQSparseGPTOptimizer", "TFLiteCompiler"),
+    ("GPTQSparseGPTOptimizer", "TVMCompiler"),
+    ("GPTQSparseGPTOptimizer", "TinygradOptimizer"),
     ("ONNXCompiler", "Ai8xCompiler"),
     ("TFLiteCompiler", "Ai8xCompiler"),
     ("TFLiteCompiler", "NNIPruningOptimizer"),
@@ -58,9 +88,8 @@ SKIP = [
     ("TinygradOptimizer", "TinygradOptimizer"),
     # Not yet supported.
     ("GPTQOptimizer", "GPTQOptimizer"),
-    ("GPTQOptimizer", "AWQOptimizer"),
-    ("AWQOptimizer", "GPTQOptimizer"),
     ("AWQOptimizer", "AWQOptimizer"),
+    ("GPTQSparseGPTOptimizer", "GPTQSparseGPTOptimizer"),
 ]
 
 for optimizer in OPTIMIZER_SUBCLASSES:

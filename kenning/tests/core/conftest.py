@@ -307,8 +307,11 @@ class DatasetModelRegistry:
 
             dataset = get_dataset_random_mock(MistralInstruct.default_dataset)
             model = MistralInstruct(
-                MistralInstruct.pretrained_model_uri, dataset
+                ResourceURI(MistralInstruct.pretrained_model_uri), dataset
             )
+
+            # Test case processes a huggingface URI so we remove this.
+            model.save_io_specification = lambda *_: None
 
         else:
             raise UnknownFramework(f"Unknown framework: {framework}")

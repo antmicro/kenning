@@ -138,7 +138,6 @@ class AWQOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
-        from awq import AutoAWQForCausalLM
         from transformers import AutoTokenizer
 
         if io_spec is None:

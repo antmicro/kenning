@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -44,11 +44,20 @@ def prepare_objects(
         compiled_model_path = get_tmp_path()
         if opt_cls.__name__ == "Ai8xCompiler":
             compiled_model_path = compiled_model_path.with_suffix(".bin")
-        optimizer = opt_cls(
-            dataset,
-            compiled_model_path,
-            model_framework=inputtype,
-        )
+
+        llm_optimizers = [
+            "AWQOptimizer",
+            "GPTQOptimizer",
+            "GPTQSparseGPTOptimizer",
+        ]
+        if opt_cls.__name__ in llm_optimizers:
+            optimizer = opt_cls(dataset, compiled_model_path)
+        else:
+            optimizer = opt_cls(
+                dataset,
+                compiled_model_path,
+                model_framework=inputtype,
+            )
         optimizer.set_input_type(inputtype)
         yield optimizer, model
     except UnknownFramework:
@@ -118,7 +127,12 @@ class TestOptimizer:
         """
         Tests optimizer compilation.
         """
+        from kenning.modelwrappers.llm.llm import LLM
+
         with prepare_objects(opt_cls, inputtype) as (optimizer, model):
+            if issubclass(type(model), LLM):
+                # Requires CUDA
+                pytest.skip(f"Optimizing with {optimizer} requires CUDA")
             try:
                 optimizer.init()
                 optimizer.compile(model.model_path)

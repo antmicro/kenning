@@ -8,6 +8,7 @@ Module containing decorators for benchmark data gathering.
 
 import json
 import os
+import sys
 import time
 from dataclasses import dataclass
 from functools import wraps
@@ -30,6 +31,19 @@ try:
     import pynvml
 except ImportError:
     pynvml = None
+
+try:
+    import amdsmi
+except ImportError:
+    amdsmi = None
+
+try:
+    rocm_smi_path = Path("/opt/rocm/libexec/rocm_smi/")
+    if rocm_smi_path.exists():
+        sys.path.append(str(rocm_smi_path))
+    import rocm_smi
+except ImportError:
+    rocm_smi = None
 
 
 class Measurements(object):
@@ -407,6 +421,18 @@ class SystemStatsCollector(Thread):
         self.prefix = prefix
         self.nvmlReady = False
         self.jetson = None
+
+        if amdsmi is not None:
+            self.amdsmi_enabled = self._amdsmi_enable()
+        else:
+            self.amdsmi_enabled = False
+
+        if rocm_smi is not None and not self.amdsmi_enabled:
+            KLogger.info("Attempting to use ROCM SMI as fallback for AMD SMI")
+            self.rocm_smi_enabled = self._rocm_smi_enable()
+        else:
+            self.rocm_smi_enabled = False
+
         self.step = step
         self.runningcondition = Condition()
         self.kenning_process = psutil.Process(kenning_pid)
@@ -435,6 +461,90 @@ class SystemStatsCollector(Thread):
             )
             self.cpu_count = 1
 
+    def _amdsmi_enable(self) -> bool:
+        """
+        Initializes AMD SMI and performs test data read.
+        """
+        # Initialize AMD SMI and check available GPUs
+        try:
+            amdsmi.amdsmi_init()
+            amdsmi_handles = amdsmi.amdsmi_get_processor_handles()
+            self.amdsmi_handle = amdsmi_handles[0]
+        except amdsmi.AmdSmiException as ex:
+            KLogger.warning(f"Failed to initialize AMD SMI: {ex}")
+            self._amdsmi_shut_down()
+            return False
+        except IndexError:
+            KLogger.warning("No AMD SMI compatible GPUs found.")
+            self._amdsmi_shut_down()
+            return False
+
+        self.pid = os.getpid()
+
+        # Attempt to obtain information about current process gpu usage
+        try:
+            info = amdsmi.amdsmi_get_gpu_compute_process_info_by_pid(self.pid)
+            vram_info = amdsmi.amdsmi_get_gpu_vram_usage(self.amdsmi_handle)
+        except amdsmi.AmdSmiException as ex:
+            KLogger.warning(
+                f"Failed to obtain test information from AMD SMI: {ex}"
+            )
+            self._amdsmi_shut_down()
+            return False
+
+        if (
+            "vram_total" not in vram_info
+            or type(vram_info["vram_total"]) is not int
+        ):
+            KLogger.warning(
+                "Failed to obtain total amount of vram from AMD SMI"
+            )
+            self._amdsmi_shut_down()
+            return False
+
+        self.amdsmi_total_vram = vram_info["vram_total"]
+
+        # If AMD SMI doesn't support fully our GPU it can return partial data
+        # with some values equal to 'N\A' instead of int.
+        if (
+            type(info["vram_usage"]) is not int
+            or not (0 <= info["vram_usage"] <= self.amdsmi_total_vram)
+            or type(info["cu_occupancy"]) is not int
+            or not (0 <= info["cu_occupancy"] <= 100)
+        ):
+            KLogger.warning("Failed to parse test information from AMD SMI")
+            self._amdsmi_shut_down()
+            return False
+
+        KLogger.info("AMD SMI support successfully enabled")
+        return True
+
+    def _amdsmi_shut_down(self):
+        """
+        Safe wrapper for amdsmi.amdsmi_shut_down.
+        """
+        try:
+            amdsmi.amdsmi_shut_down()
+        except amdsmi.AmdSmiException as ex:
+            KLogger.warning(f"Failed to shut down AMD SMI: {ex}")
+
+    def _rocm_smi_enable(self) -> bool:
+        try:
+            rocm_smi.initializeRsmi()
+            devices = rocm_smi.listDevices()
+            self.rocm_device = devices[0]
+            rocm_smi.getAllocatedMemoryPercent(self.rocm_device)
+            rocm_smi.getGpuUse(self.rocm_device)
+        except IndexError:
+            KLogger.warning("No ROCM SMI compatible GPU found.")
+        except Exception as ex:
+            KLogger.warning(f"Failed to initialize ROCM SMI: {ex}")
+        else:
+            KLogger.info("ROCM SMI support successfully enabled")
+            return True
+
+        return False
+
     def __enter__(self) -> "SystemStatsCollector":
         self.start()
         self.last_nvidia_stats_read_us = time.time_ns() // 1000 - 2 * 1_000_000
@@ -449,6 +559,10 @@ class SystemStatsCollector(Thread):
         self.stop()
         self.join()
         return False
+
+    def __del__(self):
+        if self.amdsmi_enabled:
+            self._amdsmi_shut_down()
 
     def get_measurements(self) -> Measurements:
         """
@@ -497,6 +611,48 @@ class SystemStatsCollector(Thread):
                     # TODO when Kenning report will support multiple GPU
                     # usage reports, change to system GPU load
                     self._get_system_nvidia_stats(next(iter(gpu_processes)))
+
+            elif self.amdsmi_enabled:
+                try:
+                    info = amdsmi.amdsmi_get_gpu_compute_process_info_by_pid(
+                        self.pid
+                    )
+                except amdsmi.AmdSmiException as ex:
+                    KLogger.warning(f"Failed to fetch data from AMD SMI: {ex}")
+                else:
+                    self.measurements += {
+                        f"{self.prefix}_process_gpu_mem_percent": [
+                            info["vram_usage"] * 100 // self.amdsmi_total_vram
+                        ],
+                        f"{self.prefix}_process_gpu_percent": [
+                            info["cu_occupancy"]
+                        ],
+                        f"{self.prefix}_process_gpu_timestamp": [
+                            time.perf_counter()
+                        ],
+                    }
+            elif self.rocm_smi_enabled:
+                try:
+                    vram_usage = rocm_smi.getAllocatedMemoryPercent(
+                        self.rocm_device
+                    )
+                    gpu_usage = rocm_smi.getGpuUse(self.rocm_device)
+                except Exception as ex:
+                    KLogger.warning(
+                        f"Failed to fetch data from ROCM SMI: {ex}"
+                    )
+                else:
+                    self.measurements += {
+                        f"{self.prefix}_system_gpu_mem_percent": [
+                            vram_usage["value"],
+                        ],
+                        f"{self.prefix}_system_gpu_percent": [
+                            gpu_usage,
+                        ],
+                        f"{self.prefix}_system_gpu_timestamp": [
+                            time.perf_counter()
+                        ],
+                    }
 
             with self.runningcondition:
                 self.runningcondition.wait(timeout=self.step)

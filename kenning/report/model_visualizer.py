@@ -95,6 +95,9 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     MAX_CONNECTION_COUNT = max_connections
     node_types = set()
     specification_builder.add_node_type(name="input")
+    specification_builder.add_node_type_category(
+        name="input", category="Input"
+    )
     specification_builder.add_node_type_interface(
         name="input",
         interfacename="output",
@@ -120,8 +123,12 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
             maxcount=MAX_CONNECTION_COUNT,
         )
 
+        specification_builder.add_node_type_category(
+            name=type, category="Layers"
+        )
+
         specification_builder.add_node_type_property(
-            name=type, propname="number", proptype="integer", default=0
+            name=type, propname="ID", proptype="integer", default=0
         )
         specification_builder.add_node_type_property(
             name=type, propname="bytes", proptype="integer", default=0
@@ -169,7 +176,7 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
         node = graph.create_node(layer["op_type"])
         node.instance_name = layer["name"]
 
-        node.set_property("number", layer["number"])
+        node.set_property("ID", layer["number"])
         node.set_property("bytes", layer["bytes"])
         node.set_property("parameters", layer["parameters"])
         node.set_property("data type", layer["dtype"])

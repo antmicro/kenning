@@ -27,7 +27,6 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
 
     max_connections = 1
     output_count = dict()
-    output_count["input"] = 0
 
     for node in model.graph.node:
         layer_params = 0
@@ -52,7 +51,10 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
 
         for input in inputs:
             if input != "":
-                output_count[input] += 1
+                if input in output_count:
+                    output_count[input] += 1
+                else:
+                    output_count[input] = 1
 
         layers.append(
             {
@@ -70,7 +72,9 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
     return layers, max(max_connections, max(output_count.values()))
 
 
-def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
+def create_visualization_from_onnx(
+    model: onnx.ModelProto, savedir: Path
+) -> (Path, Path):
     """
     Generate a model visualiation based on a ONNX model.
 
@@ -80,7 +84,14 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
         onnx model used for creatng the visualization.
     savedir : Path
         Path to the directory for saving pipeline-manager files.
+
+    Returns
+    -------
+    (Path, Path)
+        Path to the specification (first) and path to the graph (second).
     """
+    # TODO: frontend builder
+
     layers, max_connections = _get_layer_information_from_onnx(model)
 
     SPECIFICATION_VERSION = "20260623.14"
@@ -155,8 +166,8 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     specification = specification_builder.create_and_validate_spec(
         workspacedir=WORKSPACE_DIRECTORY,
     )
-
-    with open(savedir / "specification.json", "w") as f:
+    specification_path = savedir / "specification.json"
+    with open(specification_path, "w") as f:
         json.dump(specification, f)
 
     graph_builder = GraphBuilder(
@@ -167,10 +178,7 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
 
     graph = graph_builder.create_graph()
 
-    input_node = graph.create_node("input")
-    input_interface = input_node.get_interfaces_by_regex("output")[0]
     connections = dict()
-    connections["input"] = {"from": input_interface, "to": list()}
 
     for i, layer in enumerate(layers):
         node = graph.create_node(layer["op_type"])
@@ -189,22 +197,32 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
 
         for output in outputs:
             connections[output] = {"from": output_interface, "to": list()}
-        for input in inputs:
-            if input != "":
-                connections[input]["to"].append(input_interface)
 
+        for input in inputs:
+            if input == "":
+                continue
+
+            if input in connections:
+                connections[input]["to"].append(input_interface)
+            else:
+                input_node = graph.create_node("input")
+
+                input_node_interface = input_node.get_interfaces_by_regex(
+                    "output"
+                )[0]
+
+                connections[input] = {
+                    "from": input_node_interface,
+                    "to": [input_interface],
+                }
+    used_connections = set()
     for connection_type in connections.values():
         from_interface = connection_type["from"]
         for to_interface in connection_type["to"]:
-            graph.create_connection(from_interface, to_interface)
+            if (from_interface.id, to_interface.id) not in used_connections:
+                graph.create_connection(from_interface, to_interface)
+                used_connections.add((from_interface.id, to_interface.id))
 
-    graph_builder.save(json_file=Path(savedir / "graph.json"))
-
-
-def _test():
-    model = onnx.load_model("./dinov2.onnx")
-    create_visualization_from_onnx(model, Path("./build/"))
-
-
-if __name__ == "__main__":
-    _test()
+    graph_path = savedir / "graph.json"
+    graph_builder.save(json_file=graph_path)
+    return specification_path, graph_path

@@ -14,10 +14,6 @@ import onnx
 from pipeline_manager.dataflow_builder.dataflow_builder import (
     GraphBuilder,
 )
-from pipeline_manager.dataflow_builder.dataflow_graph import AttributeType
-from pipeline_manager.dataflow_builder.entities import (
-    Vector2,
-)
 from pipeline_manager.specification_builder import SpecificationBuilder
 
 
@@ -28,6 +24,10 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
 
     layer_count = 0
     layers = list()
+
+    max_connections = 1
+    output_count = dict()
+    output_count["input"] = 0
 
     for node in model.graph.node:
         layer_params = 0
@@ -43,6 +43,17 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
 
         dtype_str = ", ".join(sorted(dtypes)) if dtypes else "-"
         layer_count += 1
+
+        inputs = list(set(node.input) - set(initializer_map))
+        max_connections = max(max_connections, len(inputs))
+
+        outputs = node.output
+        output_count[outputs[0]] = 1
+
+        for input in inputs:
+            if input != "":
+                output_count[input] += 1
+
         layers.append(
             {
                 "number": layer_count,
@@ -51,9 +62,12 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
                 "bytes": layer_bytes,
                 "dtype": dtype_str,
                 "op_type": node.op_type,
+                "input": inputs,
+                "output": outputs,
             }
         )
-    return layers
+
+    return layers, max(max_connections, max(output_count.values()))
 
 
 def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
@@ -67,7 +81,7 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     savedir : Path
         Path to the directory for saving pipeline-manager files.
     """
-    layers = _get_layer_information_from_onnx(model)
+    layers, max_connections = _get_layer_information_from_onnx(model)
 
     SPECIFICATION_VERSION = "20260623.14"
     ASSETS_DIRECTORY = Path("./assets")
@@ -78,8 +92,15 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
         assets_dir=ASSETS_DIRECTORY,
         check_urls=True,
     )
-
+    MAX_CONNECTION_COUNT = max_connections
     node_types = set()
+    specification_builder.add_node_type(name="input")
+    specification_builder.add_node_type_interface(
+        name="input",
+        interfacename="output",
+        side="right",
+        maxcount=MAX_CONNECTION_COUNT,
+    )
 
     for layer in layers:
         type = layer["op_type"]
@@ -92,11 +113,13 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
             name=type,
             interfacename=str("input"),
             side="left",
+            maxcount=MAX_CONNECTION_COUNT,
         )
         specification_builder.add_node_type_interface(
             name=type,
             interfacename=str("output"),
             side="right",
+            maxcount=MAX_CONNECTION_COUNT,
         )
 
         specification_builder.add_node_type_property(
@@ -117,7 +140,7 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     )
 
     specification_builder.metadata_add_param(
-        paramname="connectionStyle", paramvalue="orthogonal"
+        paramname="connectionStyle", paramvalue="curved"
     )
 
     specification = specification_builder.create_and_validate_spec(
@@ -135,9 +158,14 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
 
     graph = graph_builder.create_graph()
 
+    input_node = graph.create_node("input")
+    input_interface = input_node.get_interfaces_by_regex("output")[0]
+    connections = dict()
+    connections["input"] = {"from": input_interface, "to": list()}
+
     for i, layer in enumerate(layers):
         node = graph.create_node(
-            layer["op_type"], position=Vector2(0, 450 * i)
+            layer["op_type"],  # position=Vector2(0, 450 * i)
         )
         node.instance_name = layer["name"]
         node.set_property("number", layer["number"])
@@ -145,9 +173,22 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
         node.set_property("parameters", layer["parameters"])
         node.set_property("data type", layer["dtype"])
 
-    interfaces = graph.get(AttributeType.INTERFACE)
-    for i in range(len(interfaces) // 2 - 1):
-        graph.create_connection(interfaces[i * 2 + 1], interfaces[i * 2 + 2])
+        input_interface = node.get_interfaces_by_regex("input")[0]
+        output_interface = node.get_interfaces_by_regex("output")[0]
+
+        inputs = layer["input"]
+        outputs = layer["output"]
+
+        for output in outputs:
+            connections[output] = {"from": output_interface, "to": list()}
+        for input in inputs:
+            if input != "":
+                connections[input]["to"].append(input_interface)
+
+    for connection_type in connections.values():
+        from_interface = connection_type["from"]
+        for to_interface in connection_type["to"]:
+            graph.create_connection(from_interface, to_interface)
 
     graph_builder.save(json_file=Path(savedir / "graph.json"))
 

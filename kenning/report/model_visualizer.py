@@ -112,13 +112,11 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
         specification_builder.add_node_type_interface(
             name=type,
             interfacename=str("input"),
-            side="left",
             maxcount=MAX_CONNECTION_COUNT,
         )
         specification_builder.add_node_type_interface(
             name=type,
             interfacename=str("output"),
-            side="right",
             maxcount=MAX_CONNECTION_COUNT,
         )
 
@@ -142,6 +140,10 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     specification_builder.metadata_add_param(
         paramname="connectionStyle", paramvalue="curved"
     )
+    specification_builder.metadata_add_param(
+        paramname="layout",
+        paramvalue="CytoscapeEngine - dagre-network-simplex",
+    )
 
     specification = specification_builder.create_and_validate_spec(
         workspacedir=WORKSPACE_DIRECTORY,
@@ -164,10 +166,9 @@ def create_visualization_from_onnx(model: onnx.ModelProto, savedir: Path):
     connections["input"] = {"from": input_interface, "to": list()}
 
     for i, layer in enumerate(layers):
-        node = graph.create_node(
-            layer["op_type"],  # position=Vector2(0, 450 * i)
-        )
+        node = graph.create_node(layer["op_type"])
         node.instance_name = layer["name"]
+
         node.set_property("number", layer["number"])
         node.set_property("bytes", layer["bytes"])
         node.set_property("parameters", layer["parameters"])

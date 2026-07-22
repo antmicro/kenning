@@ -11,13 +11,14 @@ import json
 from pathlib import Path
 
 import onnx
+from onnx import defs
 from pipeline_manager.dataflow_builder.dataflow_builder import (
     GraphBuilder,
 )
 from pipeline_manager.specification_builder import SpecificationBuilder
 
 
-def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
+def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
     initializer_map = {init.name: init for init in model.graph.initializer}
 
     from onnx import numpy_helper
@@ -29,6 +30,8 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
     output_count = dict()
 
     for node in model.graph.node:
+        schema = defs.get_schema(node.op_type)
+        version = schema.since_version
         layer_params = 0
         layer_bytes = 0
         dtypes = set()
@@ -64,19 +67,20 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> list:
                 "bytes": layer_bytes,
                 "dtype": dtype_str,
                 "op_type": node.op_type,
+                "op_version": version,
                 "input": inputs,
                 "output": outputs,
             }
         )
 
-    return layers, max(max_connections, max(output_count.values()))
+    return (layers, max(max_connections, max(output_count.values())))
 
 
 def create_visualization_from_onnx(
     model: onnx.ModelProto, savedir: Path
 ) -> (Path, Path):
     """
-    Generate a model visualiation based on a ONNX model.
+    Generate a model visualiation based on a ONNX model using pipeline-manager.
 
     Parameters
     ----------
@@ -103,12 +107,16 @@ def create_visualization_from_onnx(
         assets_dir=ASSETS_DIRECTORY,
         check_urls=True,
     )
+
     MAX_CONNECTION_COUNT = max_connections
+
     node_types = set()
+
     specification_builder.add_node_type(name="input")
     specification_builder.add_node_type_category(
         name="input", category="Input"
     )
+
     specification_builder.add_node_type_interface(
         name="input",
         interfacename="output",
@@ -139,7 +147,18 @@ def create_visualization_from_onnx(
         )
 
         specification_builder.add_node_type_property(
-            name=type, propname="ID", proptype="integer", default=0
+            name=type,
+            propname="ID",
+            proptype="integer",
+            default=0,
+            hidden=True,
+        )
+        specification_builder.add_node_type_property(
+            name=type,
+            propname="operation version",
+            proptype="integer",
+            default=0,
+            hidden=True,
         )
         specification_builder.add_node_type_property(
             name=type, propname="bytes", proptype="integer", default=0
@@ -171,7 +190,7 @@ def create_visualization_from_onnx(
         json.dump(specification, f)
 
     graph_builder = GraphBuilder(
-        specification=specification,
+        specification=specification_builder,
         specification_version=SPECIFICATION_VERSION,
         workspace_directory=WORKSPACE_DIRECTORY,
     )
@@ -180,14 +199,33 @@ def create_visualization_from_onnx(
 
     connections = dict()
 
+    def find_property(node, name):
+        for property in node.properties:
+            if property.name == name:
+                return property
+
     for i, layer in enumerate(layers):
         node = graph.create_node(layer["op_type"])
         node.instance_name = layer["name"]
 
         node.set_property("ID", layer["number"])
+
         node.set_property("bytes", layer["bytes"])
+        if layer["bytes"] == 0:
+            find_property(node, "bytes").hidden = True
+
         node.set_property("parameters", layer["parameters"])
+        if layer["parameters"] == 0:
+            find_property(node, "parameters").hidden = True
+
         node.set_property("data type", layer["dtype"])
+        if layer["dtype"] == "-":
+            find_property(node, "data type").hidden = True
+
+        node.set_property(
+            "operation version",
+            layer["op_version"],
+        )
 
         input_interface = node.get_interfaces_by_regex("input")[0]
         output_interface = node.get_interfaces_by_regex("output")[0]
@@ -206,7 +244,6 @@ def create_visualization_from_onnx(
                 connections[input]["to"].append(input_interface)
             else:
                 input_node = graph.create_node("input")
-
                 input_node_interface = input_node.get_interfaces_by_regex(
                     "output"
                 )[0]
@@ -215,9 +252,11 @@ def create_visualization_from_onnx(
                     "from": input_node_interface,
                     "to": [input_interface],
                 }
+
     used_connections = set()
     for connection_type in connections.values():
         from_interface = connection_type["from"]
+
         for to_interface in connection_type["to"]:
             if (from_interface.id, to_interface.id) not in used_connections:
                 graph.create_connection(from_interface, to_interface)

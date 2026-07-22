@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +14,9 @@ from kenning.core.exceptions import ModelNotLoadedError, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
     Ai8xAnomalyDetectionCNN,
+)
+from kenning.modelwrappers.anomaly_detection.gru import (
+    PyTorchAnomalyDetectionGRU,
 )
 from kenning.modelwrappers.classification.pytorch_generic import (
     PyTorchGenericClassification,
@@ -269,6 +272,9 @@ class TestModelWrapper:
         Tests the `test_inference` method.
         """
         model.prepare_model()
+        if isinstance(model, PyTorchAnomalyDetectionGRU):
+            model.threshold = 0.5
+
         try:
             model.test_inference()
         except NotSupportedError:

@@ -50,7 +50,7 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 To install Kenning with its basic dependencies with `pip`, run:
 
 ```bash test-skip
-pip install -U git+https://github.com/antmicro/kenning.git
+uv pip install -U git+https://github.com/antmicro/kenning.git
 ```
 
 Since Kenning can support various frameworks, and not all of them are required for users' particular use cases, some of the requirements are optional.
@@ -87,6 +87,12 @@ or, in newer `pip` releases:
 pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
 ```
 
+or, with `uv`:
+
+```bash test-skip
+uv pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
+```
+
 ### Working directly with the repository
 
 For development purposes, and to use additional resources (such as sample scripts), clone the repository with:
@@ -99,7 +105,7 @@ cd kenning/
 Then install using:
 
 ```bash
-pip install -e ".[tensorflow,tflite,tvm,reports]"
+uv sync --extra tensorflow,tflite,tvm,reports
 ```
 
 ## Kenning structure
@@ -183,7 +189,7 @@ The available subcommands are:
 Let's start off with installing the module and its necessary dependencies:
 
 ```bash test-skip
-pip install "kenning[tensorflow,tflite,tvm,pipeline_manager,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,tflite,tvm,pipeline_manager,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 Kenning provides two tools for displaying information about available classes: `kenning list` and `kenning info`.

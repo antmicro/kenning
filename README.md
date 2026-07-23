@@ -45,7 +45,7 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 
 ### Module installation with pip
 
-`NOTE`: Kenning supports Python up to 3.11.
+`NOTE`: Kenning supports Python from 3.10 to 3.12.
 
 To install Kenning with its basic dependencies with `pip`, run:
 

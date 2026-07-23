@@ -132,10 +132,10 @@ As an example we will generate a report for a simple [CNN](https://cs231n.github
 
 First, build `app` on `stm32f746g_disco`, using [west](https://docs.zephyrproject.org/latest/develop/west/index.html).
 Kenning Zephyr Runtime comes with `<runtime>.conf` configuration files that set up inference with a specified `<runtime>`.
-`tflite.conf` config file can be used to run TFLite Micro - this extra configuration file can be added with `-DEXTRA_CONF_FILE` option:
+`litert.conf` config file can be used to run TFLite Micro - this extra configuration file can be added with `-DEXTRA_CONF_FILE` option:
 
 ```bash
-west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=tflite.conf
+west build -p always -b stm32f746g_disco app -- -DEXTRA_CONF_FILE=litert.conf
 ```
 
 Option `-p always` will force west to run a clean build.
@@ -205,7 +205,7 @@ model_wrapper:
 # list of optimizations to apply on a model before deployment
 # the final runtime is derived from the last Optimizer
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     compiled_model_path: ./output/magic-wand.tflite
     inference_input_type: float32
@@ -214,7 +214,7 @@ optimizers:
 
 When running this, Kenning will:
 
-* Optimize the model with `TFLiteCompiler`, creating `./output/magic-wand.tflite` model.
+* Optimize the model with `LiteRTCompiler`, creating `./output/magic-wand.tflite` model.
 * Automatically run Renode simulation of the built app, finding ELF in `zephyr_build_path` directory (`simulated: true` option means that Kenning will run Renode simulation automatically).
 * Connect over (virtual) UART and send model and data for evaluation to the simulated board.
 * Receive evaluation results and save them under `results.json` (as specified with the `--measurements` CLI option).
@@ -265,7 +265,7 @@ model_wrapper:
   parameters:
     model_path: kenning:///models/classification/magic_wand.h5
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     compiled_model_path: ./output/magic-wand.tflite
     inference_input_type: float32
@@ -447,7 +447,7 @@ To run Kenning evaluation with `app` on any given board, such a file has to be c
 Overlay files should be placed at `app/boards/<board_name>.overlay` (where `<board_name>` is the name of the board in Zephyr, except if the board name contains any `/` characters, they should be changed to `_`) for west to find and use them.
 
 On some boards only one UART port is available, then `kcomms` can be set to the same port as Zephyr console.
-However in such a case printing logs and the welcome message to the console has to be disabled, by adding to the configuration file (`app/prj.conf` or another config file added with `-DEXTRA_CONF_FILE=tflite.conf`):
+However in such a case printing logs and the welcome message to the console has to be disabled, by adding to the configuration file (`app/prj.conf` or another config file added with `-DEXTRA_CONF_FILE=litert.conf`):
 
 ```
 CONFIG_LOG_BACKEND_UART=n

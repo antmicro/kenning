@@ -87,8 +87,8 @@ TENSORFLOW_MOBILE_NET_DATAFLOW_NODE = {
     ],
 }
 
-TFLITE_RUNTIME_DATAFLOW_NODE = {
-    "name": "TFLiteRuntime",
+LITERT_RUNTIME_DATAFLOW_NODE = {
+    "name": "LiteRTRuntime",
     "id": "9",
     "position": {"x": 750, "y": 50},
     "width": 300,
@@ -128,8 +128,8 @@ TFLITE_RUNTIME_DATAFLOW_NODE = {
 }
 
 
-TFLITE_COMPILER_DATAFLOW_NODE = {
-    "name": "TFLiteCompiler",
+LITERT_COMPILER_DATAFLOW_NODE = {
+    "name": "LiteRTCompiler",
     "id": "14",
     "position": {"x": 1100, "y": 50},
     "width": 300,
@@ -205,8 +205,8 @@ class TestPipelineHandler(HandlerTests):
     dataflow_nodes = [
         PET_DATASET_DATAFLOW_NODE,
         TENSORFLOW_MOBILE_NET_DATAFLOW_NODE,
-        TFLITE_RUNTIME_DATAFLOW_NODE,
-        TFLITE_COMPILER_DATAFLOW_NODE,
+        LITERT_RUNTIME_DATAFLOW_NODE,
+        LITERT_COMPILER_DATAFLOW_NODE,
     ]
     dataflow_connections = [
         {"id": "21", "from": "1", "to": "5"},

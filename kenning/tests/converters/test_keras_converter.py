@@ -22,9 +22,9 @@ def test_to_keras(dummy_keras_model):
     assert isinstance(model, tf.keras.Model)
 
 
-def test_to_tflite(dummy_keras_model):
+def test_to_litert(dummy_keras_model):
     conv = KerasConverter(source_model_path=dummy_keras_model["path"])
-    converter = conv.to_tflite()
+    converter = conv.to_litert()
     assert converter is not None
     assert hasattr(converter, "convert")
 

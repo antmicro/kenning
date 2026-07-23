@@ -91,7 +91,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
             target_attrs=f"{extra_attrs} {override_attr}",
         )
 
@@ -119,7 +119,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         compiler.read_platform(platform)
@@ -145,7 +145,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
             target="cuda",
         )
 
@@ -162,7 +162,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         compiler.init()
@@ -181,7 +181,7 @@ class TestTargetUserOverride:
         compiler = IREECompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
             backend="vulkan",
         )
 
@@ -203,7 +203,7 @@ class TestTargetUserOverride:
         compiler = IREECompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         compiler.read_platform(platform)
@@ -219,7 +219,7 @@ class TestTargetUserOverride:
         compiler = IREECompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         compiler.init()
@@ -237,7 +237,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
             target_attrs="",
         )
 
@@ -257,7 +257,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         compiler.init()
@@ -268,7 +268,7 @@ class TestTargetUserOverride:
         compiler = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
-            model_framework="tflite",
+            model_framework="litert",
         )
 
         platform.target_attrs = None

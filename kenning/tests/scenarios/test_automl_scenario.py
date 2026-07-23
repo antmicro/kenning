@@ -89,7 +89,7 @@ def create_spec(define_anomaly_detection_csv_file):
         },
         "optimizers": [
             {
-                "type": "TFLiteCompiler",
+                "type": "LiteRTCompiler",
                 "parameters": {
                     "target": "default",
                     "compiled_model_path": f"{test_tmp_path}"

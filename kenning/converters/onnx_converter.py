@@ -85,13 +85,13 @@ class OnnxConverter(ModelConverter):
             model = onnx.load(str(self.source_model_path))
         return onnx2torch.convert(model)
 
-    def to_tflite(
+    def to_litert(
         self,
         model: Optional["onnx.ModelProto"] = None,
         **kwargs,
     ) -> "tf.lite.TFLiteConverter":
         """
-        Converts ONNX file to TFLite format.
+        Converts ONNX file to LiteRT format.
 
         Parameters
         ----------
@@ -103,7 +103,7 @@ class OnnxConverter(ModelConverter):
         Returns
         -------
         tf.lite.TFLiteConverter
-            TFLite converter for model.
+            TFLite (LiteRT) converter for model.
 
         Raises
         ------

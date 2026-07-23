@@ -37,7 +37,7 @@
             }
         },
         {
-            "type": "kenning.optimizers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.litert.LiteRTCompiler",
             "parameters":
             {
                 "target": "int8",

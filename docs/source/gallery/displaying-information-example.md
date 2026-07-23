@@ -31,7 +31,7 @@ Optimizers (in kenning.optimizers):
     kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer
     kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
     kenning.optimizers.nni_pruning.NNIPruningOptimizer
-    kenning.optimizers.tflite.TFLiteCompiler
+    kenning.optimizers.litert.LiteRTCompiler
     kenning.optimizers.model_inserter.ModelInserter
 
 Datasets (in kenning.datasets):
@@ -89,7 +89,7 @@ Which will return a list similar to the one below::
 Runtimes (in kenning.runtimes):
 
     kenning.runtimes.iree.IREERuntime
-    kenning.runtimes.tflite.TFLiteRuntime
+    kenning.runtimes.litert.LiteRTRuntime
     kenning.runtimes.pytorch.PyTorchRuntime
     kenning.runtimes.tvm.TVMRuntime
     kenning.runtimes.onnx.ONNXRuntime

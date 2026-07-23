@@ -44,10 +44,10 @@ def get_default_runtime(
 
         return TVMRelaxRuntime(model_path)
 
-    if model_framework == "tflite":
-        from kenning.runtimes.tflite import TFLiteRuntime
+    if model_framework == "litert":
+        from kenning.runtimes.litert import LiteRTRuntime
 
-        return TFLiteRuntime(model_path)
+        return LiteRTRuntime(model_path)
 
     if model_framework == "torch":
         from kenning.runtimes.pytorch import PyTorchRuntime

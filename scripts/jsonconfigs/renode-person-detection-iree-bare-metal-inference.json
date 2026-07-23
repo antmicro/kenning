@@ -24,7 +24,7 @@
             "parameters": {
                 "compiled_model_path": "./build/tflite-person-detect.vmfb",
                 "backend": "llvm-cpu",
-                "model_framework": "tflite",
+                "model_framework": "litert",
                 "compiler_args": [
                     "iree-llvm-debug-symbols=false",
                     "iree-vm-bytecode-module-strip-source-map=true",

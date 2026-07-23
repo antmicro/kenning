@@ -346,10 +346,10 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             """
             super().__init__()
             self.add(
-                "kenning.optimizers.tflite.TFLiteCompiler",
+                "kenning.optimizers.litert.LiteRTCompiler",
                 "default",
                 "keras",
-                "tflite",
+                "litert",
                 dataset=datasetsamples.get("PetDataset"),
                 compiled_model_path=datasetimages.path,
             )

@@ -23,7 +23,7 @@ max32690evkit/max32690/m4:
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690evkit.resc;branch=main
   default_platform: ZephyrPlatform
   default_optimizer:
-    - TFLiteCompiler
+    - LiteRTCompiler
     - TVMCompiler
 
 max32690fthr/max32690/m4:
@@ -41,7 +41,7 @@ max32690fthr/max32690/m4:
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690fthr.resc;branch=main
   default_platform: ZephyrPlatform
   default_optimizer:
-    - TFLiteCompiler
+    - LiteRTCompiler
     - TVMCompiler
 
 max78002evkit/max78002/m4:
@@ -73,7 +73,7 @@ max78002evkit/max78002/m4:
   default_platform: ZephyrPlatform
   default_optimizer:
     - Ai8xCompiler
-    - TFLiteCompiler
+    - LiteRTCompiler
     - TVMCompiler
 
 rv32-springbok:
@@ -98,7 +98,7 @@ stm32f746g_disco:
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/stm32f746g_disco.resc;branch=main
   default_platform: ZephyrPlatform
   default_optimizer:
-    - TFLiteCompiler
+    - LiteRTCompiler
     - TVMCompiler
 
 hifive_unmatched/fu740/s7:
@@ -107,7 +107,7 @@ hifive_unmatched/fu740/s7:
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/hifive_unmatched.resc;branch=main
   default_platform: ZephyrPlatform
   default_optimizer:
-    - TFLiteCompiler
+    - LiteRTCompiler
     - TVMCompiler
 
 nvidia_rtx_4090:

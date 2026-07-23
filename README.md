@@ -229,7 +229,7 @@ Optimizers (in kenning.optimizers):
     kenning.optimizers.tvm.TVMCompiler
     kenning.optimizers.iree.IREECompiler
     kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
-    kenning.optimizers.tflite.TFLiteCompiler
+    kenning.optimizers.litert.LiteRTCompiler
 
 Datasets (in kenning.datasets):
 
@@ -270,60 +270,215 @@ For more verbose information, use the `-v` and `-vv` flags (module dependencies,
 The `kenning info` tool provides more detailed information on a given class, e.g. for:
 
 ```bash
-kenning info kenning.optimizers.tflite.TFLiteCompiler
+kenning info kenning.optimizers.litert.LiteRTCompiler
 ```
 
 We should get something like:
 
 ```
-Class: TFLiteCompiler
+                                          Class LiteRTCompiler
 
-    The TFLite and EdgeTPU compiler.
-
-Dependencies:
-* onnx2tf
-* tensorflow
-* numpy
-* onnx
-* tensorflow_model_optimization
-
-Input formats:
-* keras
-* tensorflow
-* onnx
+The LiteRT and EdgeTPU compiler.
 
 
-Output formats:
-* tflite
+                                              Dependencies
+
+ • numpy
+ • tensorflow
+ • ai_edge_litert.tools.flatbuffer_utils
+ • importlib_resources.path
+ • jinja2.Template
+ • tensorflow_model_optimization
+ • tensorflow.lite.python.schema_py_generated
+ • ai_edge_litert.interpreter
+ • ai_edge_litert.schema_py_generated
 
 
-Arguments specification:
-* model_framework
-  * argparse_name: --model-framework
-  * description: The input type of the model, framework-wise
-  * default: onnx
-  * enum
-    * keras
-    * tensorflow
-    * onnx
-* target
-  * argparse_name: --target
-  * description: The TFLite target device scenario
-  * default: default
-  * enum
-    * default
-    * int8
-    * float16
-    * edgetpu
-* inference_input_type
-  * argparse_name: --inference-input-type
-  * description: Data type of the input layer
-  * default: float32
-  * enum
-    * float32
-    * int8
-    * uint8
-...
+                                       Block input/output formats
+
+                                              Input formats
+
+ • keras
+ • onnx
+ • any
+
+                                             Output formats
+
+ • litert
+
+
+                                        Arguments' specification
+
+                                             model_framework
+
+ • The input type of the model, framework-wise
+ • argparse flag: --model-framework
+ • default: any
+ • enum
+    • keras
+    • onnx
+    • any
+    • any
+
+                                                 target
+
+ • The LiteRT target device scenario
+ • argparse flag: --target
+ • default: default
+ • enum
+    • default
+    • int8
+    • float16
+    • edgetpu
+
+                                          inference_input_type
+
+ • Data type of the input layer
+ • argparse flag: --inference-input-type
+ • default: float32
+ • enum
+    • float32
+    • int8
+    • uint8
+
+                                          inference_output_type
+
+ • Data type of the output layer
+ • argparse flag: --inference-output-type
+ • default: float32
+ • enum
+    • float32
+    • int8
+    • uint8
+
+                                           dataset_percentage
+
+ • Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset
+ • argparse flag: --dataset-percentage
+ • convert-type: builtins.float
+ • type: number
+ • default: 0.25
+
+                                       quantization_aware_training
+
+ • Enable quantization aware training
+ • argparse flag: --quantization-aware-training
+ • convert-type: builtins.bool
+ • type: boolean
+ • default: False
+
+                                            use_tf_select_ops
+
+ • Enable Tensorflow ops in model conversion (via SELECT_TF_OPS)
+ • argparse flag: --use-tf-select-ops
+ • convert-type: builtins.bool
+ • type: boolean
+ • default: False
+
+                                         resolver_template_path
+
+ •
+          Path to the custom template for creating C-based file with `tflite::MicroMutableOpResolver`
+    with used ops for a given model.
+
+          When provided, it will be used instead of the default template located in
+    `kenning.resources.templates` module
+          (as `tflite_ops_resolver.h.template`).
+
+          The template is a Jinja2 template, where names of used ops are provided via `opcode_names`
+    list.
+
+          Number of used ops can be established with `{{opcode_names|length}}`.
+          Ops can be added to resolver like so:
+          ```
+          // ...
+          tflite::MicroMutableOpResolver<{{opcode_names|length}}> resolver;
+          // ...
+          {%%- for opcode in opcode_names %%}
+              g_tflite_resolver.Add{{opcode}}();
+          {%%- endfor %%}
+          // ...
+          ```
+
+ • argparse flag: --resolver-template-path
+ • convert-type: kenning.utils.resource_manager.ResourceURI
+ • type
+    • string
+    • null
+ • default: None
+
+                                          resolver_output_path
+
+ • Path where a C-based file with tflite::MicroMutableOpResolver with used ops for a given model should
+   be saved
+ • argparse flag: --resolver-output-path
+ • convert-type: kenning.utils.resource_manager.ResourceURI
+ • type
+    • string
+    • null
+ • default: None
+
+                                                 epochs
+
+ • Number of epochs for the training
+ • argparse flag: --epochs
+ • convert-type: builtins.int
+ • type: integer
+ • default: 3
+
+                                               batch_size
+
+ • The size of a batch for the training
+ • argparse flag: --batch-size
+ • convert-type: builtins.int
+ • type: integer
+ • default: 32
+
+                                                optimizer
+
+ • Optimizer used during the training
+ • argparse flag: --optimizer
+ • convert-type: builtins.str
+ • type: string
+ • default: adam
+ • enum
+    • adam
+    • SGD
+    • RMSprop
+
+                                           disable_from_logits
+
+ • Determines whether output of the model is normalized
+ • argparse flag: --disable-from-logits
+ • convert-type: builtins.bool
+ • type: boolean
+ • default: False
+
+                                               save_to_zip
+
+ • Determines whether optimized model should additionally be saved in ZIP format
+ • argparse flag: --save-to-zip
+ • convert-type: builtins.bool
+ • type: boolean
+ • default: False
+
+                                           compiled_model_path
+
+ • The path to the compiled model output
+ • argparse flag: --compiled-model-path
+ • convert-type: kenning.utils.resource_manager.ResourceURI
+ • type: string
+ • required: True
+
+                                                location
+
+ • Specifies where optimization should be performed in client-server scenario
+ • argparse flag: --location
+ • default: host
+ • enum
+    • host
+    • target
+
 ```
 
 If a certain class does not have necessary dependencies installed, Kenning suggests what modules need to be installed, e.g.:
@@ -355,7 +510,7 @@ The optimization flow can be defined in JSON format, as follows:
   },
   "optimizers": [
     {
-      "type": "kenning.optimizers.tflite.TFLiteCompiler",
+      "type": "kenning.optimizers.litert.LiteRTCompiler",
       "parameters": {
         "target": "int8",
         "compiled_model_path": "./build/int8.tflite",
@@ -384,7 +539,7 @@ The optimization flow can be defined in JSON format, as follows:
 
 The above scenario takes the MobileNetV2 model trained for classification of cat and dog breeds, and passes it to:
 
-* `kenning.optimizers.tflite.TFLiteCompiler` to quantize the weights of the model
+* `kenning.optimizers.litert.LiteRTCompiler` to quantize the weights of the model
 * `kenning.optimizers.tvm.TVMCompiler` to create an optimized runtime of the model, utilizing AVX2 vector instructions.
 
 The optimization of the model, its evaluation and report generation can be run with one command:
@@ -408,8 +563,8 @@ The example compilation of the model can look as follows:
 from pathlib import Path
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
-from kenning.optimizers.tflite import TFLiteCompiler
-from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.optimizers.litert import LiteRTCompiler
+from kenning.runtimes.litert import LiteRTRuntime
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.resource_manager import ResourceURI
 
@@ -421,7 +576,7 @@ model = TensorFlowPetDatasetMobileNetV2(
     dataset=dataset
 )
 model.save_io_specification(model.model_path)
-compiler = TFLiteCompiler(
+compiler = LiteRTCompiler(
     dataset=dataset,
     compiled_model_path=Path('./build/compiled-model.tflite'),
     modelframework='keras',
@@ -439,7 +594,7 @@ The above script downloads the dataset and compiles the model with FP32 inputs a
 To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
 
 ```python test-skip
-compiler = TFLiteCompiler(
+compiler = LiteRTCompiler(
     dataset=dataset,
     compiled_model_path=Path('./build/compiled-model.tflite'),
     modelframework='keras',
@@ -453,10 +608,10 @@ compiler.compile(
 )
 ```
 
-To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
+To check how the compiled model is performing, create `LiteRTRuntime` object and run local model evaluation:
 
 ```python test-skip
-runtime = TFLiteRuntime(
+runtime = LiteRTRuntime(
     protocol=None,
     model_path=Path('./build/compiled-model.tflite')
 )

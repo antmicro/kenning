@@ -9,7 +9,7 @@ dataset:
   parameters:
     dataset_root: build/PetDataset
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     compiled_model_path: ./build/compiled-model.tflite
     model_framework: keras

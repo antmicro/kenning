@@ -367,7 +367,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     }
 
     allowed_frameworks = [
-        "tflite",
+        "litert",
         "tvm",
         "ai8x_c",
         "executorch",
@@ -590,7 +590,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             self.use_zephelin_uart = platform.enable_zephelin
 
             if self.use_zephelin:
-                self.allowed_frameworks = ["tflite", "tvm"]
+                self.allowed_frameworks = ["litert", "tvm"]
 
             KLogger.info(
                 "Set platform Zephyr build path to "

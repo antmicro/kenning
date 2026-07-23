@@ -79,8 +79,8 @@ class IREECompiler(Optimizer):
         "flax",
         "mlir",
         "keras",
-        "tflite",
         "gemma",
+        "litert",
         "any",
     ]
 

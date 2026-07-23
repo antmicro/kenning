@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Contains TFLite model for MagicWand dataset.
+Contains LiteRT (TFLite) model for MagicWand dataset.
 """
 
 from pathlib import Path

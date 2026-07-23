@@ -1,4 +1,4 @@
-# Model quantization and compilation using TFLite and TVM
+# Model quantization and compilation using LiteRT and TVM
 
 Let's consider a simple scenario where we want to optimize the inference time and memory usage of a classification model executed on a x86 CPU.
 
@@ -128,7 +128,7 @@ The configuration of the already existing blocks does not change, and the datase
 The first new addition in comparison to the previous flow is the presence of the `optimizers` list, which allows us to add one or more objects inheriting from the `kenning.core.optimizer.Optimizer` class.
 Optimizers read the model from the input file, apply various optimizations, and then save the optimized model to a new file.
 
-In our current scenario, we will use the `TFLiteCompiler` class - it reads the model in a Keras-specific format, optimizes the model and saves it to the `./build/fp32.tflite` file.
+In our current scenario, we will use the `LiteRTCompiler` class - it reads the model in a Keras-specific format, optimizes the model and saves it to the `./build/fp32.tflite` file.
 The parameters of this particular Optimizer are worth noting here (each Optimizer usually has a different set of parameters):
 
 * `target` - indicates what the desired target device (or model type) is, regular CPU is `default`.
@@ -167,8 +167,8 @@ With Kenning, it can be achieved with the following simple additions:
 :lines: 15-24
 ```
 
-The only changes here in comparison to the previous configuration appear in the `TFLiteCompiler` configuration. We change `target`, `inference_input_type` and `inference_output_type` to `int8`.
-Then, in the background, `TFLiteCompiler` fetches a subset of images from the `PetDataset` object to calibrate the model and the entire model calibration process happens automatically.
+The only changes here in comparison to the previous configuration appear in the `LiteRTCompiler` configuration. We change `target`, `inference_input_type` and `inference_output_type` to `int8`.
+Then, in the background, `LiteRTCompiler` fetches a subset of images from the `PetDataset` object to calibrate the model and the entire model calibration process happens automatically.
 
 Let's run the scenario above (`tflite-int8.json`):
 

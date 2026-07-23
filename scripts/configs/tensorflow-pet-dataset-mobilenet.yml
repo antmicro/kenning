@@ -9,7 +9,7 @@ dataset:
   parameters:
     dataset_root: build/PetDataset
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     compiled_model_path: build/fp32.1.tflite
     inference_input_type: float32

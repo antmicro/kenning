@@ -161,7 +161,7 @@ Once the best model is selected (e.g. `workspace/automl-results/vae.0.tflite`), 
 west build \
   -p always \
   -b max32690evkit/max32690/m4 app -- \
-  -DEXTRA_CONF_FILE="tflite.conf" \
+  -DEXTRA_CONF_FILE="litert.conf" \
   -DCONFIG_KENNING_MODEL_PATH=\"$(realpath workspace/automl-results/vae.0.tflite)\"
 west build -t board-repl
 ```

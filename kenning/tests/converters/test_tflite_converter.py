@@ -1,17 +1,17 @@
 import pytest
 
-from kenning.converters.tflite_converter import TFLiteConverter
+from kenning.converters.litert_converter import LiteRTConverter
 from kenning.tests.core.conftest import DatasetModelRegistry
 
 
 @pytest.fixture
 def dummy_tflite_model():
-    _, model, _ = DatasetModelRegistry.get("tflite")
+    _, model, _ = DatasetModelRegistry.get("litert")
     return {"path": model.get_path(), "io_spec": model.get_io_specification()}
 
 
 def test_to_tvm(dummy_tflite_model):
-    conv = TFLiteConverter(source_model_path=dummy_tflite_model["path"])
+    conv = LiteRTConverter(source_model_path=dummy_tflite_model["path"])
 
     mod, params = conv.to_tvm(
         io_spec=dummy_tflite_model["io_spec"],
@@ -24,7 +24,7 @@ def test_to_tvm(dummy_tflite_model):
 
 
 def test_to_onnx(dummy_tflite_model):
-    conv = TFLiteConverter(source_model_path=dummy_tflite_model["path"])
+    conv = LiteRTConverter(source_model_path=dummy_tflite_model["path"])
 
     model = conv.to_onnx()
 

@@ -51,7 +51,7 @@ dataset:
 # and influences the standard Kenning flow run with generated models
 
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     target: default
     compiled_model_path: ./workspace/automl-results/vae.tflite

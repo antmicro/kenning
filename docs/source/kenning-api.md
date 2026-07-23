@@ -158,7 +158,7 @@ To do so you can use `location` parameter which specifies where given [](optimiz
 
 Example model optimizers:
 
-* [TFLiteCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tflite.py) - wraps TensorFlow Lite compilation,
+* [LiteRTCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers.litert.py) - wraps TensorFlow Lite compilation,
 * [TVMCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tvm.py) - wraps TVM compilation.
 
 ```{eval-rst}
@@ -184,7 +184,7 @@ The server (target) side of the `Runtime` class requires method implementation f
 
 Runtime examples:
 
-* [TFLiteRuntime](https://github.com/antmicro/kenning/blob/main/kenning/runtimes/tflite.py) for models compiled with TensorFlow Lite,
+* [LiteRTRuntime](https://github.com/antmicro/kenning/blob/main/kenning/runtimes.litert.py) for models compiled with TensorFlow Lite,
 * [TVMRuntime](https://github.com/antmicro/kenning/blob/main/kenning/runtimes/tvm.py) for models compiled with TVM.
 
 ```{eval-rst}

@@ -30,7 +30,7 @@ EXT_TO_FRAMEWORK = {
     ".h5": "keras",
     ".pt": "torch",
     ".pth": "torch",
-    ".tflite": "tflite",
+    ".tflite": "litert",
     ".graph_data": "tvm",
     ".safetensors": "safetensors",
 }

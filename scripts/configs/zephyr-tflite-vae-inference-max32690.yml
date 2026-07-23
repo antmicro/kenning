@@ -3,7 +3,7 @@
 # This scenario should be executed within kenning-zephyr-runtime project, with built evaluation app for
 # TFLite Micro runtime:
 #
-# west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE="tflite.conf"
+# west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE="litert.conf"
 platform:
   type: ZephyrPlatform
   parameters:
@@ -33,7 +33,7 @@ dataset:
 
 # run TFLite conversion from above PyTorch model to TFLite Flatbuffers
 optimizers:
-  - type: TFLiteCompiler
+  - type: LiteRTCompiler
     parameters:
       target: default
       compiled_model_path: ./workspace/vae_cats.tflite

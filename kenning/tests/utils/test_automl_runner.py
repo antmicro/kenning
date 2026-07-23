@@ -26,7 +26,7 @@ def create_spec(test_tmp_path: Path):
         },
         "optimizers": [
             {
-                "type": "TFLiteCompiler",
+                "type": "LiteRTCompiler",
                 "parameters": {
                     "target": "default",
                     "compiled_model_path": f"{test_tmp_path}"

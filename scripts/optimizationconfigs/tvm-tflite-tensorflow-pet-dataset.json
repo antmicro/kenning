@@ -26,7 +26,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.optimizers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.litert.LiteRTCompiler",
             "parameters":
             {
                 "target": ["default"],
@@ -54,7 +54,7 @@
             }
         },
         {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
+            "type": "kenning.runtimes.litert.LiteRTRuntime",
             "parameters":
             {
                 "save_model_path": ["./build/compiled_model.tflite"]

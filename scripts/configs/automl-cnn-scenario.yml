@@ -31,7 +31,7 @@ automl:
     # use_cuda: True
 
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     # Quantize model to 8-bit integers
     target: int8

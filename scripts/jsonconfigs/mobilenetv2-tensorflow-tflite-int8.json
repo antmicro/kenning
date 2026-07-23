@@ -14,7 +14,7 @@
   },
   "optimizers": [
     {
-      "type": "kenning.optimizers.tflite.TFLiteCompiler",
+      "type": "kenning.optimizers.litert.LiteRTCompiler",
       "parameters": {
         "target": "int8",
         "compiled_model_path": "./build/int8.tflite",
@@ -24,7 +24,7 @@
     }
   ],
   "runtime": {
-    "type": "kenning.runtimes.tflite.TFLiteRuntime",
+    "type": "kenning.runtimes.litert.LiteRTRuntime",
     "parameters": {
       "save_model_path": "./build/int8.tflite"
     }

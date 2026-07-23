@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from kenning.utils.resource_manager import PathOrURI
 
 if TYPE_CHECKING:
+    import ai_edge_litert
     import onnx
     import tensorflow as tf
-    import tflite
     import torch
     import tvm
 
@@ -112,11 +112,14 @@ class ModelConverter(ABC):
         """
         ...
 
-    def to_tflite(
+    def to_litert(
         self,
         model: Optional[Any] = None,
         **kwargs,
-    ) -> Union["tf.lite.TFLiteConverter", "tflite.Model.Model"]:
+    ) -> Union[
+        "tf.lite.TFLiteConverter",
+        "ai_edge_litert.compiled_model.CompiledModel",
+    ]:
         """
         Converts model to TensorFlowLite format.
 
@@ -130,9 +133,9 @@ class ModelConverter(ABC):
 
         Returns
         -------
-        Union[tf.lite.TFLiteConverter, tflite.Model.Model]
-            Either a TFLite model, or a TFLiteConverer object.
-        """
+        Union[tf.lite.TFLiteConverter, ai_edge_litert.compiled_model.CompiledModel]
+            Either a LiteRT model, or a TFLiteConverer object.
+        """  # noqa: E501
         ...
 
     def to_tvm(

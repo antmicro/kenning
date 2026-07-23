@@ -28,8 +28,8 @@ python -m kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-tflite.json \
-    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
-    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
+    --compiler-cls kenning.optimizers.litert.LiteRTCompiler \
+    --runtime-cls kenning.runtimes.litert.LiteRTRuntime \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --compiled-model-path ./build/compiled-model.tflite \

@@ -27,7 +27,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
 from kenning.protocols.network import NetworkProtocol
-from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.runtimes.litert import LiteRTRuntime
 from kenning.scenarios.inference_server import InferenceServer
 from kenning.tests.core.conftest import DatasetModelRegistry
 from kenning.utils.pipeline_runner import PipelineRunner
@@ -188,7 +188,7 @@ class TestServerSideOptimization:
             for i in range(3)
         ]
 
-        runtime_host = TFLiteRuntime(
+        runtime_host = LiteRTRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
 
@@ -246,7 +246,8 @@ class TestServerSideOptimization:
             )
             for i, location in enumerate(optimizers_locations)
         ]
-        runtime_target = TFLiteRuntime(
+
+        runtime_target = LiteRTRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
         protocol_target = NetworkProtocol(
@@ -258,7 +259,7 @@ class TestServerSideOptimization:
 
         with prepare_objects("keras") as (dataset, model_wrapper):
             dataconverter = ModelWrapperDataConverter(model_wrapper)
-            runtime_host = TFLiteRuntime(
+            runtime_host = LiteRTRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
             protocol_host = NetworkProtocol(
@@ -308,7 +309,7 @@ class TestServerSideOptimization:
             ),
         ]
 
-        runtime_target = TFLiteRuntime(
+        runtime_target = LiteRTRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
         protocol_target = NetworkProtocol(
@@ -320,7 +321,7 @@ class TestServerSideOptimization:
 
         with prepare_objects("keras") as (dataset, model_wrapper):
             dataconverter = ModelWrapperDataConverter(model_wrapper)
-            runtime_host = TFLiteRuntime(
+            runtime_host = LiteRTRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
             protocol_host = NetworkProtocol(
@@ -357,7 +358,7 @@ class TestServerSideOptimization:
 
         with prepare_objects("keras") as (dataset, model_wrapper):
             dataconverter = ModelWrapperDataConverter(model_wrapper)
-            runtime = TFLiteRuntime(
+            runtime = LiteRTRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
 
@@ -407,7 +408,7 @@ class TestServerSideOptimization:
 
         InferenceServer._optimizers_callback = optimizers_callback_mock
 
-        runtime_target = TFLiteRuntime(
+        runtime_target = LiteRTRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
         protocol_target = NetworkProtocol(
@@ -419,7 +420,7 @@ class TestServerSideOptimization:
 
         with prepare_objects("keras") as (dataset, model_wrapper):
             dataconverter = ModelWrapperDataConverter(model_wrapper)
-            runtime_host = TFLiteRuntime(
+            runtime_host = LiteRTRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
             protocol_host = NetworkProtocol(

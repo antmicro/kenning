@@ -8,8 +8,8 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
-    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
-    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
+    --compiler-cls kenning.optimizers.litert.LiteRTCompiler \
+    --runtime-cls kenning.runtimes.litert.LiteRTRuntime \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \

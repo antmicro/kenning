@@ -45,7 +45,7 @@ The example configuration looks like this:
     "optimizers":
     [
         {
-            "type": "kenning.optimizers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.litert.LiteRTCompiler",
             "parameters":
             {
                 "target": ["default"],
@@ -73,7 +73,7 @@ The example configuration looks like this:
             }
         },
         {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
+            "type": "kenning.runtimes.litert.LiteRTRuntime",
             "parameters":
             {
                 "save_model_path": ["./build/compiled_model.tflite"]
@@ -132,7 +132,7 @@ The example `<OUTPUT PATH>.json` JSON file can look like this:
             }
         ],
         "runtime": {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
+            "type": "kenning.runtimes.litert.LiteRTRuntime",
             "parameters": {
                 "save_model_path": "build/7_compiled_model.tflite"
             }

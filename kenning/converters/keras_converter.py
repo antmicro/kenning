@@ -52,7 +52,7 @@ class KerasConverter(ModelConverter):
             )
         return model
 
-    def to_tflite(
+    def to_litert(
         self,
         model: Optional["tf.keras.Model"] = None,
         **kwargs: Dict,
@@ -70,7 +70,7 @@ class KerasConverter(ModelConverter):
         Returns
         -------
         tf.lite.TFLiteConverter
-            TFLite converter for model.
+            TFLite (LiteRT) converter for model.
         """
         import tensorflow as tf
 

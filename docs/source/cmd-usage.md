@@ -298,10 +298,10 @@ An example script for the `inference_tester` is:
 ```bash test-skip
 kenning optimize test \
     --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
-    --runtime-cls TFLiteRuntime \
+    --runtime-cls LiteRTRuntime \
     --dataset-cls PetDataset \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
-    --compiler-cls TFLiteCompiler \
+    --compiler-cls LiteRTCompiler \
     --protocol-cls NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
@@ -323,7 +323,7 @@ The above runs with the following `inference_server` setup:
 ```bash test-skip
 kenning server \
     --protocol-cls NetworkProtocol \
-    --runtime-cls TFLiteRuntime \
+    --runtime-cls LiteRTRuntime \
     --host 0.0.0.0 \
     --port 12344 \
     --packet-size 32768 \
@@ -548,10 +548,10 @@ To print available arguments run `python -m kenning.scenarios.list_classes -h`.
 * supported input and output formats,
 * arguments structure used in JSON configurations.
 
-The script accepts class names, e.g.: `TFLiteRuntime`.
+The script accepts class names, e.g.: `LiteRTRuntime`.
 
-However, module-like paths to the files (e.g. `kenning.runtimes.tflite`) can be used, too.
-Additionally, a class can be added to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`.
+However, module-like paths to the files (e.g. `kenning.runtimes.litert`) can be used, too.
+Additionally, a class can be added to the path like so: `kenning.runtimes.litert.LiteRTRuntime`.
 To get more detailed information, an optional `--load-class-with-args` argument can be passed. This needs all required class arguments to be provided, and that all dependencies are available.
 
 For more detail, check `python -m kenning.scenarios.class_info -h`.

@@ -161,11 +161,11 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def get_output_formats(cls) -> List[str]:
-        return ["tflite"]
+        return ["litert"]
 
     @classmethod
     def get_framework(cls) -> str:
-        return "tflite"
+        return "litert"
 
     @classmethod
     def get_framework_version(cls) -> str:

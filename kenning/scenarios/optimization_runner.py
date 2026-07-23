@@ -170,7 +170,7 @@ def grid_search(
             },
             "direct_extra_scenario_arguments": {},
         },
-        "TFLiteRuntime": {
+        "LiteRTRuntime": {
             "parameters":
             {
                 "save_model_path": ["./build/compiled_model.tflite"],
@@ -206,7 +206,7 @@ def grid_search(
             }
         },
         {
-            "TFLiteRuntime": {
+            "LiteRTRuntime": {
                 "parameters":
                 {
                     "save_model_path": "./build/compiled_model.tflite",

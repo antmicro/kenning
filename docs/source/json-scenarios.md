@@ -185,7 +185,7 @@ Such case will result is the following scenario:
 
 As emphasized above, the `optimizers` list is added, with two entries:
 
-* a `kenning.optimizers.tflite.TFLiteCompiler` type block, quantizing the model,
+* a `kenning.optimizers.litert.LiteRTCompiler` type block, quantizing the model,
 * a `kenning.optimizers.tvm.TVMCompiler` type block, performing remaining optimization steps.
 
 In the `runtime` field, a TVM-specific `kenning.runtimes.tvm.TVMRuntime` type is used.
@@ -264,7 +264,7 @@ To execute one of the optimizers on the target-side, simply add the `location` p
 "optimizers":
 [
     {
-        "type": "kenning.optimizers.tflite.TFLiteCompiler",
+        "type": "kenning.optimizers.litert.LiteRTCompiler",
         "parameters":
         {
             "target": "int8",

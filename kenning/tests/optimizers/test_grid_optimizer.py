@@ -220,7 +220,7 @@ class TestFilterInvalidPipelines:
         """
         invalid_pipeline = deepcopy(EXAMPLE_PIPELINE)
         del invalid_pipeline[BLOCK_CONFIGURATIONS_KEY][ConfigKey.optimizers][
-            "TFLiteCompiler"
+            "LiteRTCompiler"
         ]
         invalid_pipeline[BLOCK_CONFIGURATIONS_KEY][ConfigKey.optimizers][
             "TVMCompiler"

@@ -384,7 +384,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
     Parameters
     ----------
     variable_name: ast.AST
-        Variable to be cleaned up, e.g. "'tflite' ".
+        Variable to be cleaned up, e.g. "'litert' ".
 
     Returns
     -------
@@ -533,7 +533,7 @@ def evaluate_argument_list(
     argument_list_name: str, source_path: str
 ) -> Tuple[List[str], str]:
     """
-    Evaluate an expression like `list('tflite', 'tvm')` and return the list
+    Evaluate an expression like `list('litert', 'tvm')` and return the list
     of elements as strings.
 
     Parameters

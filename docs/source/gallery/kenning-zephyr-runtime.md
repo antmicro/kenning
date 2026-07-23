@@ -70,15 +70,15 @@ To use Renode, either follow [Renode documentation](https://renode.readthedocs.i
 source ./scripts/prepare_renode.sh
 ```
 
-## Building and evaluating Magic Wand model using TFLite backend
+## Building and evaluating Magic Wand model using LiteRT backend
 
-![TFLite Micro scenario with Renode simulation](img/kenning-zephyr-runtime-tflite.png)
+![LiteRT Micro scenario with Renode simulation](img/kenning-zephyr-runtime-tflite.png)
 
-Let's build the Kenning Zephyr Runtime with [TFLiteMicro](https://github.com/tensorflow/tflite-micro) as model executor for `stm32f746g_disco` board.
+Let's build the Kenning Zephyr Runtime with [LiteRTMicro](https://github.com/tensorflow/tflite-micro) as model executor for `stm32f746g_disco` board.
 Run:
 
 ```bash
-west build --board stm32f746g_disco app -- -DEXTRA_CONF_FILE=tflite.conf
+west build --board stm32f746g_disco app -- -DEXTRA_CONF_FILE=litert.conf
 west build -t board-repl
 ```
 

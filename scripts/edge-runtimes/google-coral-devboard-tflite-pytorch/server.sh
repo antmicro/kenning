@@ -6,7 +6,7 @@
 
 python -m kenning.scenarios.inference_server \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
-    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
+    --runtime-cls kenning.runtimes.litert.LiteRTRuntime \
     --host 0.0.0.0 \
     --port 12345 \
     --packet-size 32768 \

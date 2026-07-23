@@ -40,7 +40,7 @@ class TVMCompiler(Optimizer):
         "onnx",
         "darknet",
         "torch",
-        "tflite",
+        "litert",
         "any",
     ]
 

@@ -42,7 +42,7 @@ def create_gelu_model(approximate: bool):
         NamedTemporaryFile() as tflite_temp,
         NamedTemporaryFile() as onnx_temp,
     ):
-        tflite_model = KerasConverter(Path()).to_tflite(model).convert()
+        tflite_model = KerasConverter(Path()).to_litert(model).convert()
 
         tflite_temp.write(tflite_model)
         tflite_temp.flush()

@@ -28,7 +28,7 @@ class ONNXCompiler(Optimizer):
     inputtypes = [
         "keras",
         "torch",
-        "tflite",
+        "litert",
         "onnx",
         "any",
         "sklearn",

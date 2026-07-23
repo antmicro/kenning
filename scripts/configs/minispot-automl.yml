@@ -36,7 +36,7 @@ platform:
     zephyr_build_path: build
 
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     target: default
     compiled_model_path: ./workspace/automl-results/minispot.tflite

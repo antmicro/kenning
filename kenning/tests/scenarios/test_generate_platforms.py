@@ -80,7 +80,7 @@ dataset:
   parameters:
     dataset_root: ./output/MagicWandDataset
 optimizers:
-- type: TFLiteCompiler
+- type: LiteRTCompiler
   parameters:
     compiled_model_path: ./output/magic-wand.tflite
     inference_input_type: float32
@@ -208,7 +208,7 @@ class TestGeneratedPlatformsScenarios:
                     name,
                     "app",
                     "--",
-                    "-DEXTRA_CONF_FILE=tflite.conf",
+                    "-DEXTRA_CONF_FILE=litert.conf",
                 ],
             )
             print(res)

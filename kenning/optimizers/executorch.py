@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore", message=".*on an already erased node.*")
 class ExecuTorchOptimizer(Optimizer):
     """Class implementing ExecuTorch compiler."""
 
-    inputtypes = ["torch", "tflite", "any"]
+    inputtypes = ["torch", "litert", "any"]
 
     outputtypes = ["executorch"]
 

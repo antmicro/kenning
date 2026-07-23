@@ -665,7 +665,7 @@ The scenario can look as follows:
     ],
     "runtime":
     {
-        "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "type": "kenning.runtimes.litert.LiteRTRuntime",
         "parameters":
         {
             "save_model_path": "./build/compiled-model.tflite"

@@ -618,7 +618,7 @@ class TestBlockConfig:
             34,
             test_dict,
             ConfigKey.optimizers,
-            "TFLiteCompiler",
+            "LiteRTCompiler",
         )
         set_block_direct_argument(
             "should not be set", 76, test_dict, ConfigKey.model_wrapper

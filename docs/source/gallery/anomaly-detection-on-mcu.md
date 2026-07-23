@@ -160,7 +160,7 @@ kenning optimize --cfg ./kenning-scenarios/vae-inference/tflite-max32690.yml
 This scenario will create a `./workspace/vae_cats.tflite` file with an optimized model.
 
 Now, to test the model in simulation or an actual hardware, the evaluation app needs to be compiled.
-To do so, use the `west build` command with a `tflite.conf` configuration for the selected board.
+To do so, use the `west build` command with a `litert.conf` configuration for the selected board.
 However, this will build TensorFlow Lite Micro runtime with a limited set of operators.
 To get the runtime with just the necessary set of operators for a given model, you can provide the model that was just created.
 
@@ -168,7 +168,7 @@ To build the evaluation application, run:
 
 ```bash
 west build -p always -b max32690evkit/max32690/m4 app -- \
-      -DEXTRA_CONF_FILE=tflite.conf \
+      -DEXTRA_CONF_FILE=litert.conf \
       -DCONFIG_KENNING_MODEL_PATH=\"./workspace/vae_cats.tflite\"
 west build -t board-repl
 ```

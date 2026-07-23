@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Enables loading TFLite models and conversion to other formats.
+Enables loading LiteRT (TFLite) models and conversion to other formats.
 """
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
@@ -13,53 +13,78 @@ from kenning.core.exceptions import ConversionError
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
+    import ai_edge_litert
     import onnx
     import tensorflow as tf
-    import tflite
     import tvm
 
 
-class TFLiteConverter(ModelConverter):
+class LiteRTConverter(ModelConverter):
     """
-    The TFLite model converter.
+    The LiteRT model converter.
     """
 
-    source_format: str = "tflite"
+    source_format: str = "litert"
 
-    def to_tflite(
+    def to_litert(
         self,
-        model: Optional["tflite.Model.Model"] = None,
+        model: Optional["ai_edge_litert.compiled_model.CompiledModel"] = None,
         **kwargs,
-    ) -> "tflite.Model.Model":
+    ) -> "ai_edge_litert.schema_py_generated.ModelT":
         """
-        Loads the TFLite model.
+        Loads the LiteRT (TFLite) model.
 
         Parameters
         ----------
-        model : Optional["tflite.Model.Model"]
+        model : Optional["ai_edge_litert.compiled_model.CompiledModel"]
             Optional model object.
         **kwargs:
             Keyword arguments passed between conversions.
 
         Returns
         -------
-        tflite.Model.Model
-            Loaded TFLiteConverter.
+        ai_edge_litert.schema_py_generated.ModelT
+            Loaded LiteRTConverter.
         """
         if model is not None:
             return model
 
-        with open(self.source_model_path, "rb") as f:
-            tflite_model_buf = f.read()
+        from ai_edge_litert import schema_py_generated as schema_fb
+        from ai_edge_litert.tools import flatbuffer_utils as fbu
 
-        try:
-            import tflite
+        model = fbu.read_model(self.source_model_path)
+        is_model = isinstance(model, schema_fb.ModelT)
 
-            model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
-        except AttributeError:
-            import tflite.Model
+        if not is_model:
+            import tensorflow as tf
 
-            model = tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
+            target = kwargs.get("targets", "default")
+            inferenceinputtype = kwargs.get("inferenceinputtype", "float32")
+            inferenceoutputtype = kwargs.get("inferenceoutputtype", "float32")
+            use_tf_select_ops = kwargs.get("use_tf_select_ops", False)
+
+            if target in ["int8", "edgetpu"]:
+                model.optimizations = [tf.lite.Optimize.DEFAULT]
+                if inferenceinputtype in [
+                    "int8",
+                    "uint8",
+                ] and inferenceinputtype in ["int8", "uint8"]:
+                    model.target_spec.supported_ops = [
+                        tf.lite.OpsSet.TFLITE_BUILTINS_INT8
+                    ]
+            elif target == "float16":
+                model.optimizations = [tf.lite.Optimize.DEFAULT]
+                model.target_spec.supported_types = [tf.float16]
+            else:
+                model.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS
+                ]
+            if use_tf_select_ops:
+                model.target_spec.supported_ops.append(
+                    tf.lite.OpsSet.SELECT_TF_OPS
+                )
+            model.inference_input_type = tf.as_dtype(inferenceinputtype)
+            model.inference_output_type = tf.as_dtype(inferenceoutputtype)
 
         return model
 
@@ -70,7 +95,7 @@ class TFLiteConverter(ModelConverter):
         **kwargs,
     ) -> Tuple["tvm.IRModule", Union[Dict, str]]:
         """
-        Converts TFLite model to TVM format.
+        Converts LiteRT model to TVM format.
 
         Parameters
         ----------
@@ -95,14 +120,26 @@ class TFLiteConverter(ModelConverter):
         IOSpecificationNotFoundError
             Raised if input specification is not provided.
         """
-        import tflite
+        import tensorflow as tf
         import tvm.relay as relay
 
-        model = self.to_tflite(model=model, **kwargs)
+        if model is None or not isinstance(model, tf.lite.TFLiteConverter):
+            with open(self.source_model_path, "rb") as f:
+                tflite_model_buf = f.read()
+            try:
+                import tflite
 
-        if not isinstance(model, tflite.Model):
-            model_data = model.convert()
-            model = tflite.Model.GetRootAsModel(model_data, 0)
+                model = tflite.Model.GetRootAs(tflite_model_buf)
+            except TypeError:
+                import tflite.Model
+
+                model = tflite.Model.Model.GetRootAs(tflite_model_buf)
+
+        if isinstance(model, tf.lite.TFLiteConverter):
+            import tflite
+
+            model_bytes = model.convert()
+            model = tflite.Model.GetRootAsModel(model_bytes, 0)
 
         input_shapes = {
             spec["name"]: spec["shape"] for spec in io_spec["processed_input"]
@@ -173,7 +210,7 @@ class TFLiteConverter(ModelConverter):
         **kwargs,
     ) -> "onnx.ModelProto":
         """
-        Converts TFLite model to ONNX format.
+        Converts LiteRT (TFLite) model to ONNX format.
 
         Parameters
         ----------
@@ -199,7 +236,8 @@ class TFLiteConverter(ModelConverter):
 
         if model is not None:
             KLogger.warning(
-                "TFLite to onnx conversion requires reading from file."
+                "LiteRT (TFLite) to onnx "
+                "conversion requires reading from file."
             )
 
         try:

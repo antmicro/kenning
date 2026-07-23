@@ -23,11 +23,11 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (
 from kenning.modelwrappers.classification.tflite_person_detection import (
     PersonDetectionModelWrapper,
 )
+from kenning.optimizers.litert import LiteRTCompiler
 from kenning.optimizers.onnx import ONNXCompiler
-from kenning.optimizers.tflite import TFLiteCompiler
 from kenning.optimizers.tvm import TVMCompiler
+from kenning.runtimes.litert import LiteRTRuntime
 from kenning.runtimes.onnx import ONNXRuntime
-from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
 from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.utils.pipeline_runner import PipelineRunner
@@ -83,7 +83,7 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
         )
 
         model.save_io_specification(model.model_path)
-        compiler = TFLiteCompiler(
+        compiler = LiteRTCompiler(
             dataset=dataset,
             compiled_model_path=tmp_model_path,
             model_framework="keras",
@@ -94,7 +94,7 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
         compiler.init()
         compiler.compile(input_model_path=Path(model_path))
 
-        runtime = TFLiteRuntime(
+        runtime = LiteRTRuntime(
             model_path=tmp_model_path, batch_size=batch_size
         )
 
@@ -153,7 +153,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
             model_path=model_path, dataset=dataset, from_file=True
         )
         model.save_io_specification(model.model_path)
-        compiler_tflite = TFLiteCompiler(
+        compiler_tflite = LiteRTCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path_tflite,
             model_framework="keras",
@@ -167,7 +167,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
         compiler_tvm = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path_tvm,
-            model_framework="tflite",
+            model_framework="litert",
         )
         compiler_tvm.init()
         compiler_tvm.compile(input_model_path=Path(compiled_model_path_tflite))
@@ -234,7 +234,7 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location="host",
-            model_framework="tflite",
+            model_framework="litert",
             model_wrapper=model,
         )
         compiler.compile(

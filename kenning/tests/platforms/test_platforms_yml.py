@@ -17,7 +17,7 @@ mock_platform = """
   - -device=arm_cpu
   - -model=mcimx7d
   default_optimizer:
-  - TFLiteCompiler
+  - LiteRTCompiler
   - TVMCompiler
   default_platform: ZephyrPlatform
   display_name: Meerkat96 (mcimx7d/m4)

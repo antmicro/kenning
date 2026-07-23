@@ -25,6 +25,7 @@ from kenning.core.platform import Platform
 from kenning.utils.compiler_flag import merge_compiler_flags
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.tvm import RepeatGeneratorWrapper
 from kenning.utils.zpl_suffix import ZplSuffix
 
 TVM_FUNC_PATTERN = re.compile(
@@ -138,6 +139,16 @@ class TVMCompiler(Optimizer):
             "type": bool,
             "default": False,
         },
+        "int8_calibrate_chunk_by": {
+            "argparse_name": "--int8-calibrate-chunk-by",
+            "description": (
+                "During calibration in in8 quantization, determines how many "
+                "layers to process at once. Lower to save memory. When set to "
+                "-1, processes all layers at once."
+            ),
+            "type": int,
+            "default": -1,
+        },
         "use_tensorrt": {
             "argparse_name": "--use-tensorrt",
             "description": "For CUDA targets: delegates supported operations to TensorRT",  # noqa: E501
@@ -179,6 +190,7 @@ class TVMCompiler(Optimizer):
         conv2d_kernel_layout: str = "",
         use_fp16_precision: bool = False,
         use_int8_precision: bool = False,
+        int8_calibrate_chunk_by: int = -1,
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
         module_name: Optional[str] = None,
@@ -234,6 +246,9 @@ class TVMCompiler(Optimizer):
             Applies conversion of FP32 weights to FP16.
         use_int8_precision : bool
             Applies conversion of FP32 weights to INT8.
+        int8_calibrate_chunk_by: int
+            If set, processes layers in chunks of given quantity during int8
+            quantization calibration.
         use_tensorrt : bool
             Applies transformations moving supported operations to
             TensorRT kernels.
@@ -283,6 +298,7 @@ class TVMCompiler(Optimizer):
         self.conv2d_kernel_layout = conv2d_kernel_layout
         self.use_fp16_precision = use_fp16_precision
         self.use_int8_precision = use_int8_precision
+        self.int8_calibrate_chunk_by = int8_calibrate_chunk_by
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
         self.module_name = module_name
@@ -345,9 +361,13 @@ class TVMCompiler(Optimizer):
                     yield {io_spec["input"][0]["name"]: tvm.nd.array(sample)}
 
             with relay.quantize.qconfig(
-                calibrate_mode="kl_divergence", weight_scale="max"
+                calibrate_mode="kl_divergence",
+                weight_scale="max",
+                calibrate_chunk_by=self.int8_calibrate_chunk_by,
             ):
-                mod = relay.quantize.quantize(mod, params, dataset=generator())
+                mod = relay.quantize.quantize(
+                    mod, params, dataset=RepeatGeneratorWrapper(generator)
+                )
 
         if self.use_fp16_precision:
             transforms.append(relay.transform.ToMixedPrecision())

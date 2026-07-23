@@ -7150,7 +7150,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:28e53a905270d1fd58197127c7d173463b133949c5edc8f574dd486cf987a485" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:aa94df949ebd12268f6ec9d56d6702147369c243efd3a4a818136e9ea744ae83" },
 ]
 
 [package.metadata]
@@ -7276,7 +7276,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version == '3.11.*'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:847d7bbf0a706c149e6f974f1980210de586af0e04c515a75aa620f3c229027f" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c337b2baa74ef3101017513556fe1dca792af7c1c74f0ab8fd130bafbaeb92c0" },
 ]
 
 [package.metadata]
@@ -7402,7 +7402,7 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version >= '3.12'" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c7f5790a5bd6b7c60fd6c304b8352eac6f44627c109c83730ed9c3ae9bcdf2b2" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:470df508150daf4dcb09c59e2790992b7e72f4ace8fa4d1d6f5f93ff3bc3089e" },
 ]
 
 [package.metadata]

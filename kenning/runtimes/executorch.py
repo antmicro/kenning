@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -73,7 +73,7 @@ class ExecuTorchRuntime(Runtime):
             )
         self._memory_layout = image_memory_layout
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         KLogger.info("Loading a model to the ExecuTorch runtime.")
 
         from executorch.runtime import Runtime as ExecuTorch
@@ -85,7 +85,6 @@ class ExecuTorchRuntime(Runtime):
 
         self._load_pte_method()
         KLogger.info("Successfully loaded the model.")
-        return True
 
     def load_input(self, input_data: List[np.ndarray]) -> bool:
         import torch

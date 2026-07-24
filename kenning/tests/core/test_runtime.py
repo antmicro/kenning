@@ -99,7 +99,7 @@ class TestRuntime:
         """
         with prepare_objects(runtime_cls, inputtype) as (runtime, _, _):
             try:
-                assert runtime.prepare_local()
+                runtime.prepare_local()
             except NotImplementedError:
                 pytest.xfail(
                     f"{runtime_cls.__name__} does not support local run"
@@ -136,7 +136,7 @@ class TestRuntime:
         ) as (runtime, dataset, model):
             runtime.inference_session_start()
 
-            assert runtime.prepare_local()
+            runtime.prepare_local()
 
             for _ in range(8):
                 X, _ = next(dataset)
@@ -181,7 +181,7 @@ class TestRuntime:
             runtime_cls, inputtype, disable_performance_measurements=False
         ) as (runtime, dataset, model):
             runtime.inference_session_start()
-            assert runtime.prepare_local()
+            runtime.prepare_local()
 
             for _ in range(8):
                 X, _ = next(dataset)
@@ -226,14 +226,14 @@ class TestRuntime:
         """
         with prepare_objects(runtime_cls, inputtype) as (runtime, _, _):
             assert runtime.prepare_io_specification(None) is True
-            assert runtime.prepare_model(None) is True
-            assert runtime.prepare_model(b"") is True
+            runtime.prepare_model(None)
+            runtime.prepare_model(b"")
 
             with open(runtime.model_path, "rb") as model_f:
                 assert b"" != model_f.read()
 
             with pytest.raises(Exception):
-                assert runtime.prepare_model(b"Kenning") is False
+                runtime.prepare_model(b"Kenning")
 
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
@@ -264,7 +264,7 @@ class TestRuntime:
             dataset,
             model,
         ):
-            assert runtime.prepare_local()
+            runtime.prepare_local()
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)
             assert runtime.load_input(prepX)
@@ -301,7 +301,7 @@ class TestRuntime:
             dataset,
             model,
         ):
-            assert runtime.prepare_local()
+            runtime.prepare_local()
 
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)
@@ -340,7 +340,7 @@ class TestRuntime:
             dataset,
             model,
         ):
-            assert runtime.prepare_local()
+            runtime.prepare_local()
 
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)
@@ -388,7 +388,7 @@ class TestRuntime:
             with pytest.raises(ModelNotPreparedError):
                 runtime.upload_output(b"")
 
-            assert runtime.prepare_local()
+            runtime.prepare_local()
 
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)

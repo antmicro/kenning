@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -148,7 +148,7 @@ class TVMRuntime(Runtime):
             KLogger.error(f"Failed to load input: {ex}", stack_info=True)
             return False
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         KLogger.info("Loading model")
         ctx = tvm.runtime.device(self.contextname, self.contextid)
         if self.use_tvm_vm:
@@ -186,7 +186,6 @@ class TVMRuntime(Runtime):
             self.func = self.module.get_function(entry_func_name)
             self.model = graph_executor.GraphModule(self.func(ctx))
         KLogger.info("Model loading ended successfully")
-        return True
 
     def run(self):
         if self.model is None:

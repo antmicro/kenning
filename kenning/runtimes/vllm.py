@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -254,7 +254,7 @@ class VLLMRuntime(Runtime):
         path = path.with_suffix(".tar")
         return path
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         from vllm import LLM, SamplingParams
 
         # Models are uploaded as .tar.gz
@@ -291,7 +291,6 @@ class VLLMRuntime(Runtime):
             enforce_eager=self.enforce_eager,
             max_model_len=self.max_model_len,
         )
-        return True
 
     def load_input(self, input_data: List[List[List[str]]]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data[0])}")

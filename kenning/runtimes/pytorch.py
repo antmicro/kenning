@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -13,6 +13,7 @@ import numpy as np
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
+    ModelNotLoadedError,
     ModelNotPreparedError,
 )
 from kenning.core.runtime import (
@@ -86,7 +87,7 @@ class PyTorchRuntime(Runtime):
             batch_size=batch_size,
         )
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         KLogger.info("Loading model")
         import torch
         from torch.jit.frontend import UnsupportedNodeError
@@ -117,11 +118,10 @@ class PyTorchRuntime(Runtime):
         if not isinstance(
             self.model, (torch.nn.Module, torch.jit.ScriptModule)
         ):
-            KLogger.error(
+            raise ModelNotLoadedError(
                 f"Loaded model is type {type(self.model).__name__}, only "
                 "torch.nn.Module and torch.jit.ScriptModule supported"
             )
-            return False
         if isinstance(self.model, torch.nn.Module):
             self.model.eval()
             if not self.skip_jit:
@@ -145,7 +145,6 @@ class PyTorchRuntime(Runtime):
         ):
             self.model = torch.jit.freeze(self.model)
         KLogger.info("Model loading ended successfully")
-        return True
 
     def load_input(self, input_data: List[np.ndarray]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -102,7 +102,7 @@ class TFLiteRuntime(Runtime):
             batch_size=batch_size,
         )
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         try:
             import tflite_runtime.interpreter as tflite
         except ModuleNotFoundError:
@@ -123,7 +123,6 @@ class TFLiteRuntime(Runtime):
         )
         self.interpreter.allocate_tensors()
         KLogger.info("Model loading ended successfully")
-        return True
 
     def load_input(self, input_data: List[np.ndarray]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")

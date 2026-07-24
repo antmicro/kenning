@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -18,9 +18,7 @@ class LocalSequentialInferenceLoop(SequentialInferenceLoop):
     def _prepare(self):
         if self._runtime is not None:
             self._runtime.inference_session_start()
-            assert (
-                self._runtime.prepare_local()
-            ), "Cannot prepare local environment"
+            self._runtime.prepare_local()
 
     def _cleanup(self):
         if self._runtime is not None:

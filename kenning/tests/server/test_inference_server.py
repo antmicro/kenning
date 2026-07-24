@@ -9,6 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from kenning.core.exceptions import ModelNotLoadedError
 from kenning.core.protocol import (
     Protocol,
     ServerAction,
@@ -190,7 +191,7 @@ class TestInferenceServerRunner:
                 runtime, "inference_session_start"
             ) as runtime_inference_session_start_mock,
         ):
-            runtime_prepare_model_mock.return_value = False
+            runtime_prepare_model_mock.side_effect = ModelNotLoadedError()
 
             assert ServerStatus(
                 ServerAction.UPLOADING_MODEL, False

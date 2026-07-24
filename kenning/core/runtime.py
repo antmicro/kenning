@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -195,16 +195,11 @@ class Runtime(ArgumentsHandler, ABC):
         -------
         bool
             True if succeeded.
-
-        Raises
-        ------
-        ModelNotLoadedError :
-            Raised if model is not loaded.
         """
         ...
 
     @abstractmethod
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         """
         Receives the model to infer from the client in bytes.
 
@@ -221,10 +216,10 @@ class Runtime(ArgumentsHandler, ABC):
             Model data or None, if the model should be loaded from another
             source.
 
-        Returns
-        -------
-        bool
-            True if succeeded.
+        Raises
+        ------
+        ModelNotLoadedError
+            Raised if model is not loaded.
         """
         ...
 
@@ -548,16 +543,14 @@ class Runtime(ArgumentsHandler, ABC):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode("utf-8")
 
-    def prepare_local(self) -> bool:
+    def prepare_local(self):
         """
         Runs initialization for the local inference.
 
-        Returns
-        -------
-        bool
-            True if initialized successfully.
+        Raises ModelNotLoadedError if model loading fails.
         """
-        return self.prepare_io_specification(None) and self.prepare_model(None)
+        self.prepare_io_specification(None)
+        self.prepare_model(None)
 
     def infer(
         self,

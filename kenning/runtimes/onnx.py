@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -92,7 +92,7 @@ class ONNXRuntime(Runtime):
             self.input[spec["name"]] = inp
         return True
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         KLogger.info("Loading model")
         if input_data:
             with open(self.model_path, "wb") as outmodel:
@@ -148,7 +148,6 @@ class ONNXRuntime(Runtime):
         )
 
         KLogger.info("Model loading ended successfully")
-        return True
 
     def run(self):
         if self.session is None:

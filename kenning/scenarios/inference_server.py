@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -194,7 +194,14 @@ class InferenceServer(object):
         """
         self.status.start_action(ServerAction.UPLOADING_MODEL)
         self.runtime.inference_session_start()
-        self.status.finish_action(self.runtime.prepare_model(payload))
+
+        try:
+            self.runtime.prepare_model(payload)
+            self.status.finish_action(True)
+        except Exception as e:
+            KLogger.error(f"Error loading model: {e}")
+            self.status.finish_action(False)
+
         return self.status
 
     def _process_callback(self, payload: bytes) -> ServerStatus:

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -67,7 +67,7 @@ class Ai8xRuntime(Runtime):
     def load_input(self, input_data: List[np.ndarray]) -> bool:
         ...
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]):
         ...
 
     def run(self):

@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from kenning.converters import converter_registry
 from kenning.core.exceptions import ConversionError
 from kenning.core.model import ModelWrapper
+from kenning.report import model_visualizer
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
     get_plot_wildcard_path,
@@ -115,6 +116,13 @@ def model_report(
     except ConversionError:
         KLogger.warn("Cannot convert model to onnx")
         return "", {}
+
+    spec, graph = model_visualizer.create_visualization_from_onnx(
+        onnx_model, Path("./build/")
+    )
+
+    measurementsdata["spec"] = spec
+    measurementsdata["graph"] = graph
 
     initializer_map = {
         init.name: init for init in onnx_model.graph.initializer

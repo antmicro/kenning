@@ -1,5 +1,15 @@
 ## Input model specification{% if data["model_name"] %} for {{data["model_name"]}}{% endif %}
 
+### Model visualization
+
+```{pipeline_manager}
+:spec: {{data["spec"]}}
+:graph: {{data["graph"]}}
+:center_at_top:
+:preview:
+:width: 80%
+```
+
 ### Basic model information
 
 ```{list-table} Basic model information

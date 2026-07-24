@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module which provides model visualizations for reports.
+Module which provides specification and dataflow files for
+model visualization in pipeline-manager based on an ONNX model.
 """
 
 
@@ -19,6 +20,20 @@ from pipeline_manager.specification_builder import SpecificationBuilder
 
 
 def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
+    """
+    Extracts model information from onnx file.
+
+    Parameters
+    ----------
+    model : onnx.ModelProto
+        onnx model used for creatng the visualization.
+
+    Returns
+    -------
+    (list, int)
+        List of layers with information and the maximum number of connections
+        from one node.
+    """
     initializer_map = {init.name: init for init in model.graph.initializer}
 
     from onnx import numpy_helper
@@ -37,11 +52,12 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
         dtypes = set()
 
         for input_name in node.input:
-            if input_name in initializer_map:
-                tensor = numpy_helper.to_array(initializer_map[input_name])
-                layer_params += tensor.size
-                layer_bytes += tensor.nbytes
-                dtypes.add(str(tensor.dtype))
+            if input_name not in initializer_map:
+                continue
+            tensor = numpy_helper.to_array(initializer_map[input_name])
+            layer_params += tensor.size
+            layer_bytes += tensor.nbytes
+            dtypes.add(str(tensor.dtype))
 
         dtype_str = ", ".join(sorted(dtypes)) if dtypes else "-"
         layer_count += 1
@@ -50,14 +66,17 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
         max_connections = max(max_connections, len(inputs))
 
         outputs = node.output
-        output_count[outputs[0]] = 1
+        for output in outputs:
+            output_count[output] = 1
 
         for input in inputs:
-            if input != "":
-                if input in output_count:
-                    output_count[input] += 1
-                else:
-                    output_count[input] = 1
+            if input == "":
+                continue
+
+            if input in output_count:
+                output_count[input] += 1
+            else:
+                output_count[input] = 1
 
         layers.append(
             {
@@ -94,13 +113,26 @@ def create_visualization_from_onnx(
     (Path, Path)
         Path to the specification (first) and path to the graph (second).
     """
-    # TODO: frontend builder
+    from pipeline_manager import frontend_builder
 
     layers, max_connections = _get_layer_information_from_onnx(model)
 
     SPECIFICATION_VERSION = "20260623.14"
     ASSETS_DIRECTORY = Path("./assets")
-    WORKSPACE_DIRECTORY = savedir / "pipeline-manager-workspace"
+    WORKSPACE_DIRECTORY = Path("pm-workspace")
+
+    frontend_changed = True
+    if WORKSPACE_DIRECTORY.exists():
+        frontend_changed = frontend_builder.copy_frontend_to_workspace(
+            workspace_directory=WORKSPACE_DIRECTORY,
+        )
+
+    if frontend_changed:
+        frontend_builder.build_frontend(
+            build_type="static-html",
+            workspace_directory=WORKSPACE_DIRECTORY,
+            skip_frontend_copying=True,
+        )
 
     specification_builder = SpecificationBuilder(
         spec_version=SPECIFICATION_VERSION,

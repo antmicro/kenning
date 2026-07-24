@@ -37,7 +37,10 @@ from antmicro_sphinx_utils.defaults import (
     numfig_format as default_numfig_format,
 )
 
-sys.path.insert(0, os.path.abspath("../.."))
+try:
+    import kenning  # ruff:ignore[unused-import]
+except ImportError:
+    sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
@@ -73,6 +76,7 @@ extensions = list(
             "kenning.utils.sphinx_literalinclude",
             "kenning.utils.sphinx_codeblock",
             "sphinx_tabs.tabs",
+            "pipeline_manager.sphinxext.draw_graph",
         ]
     )
 )

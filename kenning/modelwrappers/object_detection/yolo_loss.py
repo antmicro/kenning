@@ -10,7 +10,7 @@ https://github.com/Tianxiaomo/pytorch-YOLOv4.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
@@ -88,7 +88,9 @@ def box_iou(
         boxes2 = box_center_to_corner(boxes2)
 
     def box_area(boxes):
-        return (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        return (boxes[:, 2] - boxes[:, 0]).clamp(min=0) * (
+            boxes[:, 3] - boxes[:, 1]
+        ).clamp(min=0)
 
     boxes1_area = box_area(boxes1)
     boxes2_area = box_area(boxes2)
@@ -101,6 +103,7 @@ def box_iou(
     iou = inter_areas / union_areas
     if not CIoU:
         return iou
+    # CIoU paper: https://arxiv.org/pdf/1911.08287
 
     # centerpoint distance squared
     rho2 = (
@@ -204,10 +207,12 @@ class YoloLoss:
         perlayerparams: Dict[str, List[np.array]],
         keyparams: Dict[str, int],
         numclasses: int,
-        batch_size: int,
         device: torch.device,
-        dtype: torch.dtype,
         dataset: Dataset,
+        scale_cls: float = 1.0,
+        scale_obj: float = 1.0,
+        scale_noobj: float = 1.0,
+        scale_iou: float = 1.0,
         return_all_losses: bool = False,
     ):
         import torch
@@ -257,15 +262,17 @@ class YoloLoss:
                 for w, h in self.anchors
             ]
             # get anchors for this layer
-            masked_anchors = np.array(
+            masked_anchors = torch.tensor(
                 [all_anchors_grid[j] for j in self.mask[i]],
-                dtype=np.float32,
+                dtype=torch.float32,
+                requires_grad=False,
             )
             ref_anchors = np.zeros(
                 (len(all_anchors_grid), 4), dtype=np.float32
             )
-            ref_anchors[:, 2:] = np.array(all_anchors_grid, dtype=np.float32)
-            ref_anchors = torch.from_numpy(ref_anchors)
+            ref_anchors[:, 2:] = torch.as_tensor(
+                all_anchors_grid, dtype=torch.float32, device=device
+            )
 
             fsize = image_size // self.strides[i]
             grid_x = (
@@ -280,13 +287,13 @@ class YoloLoss:
                 .to(device)
             )
             anchor_w = (
-                torch.from_numpy(masked_anchors[:, 0])
+                masked_anchors[:, 0]
                 .repeat(1, fsize, fsize, 1)
                 .permute(0, 3, 1, 2)
                 .to(device)
             )
             anchor_h = (
-                torch.from_numpy(masked_anchors[:, 1])
+                masked_anchors[:, 1]
                 .repeat(1, fsize, fsize, 1)
                 .permute(0, 3, 1, 2)
                 .to(device)
@@ -298,6 +305,11 @@ class YoloLoss:
             self.grid_y.append(grid_y)
             self.anchor_w.append(anchor_w)
             self.anchor_h.append(anchor_h)
+
+            self.scale_cls = scale_cls
+            self.scale_obj = scale_obj
+            self.scale_noobj = scale_noobj
+            self.scale_iou = scale_iou
 
     def build_target(self, pred, labels, batch_size, fsize, n_ch, output_id):
         """Builds targets for computing Yolo loss. Assigns an anchor for each
@@ -354,9 +366,9 @@ class YoloLoss:
 
             # calculate iou between truth and reference anchors
             anchor_ious = box_iou(
-                truth_box.cpu(),
+                truth_box,
                 self.ref_anchors[output_id],
-                conv2xyxy=False,
+                conv2xyxy=True,
             )
 
             best_n_all = anchor_ious.argmax(dim=1)
@@ -385,24 +397,20 @@ class YoloLoss:
                     a = best_n[ti]
                     obj_mask[b, a, j, i] = 1
                     tgt_mask[b, a, j, i, :] = 1
-                    target[b, a, j, i, 0] = truth_x[ti] - truth_x[ti].to(
-                        torch.int16
-                    ).to(torch.float)
-                    target[b, a, j, i, 1] = truth_y[ti] - truth_y[ti].to(
-                        torch.int16
-                    ).to(torch.float)
+                    target[b, a, j, i, 0] = truth_x[ti] - torch.floor(
+                        truth_x[ti]
+                    )
+                    target[b, a, j, i, 1] = truth_y[ti] - torch.floor(
+                        truth_y[ti]
+                    )
                     target[b, a, j, i, 2] = torch.log(
                         truth_w[ti]
-                        / torch.Tensor(self.masked_anchors[output_id])[
-                            best_n[ti], 0
-                        ]
+                        / self.masked_anchors[output_id][best_n[ti], 0]
                         + 1e-16
                     )
                     target[b, a, j, i, 3] = torch.log(
                         truth_h[ti]
-                        / torch.Tensor(self.masked_anchors[output_id])[
-                            best_n[ti], 1
-                        ]
+                        / self.masked_anchors[output_id][best_n[ti], 1]
                         + 1e-16
                     )
                     target[b, a, j, i, 4] = 1
@@ -490,6 +498,7 @@ class YoloLoss:
         n_ch = 5 + self.n_classes
         loss_iou, loss_cls, loss_obj = 0, 0, 0
         total_pos = 0
+        total_obj = 0
 
         for out_id, out in enumerate(outputs):
             fsize = out.shape[2]
@@ -528,17 +537,10 @@ class YoloLoss:
                 pred, labels, batch_size, fsize, n_ch, out_id
             )
 
-            # calculate loss
-            out[..., 4] *= obj_mask
-            out[..., np.r_[0:4, 5:n_ch]] *= tgt_mask
-            out[..., 2:4] *= tgt_scale
-
-            target[..., 4] *= obj_mask
-            target[..., np.r_[0:4, 5:n_ch]] *= tgt_mask
-            target[..., 2:4] *= tgt_scale
-
             pos_mask = tgt_mask[..., 0] > 0
             total_pos += pos_mask.sum()
+            total_obj += obj_mask.sum()
+            # calculate loss
             if pos_mask.any():
                 target_pos = target_xywh[pos_mask]
                 pred_pos = pred[pos_mask]
@@ -555,16 +557,19 @@ class YoloLoss:
                 out[..., 4], target[..., 4], reduction="none"
             )
             _loss_obj *= obj_mask.float()
-            _loss_obj = _loss_obj.sum()
-
-            loss_obj += _loss_obj
+            loss_obj += _loss_obj.sum()
 
         num_pos = total_pos.clamp(min=1)
+        num_obj = total_obj.clamp(min=1)
         loss_iou = loss_iou / num_pos
         loss_cls = loss_cls / num_pos
-        loss_obj = loss_obj / batch_size
+        loss_obj = loss_obj / num_obj
 
-        loss = loss_iou + loss_cls + loss_obj
+        loss = (
+            self.scale_iou * loss_iou
+            + self.scale_cls * loss_cls
+            + self.scale_obj * loss_obj
+        )
         if self.return_all_losses:
             return loss, loss_iou, loss_cls, loss_obj
         return loss

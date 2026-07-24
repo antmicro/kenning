@@ -5,6 +5,7 @@
 """
 Pruning optimizer implementation with Neural Network Intelligence.
 """
+
 import copy
 import inspect
 import logging
@@ -490,7 +491,7 @@ class NNIPruningOptimizer(Optimizer):
             model.parameters(), lr=self.finetuning_learning_rate
         )
         if KLogger.isEnabledFor(logging.INFO) and self.finetuning_epochs > 0:
-            mean_loss = self.evaluate_model(model)
+            mean_loss = self.evaluate_model(model, criterion)
             KLogger.info(
                 "Fine-tuning model starting with mean loss "
                 f"{mean_loss if mean_loss else None}\n"
@@ -498,7 +499,7 @@ class NNIPruningOptimizer(Optimizer):
         for finetuning_epoch in range(self.finetuning_epochs):
             self.train_model(model, optimizer, criterion, max_epochs=1)
             if KLogger.isEnabledFor(logging.INFO):
-                mean_loss = self.evaluate_model(model)
+                mean_loss = self.evaluate_model(model, criterion)
                 KLogger.info(
                     f"Epoch {finetuning_epoch + 1} from {self.finetuning_epochs}"  # noqa: E501
                     f", validation data mean loss: {mean_loss}\n"
@@ -582,6 +583,7 @@ class NNIPruningOptimizer(Optimizer):
                 output = model(*data)
                 loss = criterion(output, label[0])
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 if max_steps is not None:
                     max_steps -= 1
@@ -602,7 +604,9 @@ class NNIPruningOptimizer(Optimizer):
                 max_epochs=max_epochs - 1,
             )
 
-    def evaluate_model(self, model: torch.nn.Module) -> float:
+    def evaluate_model(
+        self, model: torch.nn.Module, criterion: Callable
+    ) -> float:
         """
         The method used to evaluate model, by calculating mean of losses
         on test set.
@@ -613,6 +617,8 @@ class NNIPruningOptimizer(Optimizer):
         ----------
         model : torch.nn.Module
             The PyTorch model to evaluate
+        criterion : Callable
+            The callable object used to calculate loss.
 
         Returns
         -------
@@ -621,7 +627,6 @@ class NNIPruningOptimizer(Optimizer):
         """
         # TODO: For now evaluate mean loss, possible use of additional
         # parameter with modulepath to some torchmetrics or custom function
-        criterion = load_class(self.criterion_modulepath)()
         model.eval()
         data_len = len(self.valid_data[0])
         loss_sum = 0
@@ -825,7 +830,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         assert activation in self.arguments_structure["activation"]["enum"], (
             f"Unsupported pruner type {activation}, only"
-            f" {', '.join(self.arguments_structure['activation']['enum'],)}"
+            f" {', '.join(self.arguments_structure['activation']['enum'])}"
             " are supported"
         )
         self.activation_str = activation
@@ -841,7 +846,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         assert mode in self.arguments_structure["mode"]["enum"], (
             f"Unsupported pruner type {mode}, only"
-            f" {', '.join(self.arguments_structure['mode']['enum'],)}"
+            f" {', '.join(self.arguments_structure['mode']['enum'])}"
             " are supported"
         )
         self.mode = mode

@@ -147,8 +147,9 @@ class YOLOV4TL(ONNXYOLOV4):
         else:
             self.save_model_path = model_path
         self.reset_last_layers = reset_last_layers
-        # TODO: find a better name
-        self.is_training = False
+        # This flag prevents the model wrapper from overwriting fine-tuned
+        # weights by disabling saving model in `self.save_model`.
+        self.was_finetuned = False
 
         super().__init__(
             model_path,
@@ -164,6 +165,7 @@ class YOLOV4TL(ONNXYOLOV4):
         self.head_num_epochs = head_num_epochs
         self.full_num_epochs = full_num_epochs
         self.logdir = logdir
+        self.export_dict = True
 
         if native:
             self.save_model(self.save_model_path, export_dict=False)
@@ -210,6 +212,11 @@ class YOLOV4TL(ONNXYOLOV4):
         Loads pre-trained model weights.
         Because last layers (probably) have different shapes than in the
         weights they won't get the pre-trained weights.
+
+        Parameters
+        ----------
+        model_path: PathOrURI
+            PathOrURI to a pre-trained model weights.
         """
         import torch
 
@@ -223,17 +230,19 @@ class YOLOV4TL(ONNXYOLOV4):
         missing = []
 
         for dst_name, dst_tensor in dst_sd.items():
-            if dst_name in weights:
-                src_tensor = weights[dst_name]
-                if src_tensor.shape == dst_tensor.shape:
-                    dst_sd[dst_name] = src_tensor
-                    loaded_count += 1
-                else:
-                    mismatched.append(
-                        f"{dst_name}: expected {dst_tensor.shape}, got {src_tensor.shape}",  # noqa: E501
-                    )
-            else:
+            if dst_name not in weights:
                 missing.append(dst_name)
+                continue
+
+            src_tensor = weights[dst_name]
+            if src_tensor.shape == dst_tensor.shape:
+                dst_sd[dst_name] = src_tensor
+                loaded_count += 1
+            else:
+                mismatched.append(
+                    f"{dst_name}: expected {dst_tensor.shape}, "
+                    f"got {src_tensor.shape}"
+                )
 
         self.model.load_state_dict(dst_sd, strict=False)
 
@@ -246,8 +255,17 @@ class YOLOV4TL(ONNXYOLOV4):
             KLogger.debug(f"Missing in pretrained: {len(missing)} weights")
 
     def load_torch_model(self, model_path: PathOrURI):
+        """
+        Loads a pytorch model from file.
+
+        Parameters
+        ----------
+        model_path: PathOrURI
+            PathOrURI to a pytorch model.
+        """
         import torch
 
+        KLogger.info(f"Loaded full model from {model_path}")
         weights = torch.load(
             model_path, map_location=self.device, weights_only=False
         )
@@ -266,7 +284,6 @@ class YOLOV4TL(ONNXYOLOV4):
             self.load_pretrained_torch_model(
                 ResourceURI(self.pretrained_model_uri)
             )
-            self.save_model(self.save_model_path)
         else:
             try:
                 self.load_torch_model(self.model_path)
@@ -284,7 +301,10 @@ class YOLOV4TL(ONNXYOLOV4):
     ):
         import torch
 
-        if not self.is_training:
+        if not self.was_finetuned:
+            self.prepare_model()
+            if export_dict is None:
+                export_dict = self.export_dict
             if export_dict:
                 KLogger.info(f"Saving model state dict to {model_path}")
                 torch.save(self.model.state_dict(), model_path)
@@ -353,7 +373,7 @@ class YOLOV4TL(ONNXYOLOV4):
                     )
                     loss.backward()
 
-                    nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
+                    nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
                     opt.step()
 
@@ -413,7 +433,7 @@ class YOLOV4TL(ONNXYOLOV4):
                         )
                 if eval_loss < self.best_loss:
                     self.best_loss = eval_loss
-                    self.save_model(self.save_model_path)
+                    self.save_model(self.save_model_path, export_dict=True)
             if log_eval:
                 log_eval.write(f"{eval_loss / eval_loss_count:.4f}\n")
                 log_eval.flush()
@@ -457,13 +477,6 @@ class YOLOV4TL(ONNXYOLOV4):
             raise TrainingParametersMissingError(missing_params)
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(0.25)
-        # train_transforms = v2.Compose(
-        #     [
-        #         v2.RandomHorizontalFlip(0.5),
-        #         v2.RandomPhotometricDistort(),
-        #         v2.SanitizeBoundingBoxes(),
-        #     ]
-        # )
         train_dataset = YoloDataset(
             Xt, Yt, self.dataset, self, transforms=None
         )
@@ -505,19 +518,16 @@ class YOLOV4TL(ONNXYOLOV4):
         log_eval = open(eval_path, mode="w")
 
         # Criterion
-        with torch.no_grad():
-            test_out = self.model(train_dataset[0][0].unsqueeze(0))
-            dtype = test_out[0].dtype
-
         criterion = YoloLoss(
             self.perlayerparams,
             self.keyparams,
             self.numclasses,
-            self.batch_size,
             self.device,
-            dtype,
             self.dataset,
             return_all_losses=True,
+            scale_cls=0.5,
+            scale_obj=1.0,
+            scale_iou=0.05,
         )
 
         KLogger.info("Freezing backbone")
@@ -550,7 +560,7 @@ class YOLOV4TL(ONNXYOLOV4):
             log_eval=log_eval,
         )
 
-        self.is_training = True
+        self.was_finetuned = True
 
         if log_train:
             log_train.close()

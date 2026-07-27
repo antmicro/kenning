@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,9 @@ Module containing decorators for benchmark data gathering.
 """
 
 import json
+import os
 import time
+from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
 from threading import Condition, Thread
@@ -25,9 +27,9 @@ except ImportError:
     jtop = None
 
 try:
-    from pynvml.smi import nvidia_smi
+    import pynvml
 except ImportError:
-    nvidia_smi = None
+    pynvml = None
 
 
 class Measurements(object):
@@ -375,6 +377,16 @@ class SystemStatsCollector(Thread):
     utilization of resources.
     """
 
+    @dataclass
+    class NvidiaGpuProcessInfo:
+        """
+        A dataclass to store NVIDIA GPU process statistics of Kenning.
+        """
+
+        gpu_index: int
+        kenning_process: Any
+        process_newest_usage: Any
+
     def __init__(self, prefix: str, step: float = 0.1):
         """
         Prepares thread for execution.
@@ -386,23 +398,45 @@ class SystemStatsCollector(Thread):
         step : float
             The step for the measurements, in seconds.
         """
+        kenning_pid = os.getpid()
         Thread.__init__(self)
         self.measurements = Measurements()
         self.running = True
         self.prefix = prefix
-        if nvidia_smi is not None:
-            try:
-                self.nvidia_smi = nvidia_smi.getInstance()
-            except Exception as ex:
-                KLogger.warning(f"No NVML support due to error {ex}")
-                self.nvidia_smi = None
-        else:
-            self.nvidia_smi = None
+        self.nvmlReady = False
+        self.jetson = None
         self.step = step
         self.runningcondition = Condition()
+        self.kenning_process = psutil.Process(kenning_pid)
+        self.kenning_process.cpu_percent()
+        self.last_nvidia_stats_read_us = 0
+        self.nvidia_stats_read_window_sec = 2
+
+        if pynvml is not None:
+            try:
+                pynvml.nvmlInit()
+                self.nvmlReady = True
+            except Exception as ex:
+                KLogger.warning(f"No NVML support due to error {ex}")
+
+        if jtop is not None:
+            try:
+                self.jetson = jtop()
+                self.jetson.start()
+            except Exception as ex:
+                KLogger.warning(f"No jtop support due to error {ex}")
+
+        if (cpu_count := psutil.cpu_count()) is not None:
+            self.cpu_count = cpu_count
+        else:
+            KLogger.warning(
+                "Unknown number of CPU cores. Assuming core count 1."
+            )
+            self.cpu_count = 1
 
     def __enter__(self) -> "SystemStatsCollector":
         self.start()
+        self.last_nvidia_stats_read_us = time.time_ns() // 1000 - 2 * 1_000_000
         return self
 
     def __exit__(
@@ -442,92 +476,246 @@ class SystemStatsCollector(Thread):
         self.running = True
 
         while self.running:
-            cpus = psutil.cpu_percent(interval=0, percpu=True)
-            mem = psutil.virtual_memory()
-            self.measurements += {
-                f"{self.prefix}_cpus_percent": [cpus],
-                f"{self.prefix}_mem_percent": [mem.percent],
-                f"{self.prefix}_timestamp": [time.perf_counter()],
-            }
+            self._get_process_cpu_stats()
 
-            if jtop is not None:
-                with jtop() as jetson:
-                    gpu = jetson.stats
-                    if gpu and "GPU" in gpu:
-                        gpumemutilization = float(gpu["RAM"])
-                        gpuutilization = float(gpu["GPU"])
-
-                        self.measurements += {
-                            f"{self.prefix}_gpu_utilization": [gpuutilization],
-                            f"{self.prefix}_gpu_mem_utilization": [
-                                gpumemutilization
-                            ],
-                            f"{self.prefix}_gpu_timestamp": [
-                                time.perf_counter()
-                            ],
-                        }
-
-                    # collect power information from each lines:
-
-                    if hasattr(jetson, "power"):
-                        power = jetson.power
-
-                        if "rail" in power:
-                            rails = power["rail"]
-
-                            for name, stats in rails.items():
-                                voltage = float(stats["volt"])
-                                current = float(stats["curr"])
-                                power = float(stats["power"])
-
-                                name = name.lower()
-
-                                self.measurements += {
-                                    f"{self.prefix}_{name}_voltage": [voltage],
-                                    f"{self.prefix}_{name}_current": [current],
-                                    f"{self.prefix}_{name}_power": [power],
-                                }
-
-                    # collect frequency information from each engine:
-
-                    if hasattr(jetson, "engine"):
-                        engines = jetson.engine
-
-                        for group in engines.keys():
-                            for name, engine in engines[group].items():
-                                frequency = float(engine["cur"])
-                                name = name.lower()
-
-                                self.measurements += {
-                                    f"{self.prefix}_{name}_frequency": [
-                                        frequency
-                                    ],
-                                }
-
-            elif self.nvidia_smi is not None:
-                gpu = self.nvidia_smi.DeviceQuery(
-                    "memory.free, memory.total, utilization.gpu"
-                )
-                if gpu and "gpu" in gpu:
-                    memtot = float(gpu["gpu"][0]["fb_memory_usage"]["total"])
-                    memfree = float(gpu["gpu"][0]["fb_memory_usage"]["free"])
-                    gpumemutilization = (memtot - memfree) / memtot * 100.0
-                    gpuutilization = float(
-                        gpu["gpu"][0]["utilization"]["gpu_util"]
+            if self.jetson and self.jetson.ok(spin=True):
+                self._get_global_jetson_stats()
+            elif pynvml and self.nvmlReady:
+                gpu_processes = self._get_nvidia_gpu_processes()
+                if not gpu_processes:
+                    KLogger.debug(
+                        "No NVIDIA GPU present in system."
+                        " GPU logs will not be collected."
                     )
-                    self.measurements += {
-                        f"{self.prefix}_gpu_utilization": [gpuutilization],
-                        f"{self.prefix}_gpu_mem_utilization": [
-                            gpumemutilization
-                        ],
-                        f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
-                    }
+                else:
+                    stats = self._is_kenning_process_in_nvidia(gpu_processes)
+                    if stats is not None:
+                        self._get_process_nvidia_stats(stats)
+                    else:
+                        # TODO when Kenning report will support multiple GPU
+                        # usage reports, change to global GPU load
+                        self._get_global_nvidia_stats(
+                            next(iter(gpu_processes))
+                        )
 
             with self.runningcondition:
                 self.runningcondition.wait(timeout=self.step)
 
+    def _get_nvidia_gpu_processes(self) -> Dict[int, List]:
+        gpu_processes = {}
+        if not pynvml:
+            return gpu_processes
+
+        try:
+            for gpu_index in range(pynvml.nvmlDeviceGetCount()):
+                handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_index)
+                processes = [
+                    *pynvml.nvmlDeviceGetComputeRunningProcesses(handle),
+                    *pynvml.nvmlDeviceGetGraphicsRunningProcesses(handle),
+                    *pynvml.nvmlDeviceGetMPSComputeRunningProcesses(handle),
+                ]
+                gpu_processes[gpu_index] = processes
+        except pynvml.NVMLError as ex:
+            KLogger.debug(
+                "Failed to get running processes from NVIDIA GPU,"
+                f" traceback is: \n{ex}"
+            )
+
+        return gpu_processes
+
+    def _is_kenning_process_in_nvidia(
+        self, gpu_processes: Dict[int, List[Any]]
+    ) -> Optional[NvidiaGpuProcessInfo]:
+        if not pynvml:
+            return None
+
+        kenning_gpu_index = -1
+        kenning_process = None
+        for gpu_index, processes in gpu_processes.items():
+            for process in processes:
+                if self.kenning_process.pid == process.pid:
+                    kenning_process = process
+                    kenning_gpu_index = gpu_index
+                    break
+
+            if kenning_gpu_index != -1:
+                break
+
+        if kenning_gpu_index == -1:
+            KLogger.debug("No Kenning process in GPU")
+            return None
+
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(kenning_gpu_index)
+            samples = pynvml.nvmlDeviceGetProcessUtilization(
+                handle, self.last_nvidia_stats_read_us
+            )
+        except pynvml.NVMLError as ex:
+            KLogger.error(
+                "Failed to get process utilization from NVIDIA GPU,"
+                f" traceback is:\n{ex}"
+            )
+            return None
+
+        self.last_nvidia_stats_read_us = (
+            time.time_ns() - self.nvidia_stats_read_window_sec * 10**9
+        ) // 1000
+
+        process_newest_usage = None
+        for sample in samples:
+            if sample.pid != self.kenning_process.pid:
+                continue
+
+            if (
+                process_newest_usage is None
+                or sample.timeStamp > process_newest_usage.timeStamp
+            ):
+                process_newest_usage = sample
+
+        if process_newest_usage:
+            self.process_present_in_nvidia_gpu = True
+            return self.NvidiaGpuProcessInfo(
+                gpu_index=gpu_index,
+                kenning_process=kenning_process,
+                process_newest_usage=process_newest_usage,
+            )
+        else:
+            return None
+
+    def _get_process_nvidia_stats(self, stats: NvidiaGpuProcessInfo) -> None:
+        if not pynvml:
+            return
+
+        if (used_vram := stats.kenning_process.usedGpuMemory) is None:
+            KLogger.debug(
+                "GPU has not reported total memory."
+                " Usage percent calculation is not possible."
+            )
+            used_vram = 0
+
+        gpu_usage_percent = None
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(stats.gpu_index)
+            total_vram = pynvml.nvmlDeviceGetMemoryInfo(handle).total
+
+            if total_vram is not None and total_vram != 0:
+                gpu_usage_percent = used_vram / int(total_vram) * 100
+        except pynvml.NVMLError as ex:
+            KLogger.error(
+                "Failed to get VRAM information from NVIDIA GPU,"
+                f" traceback is:\n{ex}"
+            )
+
+        self.measurements += {
+            f"{self.prefix}_gpu_utilization": [
+                stats.process_newest_usage.smUtil
+            ],
+            f"{self.prefix}_gpu_mem_utilization": [gpu_usage_percent],
+            f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+        }
+
+    def _get_global_nvidia_stats(self, gpu_index: int) -> None:
+        if not pynvml:
+            return
+
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_index)
+            util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            vram_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        except pynvml.NVMLError as ex:
+            KLogger.error(
+                "Failed to get statistics from NVIDIA GPU,"
+                f" traceback is:\n{ex}"
+            )
+
+            self.measurements += {
+                f"{self.prefix}_gpu_utilization": [None],
+                f"{self.prefix}_gpu_mem_utilization": [None],
+                f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+            }
+            return
+
+        gpu_usage_percent = (
+            vram_info.used / vram_info.total * 100 if vram_info.total else None
+        )
+
+        self.measurements += {
+            f"{self.prefix}_gpu_utilization": [util.gpu],
+            f"{self.prefix}_gpu_mem_utilization": [gpu_usage_percent],
+            f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+        }
+
+    def _get_process_cpu_stats(self) -> None:
+        if (cpu_percent := self.kenning_process.cpu_percent()) is None:
+            KLogger.warning(
+                "Unknown Kenning process usage, assuming 0 percent."
+            )
+            cpu_percent = 0
+
+        cpus = cpu_percent / self.cpu_count
+        memory_percent = self.kenning_process.memory_percent()
+        self.measurements += {
+            f"{self.prefix}_cpus_percent": [[cpus]],
+            f"{self.prefix}_mem_percent": [memory_percent],
+            f"{self.prefix}_timestamp": [time.perf_counter()],
+        }
+
+    def _get_global_jetson_stats(self) -> None:
+        if not self.jetson:
+            return
+
+        gpu = self.jetson.stats
+        if gpu and "GPU" in gpu:
+            gpu = self.jetson.stats
+            # It is unable to get Jetson GPU load on given process
+            gpu_usage = float(gpu["GPU"])
+            memory_percent = self.kenning_process.memory_percent()
+
+            self.measurements += {
+                f"{self.prefix}_gpu_utilization": [gpu_usage],
+                # Jetson use RAM for GPU memory
+                f"{self.prefix}_gpu_mem_utilization": [memory_percent],
+                f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+            }
+
+        # collect power information from each lines:
+        if hasattr(self.jetson, "power"):
+            power = self.jetson.power
+
+            if "rail" in power:
+                rails = power["rail"]
+
+                for name, stats in rails.items():
+                    voltage = float(stats["volt"])
+                    current = float(stats["curr"])
+                    power = float(stats["power"])
+
+                    name = name.lower()
+                    self.measurements += {
+                        f"{self.prefix}_{name}_voltage": [voltage],
+                        f"{self.prefix}_{name}_current": [current],
+                        f"{self.prefix}_{name}_power": [power],
+                    }
+
+        # collect frequency information from each engine:
+        if hasattr(self.jetson, "engine"):
+            engines = self.jetson.engine
+
+            for group in engines.keys():
+                for name, engine in engines[group].items():
+                    frequency = float(engine["cur"])
+                    self.measurements += {
+                        f"{self.prefix}_{name.lower()}_frequency": [frequency]
+                    }
+
     def stop(self):
         self.running = False
+        if self.jetson:
+            self.jetson.close()
+
+        if pynvml and self.nvmlReady:
+            pynvml.nvmlShutdown()
+
         with self.runningcondition:
             self.runningcondition.notify_all()
 

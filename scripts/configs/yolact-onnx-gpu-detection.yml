@@ -1,3 +1,7 @@
+platform:
+  type: CUDAPlatform
+  parameters:
+    name: jetson_thor_devkit
 model_wrapper:
   type: kenning.modelwrappers.instance_segmentation.yolact.YOLACT
   parameters:
@@ -21,6 +25,13 @@ runtime:
     execution_providers:
     - CUDAExecutionProvider
     - CPUExecutionProvider
-
-
-
+report:
+  type: MarkdownReport
+  parameters:
+    measurements: ./build/yolact-onnx-gpu-detection-cfg.json
+    report_path: ./build/yolact-onnx-gpu-detection/report.md
+    report_name: "Sample ONNX model on GPU inference report"
+    report_types:
+      - performance
+      - classification
+    to_html: true

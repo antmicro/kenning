@@ -17,6 +17,13 @@ All information is stored in JSON format.
 
 While quality measurements are problem-specific (collected in the `evaluate` method of the [](dataset-api) class), performance metrics are common across devices and applications.
 
+Kenning can fetch performance metrics from CPU, NVIDIA Jeston and NVIDIA GPU.
+
+For CPU, Kenning collects process-specific measurements, based on Kenning PID.
+For NVIDIA Jetson, Kenning collects process-specific CPU and shared RAM/VRAM usage measurements and overall usage for GPU, engines or power draw.
+NVIDIA GPU allows to collect process-specific usage measurements with `nvidia-ml-py` library.
+But when Kenning is run inside Docker container, `--pid host` option is required, because `nvidia-ml-py` reports host machine processes PID, which differs from container processes PID.
+
 Metrics are collected with a certain prefix `<prefix>`, indicating the scope of computations.
 There are:
 

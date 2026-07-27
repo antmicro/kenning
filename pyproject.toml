@@ -78,7 +78,7 @@ coralnpu = [
     "tensorstore"
 ]
 nvidia_perf = [
-    "pynvml>=8.0.4,<11.5.0",
+    "nvidia-ml-py>=13.610.43",
 ]
 object_detection = [
     "boto3>=1.17.5",

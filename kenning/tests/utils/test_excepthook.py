@@ -29,6 +29,8 @@ IGNORED_MODULES = {
     "list_boards",
     # ai8x tools
     "ai8x",
+    # nvidia-ml-py, library for Nvidia GPU statisctics
+    "pynvml",
     # Python.NET modules
     "System",
     # TODO: LLM quantization modules. Will be replaced

@@ -2312,6 +2312,7 @@ all = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "nvidia-ml-py" },
     { name = "onnx-graphsurgeon" },
     { name = "onnx2tf" },
     { name = "onnx2torch" },
@@ -2332,7 +2333,6 @@ all = [
     { name = "pydub" },
     { name = "pyelftools" },
     { name = "pykwalify" },
-    { name = "pynvml" },
     { name = "pyod" },
     { name = "pyrenode3" },
     { name = "pyserial" },
@@ -2446,7 +2446,7 @@ nni = [
     { name = "torchvision" },
 ]
 nvidia-perf = [
-    { name = "pynvml" },
+    { name = "nvidia-ml-py" },
 ]
 object-detection = [
     { name = "boto3" },
@@ -2639,6 +2639,7 @@ requires-dist = [
     { name = "numba", marker = "extra == 'speech-to-text'", specifier = ">=0.66.0" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "numpy", marker = "extra == 'object-detection'", specifier = ">=2.2.6" },
+    { name = "nvidia-ml-py", marker = "extra == 'nvidia-perf'", specifier = ">=13.610.43" },
     { name = "onnx", specifier = "==1.22.0" },
     { name = "onnx-graphsurgeon", marker = "extra == 'onnx2tf'" },
     { name = "onnx2tf", marker = "extra == 'onnx2tf'", specifier = ">=1.28.8" },
@@ -2667,7 +2668,6 @@ requires-dist = [
     { name = "pydub", marker = "extra == 'speech-to-text'" },
     { name = "pyelftools", marker = "extra == 'zephyr'" },
     { name = "pykwalify", marker = "extra == 'zephyr'" },
-    { name = "pynvml", marker = "extra == 'nvidia-perf'", specifier = ">=8.0.4,<11.5.0" },
     { name = "pyod", marker = "extra == 'anomaly-detection'" },
     { name = "pyrenode3", marker = "extra == 'renode'", git = "https://github.com/antmicro/pyrenode3.git" },
     { name = "pyserial", marker = "extra == 'uart'" },
@@ -3757,6 +3757,15 @@ version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/79/12978b96bd44274fe38b5dde5cfb660b1d114f70a65ef962bcbbed99b549/nvidia_cusparselt_cu12-0.7.1-py3-none-manylinux2014_x86_64.whl", hash = "sha256:f1bb701d6b930d5a7cea44c19ceb973311500847f81b634d802b7b539dc55623", size = 287193691, upload-time = "2025-02-26T00:15:44.104Z" },
+]
+
+[[package]]
+name = "nvidia-ml-py"
+version = "13.610.43"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/b5/a8fbc356f768fa5c9cfd646668fd7d34bf55bdd1c6e20754642a64d930d4/nvidia_ml_py-13.610.43.tar.gz", hash = "sha256:65437eb73d68d0c62c931ca4d45038472faff03bd0b8729abba4b899f70d60f2", size = 52109, upload-time = "2026-06-01T18:54:08.829Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/45/caa600acfab94560807a20a64b5830d2cd3c3202b7f1328644d70b7d6bd8/nvidia_ml_py-13.610.43-py3-none-any.whl", hash = "sha256:f13c72698edef492f985cc225f14faafe68ae065a2e407f45bdf6f4b9b43fde8", size = 53163, upload-time = "2026-06-01T18:54:07.704Z" },
 ]
 
 [[package]]
@@ -4947,15 +4956,6 @@ dependencies = [
     { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8d/39/edac9acf3bd245ecf475151014cce3652c25ca3c2352eac725502cfce6ea/pynisher-0.6.4.tar.gz", hash = "sha256:111d91aad471375c0509a912415ff90053ef909100facf412511383af107c124", size = 11594, upload-time = "2021-02-24T19:58:20.089Z" }
-
-[[package]]
-name = "pynvml"
-version = "11.4.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/63/4f/a9d35c8bc45af9b5128e66d9af8099c91431db574cc90da0071ad432d110/pynvml-11.4.1.tar.gz", hash = "sha256:b2e4a33b80569d093b513f5804db0c7f40cfc86f15a013ae7a8e99c5e175d5dd", size = 64285, upload-time = "2021-12-08T21:28:57.271Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/0a/47be6726fd13f1f4371fa858b506228ed12bc418c07ffcaa6c0f7ceedac0/pynvml-11.4.1-py3-none-any.whl", hash = "sha256:d27be542cd9d06558de18e2deffc8022ccd7355bc7382255d477038e7e424c6c", size = 46986, upload-time = "2021-12-08T21:28:55.967Z" },
-]
 
 [[package]]
 name = "pyod"

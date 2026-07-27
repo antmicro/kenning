@@ -482,7 +482,7 @@ class NNIPruningOptimizer(Optimizer):
         optimizer = optimizer_cls(
             model.parameters(), lr=self.finetuning_learning_rate
         )
-        if KLogger.level == logging.INFO and self.finetuning_epochs > 0:
+        if KLogger.isEnabledFor(logging.INFO) and self.finetuning_epochs > 0:
             mean_loss = self.evaluate_model(model)
             KLogger.info(
                 "Fine-tuning model starting with mean loss "
@@ -490,7 +490,7 @@ class NNIPruningOptimizer(Optimizer):
             )
         for finetuning_epoch in range(self.finetuning_epochs):
             self.train_model(model, optimizer, criterion, max_epochs=1)
-            if KLogger.level == logging.INFO:
+            if KLogger.isEnabledFor(logging.INFO):
                 mean_loss = self.evaluate_model(model)
                 KLogger.info(
                     f"Epoch {finetuning_epoch + 1} from {self.finetuning_epochs}"  # noqa: E501

@@ -212,7 +212,6 @@ class ConverterRegistry(metaclass=Singleton):
         if "io_spec" in kwargs:
             kwargs["io_spec"] = ensure_processed_input(kwargs["io_spec"])
 
-
         for path in all_paths:
             KLogger.debug(f"Trying conversion path: {' -> '.join(path)}")
 

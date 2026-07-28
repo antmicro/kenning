@@ -69,7 +69,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch",
-    "torch==2.8.0",
+    "torch==2.10.0",
     "torchvision>=0.15.0",
 ]
 mxnet = [
@@ -356,4 +356,6 @@ nd = "nd"
 [tool.uv]
 override-dependencies = [
     "numpy>=1.23.2,<2.0.0",  # Enforce that numpy version for all packages.
+    "torch==2.10.0",         # Force executorch to accept torch 2.10
+    "scikit-learn>=1.7.2"
 ]

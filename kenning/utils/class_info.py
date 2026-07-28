@@ -27,8 +27,8 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
+from kenning.dispatcher.block_config import from_flag_to_name
 from kenning.utils.args_manager import (
-    from_argparse_name,
     jsontype_to_type,
     to_argparse_name,
 )
@@ -695,7 +695,7 @@ def instantiate_object(
     arg_tuples = [arguments[i : i + 2] for i in range(0, len(arguments), 2)]
 
     for arg_tuple in arg_tuples:
-        argparse_name = from_argparse_name(arg_tuple[0])
+        argparse_name = from_flag_to_name(arg_tuple[0])
 
         if argparse_name not in parameterschema["properties"].keys():
             raise ClassInfoInvalidArgumentError(

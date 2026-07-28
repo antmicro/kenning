@@ -34,6 +34,7 @@ import jsonschema
 import numpy as np
 
 from kenning.core.exceptions import InvalidArgumentsError
+from kenning.dispatcher.block_config import from_flag_to_name
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
@@ -115,13 +116,6 @@ supported_keywords = [
     "list_range",
     "item_range",
 ]
-
-
-def from_argparse_name(s):
-    """
-    Converts argparse name to snake-case name.
-    """
-    return s.lstrip("-").replace("-", "_")
 
 
 def to_argparse_name(s: str) -> str:
@@ -461,7 +455,7 @@ def get_parsed_args_dict(
     parsed_args = {}
     for arg_name, arg_properties in args_structure.items():
         if "argparse_name" in arg_properties:
-            argparse_name = from_argparse_name(arg_properties["argparse_name"])
+            argparse_name = from_flag_to_name(arg_properties["argparse_name"])
         else:
             argparse_name = arg_name
 
@@ -762,7 +756,7 @@ def add_parameterschema_argument(
 
         if "argparse_name" in prop:
             argparse_name = prop["argparse_name"]
-            argschema_name = from_argparse_name(argparse_name)
+            argschema_name = from_flag_to_name(argparse_name)
         else:
             argschema_name = name
 
@@ -991,7 +985,7 @@ class ArgumentsHandler(ABC):
                 if not hasattr(self, arg_name):
                     continue
                 if "argparse_name" in arg_opts:
-                    name = from_argparse_name(arg_opts["argparse_name"])
+                    name = from_flag_to_name(arg_opts["argparse_name"])
                 else:
                     name = arg_name
 

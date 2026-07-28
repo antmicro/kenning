@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "torch==2.8.0", "nvidia-cutlass==3.5.1.0"]
+requires = ["setuptools>=40.8.0", "wheel", "torch==2.11.0", "nvidia-cutlass==3.5.1.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,10 +20,24 @@ classifiers = [
 ]
 dependencies = [
     "safetensors==0.4.3",
-    "torch==2.10.0",
-    "vllm==0.19",
+    "numpy>=2.0.0",
+    "torch==2.11.0",
+    "vllm==0.21.0",
     "transformers>=5.0.0",  # version fixed for sparsegpt+gptq optimization
 ]
 
+# Force the pytorch version compiled against CUDA 12.9 to
+# ensure a common cuda version in environments where full kenning and
+# this package are required to be installed.
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu129" }
+torchvision = { index = "pytorch-cu129" }
+vllm = { url = "https://wheels.vllm.ai/ad7125a431e176d4161099480a66f0169609a690/vllm-0.21.0%2Bcu129-cp38-abi3-manylinux_2_34_x86_64.whl" }
+
 [tool.setuptools.packages.find]
 include = ["kenning_sparsity_aware_kernel*"]
+

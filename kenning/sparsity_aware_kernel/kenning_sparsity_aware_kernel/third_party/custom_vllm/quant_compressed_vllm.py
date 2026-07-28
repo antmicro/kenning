@@ -8,9 +8,10 @@ This module is used to run compressed model with GPTQ quantization.
 from typing import List, Optional
 
 import torch
-from torch.nn.parameter import Parameter
+
 # MODIFIED: Adding custom kernel import
-import custom_ext # noqa: I001
+import custom_ext  # isort: skip
+from torch.nn.parameter import Parameter
 from vllm.model_executor.layers.linear import LinearMethodBase
 
 # Adding GPTQConfig and ExllamaState imports

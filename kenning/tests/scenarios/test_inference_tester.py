@@ -63,7 +63,7 @@ def measurements_expected(
         return 0
 
     mocker.patch(name, return_value=mock)
-    mocker.patch(f"{name}.from_json_cfg", return_value=mock)
+    mocker.patch(f"{name}.from_objs_dict", return_value=mock)
     mock.run = run
     mock.optimizers = [None]
     mock.dataset = mocker.Mock()

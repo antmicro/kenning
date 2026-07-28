@@ -28,4 +28,5 @@ source/generated/AnomalyDetectionDatasetInfo.md:
 # placed alongside the .md report file. Therefore in the reports path to the trace file is given as ../zephyr_traces_report.html. In the docs folder structure is different, so
 # we need to adjust by changing the path.
 	@if [ -f "source/generated/sample-zephyr-tracing.md" ]; then sed -i 's|../zephyr_traces_report.html|zephyr_traces_report.html|g' source/generated/sample-zephyr-tracing.md; fi
+	@if [ -f "source/generated/sample-riscv-zephyr-tracing-report.md" ]; then sed -i 's|../zephyr_traces_report.html|zephyr_traces_report.html|g' source/generated/sample-riscv-zephyr-tracing-report.md; fi
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

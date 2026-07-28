@@ -1,0 +1,32 @@
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: hifive_unmatched/fu740/u74
+    simulated: true
+    enable_zephelin: true
+    zephyr_build_path: ./build
+
+model_wrapper:
+  type: PyTorchMagicWandModelWrapper
+  parameters:
+    model_path: kenning:///models/classification/magic_wand.pth
+
+dataset:
+  type: MagicWandDataset
+  parameters:
+    dataset_root: ./build/data
+
+optimizers:
+  - type: TVMCompiler
+    parameters:
+      compiled_model_path: ./build/compiled-model-magic-wand.graph_data
+
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    workspace: .
+    run_west_update: false
+    output_path: ./build/hifive_unmatched/
+    extra_targets: [board-repl]
+    extra_build_args:
+      - "-DCONFIG_KENNING_TVM_MODEL_PRE_GEN=y"

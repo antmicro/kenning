@@ -216,6 +216,7 @@ EXPECTED_FAIL = [
     ("YOLACTWithPostprocessing", "TVMCompiler"),
     ("YOLACTWithPostprocessing", "TensorFlowClusteringOptimizer"),
     ("YOLACTWithPostprocessing", "TensorFlowPruningOptimizer"),
+    ("YOLOV4TL", "Ai8xCompiler"),
     ("TVMDarknetCOCOYOLOV3", "TVMCompiler"),
     ("TVMDarknetCOCOYOLOV3", "TensorFlowClusteringOptimizer"),
     ("TVMDarknetCOCOYOLOV3", "TensorFlowPruningOptimizer"),

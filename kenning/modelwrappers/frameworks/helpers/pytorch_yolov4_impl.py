@@ -7,54 +7,9 @@ YOLOv4 implementation in pytorch based on https://github.com/Tianxiaomo/pytorch-
 """
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
 from kenning.utils.logger import KLogger
-
-
-class _Mish(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x):
-        x = x * (torch.tanh(torch.nn.functional.softplus(x)))
-        return x
-
-
-class _Upsample(nn.Module):
-    def __init__(self):
-        super(_Upsample, self).__init__()
-
-    def forward(self, x, target_size, inference=False):
-        assert x.data.dim() == 4
-        # _, _, tH, tW = target_size
-
-        if inference:
-            """
-            B = x.data.size(0)
-            C = x.data.size(1)
-            H = x.data.size(2)
-            W = x.data.size(3)
-            """
-
-            return (
-                x.view(x.size(0), x.size(1), x.size(2), 1, x.size(3), 1)
-                .expand(
-                    x.size(0),
-                    x.size(1),
-                    x.size(2),
-                    target_size[2] // x.size(2),
-                    x.size(3),
-                    target_size[3] // x.size(3),
-                )
-                .contiguous()
-                .view(x.size(0), x.size(1), target_size[2], target_size[3])
-            )
-        else:
-            return F.interpolate(
-                x, size=(target_size[2], target_size[3]), mode="nearest"
-            )
 
 
 class _Conv_Bn_Activation(nn.Module):
@@ -90,7 +45,7 @@ class _Conv_Bn_Activation(nn.Module):
         if bn:
             self.conv.append(nn.BatchNorm2d(out_channels))
         if activation == "mish":
-            self.conv.append(_Mish())
+            self.conv.append(torch.nn.Mish())
         elif activation == "relu":
             self.conv.append(nn.ReLU(inplace=True))
         elif activation == "leaky":
@@ -277,10 +232,8 @@ class _DownSample5(nn.Module):
 
 
 class _neek(nn.Module):
-    def __init__(self, inference=False):
+    def __init__(self):
         super().__init__()
-        self.inference = inference
-
         self.conv1 = _Conv_Bn_Activation(1024, 512, 1, 1, "leaky")
         self.conv2 = _Conv_Bn_Activation(512, 1024, 3, 1, "leaky")
         self.conv3 = _Conv_Bn_Activation(1024, 512, 1, 1, "leaky")
@@ -296,7 +249,7 @@ class _neek(nn.Module):
         self.conv6 = _Conv_Bn_Activation(1024, 512, 1, 1, "leaky")
         self.conv7 = _Conv_Bn_Activation(512, 256, 1, 1, "leaky")
         # UP
-        self.upsample1 = _Upsample()
+        self.upsample1 = torch.nn.Upsample(scale_factor=2, mode="nearest")
         # R 85
         self.conv8 = _Conv_Bn_Activation(512, 256, 1, 1, "leaky")
         # R -1 -3
@@ -307,7 +260,7 @@ class _neek(nn.Module):
         self.conv13 = _Conv_Bn_Activation(512, 256, 1, 1, "leaky")
         self.conv14 = _Conv_Bn_Activation(256, 128, 1, 1, "leaky")
         # UP
-        self.upsample2 = _Upsample()
+        self.upsample2 = torch.nn.Upsample(scale_factor=2, mode="nearest")
         # R 54
         self.conv15 = _Conv_Bn_Activation(256, 128, 1, 1, "leaky")
         # R -1 -3
@@ -317,7 +270,7 @@ class _neek(nn.Module):
         self.conv19 = _Conv_Bn_Activation(128, 256, 3, 1, "leaky")
         self.conv20 = _Conv_Bn_Activation(256, 128, 1, 1, "leaky")
 
-    def forward(self, input, downsample4, downsample3, inference=False):
+    def forward(self, input, downsample3, downsample4):
         x1 = self.conv1(input)
         x2 = self.conv2(x1)
         x3 = self.conv3(x2)
@@ -332,9 +285,9 @@ class _neek(nn.Module):
         x6 = self.conv6(x5)
         x7 = self.conv7(x6)
         # UP
-        up = self.upsample1(x7, downsample4.size(), self.inference)
+        up = self.upsample1(x7)
         # R 85
-        x8 = self.conv8(downsample4)
+        x8 = self.conv8(downsample3)
         # R -1 -3
         x8 = torch.cat([x8, up], dim=1)
 
@@ -346,9 +299,9 @@ class _neek(nn.Module):
         x14 = self.conv14(x13)
 
         # UP
-        up = self.upsample2(x14, downsample3.size(), self.inference)
+        up = self.upsample2(x14)
         # R 54
-        x15 = self.conv15(downsample3)
+        x15 = self.conv15(downsample4)
         # R -1 -3
         x15 = torch.cat([x15, up], dim=1)
 
@@ -361,10 +314,8 @@ class _neek(nn.Module):
 
 
 class _Yolov4Head(nn.Module):
-    def __init__(self, output_ch, n_classes, inference=False):
+    def __init__(self, output_ch, n_classes):
         super().__init__()
-        self.inference = inference
-
         self.conv1 = _Conv_Bn_Activation(128, 256, 3, 1, "leaky")
         self.conv2 = _Conv_Bn_Activation(
             256, output_ch, 1, 1, "linear", bn=False, bias=True
@@ -434,9 +385,7 @@ class Yolov4(nn.Module):
     Yolov4 model.
     """
 
-    def __init__(
-        self, yolov4conv137weight=None, n_classes=80, inference=False
-    ):
+    def __init__(self, yolov4conv137weight=None, n_classes=80):
         super().__init__()
 
         output_ch = (4 + 1 + n_classes) * 3
@@ -448,7 +397,7 @@ class Yolov4(nn.Module):
         self.down4 = _DownSample4()
         self.down5 = _DownSample5()
         # neek
-        self.neek = _neek(inference)
+        self.neek = _neek()
         # yolov4conv137
         if yolov4conv137weight:
             _model = nn.Sequential(
@@ -472,7 +421,7 @@ class Yolov4(nn.Module):
             _model.load_state_dict(model_dict)
 
         # head
-        self.head = _Yolov4Head(output_ch, n_classes, inference)
+        self.head = _Yolov4Head(output_ch, n_classes)
 
     def forward(self, input):
         d1 = self.down1(input)

@@ -12,14 +12,14 @@ https://github.com/vllm-project/vllm/blob/88407532e7ec2dd3313f6cb3a31d8dd1fa8681
 
 from typing import Optional
 
-import custom_ext
 import torch
+from torch.nn.parameter import Parameter
+import custom_ext # noqa: I001
 from kenning_sparsity_aware_kernel.utils import (
     GPTQConfig,
     assert_and_assign,
     set_weight_attrs,
 )
-from torch.nn.parameter import Parameter
 
 COMPRESSION_RATIO = 2
 METADATA_PACK_FACTOR = 8

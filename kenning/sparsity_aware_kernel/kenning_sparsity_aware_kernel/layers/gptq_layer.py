@@ -13,15 +13,16 @@ It is only used for testing purposes and does not implement a forward pass.
 
 from typing import Optional
 
-import custom_ext
 import torch
+from torch.nn.parameter import Parameter
+import custom_ext # noqa: I001
+
 from kenning_sparsity_aware_kernel.utils import (
     ExllamaState,
     GPTQConfig,
     assert_and_assign,
     set_weight_attrs,
 )
-from torch.nn.parameter import Parameter
 
 from kenning.core.exceptions import NotSupportedError
 

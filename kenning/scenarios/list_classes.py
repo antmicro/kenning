@@ -24,8 +24,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
     generate_command_type,
 )
-from kenning.utils.class_info import generate_class_info, get_class_description
-from kenning.utils.class_loader import (
+from kenning.dispatcher.block_config import (
     AUTOML,
     CONVERTERS,
     DATA_CONVERTERS,
@@ -39,6 +38,9 @@ from kenning.utils.class_loader import (
     RUNNERS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
+)
+from kenning.utils.class_info import generate_class_info, get_class_description
+from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
 )

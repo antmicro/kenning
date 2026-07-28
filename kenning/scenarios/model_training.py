@@ -23,14 +23,13 @@ from kenning.cli.command_template import (
     ParserHelpException,
     generate_command_type,
 )
-from kenning.cli.completers import DATASETS, ClassPathCompleter
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
+from kenning.dispatcher.block_config import (
+    ConfigKey,
+)
 from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import (
-    MODEL_WRAPPERS,
-    PLATFORMS,
-    ConfigKey,
     get_command,
     load_class,
     obj_from_json,
@@ -80,20 +79,10 @@ class TrainModel(CommandTemplate):
         ).completer = FilesCompleter(
             allowednames=("*.json", "*.yaml", "*.yml")
         )
-        groups[FLAG_CONFIG].add_argument(
-            "--modelwrapper-cls",
-            help=_(
-                "ModelWrapper-based class with inference implementation to import"  # noqa: E501
-            ),
-        ).completer = ClassPathCompleter(MODEL_WRAPPERS)
-        groups[FLAG_CONFIG].add_argument(
-            "--dataset-cls",
-            help=_("Dataset-based class with dataset to import"),
-        ).completer = ClassPathCompleter(DATASETS)
-        groups[FLAG_CONFIG].add_argument(
-            "--platform-cls",
-            help="Platform-based class that wraps platform being tested",
-        ).completer = ClassPathCompleter(PLATFORMS)
+        CommandTemplate.add_block_flags_to_argparse(
+            groups[FLAG_CONFIG],
+            [ConfigKey.model_wrapper, ConfigKey.dataset, ConfigKey.platform],
+        )
 
         return parser, groups
 

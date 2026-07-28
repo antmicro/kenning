@@ -42,10 +42,10 @@ from kenning.core.exceptions import ModelNotPreparedError, NotSupportedError
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, ServerAction, ServerStatus
 from kenning.core.runtime import Runtime
+from kenning.dispatcher.block_config import CONFIG_KEY_TO_CLS_FLAG
 from kenning.platforms.local import LocalPlatform
 from kenning.utils.args_manager import (
     report_missing,
-    to_namespace_name,
 )
 from kenning.utils.class_loader import (
     ConfigKey,
@@ -485,7 +485,7 @@ class InferenceServerRunner(CommandTemplate):
 
             def required(classes: Dict[ConfigKey, Type]):
                 if ConfigKey.runtime not in classes:
-                    report_missing([to_namespace_name(ConfigKey.runtime)])
+                    report_missing([CONFIG_KEY_TO_CLS_FLAG[ConfigKey.runtime]])
 
             objs = objs_from_argparse(
                 args, not_parsed, keys, required=required

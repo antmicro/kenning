@@ -45,7 +45,6 @@ from kenning.dispatcher.block_config import (
     BLOCK_CONFIGURATIONS_KEY,
     BLOCK_DIRECT_ARGUMENTS_KEY,
     UNAFFILIATED_PARAMETERS_KEY,
-    ConfigKey,
     KenningBlockConfigDict,
     from_flag_to_name,
 )
@@ -134,28 +133,6 @@ def from_name_to_flag(s: str) -> str:
     Converts entry from arguments_structure to argparse entry.
     """
     return "--" + s.replace("_", "-")
-
-
-def to_namespace_name(s: ConfigKey) -> str:
-    """
-    Converts class key to the name that is stored in the
-    ``argparse.Namespace``.
-
-    Parameters
-    ----------
-    s : ConfigKey
-        Configuration key of the class.
-
-    Returns
-    -------
-    str
-        Name of the attribute in the namespace.
-    """
-    from kenning.utils.class_loader import ConfigKey
-
-    if s == ConfigKey.optimizers:
-        return "compiler_cls"
-    return s.name.replace("_", "") + "_cls"
 
 
 def convert_to_jsontype(v: Any) -> Any:

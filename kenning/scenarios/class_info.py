@@ -26,6 +26,7 @@ from kenning.cli.command_template import (
     generate_command_type,
 )
 from kenning.cli.completers import ClassPathCompleter
+from kenning.cli.parser import USED_SUBCOMMANDS
 from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
     get_module_path,
@@ -105,8 +106,6 @@ class ClassInfoRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        from kenning.cli.config import USED_SUBCOMMANDS
-
         args_dict = {
             k: v
             for k, v in vars(args).items()

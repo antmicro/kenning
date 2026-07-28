@@ -14,7 +14,6 @@ import importlib.util
 import inspect
 import sys
 from contextlib import contextmanager
-from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
@@ -45,50 +44,33 @@ from kenning.core.report import Report
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.dispatcher.block_config import (
+    AUTOML,
+    BLOCK_CONFIGURATIONS_KEY,
+    CONFIG_KEY_TO_CLS_FLAG,
+    CONVERTERS,
+    DATA_CONVERTERS,
+    DATA_PROVIDERS,
+    DATASETS,
+    INFERENCE_LOOPS,
+    MODEL_WRAPPERS,
+    OPTIMIZERS,
+    OUTPUT_COLLECTORS,
+    PLATFORMS,
+    REPORT,
+    RUNNERS,
+    RUNTIME_BUILDERS,
+    RUNTIME_PROTOCOLS,
+    RUNTIMES,
+    ConfigKey,
+    KenningBlockConfigDict,
+)
 from kenning.utils.args_manager import (
     convert_to_jsontype,
+    from_flag_to_name,
     get_parsed_args_dict,
-    to_namespace_name,
 )
 from kenning.utils.logger import KLogger
-
-OPTIMIZERS = "optimizers"
-RUNNERS = "runners"
-DATA_PROVIDERS = "dataproviders"
-DATA_CONVERTERS = "dataconverters"
-DATASETS = "datasets"
-MODEL_WRAPPERS = "modelwrappers"
-ONNX_CONVERSIONS = "onnxconversions"
-OUTPUT_COLLECTORS = "outputcollectors"
-PLATFORMS = "platforms"
-RUNTIME_BUILDERS = "runtimebuilders"
-INFERENCE_LOOPS = "inferenceloops"
-RUNTIME_PROTOCOLS = "protocols"
-RUNTIMES = "runtimes"
-AUTOML = "automl"
-REPORT = "report"
-CONVERTERS = "converters"
-
-
-class ConfigKey(str, Enum):
-    """
-    Enum with fields available in configuration.
-
-    `name` property defines key in configuration,
-    `value` property defines type of the class given field can store.
-    """
-
-    dataset = DATASETS
-    runtime = RUNTIMES
-    optimizers = OPTIMIZERS
-    platform = PLATFORMS
-    protocol = RUNTIME_PROTOCOLS
-    model_wrapper = MODEL_WRAPPERS
-    runtime_builder = RUNTIME_BUILDERS
-    inference_loop = INFERENCE_LOOPS
-    dataconverter = DATA_CONVERTERS
-    automl = AUTOML
-    report = REPORT
 
 
 def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
@@ -277,6 +259,160 @@ def get_all_subclasses(
     return result
 
 
+def classes_from_full_dict_config(
+    full_dict_config: KenningBlockConfigDict
+) -> Dict[ConfigKey, Union[type, List[type]]]:
+    """
+    Loads and returns block classes based on a Kenning configuration dict.
+
+    Parameters
+    ----------
+    full_dict_config: KenningBlockConfigDict
+        Special Kenning block configuration dict, with format as specified in
+        kenning.dispatcher.block_config
+
+    Returns
+    -------
+    Dict[ConfigKey, Union[type, List[type]]]
+        Classes. For each ConfigKey there is a single class, except for
+        ConfigKey.optimizers (for which there is a list of classes).
+    """
+    keys = full_dict_config[BLOCK_CONFIGURATIONS_KEY].keys()
+
+    keys = [ConfigKey(key) for key in keys]
+
+    classes = {}
+
+    for key in keys:
+        if key == ConfigKey.optimizers:
+            optimizer_classes = []
+            for optimizer in list(
+                full_dict_config[BLOCK_CONFIGURATIONS_KEY][
+                    ConfigKey.optimizers
+                ].keys()
+            ):
+                if optimizer:
+                    optimizer_classes.append(load_class(optimizer))
+            classes[ConfigKey.optimizers] = optimizer_classes
+        else:
+            class_name = list(
+                full_dict_config[BLOCK_CONFIGURATIONS_KEY][key].keys()
+            )[0]
+            if class_name:
+                classes[key] = load_class(class_name)
+    return classes
+
+
+def objs_from_full_dict_config(
+    full_dict_config: KenningBlockConfigDict
+) -> Dict[ConfigKey, Any]:
+    """
+    Builds block objects based on a Kenning configuration dict.
+
+    Parameters
+    ----------
+    full_dict_config: KenningBlockConfigDict
+        Special Kenning block configuration dict, with format as specified in
+        kenning.dispatcher.block_config
+
+    Returns
+    -------
+    Dict[ConfigKey, Any]
+        Parsed objects. For each ConfigKey there is a single object, except for
+        ConfigKey.optimizers, for which there is a list of objects.
+    """
+    classes = classes_from_full_dict_config(full_dict_config)
+
+    objs = {
+        key: cls.build_from_config(full_dict_config)
+        for key, cls in classes.items()
+        if key
+        in [
+            ConfigKey.platform,
+            ConfigKey.protocol,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+            ConfigKey.runtime_builder,
+        ]
+    }
+
+    dataset = objs.get(ConfigKey.dataset)
+
+    if modelwrappercls := classes.get(ConfigKey.model_wrapper):
+        objs[ConfigKey.model_wrapper] = (
+            modelwrappercls.build_from_config(
+                full_dict_config, dataset=dataset
+            )
+            if modelwrappercls
+            else None
+        )
+
+    if reportcls := classes.get(ConfigKey.report):
+        objs[ConfigKey.report] = (
+            reportcls.build_from_config(
+                full_dict_config,
+                model_wrapper=objs[ConfigKey.model_wrapper]
+                if ConfigKey.model_wrapper in objs
+                else None,
+            )
+            if reportcls
+            else None
+        )
+
+    # TODO: This is a temporal solution, in future dataconverter
+    # should be parsed separately
+    if model := objs.get(ConfigKey.model_wrapper):
+        from kenning.dataconverters.modelwrapper_dataconverter import (
+            ModelWrapperDataConverter,
+        )
+
+        objs[ConfigKey.dataconverter] = ModelWrapperDataConverter(model)
+
+    if compilercls_list := classes.get(ConfigKey.optimizers):
+        objs[ConfigKey.optimizers] = [
+            compilercls.build_from_config(
+                full_dict_config,
+                dataset=dataset,
+                model_wrapper=objs[ConfigKey.model_wrapper]
+                if ConfigKey.model_wrapper in objs
+                else None,
+            )
+            for compilercls in compilercls_list
+        ]
+    else:
+        objs[ConfigKey.optimizers] = []
+
+    automl_optional_deps = {}
+    if ConfigKey.platform in objs:
+        automl_optional_deps["platform"] = objs[ConfigKey.platform]
+    if ConfigKey.optimizers in objs:
+        automl_optional_deps["optimizers"] = objs[ConfigKey.optimizers]
+    if ConfigKey.runtime in objs:
+        automl_optional_deps["runtime"] = objs[ConfigKey.runtime]
+
+    if automl := classes.get(ConfigKey.automl):
+        objs[ConfigKey.automl] = (
+            automl.build_from_config(
+                full_dict_config, dataset=dataset, **automl_optional_deps
+            )
+            if automl
+            else None
+        )
+
+    if inference_loop := classes.get(ConfigKey.inference_loop):
+        objs[ConfigKey.inference_loop] = inference_loop.build_from_config(
+            full_dict_config,
+            dataset=objs.get(ConfigKey.dataset),
+            dataconverter=objs.get(ConfigKey.dataconverter),
+            model_wrapper=objs.get(ConfigKey.model_wrapper),
+            platform=objs.get(ConfigKey.platform),
+            protocol=objs.get(ConfigKey.protocol),
+            runtime=objs.get(ConfigKey.runtime),
+        )
+
+    return objs
+
+
 def objs_from_json(
     json_cfg: Dict[str, Any],
     keys: Set[ConfigKey],
@@ -455,7 +591,13 @@ def objs_from_argparse(
     classes = {
         key: cls
         for key in keys
-        if (class_arg := getattr(args, to_namespace_name(key), None))
+        if (
+            class_arg := getattr(
+                args,
+                from_flag_to_name(CONFIG_KEY_TO_CLS_FLAG[key]),
+                None,
+            )
+        )
         if (cls := load_class(class_arg))
     }
 
@@ -877,9 +1019,11 @@ def get_command(argv: List[str] = None, with_slash: bool = True) -> List[str]:
         argv = sys.argv
     command = [ar.strip() for ar in argv if ar.strip() != ""]
 
+    import kenning
+
     modulename = None
-    if not str(Path(command[0]).resolve()).endswith("kenning"):
-        modulename = get_kenning_submodule_from_path(command[0])
+    if not str(Path(kenning.__file__).resolve()).endswith("kenning"):
+        modulename = get_kenning_submodule_from_path(kenning.__file__)
 
     flagpresent = False
     first_flag = 1

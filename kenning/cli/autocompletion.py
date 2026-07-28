@@ -16,9 +16,9 @@ from argcomplete.finders import CompletionFinder
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
-    USED_SUBCOMMANDS,
     setup_base_parser,
 )
+from kenning.cli.parser import USED_SUBCOMMANDS
 from kenning.utils.class_loader import load_class, load_class_by_key
 
 # Subcommands without help

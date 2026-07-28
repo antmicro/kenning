@@ -11,8 +11,7 @@ from typing import Dict, Optional
 
 from argcomplete.completers import BaseCompleter
 
-from kenning.scenarios.list_classes import list_classes
-from kenning.utils.class_loader import (
+from kenning.dispatcher.block_config import (
     AUTOML,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
@@ -27,6 +26,7 @@ from kenning.utils.class_loader import (
     RUNTIME_PROTOCOLS,
     RUNTIMES,
 )
+from kenning.scenarios.list_classes import list_classes
 
 ALL_TYPES = (
     AUTOML,

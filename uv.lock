@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and platform_machine != 's390x' and sys_platform == 'win32'",
@@ -2027,6 +2027,7 @@ dependencies = [
     { name = "tf-keras", version = "2.21.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "tqdm" },
+    { name = "typeguard" },
 ]
 
 [package.optional-dependencies]
@@ -2514,6 +2515,7 @@ requires-dist = [
     { name = "tvm", marker = "python_full_version == '3.10.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "tvm", marker = "python_full_version == '3.11.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "tvm", marker = "python_full_version == '3.12.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
+    { name = "typeguard" },
     { name = "west", marker = "extra == 'zephyr'" },
 ]
 provides-extras = ["docs", "tensorflow", "torch", "mxnet", "nvidia-perf", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "tflite", "tvm", "tinygrad", "iree", "onnxruntime", "onnxruntime-gpu", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "llm", "onnx2tf", "executorch", "sklearn", "emlearn", "all"]

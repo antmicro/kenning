@@ -29,8 +29,8 @@ from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.dispatcher.block_config import from_flag_to_name
 from kenning.utils.args_manager import (
+    from_name_to_flag,
     jsontype_to_type,
-    to_argparse_name,
 )
 from kenning.utils.excepthook import (
     MissingKenningDependencies,
@@ -583,7 +583,7 @@ def get_args_structure_from_parameterschema(
             resulting_lines.append(f"* {arg_dict['description']}\n")
 
         resulting_lines.append(
-            f"* argparse flag: `{to_argparse_name(arg_name)}`\n"
+            f"* argparse flag: `{from_name_to_flag(arg_name)}`\n"
         )
 
         for key, value in arg_dict.items():
@@ -699,8 +699,8 @@ def instantiate_object(
 
         if argparse_name not in parameterschema["properties"].keys():
             raise ClassInfoInvalidArgumentError(
-                f"Argparse name {to_argparse_name(argparse_name)} not present "
-                f"in argument specification"
+                f"Argparse name {from_name_to_flag(argparse_name)} not present"
+                f" in argument specification"
             )
 
         parameter = parameterschema["properties"][argparse_name]

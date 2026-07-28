@@ -17,6 +17,8 @@ from typing import List, Optional
 from kenning.cli.formatter import Formatter
 
 HELP_FLAGS = ("-h", "--help")
+# Destination of used subcommands list
+USED_SUBCOMMANDS = "__seq"
 
 
 def print_help_from_parsers(
@@ -43,6 +45,25 @@ def print_help_from_parsers(
         description=description,
         add_help=False,
     ).print_help()
+
+
+def get_used_subcommands(
+    args: argparse.Namespace,
+) -> List[str]:
+    """
+    Returns used subcommands from parsed arguments.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments.
+
+    Returns
+    -------
+    List[str]
+        List with used subcommands.
+    """
+    return getattr(args, USED_SUBCOMMANDS, [])
 
 
 class ParserHelpException(BaseException):

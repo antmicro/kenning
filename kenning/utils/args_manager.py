@@ -10,11 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import os.path
+import typing
 from abc import ABC
 from pathlib import Path
 from types import UnionType
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -32,14 +32,24 @@ from typing import (
 
 import jsonschema
 import numpy as np
+from typeguard import check_type
 
-from kenning.core.exceptions import InvalidArgumentsError
-from kenning.dispatcher.block_config import from_flag_to_name
+from kenning.cli.parser import get_used_subcommands
+from kenning.core.exceptions import (
+    ArgsManagerConvertError,
+    ConfigurationError,
+    InvalidArgumentsError,
+)
+from kenning.dispatcher.block_config import (
+    BLOCK_CONFIG_PARAMETERS_KEY,
+    BLOCK_CONFIGURATIONS_KEY,
+    BLOCK_DIRECT_ARGUMENTS_KEY,
+    UNAFFILIATED_PARAMETERS_KEY,
+    ConfigKey,
+    KenningBlockConfigDict,
+    from_flag_to_name,
+)
 from kenning.utils.logger import KLogger
-
-if TYPE_CHECKING:
-    from kenning.utils.class_loader import ConfigKey
-from kenning.core.exceptions import ArgsManagerConvertError
 from kenning.utils.resource_manager import ResourceURI
 
 """
@@ -109,16 +119,17 @@ supported_keywords = [
     "required",
     "enum",
     "nullable",
-    "subcommands",
+    "subcommands",  # DEPRECATED
     "overridable",
-    # AutoML specific keys
+    # optional keys (do not need to be in the argument definition and have no
+    # default values).
     "AutoML",
     "list_range",
     "item_range",
 ]
 
 
-def to_argparse_name(s: str) -> str:
+def from_name_to_flag(s: str) -> str:
     """
     Converts entry from arguments_structure to argparse entry.
     """
@@ -618,7 +629,7 @@ def add_argparse_argument(
     KeyError :
         Raised if there is a keyword that is not recognized.
     """
-    from kenning.cli.config import AVAILABLE_COMMANDS, get_used_subcommands
+    from kenning.cli.config import AVAILABLE_COMMANDS
 
     if not names:
         names = struct.keys()
@@ -639,7 +650,7 @@ def add_argparse_argument(
         if "argparse_name" in prop:
             argparse_name = prop["argparse_name"]
         else:
-            argparse_name = to_argparse_name(name)
+            argparse_name = from_name_to_flag(name)
 
         keywords = {}
         if "type" in prop:
@@ -701,10 +712,8 @@ def add_argparse_argument(
                 keywords["type"] = prop_type
         if "description" in prop:
             keywords["help"] = prop["description"]
-        if "default" in prop and not override_only:
-            keywords["default"] = prop["default"]
-        if "required" in prop and prop["required"] and not override_only:
-            keywords["required"] = prop["required"]
+        keywords["default"] = argparse.SUPPRESS
+        keywords["required"] = False
         if "enum" in prop:
             keywords["choices"] = prop["enum"]
 
@@ -875,6 +884,26 @@ class ArgumentsHandler(ABC):
         return parameterschema
 
     @classmethod
+    def get_full_arguments_structure(cls) -> Dict:
+        """
+        Takes 'arguments_structure' (dicts describing user-defined block
+        parameters) from this class, and from all parent classes in the
+        inheritance chain, and combines them. Settings from child always
+        override settings from parent.
+
+        Returns
+        -------
+        Dict
+            Combined 'arguments_structure' from the inheritance chain.
+        """
+        full_arguments_structure = cls.arguments_structure
+        for curr_cls in traverse_parents_with_args(cls):
+            full_arguments_structure = (
+                curr_cls.arguments_structure | full_arguments_structure
+            )
+        return full_arguments_structure
+
+    @classmethod
     def form_argparse(
         cls, args: argparse.Namespace, override_only: bool = False
     ) -> Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]:
@@ -966,6 +995,394 @@ class ArgumentsHandler(ABC):
 
         cls_args = dict(parsed_json_dict, **kwargs)
 
+        return cls(**cls_args)
+
+    @classmethod
+    def cast_complex_type(
+        cls, value: Any, target_type: type | Tuple[type]
+    ) -> Any:
+        """
+        Casts a value, or a does a recursive cast, if the value is a container.
+
+        Parameters
+        ----------
+        value: Any
+            Value to be converted. Can be any object, or a list, union or tuple
+            of objects (also recursively). For example types such as:
+            Tuple[List[List[Tuple[int]]], Tuple[str]] are supported.
+        target_type: type | Tuple[type]
+            A type or multiple types (in case of value being a container), that
+            the value should be converted to. When type is a container type,
+            and value is another container type - the kind of container will be
+            preserved (this function cannot change container type, it only
+            casts values inside containers).
+
+        Returns
+        -------
+        Any
+            Converted value.
+
+        Raises
+        ------
+        ValueError
+            Casting is not possible.
+        """
+        if isinstance(value, (list, List, Tuple, tuple)):
+            if not hasattr(target_type, "__args__"):
+                raise ValueError(
+                    f"{value} is a container, but {target_type} is not a"
+                    " container type."
+                )
+            subtypes = target_type.__args__
+            # If length of the type tuple matches the length of container,
+            # we may conclude that each container item has a different
+            # corresponding type. Otherwise we assume that the entire type
+            # applies to every item separately (e.g. List[str] vs
+            # Tuple[int, str])
+            return type(value)(
+                [
+                    cls.cast_complex_type(
+                        value[i],
+                        subtypes[i]
+                        if len(subtypes) == len(value)
+                        else subtypes,
+                    )
+                    for i in range(len(value))
+                ]
+            )
+        if type(target_type) is tuple:
+            target_type = target_type[0]
+        if type(value) is target_type:
+            return value
+        try:
+            check_type(value, value, target_type)
+            return value
+        except TypeError:
+            ...
+        try:
+            return target_type(value)
+        except TypeError:
+            raise ValueError(f"Casting {value} to {target_type} failed.")
+
+    @classmethod
+    def convert_value(cls, value: Any, spec: Dict) -> Any:
+        """
+        Converts given value to type required by a given 'arguments_structure'
+        argument.
+
+        Parameters
+        ----------
+        value: Any
+            Value to be converted. Can be any object, or a list, union or tuple
+            of objects (also recursively). For example types such as:
+            Union[List[List[Tuple[int]]], Tuple[str]] are supported, so are
+            enums, None values etc.
+        spec: Dict
+            A value of the 'arguments_structure' dict, for the argument to be
+            matched.
+
+        Returns
+        -------
+        Any
+            Converted value.
+
+        Raises
+        ------
+        ArgsManagerConvertError
+            Thrown when value cannot be safely converted.
+        """
+        if value is None:
+            if spec["nullable"]:
+                return None
+            else:
+                raise ArgsManagerConvertError(
+                    f"{spec['type']} is not nullable."
+                )
+        if spec["enum"]:
+
+            def check_list(value, spec):
+                for element in value:
+                    if element not in spec["enum"]:
+                        raise ArgsManagerConvertError(
+                            f"{element} not in {spec['enum']}"
+                        )
+
+            try:
+                value = cls.cast_complex_type(value, spec["type"])
+                if value in spec["enum"]:
+                    return value
+                if type(value) is not list:
+                    raise ArgsManagerConvertError(
+                        f"{value} not in {spec['enum']}"
+                    )
+                check_list(value, spec)
+                return value
+            except ValueError:
+                ...
+            try:
+                value = cls.cast_complex_type(value, List[spec["type"]])
+                check_list(value, spec)
+                return value
+            except ValueError:
+                ...
+            raise ArgsManagerConvertError(
+                f"Enum value {value} does not match {spec['type']}."
+            )
+        if typing.get_origin(spec["type"]) in [Union, UnionType]:
+            subtypes = list(spec["type"].__args__)
+            for subtype in subtypes:
+                try:
+                    return cls.cast_complex_type(value, subtype)
+                except ValueError:
+                    ...
+            raise ArgsManagerConvertError(
+                f"Value {value} does not any of the types in the Union:"
+                f" {spec['type']}."
+            )
+        try:
+            return cls.cast_complex_type(value, spec["type"])
+        except ValueError:
+            raise ArgsManagerConvertError(
+                f"Value {value} does not match {spec['type']}."
+            )
+
+    @classmethod
+    def verify_type(cls, value: Any, spec: Dict) -> bool:
+        """
+        Checks, if the given value is of type specified by the argument spec,
+        or can be cast to it.
+
+        Parameters
+        ----------
+        value: Any
+            Value to be checked. Can be any object, or a list, union or tuple
+            of objects (also recursively).
+        spec: Dict
+            A value of the 'arguments_structure' dict, for the argument to be
+            matched.
+
+        Returns
+        -------
+        bool
+            True if the value matches the argument. False otherwise.
+        """
+
+        def check_list_constraints(value, spec):
+            if type(value) is not list:
+                return True
+            if "list_range" in spec and (
+                spec["list_range"][0] > len(value)
+                or spec["list_range"][1] < len(value)
+            ):
+                return False
+            if "item_range" in spec:
+                for subvalue in value:
+                    try:
+                        subvalue = float(subvalue)
+                        if (
+                            spec["item_range"][0] > subvalue
+                            or spec["item_range"][1] < subvalue
+                        ):
+                            return False
+                    except ValueError:
+                        continue
+            return True
+
+        if value is None and spec["nullable"]:
+            return True
+        try:
+            cls.convert_value(value, spec)
+            return check_list_constraints(value, spec)
+        except ArgsManagerConvertError:
+            ...
+        try:
+            check_type(value, value, spec["type"])
+            return check_list_constraints(value, spec)
+        except TypeError:
+            ...
+        return False
+
+    @classmethod
+    def process_argument_spec(
+        cls, argument_name: str, argument_spec: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Fills missing values in the given 'arguments_structure' parameter
+        specification dict with defaults. For non-required arguments it checks
+        if the default value provided conforms to the specified type, and if
+        not - marks the argument as default, emitting a warning.
+
+        Parameters
+        ----------
+        argument_name: str
+            Name of the argument being processed.
+        argument_spec: Dict[str, Any]
+            Value of from the arguments_structure dict.
+
+        Returns
+        -------
+        argument_spec: Dict[str, Any]
+            Validated and filled-out specification.
+        """
+        default_spec = {
+            "argparse_name": from_name_to_flag(argument_name),
+            "description": "Description not provided.",
+            "type": str,
+            "nullable": True,
+            "default": None,
+            "required": False,
+            "override": True,
+            "enum": None,
+        }
+        spec = default_spec | argument_spec
+        if not spec["required"] and not cls.verify_type(spec["default"], spec):
+            spec["required"] = True
+            KLogger.warning(
+                f"Block class {cls.__name__} parameter {argument_name} was"
+                " marked as not required, but the default value provided"
+                f" ({spec['default']}) does not match the provided type"
+                f" requirements (type={spec['type']},"
+                f" nullable={spec['nullable']}, enum={spec['enum']})."
+                " Parameter will be marked as required."
+            )
+        return spec
+
+    @classmethod
+    def build_from_config(
+        cls, config: KenningBlockConfigDict, **kwargs: Dict[str, Any]
+    ) -> Any:
+        """
+        Constructor wrapper that takes the parameters from config dict.
+
+        This function matches parameters from the config, by name and type, to
+        'arguments_structure' and then calls the constructor with all
+        parameters that match (after necessary type conversions).
+
+        Parameters
+        ----------
+        config: KenningBlockConfigDict
+            Configuration dictionary.
+        **kwargs : Dict[str, Any]
+            Additional class-dependent arguments.
+
+        Returns
+        -------
+        Any
+            Instance created from provided config.
+
+        Raises
+        ------
+        ConfigurationError
+            Thrown, when there's a missing required parameter.
+        """
+        KLogger.debug(
+            f"Building block class {cls.__name__} from standard Kenning block"
+            " configuration dictionary..."
+        )
+        arguments_structure = cls.get_full_arguments_structure()
+        final_args = {}
+        class_specific_config = None
+        direct_arguments = {}
+        for block_type in config[BLOCK_CONFIGURATIONS_KEY].values():
+            if cls.__name__ in block_type:
+                class_specific_config = block_type[cls.__name__][
+                    BLOCK_CONFIG_PARAMETERS_KEY
+                ]
+                direct_arguments = block_type[cls.__name__][
+                    BLOCK_DIRECT_ARGUMENTS_KEY
+                ]
+                KLogger.debug(
+                    f"Found block-specific config for {cls.__name__}"
+                )
+                break
+        shared_config = config[UNAFFILIATED_PARAMETERS_KEY]
+        missing_args = []
+        for argument_name, spec in arguments_structure.items():
+            spec = cls.process_argument_spec(argument_name, spec)
+            alternative_argument_name = from_flag_to_name(
+                spec["argparse_name"]
+            )
+            KLogger.debug(f"Matching argument {argument_name}: {spec}...")
+            found = False
+            value = None
+            # 'shared_config' contains unmatched flags from argparse, while
+            # 'class_specific_config' are flags, for that we already know which
+            # block they belong to (and those in practice come from yaml/json
+            # configs). Class arguments in Kenning have different names in
+            # argparse and in yaml/json. Argparse names are stored under
+            # 'argparse_name' key in arguments_structure in the form
+            # '--arg-name', but after actually parsing the flags, they show up
+            # in argparse.Namespace in the form 'arg_name'. Therefore we use
+            # 'from_flag_to_name' above to convert and match
+            # those properly.
+            # In the code below, we first match from `class_specific_config`
+            # and there we give matching priority to the regular argument name
+            # (the one used in yaml/json - 'argument_name').
+            # But then we match from `shared_config`, and there we match first
+            # by the converted argparse name ('alternative_argument_name'),
+            # because shared config flags typically come from argparse.
+            # Matching priority is important, and changing it will break stuff,
+            # since some arguments have argparse names that are the same as
+            # other arguments' normal names.
+            KLogger.debug("Matching by name...")
+            if class_specific_config:
+                if argument_name in class_specific_config.keys():
+                    value = class_specific_config[argument_name]
+                    found = True
+                    KLogger.debug(f"Found {argument_name} in block config.")
+                elif alternative_argument_name in class_specific_config.keys():
+                    value = class_specific_config[alternative_argument_name]
+                    found = True
+                    KLogger.debug(
+                        f"Found {alternative_argument_name} in block config."
+                    )
+            if not found or spec["override"]:
+                if alternative_argument_name in shared_config.keys():
+                    value = shared_config[alternative_argument_name]
+                    found = True
+                    KLogger.debug(
+                        f"Found {alternative_argument_name} in unaffiliated"
+                        " flags."
+                    )
+                elif argument_name in shared_config.keys():
+                    value = shared_config[argument_name]
+                    found = True
+                    KLogger.debug(
+                        f"Found {argument_name} in unaffiliated flags."
+                    )
+            if found:
+                KLogger.debug(
+                    f"Value for {argument_name} matched by name: {value}."
+                )
+                KLogger.debug("Matching by data type....")
+            if found and cls.verify_type(value, spec):
+                final_args[argument_name] = cls.convert_value(value, spec)
+                KLogger.debug(
+                    f"Type verified, {argument_name} value set: {value}"
+                    f" ({final_args[argument_name]} after type conversion)."
+                )
+                continue
+            elif not spec["required"]:
+                final_args[argument_name] = cls.convert_value(
+                    spec["default"], spec
+                )
+                KLogger.debug(
+                    f"Matching by name and type failed for {argument_name},"
+                    f" applying default value: {spec['default']}."
+                )
+                continue
+            KLogger.error(
+                f"Required {cls.__name__} parameter {argument_name} missing."
+            )
+            missing_args.append(argument_name)
+        if len(missing_args) > 0:
+            raise ConfigurationError(
+                f"Block {cls.__name__} could not be constructed, due to"
+                f" missing required parameters: {missing_args}."
+            )
+        cls_args = dict(final_args, **kwargs, **direct_arguments)
+        KLogger.debug("Argument matching finished, building the block...")
+        KLogger.debug(f"Direct arguments applied: {direct_arguments}")
         return cls(**cls_args)
 
     def to_json(self) -> Dict[str, Any]:

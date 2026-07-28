@@ -44,6 +44,7 @@ dependencies = [
     "tqdm>=4.60.0",
     "kenning[onnx2tf]",
     "polars",
+    "typeguard",
 ]
 
 [project.optional-dependencies]

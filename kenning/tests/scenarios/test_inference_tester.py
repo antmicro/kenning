@@ -11,7 +11,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kenning.cli.command_template import OPTIMIZE, TEST
-from kenning.cli.config import USED_SUBCOMMANDS
+from kenning.cli.parser import USED_SUBCOMMANDS
 from kenning.core.measurements import Measurements
 from kenning.scenarios.inference_tester import InferenceTester
 

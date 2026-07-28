@@ -145,27 +145,6 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
 SUBCOMMANDS = "Subcommands"
 # Destination of subcommands
 SUB_DEST_FORM = "__seq_{}"
-# Destination of used subcommands list
-USED_SUBCOMMANDS = "__seq"
-
-
-def get_used_subcommands(
-    args: argparse.Namespace,
-) -> List[str]:
-    """
-    Returns used subcommands from parsed arguments.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Parsed arguments.
-
-    Returns
-    -------
-    List[str]
-        List with used subcommands.
-    """
-    return getattr(args, USED_SUBCOMMANDS, [])
 
 
 def get_all_sequences(

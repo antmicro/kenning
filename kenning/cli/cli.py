@@ -19,10 +19,10 @@ from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
     SUB_DEST_FORM,
-    USED_SUBCOMMANDS,
     setup_base_parser,
 )
 from kenning.cli.parser import (
+    USED_SUBCOMMANDS,
     Parser,
     ParserHelpException,
     print_help_from_parsers,

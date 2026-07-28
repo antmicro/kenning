@@ -37,7 +37,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
             "argparse_name": "--export-dict",
             "description": "If enabled, only the model state dictionary will be saved, not the whole model.",  # noqa: E501
             "type": bool,
-            "default": True,
+            "default": False,
         },
     }
 
@@ -47,7 +47,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
         dataset: Dataset,
         from_file: bool = True,
         model_name: Optional[str] = None,
-        export_dict: bool = True,
+        export_dict: bool = False,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.export_dict = export_dict

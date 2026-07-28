@@ -38,9 +38,8 @@ compilation and benchmark process.
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type
+from typing import List, Optional, Tuple
 
-import yaml
 from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
@@ -56,21 +55,15 @@ from kenning.cli.command_template import (
     ParserHelpException,
     generate_command_type,
 )
-from kenning.cli.completers import (
-    DATASETS,
-    MODEL_WRAPPERS,
-    OPTIMIZERS,
-    PLATFORMS,
-    RUNTIME_PROTOCOLS,
-    RUNTIMES,
-    ClassPathCompleter,
-)
+from kenning.cli.parser import get_used_subcommands
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
+from kenning.dispatcher.block_config import (
+    set_block_direct_argument,
+)
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
-    objs_from_argparse,
+    objs_from_full_dict_config,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import (
@@ -118,12 +111,11 @@ class InferenceTester(CommandTemplate):
         )
 
         other_group = groups[DEFAULT_GROUP]
-        required_prefix = "* "
         groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
         groups[FILE_CONFIG].add_argument(
             "--json-cfg",
             "--cfg",
-            help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
+            help="The path to the input JSON file with configuration of the inference",  # noqa: E501
             type=ResourceURI,
         ).completer = FilesCompleter(
             allowednames=("*.json", "*.yaml", "*.yml")
@@ -136,26 +128,18 @@ class InferenceTester(CommandTemplate):
             flag_group = parser.add_argument_group(GROUP_SCHEMA.format(TEST))
             shared_flags_group = other_group
 
-        shared_flags_group.add_argument(
-            "--platform-cls",
-            help="Platform-based class that wraps platform being tested",
-        ).completer = ClassPathCompleter(PLATFORMS)
+        block_types_for_shared_group = [ConfigKey.platform, ConfigKey.dataset]
         if include_modelwrapper:
-            shared_flags_group.add_argument(
-                "--modelwrapper-cls",
-                help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
-            ).completer = ClassPathCompleter(MODEL_WRAPPERS)
-        dataset_flag = shared_flags_group.add_argument(
-            "--dataset-cls",
-            help="Dataset-based class with dataset to import",
+            block_types_for_shared_group.append(ConfigKey.model_wrapper)
+
+        CommandTemplate.add_block_flags_to_argparse(
+            shared_flags_group, block_types_for_shared_group
         )
-        dataset_flag.completer = ClassPathCompleter(DATASETS)
+
+        block_types = []
         # 'optimize' specific arguments
         if not types or OPTIMIZE in types:
-            flag_group.add_argument(
-                "--compiler-cls",
-                help=f"{required_prefix}Optimizer-based class with compiling routines to import",  # noqa: E501
-            ).completer = ClassPathCompleter(OPTIMIZERS)
+            block_types.append(ConfigKey.optimizers)
             other_group.add_argument(
                 "--convert-to-onnx",
                 help="Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)",  # noqa: E501
@@ -169,11 +153,7 @@ class InferenceTester(CommandTemplate):
             )
 
         if include_measurements:
-            flag_group.add_argument(
-                "--report-cls",
-                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
-                default="StubReport",
-            ).completer = ClassPathCompleter(REPORT)
+            block_types.append(ConfigKey.report)
 
         # 'test' specific arguments
         if not types or TEST in types:
@@ -182,15 +162,8 @@ class InferenceTester(CommandTemplate):
                 help="Test model before optimization and append measurements",
                 action="store_true",
             )
-            dataset_flag.help = f"{required_prefix}{dataset_flag.help}"
-            flag_group.add_argument(
-                "--runtime-cls",
-                help="Runtime-based class with the implementation of model runtime",  # noqa: E501
-            ).completer = ClassPathCompleter(RUNTIMES)
-            flag_group.add_argument(
-                "--protocol-cls",
-                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
-            ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
+            block_types += [ConfigKey.runtime, ConfigKey.protocol]
+        CommandTemplate.add_block_flags_to_argparse(flag_group, block_types)
 
         # Only when scenario is used outside of Kenning CLI
         if not types:
@@ -202,9 +175,7 @@ class InferenceTester(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def prepare_args(
-        args: argparse.Namespace, required_flags: List[str]
-    ) -> argparse.Namespace:
+    def prepare_args(args: argparse.Namespace) -> argparse.Namespace:
         """
         Prepares and validates parased arguments.
 
@@ -212,8 +183,6 @@ class InferenceTester(CommandTemplate):
         ----------
         args : argparse.Namespace
             Parsed arguments.
-        required_flags : List[str]
-            Flags required for this command.
 
         Returns
         -------
@@ -221,7 +190,6 @@ class InferenceTester(CommandTemplate):
             Validated parsed arguments.
         """
         InferenceTester._fill_missing_namespace_args(args)
-        InferenceTester._ensure_exclusive_cfg_or_flags(args, required_flags)
         return args
 
     @staticmethod
@@ -232,89 +200,10 @@ class InferenceTester(CommandTemplate):
             args.evaluate_unoptimized = False
 
     @staticmethod
-    def _ensure_exclusive_cfg_or_flags(
-        args: argparse.Namespace, required_flags: List[str]
-    ):
-        required_args = (
-            [1] + [2]
-            if hasattr(args, "report_cls")
-            else [] + [3]
-            if "compiler_cls" in args
-            else []
-        )
-        ensure_exclusive_cfg_or_flags(args, required_flags, required_args)
-
-    @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
-
-        flag_config_args = [
-            "platform_cls",
-            "modelwrapper_cls",
-            "dataset_cls",
-            "compiler_cls",
-            "runtime_cls",
-            "protocol_cls",
-        ]
-
-        args = InferenceTester.prepare_args(args, flag_config_args)
-
-        if args.json_cfg is not None:
-            KLogger.debug("Running using parameters from config file")
-            if args.help:
-                raise ParserHelpException
-            return InferenceTester._run_from_cfg(
-                args, command, not_parsed=not_parsed, **kwargs
-            )
-        return InferenceTester._run_from_flags(
-            args, command, not_parsed=not_parsed, **kwargs
-        )
-
-    @staticmethod
-    def _run_from_cfg(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
-        with open(args.json_cfg, "r") as f:
-            json_cfg = yaml.safe_load(f)
-
-        if ConfigKey.report.name not in json_cfg.keys():
-            json_cfg[ConfigKey.report.name] = {
-                "type": args.report_cls,
-                "parameters": {},
-            }
-        elif "type" not in json_cfg[ConfigKey.report.name].keys():
-            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
-        elif args.report_cls != "StubReport":
-            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
-
-        report_types = json_cfg[ConfigKey.report.name]["type"]
-
-        KLogger.debug(f"Selected report type: {report_types}")
-
-        pipeline_runner = PipelineRunner.from_json_cfg(
-            json_cfg,
-            cfg_path=args.json_cfg,
-            include_measurements=hasattr(args, "report_cls"),
-            override=(args, not_parsed),
-        )
-
-        # pass already parsed report to RenderReport
-        args.parsed_report = pipeline_runner.report
-
-        return InferenceTester._run_pipeline(
-            args=args, command=command, pipeline_runner=pipeline_runner
-        )
-
-    @staticmethod
-    def _run_from_flags(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
+        if args.help:
+            raise ParserHelpException
         keys = [
             ConfigKey.platform,
             ConfigKey.model_wrapper,
@@ -323,26 +212,29 @@ class InferenceTester(CommandTemplate):
             ConfigKey.optimizers,
             ConfigKey.protocol,
             ConfigKey.report,
+            ConfigKey.runtime_builder,
+            ConfigKey.inference_loop,
         ]
 
-        KLogger.debug(f"Selected report type: {args.report_cls}")
+        if REPORT not in get_used_subcommands(args):
+            InferenceTester.default_block_classes[
+                ConfigKey.report
+            ] = "StubReport"
 
-        def required(objs: Dict[ConfigKey, Type]):
-            compilercls = objs.get(ConfigKey.optimizers)
-            protocolcls = objs.get(ConfigKey.protocol)
-            runtimecls = objs.get(ConfigKey.runtime)
-            if not compilercls and (protocolcls and not runtimecls):
-                raise argparse.ArgumentError(
-                    None,
-                    "'--protocol-cls' requires '--runtime-cls' to be defined",
-                )
+        config = InferenceTester.parse_configuration(args, not_parsed, keys)
 
-        objs = objs_from_argparse(
-            args, not_parsed, set(keys), required=required
+        config = set_block_direct_argument(
+            "from_file", True, config, ConfigKey.model_wrapper
         )
+
+        objs = objs_from_full_dict_config(config)
 
         if ConfigKey.report in objs.keys():
             args.parsed_report = objs[ConfigKey.report]
+
+            report_type = type(objs[ConfigKey.report]).__name__
+
+            KLogger.debug(f"Selected report type: {report_type}")
 
         pipeline_runner = PipelineRunner.from_objs_dict(objs)
 
@@ -356,8 +248,6 @@ class InferenceTester(CommandTemplate):
         command: List[str],
         pipeline_runner: PipelineRunner,
     ):
-        from kenning.cli.config import get_used_subcommands
-
         subcommands = get_used_subcommands(args)
 
         output = None

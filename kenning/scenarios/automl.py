@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import yaml
 
@@ -27,13 +27,17 @@ from kenning.cli.command_template import (
     TEST,
     TRAIN,
     ArgumentsGroups,
-    ParserHelpException,
 )
 from kenning.cli.completers import (
     AUTOML,
-    ClassPathCompleter,
 )
+from kenning.cli.parser import get_used_subcommands
 from kenning.core.automl import AutoML
+from kenning.dispatcher.block_config import (
+    filter_block_types_from_config_dict,
+    merge_config_dicts,
+    yaml_or_json_to_config_dict,
+)
 from kenning.scenarios.inference_tester import (
     DEFAULT_GROUP,
     FLAG_CONFIG,
@@ -43,7 +47,7 @@ from kenning.utils.automl_runner import AutoMLRunner
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
-    objs_from_argparse,
+    objs_from_full_dict_config,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
@@ -158,12 +162,10 @@ class AutoMLCommand(InferenceTester):
             include_measurements=False,
         )
 
-        required_prefix = "* "
         flag_group = groups[FLAG_CONFIG]
-        flag_group.add_argument(
-            "--automl-cls",
-            help=f"{required_prefix}AutoML-based class with AutoML flow implementation",  # noqa: E501
-        ).completer = ClassPathCompleter(AUTOML)
+        InferenceTester.add_block_flags_to_argparse(
+            flag_group, [ConfigKey.automl]
+        )
 
         other_group = groups[DEFAULT_GROUP]
         other_group.add_argument(
@@ -185,45 +187,7 @@ class AutoMLCommand(InferenceTester):
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
-        flag_config_names = [
-            "automl_cls",
-            "dataset_cls",
-        ]
 
-        args = AutoMLCommand.prepare_args(args, flag_config_names)
-
-        if args.json_cfg:
-            if args.help:
-                raise ParserHelpException
-            return AutoMLCommand._run_from_cfg(
-                args, command, not_parsed=not_parsed, **kwargs
-            )
-        return AutoMLCommand._run_from_flags(
-            args, command, not_parsed=not_parsed, **kwargs
-        )
-
-    @staticmethod
-    def _run_from_cfg(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
-        with open(args.json_cfg, "r") as f:
-            cfg = yaml.safe_load(f)
-
-        automl_runner = AutoMLRunner.from_json_cfg(
-            cfg, override=(args, not_parsed)
-        )
-        return AutoMLCommand._run_pipeline(args, command, automl_runner)
-
-    @staticmethod
-    def _run_from_flags(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
         keys = [
             ConfigKey.automl,
             ConfigKey.platform,
@@ -231,21 +195,24 @@ class AutoMLCommand(InferenceTester):
             ConfigKey.runtime,
             ConfigKey.optimizers,
             ConfigKey.protocol,
+            ConfigKey.runtime_builder,
         ]
 
-        def required(objs: Dict[ConfigKey, Type]):
-            compilercls = objs.get(ConfigKey.optimizers)
-            protocolcls = objs.get(ConfigKey.protocol)
-            runtimecls = objs.get(ConfigKey.runtime)
-            if not compilercls and (protocolcls and not runtimecls):
-                raise argparse.ArgumentError(
-                    None,
-                    "'--protocol-cls' requires '--runtime-cls' to be defined",
-                )
+        config = AutoMLCommand.parse_configuration(args, not_parsed, keys)
 
-        objs = objs_from_argparse(
-            args, not_parsed, set(keys), required=required
+        return AutoMLCommand._run_pipeline(
+            args,
+            command,
+            config,
         )
+
+    @staticmethod
+    def _run_pipeline(
+        args: argparse.Namespace,
+        command: List[str],
+        initial_config: Dict,
+    ):
+        objs = objs_from_full_dict_config(initial_config)
 
         conf = {
             key.name: obj.to_json()
@@ -262,19 +229,7 @@ class AutoMLCommand(InferenceTester):
             opt.to_json() for opt in objs[ConfigKey.optimizers]
         ]
 
-        return AutoMLCommand._run_pipeline(
-            args,
-            command,
-            AutoMLRunner.from_objs_dict(objs, pipeline_config=conf),
-        )
-
-    @staticmethod
-    def _run_pipeline(
-        args: argparse.Namespace,
-        command: List[str],
-        automl_runner: AutoMLRunner,
-    ):
-        from kenning.cli.config import get_used_subcommands
+        automl_runner = AutoMLRunner.from_objs_dict(objs, pipeline_config=conf)
 
         subcommands = get_used_subcommands(args)
         measurements = []
@@ -339,9 +294,25 @@ class AutoMLCommand(InferenceTester):
 
             # Run InferenceTester flow - optimization and evaluation
             if run_pipeline:
-                pipeline_runner = PipelineRunner.from_json_cfg(
+                # AutoML runner returns pipeline config in the same format as
+                # Kenning's yaml/dict config files. We need to convert it to a
+                # standard config.
+                conf = yaml_or_json_to_config_dict(conf)
+                conf = merge_config_dicts(initial_config, conf)
+                conf = filter_block_types_from_config_dict(
+                    [
+                        ConfigKey.model_wrapper,
+                        ConfigKey.dataset,
+                        ConfigKey.optimizers,
+                        ConfigKey.runtime,
+                        ConfigKey.platform,
+                        ConfigKey.runtime_builder,
+                        ConfigKey.protocol,
+                    ],
                     conf,
-                    cfg_path=path,
+                )
+                pipeline_runner = PipelineRunner.from_objs_dict(
+                    objs_from_full_dict_config(conf)
                 )
 
                 run_optimizations = (

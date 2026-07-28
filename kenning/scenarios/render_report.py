@@ -15,33 +15,30 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-import yaml
 from argcomplete import FilesCompleter
 
+from kenning.utils.resource_manager import ResourceURI
+
+if sys.version_info.minor < 9:
+    pass
+else:
+    pass
 from kenning.cli.command_template import (
     AUTOML,
     DEFAULT_GROUP,
     OPTIMIZE,
-    REPORT,
     TEST,
     TRAIN,
     ArgumentsGroups,
     CommandTemplate,
-    ParserHelpException,
     generate_command_type,
 )
-from kenning.cli.completers import MODEL_WRAPPERS, ClassPathCompleter
-from kenning.core.model import ModelWrapper
-from kenning.core.report import Report
-from kenning.report.markdown_report import MarkdownReport
+from kenning.cli.parser import get_used_subcommands
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
-    load_class_by_type,
-    objs_from_json,
 )
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import ResourceURI
 
 FILE_CONFIG = "Inference configuration with JSON/YAML file"
 FLAG_CONFIG = "Inference configuration with flags"
@@ -74,13 +71,12 @@ class RenderReport(CommandTemplate):
         other_group = groups[DEFAULT_GROUP]
         # Group specific for this scenario,
         # doesn't have to be added to global groups
-        required_prefix = "* "
         groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
         groups[FILE_CONFIG].add_argument(
             "--json-cfg",
             "--cfg",
-            help=f"{required_prefix}The path to the input JSON file with configuration of the report",  # noqa: E501
+            help="The path to the input JSON file with configuration of the report",  # noqa: E501
             type=ResourceURI,
         ).completer = FilesCompleter(
             allowednames=("*.json", "*.yaml", "*.yml")
@@ -94,18 +90,12 @@ class RenderReport(CommandTemplate):
                 default=None,
             )
 
+        block_types = [ConfigKey.report]
         if OPTIMIZE not in types and TEST not in types and TRAIN not in types:
-            groups[FILE_CONFIG].add_argument(
-                "--modelwrapper-cls",
-                help="Modelwrapper type that will be used in the report",
-            ).completer = ClassPathCompleter(MODEL_WRAPPERS)
+            block_types.append(ConfigKey.model_wrapper)
 
         other_group = groups[FLAG_CONFIG]
-        other_group.add_argument(
-            "--report-cls",
-            help="Report type that will be used in report generation",
-            default="MarkdownReport",
-        ).completer = ClassPathCompleter(REPORT)
+        CommandTemplate.add_block_flags_to_argparse(other_group, block_types)
 
         return parser, groups
 
@@ -117,9 +107,7 @@ class RenderReport(CommandTemplate):
             args.evaluate_unoptimized = False
 
     @staticmethod
-    def prepare_args(
-        args: argparse.Namespace, required_flags: List[str]
-    ) -> argparse.Namespace:
+    def prepare_args(args: argparse.Namespace) -> argparse.Namespace:
         """
         Prepares and validates parased arguments.
 
@@ -127,8 +115,6 @@ class RenderReport(CommandTemplate):
         ----------
         args : argparse.Namespace
             Parsed arguments.
-        required_flags : List[str]
-            Flags required for this command.
 
         Returns
         -------
@@ -139,139 +125,29 @@ class RenderReport(CommandTemplate):
         return args
 
     @staticmethod
-    def _run_from_cfg(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
-        from kenning.cli.config import get_used_subcommands
-
-        with open(args.json_cfg, "r") as f:
-            json_cfg = yaml.safe_load(f)
-
-        if ConfigKey.report.name not in json_cfg.keys():
-            KLogger.debug(
-                f"No {ConfigKey.report.name} in config file ,"
-                " loading from command line"
-            )
-            # Get it from argument line if definition not present in cfg file
-            return RenderReport._run_from_flags(args, command, not_parsed)
-
-        # set default type for Report
-        if (
-            ConfigKey.report.name in json_cfg.keys()
-            and "type" not in json_cfg[ConfigKey.report.name].keys()
-        ):
-            json_cfg[ConfigKey.report.name]["type"] = args.report_cls
-        elif ConfigKey.report.name not in json_cfg.keys():
-            json_cfg[ConfigKey.report.name] = {
-                "parameters": {},
-                "type": args.report_cls,
-            }
-
-        report_type = json_cfg[ConfigKey.report.name]["type"]
-
-        KLogger.debug(f"Selected report type: {report_type}")
-
-        objs = objs_from_json(
-            json_cfg,
-            set([ConfigKey.report, ConfigKey.model_wrapper]),
-            override=(args, not_parsed),
-        )
-
-        report = objs[ConfigKey.report]
-
-        model_wrapper = objs[ConfigKey.model_wrapper]
-        report.model_wrapper = model_wrapper
-
-        subcommands = get_used_subcommands(args)
-
-        return report.generate_report(subcommands, command)
-
-    @staticmethod
-    def _run_from_flags(
-        args: argparse.Namespace,
-        command: List[str],
-        not_parsed: List[str] = [],
-        **kwargs,
-    ):
-        from kenning.cli.config import get_used_subcommands
-
-        reportcls: Report = load_class_by_type(
-            getattr(args, "report_cls", None), REPORT
-        )
-
-        model_wrapper_cls: ModelWrapper = load_class_by_type(
-            getattr(args, "modelwrapper_cls", None), MODEL_WRAPPERS
-        )
-
-        if reportcls is None:
-            reportcls = MarkdownReport
-
-        KLogger.debug(f"Using report type {reportcls}")
-
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
-            + "\n",
-            parents=[reportcls.form_argparse(args)[0]]
-            + (
-                [model_wrapper_cls.form_argparse(args)[0]]
-                if model_wrapper_cls
-                else []
-            ),
-            add_help=False,
-        )
-
-        if args.help:
-            raise ParserHelpException(parser)
-
-        for key, value in parser.parse_known_args(not_parsed, namespace=args)[
-            0
-        ].__dict__.items():
-            setattr(args, key, value)
-
-        report = reportcls.from_argparse(args)
-
-        model_wrapper = None
-        if model_wrapper_cls:
-            model_wrapper = model_wrapper_cls.from_argparse(None, args)
-            # Dataset is set to none because it is not needed for basic stats
-        report.model_wrapper = model_wrapper
-
-        subcommands = get_used_subcommands(args)
-        return report.generate_report(subcommands, command)
-
-    @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
-
-        flag_config_args = []
-
         if hasattr(args, "parsed_report"):
             KLogger.debug(
                 "Parsed report has been found, using already parsed report"
             )
             report = args.parsed_report
 
-            from kenning.cli.config import get_used_subcommands
-
             subcommands = get_used_subcommands(args)
 
             return report.generate_report(subcommands, command)
 
-        args = RenderReport.prepare_args(args, flag_config_args)
-
-        if args.json_cfg is not None:
-            KLogger.debug("Running using parameters from config file")
-            if args.help:
-                raise ParserHelpException
-            return RenderReport._run_from_cfg(
-                args, command, not_parsed, **kwargs
-            )
-        return RenderReport._run_from_flags(
-            args, command, not_parsed, **kwargs
+        objs = RenderReport.initialize_blocks(
+            args,
+            not_parsed,
+            [ConfigKey.report, ConfigKey.model_wrapper],
         )
+
+        report = objs[ConfigKey.report]
+
+        subcommands = get_used_subcommands(args)
+
+        return report.generate_report(subcommands, command)
 
 
 if __name__ == "__main__":

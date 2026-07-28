@@ -51,7 +51,7 @@ class Report(ArgumentsHandler, ABC):
         "measurements": {
             "description": "Path to the JSON files with measurements",
             "type": Path | List[Path],
-            "default": [None],
+            "default": None,
             "overridable": True,
         },
         "report_name": {

@@ -12,7 +12,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from matplotlib.colors import to_hex
 
@@ -103,7 +103,7 @@ class MarkdownReport(Report):
         "model_names": {
             "description": "Names of the models used to create measurements\
                   in order",
-            "type": str,
+            "type": Union[str, List[str]],
             "default": None,
             "overridable": True,
         },

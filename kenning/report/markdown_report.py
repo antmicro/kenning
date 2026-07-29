@@ -11,13 +11,18 @@ import argparse
 import json
 import re
 import sys
+from functools import partial
 from pathlib import Path
 from typing import List, Optional, Union
 
 from matplotlib.colors import to_hex
 
 from kenning.cli.command_template import AUTOML
-from kenning.core.metrics import Metric
+from kenning.core.metrics import (
+    Metric,
+    compute_depth_estimation_metrics,
+    compute_regression_metrics,
+)
 from kenning.core.model import ModelWrapper
 from kenning.report.markdown_components import (
     anomaly_detection_report,
@@ -40,6 +45,9 @@ from kenning.report.markdown_components import (
     renode_stats_report,
     text_summarization_report,
     zephyr_traces_report,
+)
+from kenning.report.markdown_components.comp_generic_quality_report import (
+    comparison_generic_quality_report,
 )
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
@@ -147,7 +155,8 @@ class MarkdownReport(Report):
             "to compare models against",
             "type": str,
             "enum": [metric.name.lower() for metric in list(Metric)],
-            "default": Metric.ACC.name.lower(),
+            "nullable": True,
+            "default": None,
             "overridable": True,
         },
         "compiled_model_path": {
@@ -203,7 +212,7 @@ class MarkdownReport(Report):
         save_summary: bool = False,
         skip_general_information: bool = False,
         automl_stats: Optional[Path] = None,
-        main_quality_metric: str = Metric.ACC.name.lower(),
+        main_quality_metric: Optional[str] = None,
         compiled_model_path: Optional[Path] = None,
         zephyr_trace_file_ctf: Optional[Path] = None,
         zephyr_trace_file_tef: Optional[Path] = None,
@@ -242,7 +251,10 @@ class MarkdownReport(Report):
 
         self.measurementsdata = {}
 
-        self.main_quality_metric = Metric[main_quality_metric.upper()]
+        if main_quality_metric:
+            self.main_quality_metric = Metric[main_quality_metric.upper()]
+        else:
+            self.main_quality_metric = None
 
         if self.to_html:
             if isinstance(self.to_html, Path):
@@ -337,6 +349,18 @@ class MarkdownReport(Report):
             rep.DETECTION: comparison_detection_report,
             rep.RENODE: comparison_renode_stats_report,
             rep.TEXT_SUMMARIZATION: comparison_text_summarization_report,
+            rep.REGRESSION: partial(
+                comparison_generic_quality_report,
+                type_to_display="Regression",
+                compute_metric_func=compute_regression_metrics,
+                default_quality_metric=Metric.RMSE,
+            ),
+            rep.DEPTH_ESTIMATION: partial(
+                comparison_generic_quality_report,
+                type_to_display="Depth estimation",
+                compute_metric_func=compute_depth_estimation_metrics,
+                default_quality_metric=Metric.RMSE,
+            ),
             rep.LLM_PERFORMANCE: comparison_llm_performance_report,
         }
 

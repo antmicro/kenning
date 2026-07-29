@@ -128,6 +128,36 @@ def box_iou(
     return iou - (rho2 / c2 + v * alpha)  # CIoU
 
 
+def pad_tensor_batch(batch: List[torch.Tensor]) -> torch.Tensor:
+    """
+    Takes a list of tensors (each tensor representing bounding boxes for one
+    image) and produces one tensor representing the whole batch.
+
+    It adds padding in the form of zeros so that each image has the same number
+    of "objects".
+
+    Parameters
+    ----------
+    batch : List[torch.Tensor]
+        Each tensor here represents detect objects for one image.
+
+    Returns
+    -------
+    torch.Tensor
+        The whole batch in a form of a tensor.
+    """
+    import torch
+
+    max_objects = max(labels.shape[0] for labels in batch)
+    padded_tensors = []
+    for tensor in batch:
+        n_objects = tensor.shape[0]
+        padding = torch.new_zeros((max_objects - n_objects, tensor.shape[1]))
+        padded_tensors.append(torch.cat([tensor, padding], dim=0))
+    tensors = torch.stack(padded_tensors)
+    return tensors
+
+
 class YoloLoss:
     """
     Class for calculating loss for Yolov4 using PyTorch.
@@ -380,54 +410,74 @@ class YoloLoss:
                     target_xywh[b, a, j, i, 3] = truth_h[ti]
         return obj_mask, tgt_mask, tgt_scale, target, target_xywh
 
-    def _preprocess_labels(
-        self, targets: List[List[DetectObject]], batch_size: int
-    ):
+    def image_dobjects_to_tensor(
+        self,
+        object_list: List[DetectObject],
+    ) -> torch.Tensor:
+        """
+        Takes list of `DetectObject`s from one image and transforms them into
+        a PyTorch tensor.
+
+        Parameters
+        ----------
+        object_list : List[DetectObject]
+            List of detect objects from one image.
+
+        Returns
+        -------
+        torch.Tensor
+            Detect objects in one tensor.
+        """
         import torch
 
-        labels = []
-        for id, target_batch in enumerate(targets):
-            if not target_batch:
-                continue
+        if not object_list:
+            return torch.zeros((1, 5), device=self.device)
 
-            # Converting DectObject to tensor
-            # Shape: (N, center_x, center_y, width, height, cls)
-            target_batch_torch = torch.tensor(
+        # Converting DectObject to tensor
+        # Shape: (N, center_x, center_y, width, height, cls)
+        return torch.tensor(
+            [
                 [
-                    [
-                        _target.xmin * self.width,
-                        _target.ymin * self.height,
-                        _target.xmax * self.width,
-                        _target.ymax * self.height,
-                        self.classnames.index(_target.clsname),
-                    ]
-                    for _target in target_batch
-                ],
-                device=self.device,
-            )
-            labels.append(target_batch_torch)
+                    _target.xmin * self.width,
+                    _target.ymin * self.height,
+                    _target.xmax * self.width,
+                    _target.ymax * self.height,
+                    self.classnames.index(_target.clsname),
+                ]
+                for _target in object_list
+            ],
+            device=self.device,
+        )
 
-        # This is mainly for tests where we get no target bounding boxes
-        if not labels:
-            return torch.zeros((batch_size, 1, 5), device=self.device)
+    def preprocess_targets(
+        self,
+        targets: List[List[DetectObject]] | List[torch.Tensor],
+        batch_size: int,
+    ) -> List[torch.Tensor]:
+        """
+        Converts targets to one PyTorch tensor.
+        """
+        tensor_list = targets
+        if isinstance(targets[0], list):
+            tensor_list = [
+                self.image_dobjects_to_tensor(image_objects)
+                for image_objects in targets
+            ]
+        return pad_tensor_batch(tensor_list)
 
-        max_objects = max([label.shape[0] for label in labels])
-        padded_labels = []
-        for label in labels:
-            n_objects = label.shape[0]
-            padding = torch.zeros(
-                (max_objects - n_objects, label.shape[1]), device=self.device
-            )
-            padded_labels.append(torch.cat([label, padding], dim=0))
-        labels = torch.stack(padded_labels)
-        return labels
-
-    def __call__(self, outputs: List, targets: List[List[DetectObject]]):
+    def __call__(
+        self,
+        outputs: List[torch.Tensor],
+        targets: List[List[DetectObject]] | List[torch.Tensor],
+    ):
         import torch
         import torch.nn.functional as F
 
         batch_size = outputs[0].shape[0]
-        labels = self._preprocess_labels(targets, batch_size)
+        if targets:
+            labels = self.preprocess_targets(targets, batch_size)
+        else:
+            labels = torch.zeros((batch_size, 1, 5), device=self.device)
         n_ch = 5 + self.n_classes
         loss_iou, loss_cls, loss_obj = 0, 0, 0
         total_pos = 0

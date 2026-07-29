@@ -9,13 +9,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import numpy as np
 from torch.utils.data import Dataset
 
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 if TYPE_CHECKING:
-    import torch
     from torchvision.transforms.v2._container import Compose
 
     from kenning.core.dataset import Dataset as KenningDataset
@@ -54,71 +52,53 @@ class YoloDataset(Dataset):
         batch_x = [self.inputs[idx]]
         data = self.dataset.prepare_input_samples(batch_x)
         data = self.wrapper._preprocess_input(data)
-        if isinstance(data[0], torch.Tensor):
-            data = torch.stack(data)
+        data = torch.as_tensor(data, device=self.device)
+
         batch_y = [self.labels[idx]]
         label = self.dataset.prepare_output_samples(batch_y)
 
-        data = torch.Tensor(data).to(self.device)
-        try:
-            label = [
-                torch.from_numpy(np.asarray(_l)).to(self.device)
-                for _l in label
-            ]
-        except (ValueError, TypeError):
-            pass
-
-        data = data[0].squeeze(0)
+        # labels and data are nested inside lists, we only want one image and
+        # labels for detect objects inside it
         label = label[0][0]
-        w, h = data.shape[1], data.shape[2]
+        img = data[0][0]
+        w, h = img.shape[1], img.shape[2]
 
-        def dobject_to_tensor(dobj: DetectObject) -> torch.Tensor:
-            return torch.tensor(
+        tensor_boxes = torch.tensor(
+            [
                 [
-                    dobj.xmin * w,
-                    dobj.ymin * h,
-                    dobj.xmax * w,
-                    dobj.ymax * h,
+                    d.xmin * w,
+                    d.ymin * h,
+                    d.xmax * w,
+                    d.ymax * h,
                 ]
-            )
+                for d in label
+            ],
+            dtype=torch.float32,
+        )
 
         boxes = tv_tensors.BoundingBoxes(
-            torch.stack([dobject_to_tensor(dobj) for dobj in label]),
+            tensor_boxes,
             format="XYXY",
-            canvas_size=data.shape[-2:],
+            canvas_size=img.shape[-2:],
         )
 
         target = {
             "boxes": boxes,
             "labels": torch.tensor(
-                list(
-                    map(
-                        lambda do: (
-                            self.wrapper.classnames_to_index[do.clsname] + 1
-                        ),
-                        label,
-                    )
-                )
+                [
+                    self.wrapper.classnames_to_index[det_obj.clsname] + 1
+                    for det_obj in label
+                ]
             ),
-            "iscrowd": torch.tensor(list(map(lambda do: do.iscrowd, label))),
-            "scores": torch.tensor(list(map(lambda do: do.score, label))),
+            "iscrowd": torch.tensor([det_obj.iscrowd for det_obj in label]),
+            "scores": torch.tensor([det_obj.score for det_obj in label]),
         }
 
         if self.transforms:
-            data, target = self.transforms(data, target)
+            img, target = self.transforms(img, target)
 
-        label = [
-            DetectObject(
-                self.wrapper.index_to_classnames[
-                    target["labels"][i].item() - 1
-                ],
-                target["boxes"][i][0].item() / w,
-                target["boxes"][i][1].item() / h,
-                target["boxes"][i][2].item() / w,
-                target["boxes"][i][3].item() / h,
-                target["scores"][i].item(),
-                target["iscrowd"][i].item(),
-            )
-            for i in range(len(target["labels"]))
-        ]
-        return data, [label]
+        boxes = target["boxes"].as_subclass(torch.Tensor)
+        labels = (target["labels"] - 1).unsqueeze(1)
+        label = torch.cat([boxes, labels], dim=1)
+
+        return img, label

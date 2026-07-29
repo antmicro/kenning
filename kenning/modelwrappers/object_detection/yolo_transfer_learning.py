@@ -423,7 +423,7 @@ class YOLOV4TL(ONNXYOLOV4):
 
         def detection_collate(batch):
             images = torch.stack([item[0] for item in batch])
-            targets = [item[1][0] for item in batch]
+            targets = [item[1] for item in batch]
             return images, targets
 
         train_loader = DataLoader(

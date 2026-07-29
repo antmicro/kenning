@@ -152,7 +152,14 @@ def pad_tensor_batch(batch: List[torch.Tensor]) -> torch.Tensor:
     padded_tensors = []
     for tensor in batch:
         n_objects = tensor.shape[0]
-        padding = torch.new_zeros((max_objects - n_objects, tensor.shape[1]))
+        padding = torch.zeros(
+            (
+                max_objects - n_objects,
+                tensor.shape[1],
+            ),
+            device=tensor.device,
+            dtype=tensor.dtype,
+        )
         padded_tensors.append(torch.cat([tensor, padding], dim=0))
     tensors = torch.stack(padded_tensors)
     return tensors
@@ -410,7 +417,7 @@ class YoloLoss:
                     target_xywh[b, a, j, i, 3] = truth_h[ti]
         return obj_mask, tgt_mask, tgt_scale, target, target_xywh
 
-    def image_dobjects_to_tensor(
+    def image_det_obj_to_tensor(
         self,
         object_list: List[DetectObject],
     ) -> torch.Tensor:
@@ -460,7 +467,7 @@ class YoloLoss:
         tensor_list = targets
         if isinstance(targets[0], list):
             tensor_list = [
-                self.image_dobjects_to_tensor(image_objects)
+                self.image_det_obj_to_tensor(image_objects)
                 for image_objects in targets
             ]
         return pad_tensor_batch(tensor_list)

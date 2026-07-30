@@ -8,7 +8,7 @@ model_wrapper:
     classes: ./build/oid_classes
     backbone_layers_to_freeze:
       - down[1-5]
-    batch_size: 16
+    batch_size: 1
     learning_rate: 0.001
     head_num_epochs: 3
     full_num_epochs: 10
@@ -18,7 +18,6 @@ dataset:
   parameters:
     dataset_root: ./build/OpenImagesDatasetV6
     task: object_detection
-    show_predictions_on_eval: true
     classes: ./build/oid_classes
     image_width: 608
     image_height: 608

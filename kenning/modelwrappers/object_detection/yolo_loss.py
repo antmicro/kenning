@@ -21,6 +21,54 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
+class FocalLoss:
+    """
+    Focal loss implementation from https://arxiv.org/pdf/1708.02002.
+    """
+
+    def __init__(self, loss_fn: torch.nn.Module, gamma: float, alpha: float):
+        """
+        Creates focal loss function.
+
+        Parameters
+        ----------
+        loss_fn : torch.nn.Module
+            Loss function to use first on the preds an targets.
+        gamma : float
+            Focusing parameter.
+        alpha : float
+            Weighting factor.
+        """
+        self.loss_fn = loss_fn
+        self.reduction = loss_fn.reduction
+        self.loss_fn.reduction = "none"
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def __call__(
+        self, preds: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        import torch
+
+        loss = self.loss_fn(preds, targets)
+
+        # TF implementation https://github.com/tensorflow/addons/blob/v0.7.1/tensorflow_addons/losses/focal_loss.py
+        preds_prob = torch.sigmoid(preds)  # prob from logits
+        p_t = targets * preds_prob + (1 - targets) * (1 - preds_prob)
+        alpha_factor = targets * self.alpha + (1 - targets) * (1 - self.alpha)
+        modulating_factor = (1.0 - p_t) ** self.gamma
+        loss *= alpha_factor * modulating_factor
+
+        if self.reduction == "sum":
+            return loss.sum()
+        elif self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "none":
+            return loss
+        else:
+            raise ValueError
+
+
 def box_center_to_corner(boxes: torch.Tensor) -> torch.Tensor:
     """
     Converts boxes format from (center, width, height) to
@@ -211,8 +259,8 @@ class YoloLoss:
         dataset: Dataset,
         scale_cls: float = 1.0,
         scale_obj: float = 1.0,
-        scale_noobj: float = 1.0,
         scale_iou: float = 1.0,
+        gamma: float = 1.5,
         return_all_losses: bool = False,
     ):
         import torch
@@ -266,37 +314,33 @@ class YoloLoss:
                 [all_anchors_grid[j] for j in self.mask[i]],
                 dtype=torch.float32,
                 requires_grad=False,
+                device=device,
             )
-            ref_anchors = np.zeros(
-                (len(all_anchors_grid), 4), dtype=np.float32
+            ref_anchors = torch.zeros(
+                (len(all_anchors_grid), 4), dtype=torch.float32, device=device
             )
             ref_anchors[:, 2:] = torch.as_tensor(
                 all_anchors_grid, dtype=torch.float32, device=device
             )
 
             fsize = image_size // self.strides[i]
-            grid_x = (
-                torch.arange(fsize, dtype=torch.float)
-                .repeat(1, 3, fsize, 1)
-                .to(device)
-            )
+            grid_x = torch.arange(
+                fsize, dtype=torch.float, device=device
+            ).repeat(1, 3, fsize, 1)
             grid_y = (
-                torch.arange(fsize, dtype=torch.float)
+                torch.arange(fsize, dtype=torch.float, device=device)
                 .repeat(1, 3, fsize, 1)
                 .permute(0, 1, 3, 2)
-                .to(device)
             )
             anchor_w = (
                 masked_anchors[:, 0]
                 .repeat(1, fsize, fsize, 1)
                 .permute(0, 3, 1, 2)
-                .to(device)
             )
             anchor_h = (
                 masked_anchors[:, 1]
                 .repeat(1, fsize, fsize, 1)
                 .permute(0, 3, 1, 2)
-                .to(device)
             )
 
             self.masked_anchors.append(masked_anchors)
@@ -306,10 +350,11 @@ class YoloLoss:
             self.anchor_w.append(anchor_w)
             self.anchor_h.append(anchor_h)
 
-            self.scale_cls = scale_cls
-            self.scale_obj = scale_obj
-            self.scale_noobj = scale_noobj
-            self.scale_iou = scale_iou
+        self.scale_cls = scale_cls
+        self.scale_obj = scale_obj
+        self.scale_iou = scale_iou
+        self.gamma = gamma
+        self.alpha = 0.25
 
     def build_target(self, pred, labels, batch_size, fsize, n_ch, output_id):
         """Builds targets for computing Yolo loss. Assigns an anchor for each
@@ -317,19 +362,11 @@ class YoloLoss:
         """
         import torch
 
+        dims = [batch_size, self.n_anchors, fsize, fsize]
         # target assignment
-        tgt_mask = torch.zeros(
-            batch_size, self.n_anchors, fsize, fsize, 4 + self.n_classes
-        ).to(device=self.device)
-        obj_mask = torch.ones(batch_size, self.n_anchors, fsize, fsize).to(
-            device=self.device
-        )
-        tgt_scale = torch.zeros(
-            batch_size, self.n_anchors, fsize, fsize, 2
-        ).to(self.device)
-        target = torch.zeros(
-            batch_size, self.n_anchors, fsize, fsize, n_ch
-        ).to(self.device)
+        tgt_mask = torch.zeros(*dims, 4 + self.n_classes, device=self.device)
+        obj_mask = torch.ones(*dims, device=self.device)
+        target = torch.zeros(*dims, n_ch, device=self.device)
 
         truth_x_all = (labels[:, :, 2] + labels[:, :, 0]) / (
             self.strides[output_id] * 2
@@ -378,7 +415,7 @@ class YoloLoss:
                 | (best_n_all == self.mask[output_id][1])
                 | (best_n_all == self.mask[output_id][2])
             )
-            if sum(best_n_mask) == 0:
+            if best_n_mask.sum().item() == 0:
                 continue
 
             truth_box[:n, 0] = truth_x[:n]
@@ -391,41 +428,37 @@ class YoloLoss:
             # set mask to zero (ignore) if pred matches truth
             obj_mask[b] = ~pred_best_iou
 
-            for ti in range(best_n.shape[0]):
-                if best_n_mask[ti] == 1:
-                    i, j = truth_i[ti], truth_j[ti]
-                    a = best_n[ti]
-                    obj_mask[b, a, j, i] = 1
-                    tgt_mask[b, a, j, i, :] = 1
-                    target[b, a, j, i, 0] = truth_x[ti] - torch.floor(
-                        truth_x[ti]
-                    )
-                    target[b, a, j, i, 1] = truth_y[ti] - torch.floor(
-                        truth_y[ti]
-                    )
-                    target[b, a, j, i, 2] = torch.log(
-                        truth_w[ti]
-                        / self.masked_anchors[output_id][best_n[ti], 0]
+            idx = torch.where(best_n_mask)[0]
+            i, j = truth_i[idx], truth_j[idx]
+            a = best_n[idx]
+            obj_mask[b, a, j, i] = 1
+            tgt_mask[b, a, j, i, :] = 1
+            target_box = torch.stack(
+                (
+                    truth_x[idx].frac(),
+                    truth_y[idx].frac(),
+                    torch.log(
+                        truth_w[idx]
+                        / self.masked_anchors[output_id][best_n[idx], 0]
                         + 1e-16
-                    )
-                    target[b, a, j, i, 3] = torch.log(
-                        truth_h[ti]
-                        / self.masked_anchors[output_id][best_n[ti], 1]
+                    ),
+                    torch.log(
+                        truth_h[idx]
+                        / self.masked_anchors[output_id][best_n[idx], 1]
                         + 1e-16
-                    )
-                    target[b, a, j, i, 4] = 1
-                    cls_index = (
-                        valid_labels[ti, 4].to(torch.int16).cpu().numpy()
-                    )
-                    target[b, a, j, i, 5 + cls_index] = 1
-                    tgt_scale[b, a, j, i, :] = torch.sqrt(
-                        2 - truth_w[ti] * truth_h[ti] / fsize / fsize
-                    )
-                    target_xywh[b, a, j, i, 0] = truth_x[ti]
-                    target_xywh[b, a, j, i, 1] = truth_y[ti]
-                    target_xywh[b, a, j, i, 2] = truth_w[ti]
-                    target_xywh[b, a, j, i, 3] = truth_h[ti]
-        return obj_mask, tgt_mask, tgt_scale, target, target_xywh
+                    ),
+                ),
+                dim=1,
+            )
+            target[b, a, j, i, :4] = target_box
+            target[b, a, j, i, 4] = 1
+            cls_index = valid_labels[idx, 4].long()
+            target[b, a, j, i, 5 + cls_index] = 1
+            target_xywh[b, a, j, i, 0] = truth_x[idx]
+            target_xywh[b, a, j, i, 1] = truth_y[idx]
+            target_xywh[b, a, j, i, 2] = truth_w[idx]
+            target_xywh[b, a, j, i, 3] = truth_h[idx]
+        return obj_mask, tgt_mask, target, target_xywh
 
     def image_det_obj_to_tensor(
         self,
@@ -488,7 +521,7 @@ class YoloLoss:
         targets: List[List[DetectObject]] | List[torch.Tensor],
     ):
         import torch
-        import torch.nn.functional as F
+        import torch.nn as nn
 
         batch_size = outputs[0].shape[0]
         if targets:
@@ -499,6 +532,14 @@ class YoloLoss:
         loss_iou, loss_cls, loss_obj = 0, 0, 0
         total_pos = 0
         total_obj = 0
+
+        # Loss functions for class and objectness losses
+        bce_cls = nn.BCEWithLogitsLoss(reduction="sum").to(self.device)
+        bce_obj = nn.BCEWithLogitsLoss(reduction="none").to(self.device)
+
+        if self.gamma > 0:
+            bce_cls = FocalLoss(bce_cls, gamma=self.gamma, alpha=self.alpha)
+            bce_obj = FocalLoss(bce_obj, gamma=self.gamma, alpha=self.alpha)
 
         for out_id, out in enumerate(outputs):
             fsize = out.shape[2]
@@ -530,7 +571,6 @@ class YoloLoss:
             (
                 obj_mask,
                 tgt_mask,
-                tgt_scale,
                 target,
                 target_xywh,
             ) = self.build_target(
@@ -547,23 +587,23 @@ class YoloLoss:
                 ious = box_iou(pred_pos, target_pos, CIoU=True).diagonal()
                 loss_iou += (1 - ious).sum()
 
-                loss_cls += F.binary_cross_entropy_with_logits(
+                loss_cls += bce_cls(
                     out[..., 5:][pos_mask],
                     target[..., 5:][pos_mask],
-                    reduction="sum",
                 )
 
-            _loss_obj = F.binary_cross_entropy_with_logits(
-                out[..., 4], target[..., 4], reduction="none"
-            )
+            obj_logits = out[..., 4]
+            obj_targets = target[..., 4]
+
+            _loss_obj = bce_obj(obj_logits, obj_targets)
             _loss_obj *= obj_mask.float()
             loss_obj += _loss_obj.sum()
 
         num_pos = total_pos.clamp(min=1)
         num_obj = total_obj.clamp(min=1)
-        loss_iou = loss_iou / num_pos
-        loss_cls = loss_cls / num_pos
-        loss_obj = loss_obj / num_obj
+        loss_iou /= num_pos
+        loss_cls /= num_pos
+        loss_obj /= num_obj
 
         loss = (
             self.scale_iou * loss_iou

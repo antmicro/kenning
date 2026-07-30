@@ -134,15 +134,12 @@ class ONNXYOLOV4(YOLOWrapper):
             Value of loss
         """
         device = outputs[0].device
-        dtype = outputs[0].dtype
 
         criterion = YoloLoss(
             self.perlayerparams,
             self.keyparams,
             self.numclasses,
-            self.batch_size,
             device,
-            dtype,
             self.dataset,
         )
         return criterion(outputs, target)

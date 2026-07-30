@@ -525,9 +525,9 @@ class YOLOV4TL(ONNXYOLOV4):
             self.device,
             self.dataset,
             return_all_losses=True,
-            scale_cls=0.5,
+            scale_cls=1.0,
             scale_obj=1.0,
-            scale_iou=0.05,
+            scale_iou=1.0,
         )
 
         KLogger.info("Freezing backbone")

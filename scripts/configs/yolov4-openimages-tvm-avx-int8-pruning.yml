@@ -22,8 +22,81 @@ optimizers:
               - Conv2d
           - exclude: true
             op_names:
+              # Neck
+              - neek.conv1.conv.0
+              - neek.conv1.conv.1
+              - neek.conv2.conv.0
+              - neek.conv2.conv.1
+              - neek.conv3.conv.0
+              - neek.conv3.conv.1
+              - neek.conv4.conv.0
+              - neek.conv4.conv.1
+              - neek.conv5.conv.0
+              - neek.conv5.conv.1
+              - neek.conv6.conv.0
+              - neek.conv6.conv.1
+              - neek.conv7.conv.0
+              - neek.conv7.conv.1
+              - neek.conv8.conv.0
+              - neek.conv8.conv.1
+              - neek.conv9.conv.0
+              - neek.conv9.conv.1
+              - neek.conv10.conv.0
+              - neek.conv10.conv.1
+              - neek.conv11.conv.0
+              - neek.conv11.conv.1
+              - neek.conv12.conv.0
+              - neek.conv12.conv.1
+              - neek.conv13.conv.0
+              - neek.conv13.conv.1
+              - neek.conv14.conv.0
+              - neek.conv14.conv.1
+              - neek.conv15.conv.0
+              - neek.conv15.conv.1
+              - neek.conv16.conv.0
+              - neek.conv16.conv.1
+              - neek.conv17.conv.0
+              - neek.conv17.conv.1
+              - neek.conv18.conv.0
+              - neek.conv18.conv.1
+              - neek.conv19.conv.0
+              - neek.conv19.conv.1
+              - neek.conv20.conv.0
+              - neek.conv20.conv.1
+
+              # Head
+              - head.conv1.conv.0
+              - head.conv1.conv.1
               - head.conv2.conv.0
+              - head.conv3.conv.0
+              - head.conv3.conv.1
+              - head.conv4.conv.0
+              - head.conv4.conv.1
+              - head.conv5.conv.0
+              - head.conv5.conv.1
+              - head.conv6.conv.0
+              - head.conv6.conv.1
+              - head.conv7.conv.0
+              - head.conv7.conv.1
+              - head.conv8.conv.0
+              - head.conv8.conv.1
+              - head.conv9.conv.0
+              - head.conv9.conv.1
               - head.conv10.conv.0
+              - head.conv11.conv.0
+              - head.conv11.conv.1
+              - head.conv12.conv.0
+              - head.conv12.conv.1
+              - head.conv13.conv.0
+              - head.conv13.conv.1
+              - head.conv14.conv.0
+              - head.conv14.conv.1
+              - head.conv15.conv.0
+              - head.conv15.conv.1
+              - head.conv16.conv.0
+              - head.conv16.conv.1
+              - head.conv17.conv.0
+              - head.conv17.conv.1
               - head.conv18.conv.0
       training_steps: 256
       activation: relu6

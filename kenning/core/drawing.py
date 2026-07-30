@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -41,7 +41,6 @@ if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
-
 
 BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
 BOKEH_PLOT_WIDTH = 90  # in viewport width (vw)
@@ -151,8 +150,9 @@ class Plot(ABC, object):
                 KLogger.error(
                     "bokeh rendering not implemented for this plot type"
                 )
-            output_formats = set(output_formats)
-            output_formats.discard("html")
+
+        output_formats = set(output_formats)
+        output_formats.discard("html")
 
         self.plot_matplotlib(output_path, output_formats)
 
@@ -3182,6 +3182,196 @@ class Barplot(Plot):
             barplot_fig.xaxis.major_label_orientation = "vertical"
 
         self._output_bokeh_figure(barplot_fig, output_path, output_formats)
+
+
+class ImageGallery(Plot):
+    """
+    Plot showing a grid of images.
+    """
+
+    def __init__(
+        self,
+        images: List[Optional[np.ndarray]],
+        n_cols: int = 1,
+        image_titles: Optional[List[str]] = None,
+        force_common_scale: bool = False,
+        cbar_label: Optional[str] = None,
+        title: Optional[str] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        cmap: Optional[Any] = None,
+    ):
+        """
+        Create an image gallery plot with a grid of images.
+
+        Parameters
+        ----------
+        images : List[Optional[np.ndarray]]
+            List of images to display. There are three options for an image:
+            - None - the place in the grid will be left empty
+            - 3D array with RGB(A) values in HWC order
+            - 2D array - the monochromatic image values will be normalised and
+                displayed using the selected cmap
+        n_cols : int
+            Number of columns in the image grid. Number of rows will be
+            inferred automatically.
+        image_titles : Optional[List[str]]
+            Titles for individual images.
+        force_common_scale : bool
+            If set to true, all monochromatic image values will be normalised
+            using the same value range. A colorbar will be displayed alongside
+            the plot.
+        cbar_label: Optional[str]
+            The label for the colorbar displayed if the force_common_scale is
+            set to True.
+        title : Optional[str]
+            Title of the plot.
+        width : Optional[int]
+            Width of the plot. If left empty, it will use the
+            DEFAULT_PLOT_SIZE.
+        height : Optional[int]
+            Height of the plot. If left empty, it will be inferred from width,
+            image proportions and grid proportions.
+        cmap : Optional[Any]
+            Color map for displaying monochromatic images.
+
+        Raises
+        ------
+        ValueError
+            If empty sequence was provided to the plot.
+        """
+        # Validate image format
+        if not (isinstance(images, list) and len(images) > 0):
+            raise ValueError("images must be a list with size > 0")
+
+        at_least_one_image = False
+
+        for i, img in enumerate(images):
+            if img is None:
+                continue
+
+            if not (2 <= len(img.shape) <= 3):
+                raise ValueError(
+                    f"Image at index {i} has invalid axis count, "
+                    f"{len(img.shape)} is not between 2 and 3"
+                )
+
+            if any(size == 0 for size in img.shape):
+                raise ValueError(f"Image at index {i} cannot be empty")
+
+            at_least_one_image = True
+
+        if not at_least_one_image:
+            raise ValueError("At least one image must not be None")
+
+        # Calculate default size
+        self.n_cols = n_cols
+        self.n_rows = int(np.ceil(len(images) / n_cols))
+
+        self.images = images
+
+        if width is None:
+            width = DEFAULT_PLOT_SIZE
+
+        if height is None:
+            img_shape = self.images[0].shape
+            img_ratio = img_shape[0] / img_shape[1]
+
+            plot_ratio = self.n_rows / self.n_cols
+
+            height = int(width * img_ratio * plot_ratio)
+
+        # Choose default cmap
+        if cmap is None:
+            cmap = plt.get_cmap("plasma")
+
+        super().__init__(width, height, title, cmap=cmap)
+
+        self.image_titles = image_titles
+        self.force_common_scale = force_common_scale
+        self.cbar_label = cbar_label
+
+    def plot_matplotlib(
+        self,
+        output_path: Optional[Path],
+        output_formats: Iterable[str],
+    ):
+        fig = plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+
+        bbox_extra = []
+        if self.title:
+            bbox_extra.append(fig.suptitle(self.title))
+
+        axs = fig.subplots(self.n_rows, self.n_cols, squeeze=False)
+
+        scale_min = None
+        scale_max = None
+        example_mono_img = None
+
+        if self.force_common_scale:
+            for image in self.images:
+                # Only check scale for monochromatic images
+                if image is None or image.ndim != 2:
+                    continue
+
+                image_min = np.min(image)
+                image_max = np.max(image)
+
+                if scale_min is None or image_min < scale_min:
+                    scale_min = image_min
+
+                if scale_max is None or image_max > scale_max:
+                    scale_max = image_max
+
+        for i in range(self.n_rows * self.n_cols):
+            row = i // self.n_cols
+            col = i % self.n_cols
+
+            if i >= len(self.images) or self.images[i] is None:
+                fig.delaxes(axs[row, col])
+                continue
+
+            ax = axs[row, col]
+
+            if self.force_common_scale and self.images[i].ndim == 2:
+                example_mono_img = ax.imshow(
+                    self.images[i],
+                    cmap=self.cmap,
+                    vmin=scale_min,
+                    vmax=scale_max,
+                )
+            else:
+                ax.imshow(self.images[i], cmap=self.cmap)
+
+            ax.set_axis_off()
+
+            if (
+                self.image_titles
+                and len(self.image_titles) > i
+                and self.image_titles[i]
+            ):
+                ax.set_title(self.image_titles[i])
+
+        if example_mono_img:
+            fig.subplots_adjust(right=0.9)
+            cbar_ax = fig.add_axes([0.95, 0.15, 0.03, 0.7])
+            cbar = fig.colorbar(example_mono_img, cax=cbar_ax)
+
+            if self.cbar_label:
+                cbar.set_label(self.cbar_label, size=MATPLOTLIB_FONT_SIZE)
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self,
+        output_path: Optional[Path],
+        output_formats: Iterable[str],
+    ):
+        raise NotImplementedError()
 
 
 @contextmanager

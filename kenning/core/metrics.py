@@ -896,6 +896,12 @@ DEPTH_ESTIMATION_METRICS = BASIC_REGRESSION_METRICS + [
     # at many different thresholds
 ]
 
+REGRESSION_METRIC_FUNS = {
+    Metric.MAE: mean_absolute_error,
+    Metric.RMSE: root_mean_squared_error,
+    Metric.MARE: mean_absolute_relative_error,
+}
+
 
 def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
@@ -1295,17 +1301,11 @@ def _compute_regression_metrics(
     if pred_key not in measurementsdata or true_key not in measurementsdata:
         return metrics
 
-    metric_funs = {
-        Metric.MAE: mean_absolute_error,
-        Metric.RMSE: root_mean_squared_error,
-        Metric.MARE: mean_absolute_relative_error,
-    }
-
     for metric_type in metric_types:
-        if metric_type not in metric_funs:
+        if metric_type not in REGRESSION_METRIC_FUNS:
             raise ValueError(f"Metric {metric_type} is not supported")
 
-        metrics[metric_type] = metric_funs[metric_type](
+        metrics[metric_type] = REGRESSION_METRIC_FUNS[metric_type](
             np.asarray(measurementsdata[pred_key]),
             np.asarray(measurementsdata[true_key]),
         )

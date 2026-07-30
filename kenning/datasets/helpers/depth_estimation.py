@@ -5,6 +5,8 @@
 """
 Functions and common depth estimation utils.
 """
+from typing import NamedTuple
+
 import matplotlib
 import numpy as np
 
@@ -95,3 +97,23 @@ def calculate_partial_metrics(
         )
 
     return measurements
+
+
+class PredictionSample(NamedTuple):
+    """
+    A tuple holding information necessary for saving a single prediction
+    received in the evaluate method.
+
+    Attributes
+    ----------
+    internal_idx : int
+        The idx of the image and depth map in the dataset internal fields.
+    score : float
+        The value of the metric selected for evaluation.
+    prediction : np.ndarray
+        The full predicted depth map.
+    """
+
+    internal_idx: int
+    score: float
+    prediction: np.ndarray

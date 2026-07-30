@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -458,10 +458,15 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         measurements = Measurements()
 
+        # Make sure the splits are generated before calling dataset
+        # begin_evaluate
+        iterator = self.dataset.iter_test()
+        measurements += self.dataset.begin_evaluate()
+
         with LoggerProgressBar() as logger_progress_bar:
             for X, y in TqdmCallback(
                 "runtime",
-                self.dataset.iter_test(),
+                iterator,
                 **logger_progress_bar.kwargs,
             ):
                 if self.should_cancel:
@@ -477,6 +482,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                     else self.io_specification["output"],
                 )
 
+        measurements += self.dataset.end_evaluate()
         MeasurementsCollector.measurements += measurements
 
         return measurements

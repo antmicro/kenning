@@ -9,9 +9,26 @@ align: center
 ---
 * - Statistic
   - Value
-{%- for metric in data %}
+{%- for metric in data["metrics"] %}
 * - {{metric.value or metric}}
   - {{data[metric]}}
 {%- endfor %}
 ```
+
+{%- for sample_category in data["sample_categories"] %}
+{% if data[sample_category + "_plot_paths"] %}
+### {{ sample_category.capitalize() }} sample predictions
+{% endif %}
+
+{%- for plot_path in data[sample_category + "_plot_paths"] %}
+```{image} {{plot_path}}
+:alt: Depth estimation sample prediction
+:class: bg-primary
+:width: 50%
+:align: center
+```
+
+
+{%- endfor %}
+{%- endfor %}
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -857,6 +857,37 @@ class Dataset(ArgumentsHandler, ABC):
             f"Dataset reduced from {full_size} to {reduced_size} entries"
             f" ({reduced_size / full_size * 100:.2f}%)"
         )
+
+    def begin_evaluate(self) -> "Measurements":
+        """
+        Runs before model evaluation begins. Can be used to save one-off
+        metadata in measurements or control internal evaluation state.
+
+        This function is run after train_test_split_representations, so it's
+        safe to assume the split-related fields have already been assigned, but
+        there is no guarantee that all of the test data will be used for
+        evaluation, as the inference loop can finish earlier.
+
+        Returns
+        -------
+        Measurements
+            The measurements object containing metadata or any other values
+            that need to be saved just once.
+        """
+        return Measurements()
+
+    def end_evaluate(self) -> "Measurements":
+        """
+        Runs after model evaluation has finished. Can be used to save one-off
+        metadata in measurements or control internal evaluation state.
+
+        Returns
+        -------
+        Measurements
+            The measurements object containing metadata or any other values
+            that need to be saved just once.
+        """
+        return Measurements()
 
     @abstractmethod
     def evaluate(self, predictions: List, truth: List) -> "Measurements":

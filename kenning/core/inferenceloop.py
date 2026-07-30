@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -156,6 +156,9 @@ class SequentialInferenceLoop(InferenceLoop, ABC):
             iterator = self._dataset.iter_test()
             if self.inference_limit:
                 iterator.cull(self.inference_limit)
+
+            measurements += self._dataset.begin_evaluate()
+
             for X, y in tqdm(
                 iterator,
                 **logger_progress_bar.kwargs,
@@ -172,6 +175,8 @@ class SequentialInferenceLoop(InferenceLoop, ABC):
                 measurements += self._dataset._evaluate(postPreds, y)
 
                 self._platform.inference_step_callback()
+
+            measurements += self._dataset.end_evaluate()
 
 
 class RealtimeInferenceLoop(InferenceLoop):

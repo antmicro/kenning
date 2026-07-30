@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +11,7 @@ import pytest
 
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
+from kenning.core.measurements import Measurements
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
@@ -82,6 +83,8 @@ def dataset_mock():
     mock.get_class_names.return_value = mock.classnames
     mock.iter_test.return_value = [([1, 2], 3)]
     mock._evaluate.return_value = {}
+    mock.begin_evaluate = lambda: Measurements()
+    mock.end_evaluate = lambda: Measurements()
     return mock
 
 

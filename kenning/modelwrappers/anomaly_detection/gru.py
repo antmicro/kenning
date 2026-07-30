@@ -21,6 +21,7 @@ from sklearn import metrics
 from torch import optim
 
 from kenning.cli.command_template import TRAIN
+from kenning.core.exceptions import KenningModelWrapperError
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.anomaly_detection.generic import (
     PyTorchAnomalyDetectionWrapper,
@@ -50,10 +51,21 @@ def _find_best_threshold(
     dict
         Dictionary containing f1, threshold, percentile,
         and confusion matrix (cm).
+
+    Raises
+    ------
+    KenningModelWrapperError
+        Raised when the shape of the true array differ
+        from the predicted array.
     """
     y = np.asarray(true_values).astype(int).ravel()
     s = np.asarray(pred_scores).ravel()
-    assert y.shape[0] == s.shape[0]
+
+    if y.shape[0] != s.shape[0]:
+        raise KenningModelWrapperError(
+            f"Expected shape of predictions is {y.shape}, "
+            f"got {s.shape} instead."
+        )
 
     if y.sum() == 0:
         threshold = s.max() + 1.0
@@ -72,20 +84,20 @@ def _find_best_threshold(
             "cm": metrics.confusion_matrix(y, s >= threshold),
         }
 
-    pct = float(anomaly_rate)
-    percentile = 100.0 - pct
+    percentage = float(anomaly_rate)
+    percentile = 100.0 - percentage
     threshold = float(np.percentile(s, percentile))
 
     # evaluate
     yhat = s >= threshold
     f1 = float(metrics.f1_score(y, yhat))
-    actual_pct = 100.0 * yhat.mean()
+    actual_percentage = 100.0 * yhat.mean()
     cm = metrics.confusion_matrix(y, yhat)
 
     return {
         "f1": f1,
         "threshold": threshold,
-        "percentile": actual_pct,
+        "percentile": actual_percentage,
         "cm": cm,
     }
 
@@ -114,21 +126,21 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
             "argparse_name": "--dropout",
             "description": "Dropout rate",
             "type": float,
-            "default": None,
+            "default": 0.1,
             "subcommands": [TRAIN],
         },
         "batch_size": {
             "argparse_name": "--batch-size",
             "description": "Batch size for training. If not assigned, dataset batch size will be used",  # noqa: E501
             "type": int,
-            "default": None,
+            "default": 32,
             "subcommands": [TRAIN],
         },
         "num_epochs": {
             "argparse_name": "--num-epochs",
             "description": "Number of epochs to train for",
             "type": int,
-            "default": None,
+            "default": 15,
             "subcommands": [TRAIN],
         },
         "clean_trainset": {
@@ -236,7 +248,7 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
         import torch
 
         self.prepare_model()
-        assert self.threshold is not None
+        assert self.threshold is not None, "threshold is None"
 
         inp = torch.tensor(X[0], device=self.device)
         if (

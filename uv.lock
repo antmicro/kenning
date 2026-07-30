@@ -2431,7 +2431,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.21.3,<2.0.0" },
     { name = "onnx", specifier = "==1.21.0" },
     { name = "onnx-graphsurgeon", marker = "extra == 'onnx2tf'" },
-    { name = "onnx2tf", marker = "extra == 'onnx2tf'", specifier = "==1.27.10" },
+    { name = "onnx2tf", marker = "extra == 'onnx2tf'", specifier = "==1.26.9" },
     { name = "onnx2torch", marker = "extra == 'torch'" },
     { name = "onnxruntime", marker = "extra == 'onnx2tf'", specifier = "==1.21.1" },
     { name = "onnxruntime", marker = "extra == 'onnxruntime'", specifier = ">=1.12.0" },
@@ -3507,11 +3507,11 @@ wheels = [
 
 [[package]]
 name = "onnx2tf"
-version = "1.27.10"
+version = "1.26.9"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1a/04/f09db2040a589ab4852440e327b95781c0486160a55d27daa24752f9e4be/onnx2tf-1.27.10.tar.gz", hash = "sha256:9428ce2b182c0e6e154ed13b3469a6fc562f45e51352121ff9e98f0a00872a95", size = 340614, upload-time = "2025-05-21T23:52:52.891Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/6d/ce6947666adbdf438e98cc1272b3372c0b7de762c051f981e755c9eae027/onnx2tf-1.26.9.tar.gz", hash = "sha256:adfbee3fe7ac72eb97eaa61ff2ee43c9433c98a01a915b1958a190f937337540", size = 338457, upload-time = "2025-03-11T14:58:29.093Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/26/c6f7a960e6fd8f154eaf961397a66db3ec7034c8c45f8bad4dc8b9bb88a0/onnx2tf-1.27.10-py3-none-any.whl", hash = "sha256:e1e5e4f6ebda00cb1a1d624b7677167d3686af4a704fc3104a6eff4517c44c9c", size = 447957, upload-time = "2025-05-21T23:52:50.152Z" },
+    { url = "https://files.pythonhosted.org/packages/33/e6/8ab2a7e9f90615b62360a20405c465e676a36b5262f80b019ef2528c82c3/onnx2tf-1.26.9-py3-none-any.whl", hash = "sha256:06d02e7dfe52ffdb898b5c1b4a2a2b4354e62d3bf830b82e629e99353aecef67", size = 446200, upload-time = "2025-03-11T14:58:26.937Z" },
 ]
 
 [[package]]

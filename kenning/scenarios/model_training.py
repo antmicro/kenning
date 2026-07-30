@@ -188,6 +188,12 @@ class TrainModel(CommandTemplate):
         model.train_model()
         model.save_model(model.get_path())
 
+    @staticmethod
+    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
+        return [
+            ConfigKey.model_wrapper,
+        ]
+
 
 if __name__ == "__main__":
     sys.exit(TrainModel.scenario_run(sys.argv))

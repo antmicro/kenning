@@ -43,6 +43,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             "description": "Path to the model",
             "type": ResourceURI,
             "required": True,
+            "overridable": True,
         },
         "model_name": {
             "argparse_name": "--model-name",
@@ -655,7 +656,5 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return _get_model_size(
             self.model_path,
-            FileNotFoundError(
-                "Model path does not exist:" f"{self.model_path}"
-            ),
+            FileNotFoundError(f"Model path does not exist:{self.model_path}"),
         )

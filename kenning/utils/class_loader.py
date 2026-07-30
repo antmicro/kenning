@@ -438,13 +438,14 @@ def objs_from_json(
     """
     keys_regular = set(
         [
+            ConfigKey.automl,
+            ConfigKey.dataset,
+            ConfigKey.model_wrapper,
             ConfigKey.platform,
             ConfigKey.protocol,
-            ConfigKey.dataset,
+            ConfigKey.report,
             ConfigKey.runtime,
             ConfigKey.runtime_builder,
-            ConfigKey.automl,
-            ConfigKey.report,
         ]
     )
 

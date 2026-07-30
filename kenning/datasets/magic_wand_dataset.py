@@ -265,7 +265,9 @@ class MagicWandDataset(Dataset):
             assert shape[0] == self.numclasses
             predictions = [predictions]
         elif len(shape) > 1:
-            assert shape[0] == self.batch_size
+            # here we check whether shape is less or equal batch size as last
+            # batches might not be full
+            assert shape[0] <= self.batch_size
         if truth is not None:
             confusion_matrix = np.zeros((self.numclasses, self.numclasses))
             for prediction, label in zip(predictions, truth):

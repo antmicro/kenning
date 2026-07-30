@@ -22,6 +22,7 @@ from kenning.modelwrappers.anomaly_detection.gru import (
 from kenning.modelwrappers.classification.pytorch_generic import (
     PyTorchGenericClassification,
 )
+from kenning.modelwrappers.frameworks.flax import FlaxWrapper
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.tests.core.conftest import (
     copy_model_to_tmp,
@@ -343,6 +344,8 @@ class TestModelWrapper:
         """
         Tests the `train_model` method.
         """
+        if isinstance(model, FlaxWrapper) and sys.version_info[1] < 11:
+            pytest.xfail("Flax training is not supported for Python 3.10")
         model.prepare_model()
 
         model.batch_size = 16

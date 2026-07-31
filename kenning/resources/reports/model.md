@@ -24,6 +24,18 @@ align: center
 
 ### Layers
 
+{%- if 'layer_type_count_bar_path' in data %}
+```{figure} {{data["layer_type_count_bar_path"]}}
+---
+name: layer_type_count_bar_path
+alt: Layer Operations
+align: center
+---
+
+Layer operation type counts
+```
+{% endif %}
+
 ```{table} Model's layers
 ---
 align: center

@@ -6,15 +6,17 @@
 Module used for basic model statistics report generation.
 """
 
+from collections import Counter
 from importlib.resources import path
 from pathlib import Path
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from kenning.converters import converter_registry
 from kenning.core.exceptions import ConversionError
 from kenning.core.model import ModelWrapper
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
+    get_plot_wildcard_path,
 )
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
@@ -26,7 +28,10 @@ def model_report(
     imgprefix: str,
     root_dir: Path,
     image_formats: Set[str],
-    model_wrapper: ModelWrapper = None,
+    draw_titles: bool = True,
+    colors: Optional[List] = None,
+    color_offset: int = 0,
+    model_wrapper: Optional[ModelWrapper] = None,
     **kwargs: Any,
 ) -> Tuple[str, Dict]:
     """
@@ -45,8 +50,14 @@ def model_report(
         involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
-    model_wrapper : ModelWrapper
-        ModelWrapper of the reported model.
+    draw_titles : bool
+        Should titles be drawn on the plot.
+    colors : Optional[List]
+        Colors to be used in the plots.
+    color_offset : int
+        How many colors from default color list should be skipped.
+    model_wrapper: Optional[ModelWrapper]
+        ModelWrapper of the reported model
     **kwargs : Any
         Additional keyword arguments.
 
@@ -56,6 +67,7 @@ def model_report(
         Content of the report in MyST format.
     """
     KLogger.info(f'Running model_report for {measurementsdata["model_name"]}')
+
     if model_wrapper is None:
         KLogger.warn(
             "Cannot generate model specification report"
@@ -140,6 +152,29 @@ def model_report(
                 dtype_str,
             )
         )
+
+    from kenning.core.drawing import Barplot
+
+    KLogger.info("Using layer type count")
+    layer_type_count_plot_path = imgdir / f"{imgprefix}layer_type_count"
+
+    ops = Counter(node.op_type for node in onnx_model.graph.node)
+    model_ops_name = sorted(ops, key=str.lower)
+    model_ops_count = list(ops[name] for name in model_ops_name)
+
+    Barplot(
+        title="Layer operation type counts" if draw_titles else None,
+        x_label="Operation type",
+        y_label="Layers count",
+        x_data=model_ops_name,
+        y_data={"count": model_ops_count},
+        colors=colors,
+        color_offset=color_offset,
+        max_bars_matplotlib=32,
+    ).plot(layer_type_count_plot_path, image_formats)
+    measurementsdata["layer_type_count_bar_path"] = get_plot_wildcard_path(
+        layer_type_count_plot_path, root_dir
+    )
 
     measurementsdata["layer count"] = layer_count
     measurementsdata["total parameters"] = total_params

@@ -11,19 +11,16 @@ from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.optimizers.llm_optimizer import LLMOptimizer
 from kenning.utils.resource_manager import PathOrURI
 
 
-class GPTQSparseGPTOptimizer(Optimizer):
+class GPTQSparseGPTOptimizer(LLMOptimizer):
     """
     Optimizer subclass that provides an API
     for quantizing and pruning LLMs using GPTQ + sparseGPT optimizer
     into format that is compliant with sparsity_aware_kernel.
     """
-
-    inputtypes = ["safetensors"]
-    outputtypes = ["safetensors-sparsity-aware-kernel"]
 
     arguments_structure = {
         "group_size": {
@@ -49,6 +46,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        model_framework: str = "safetensors",
         group_size: int = 128,
         context_length: int = 4096,
         calibration_samples: int = 128,
@@ -58,7 +56,13 @@ class GPTQSparseGPTOptimizer(Optimizer):
         self.context_length = context_length
         self.calibration_samples = calibration_samples
 
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            model_framework,
+            model_wrapper,
+        )
 
     def compile(
         self,
@@ -106,3 +110,15 @@ class GPTQSparseGPTOptimizer(Optimizer):
     @classmethod
     def get_framework_version(cls) -> str:
         return "0.0.2"
+
+    def _get_quantization_config(self) -> Dict:
+        return {
+            "sparsity": 0.5,
+            "n_samples": self.calibration_samples,
+            "prunen": 2,
+            "prunem": 4,
+            "bits": 4,
+            "block_size": self.group_size,
+            "minlayer": None,
+            "maxlayer": None,
+        }

@@ -12,19 +12,15 @@ from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.optimizers.llm_optimizer import LLMOptimizer
 from kenning.utils.resource_manager import PathOrURI
 
 
-class GPTQOptimizer(Optimizer):
+class GPTQOptimizer(LLMOptimizer):
     """
     Optimizer subclass that provides an API
     for quantizing LLMs using AutoGPTQ optimizer.
     """
-
-    inputtypes = ["safetensors"]
-
-    outputtypes = ["safetensors-gptq"]
 
     arguments_structure = {
         "bits": {
@@ -63,7 +59,7 @@ class GPTQOptimizer(Optimizer):
         location: Literal["host", "target"] = "host",
         bits: int = 4,
         group_size: int = 128,
-        calibration_samples: int = 128,
+        calibration_samples: int = 256,
         desc_act: bool = True,
         symmetric: bool = True,
         model_wrapper: Optional[ModelWrapper] = None,
@@ -74,7 +70,13 @@ class GPTQOptimizer(Optimizer):
         self.desc_act = desc_act
 
         self.symmetric = symmetric
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            "safetensors",
+            model_wrapper,
+        )
 
     def compile(
         self,
@@ -82,7 +84,8 @@ class GPTQOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
-        from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+        GPTQOptimizer.silence_gptq_logging()
+        from gptqmodel import GPTQConfig, GPTQModel
         from transformers import AutoTokenizer
 
         from kenning.sparsegpt.datautils import get_c4
@@ -92,15 +95,11 @@ class GPTQOptimizer(Optimizer):
             trust_remote_code=True,
         )
 
-        quantization_config = BaseQuantizeConfig(
-            bits=self.bits,
-            group_size=self.group_size,
-            desc_act=self.desc_act,
-            sym=self.symmetric,
-        )
+        quantization_config = GPTQConfig(**self._get_quantization_config())
 
-        model = AutoGPTQForCausalLM.from_pretrained(
-            str(input_model_path), quantization_config
+        model = GPTQModel.load(
+            str(input_model_path),
+            quantize_config=quantization_config,
         )
 
         calibration_samples = get_c4(
@@ -110,8 +109,8 @@ class GPTQOptimizer(Optimizer):
 
         model.quantize(calibration_samples)
         tokenizer.save_pretrained(str(self.compiled_model_path))
-        model.save_quantized(str(self.compiled_model_path))
 
+        model.save(str(self.compiled_model_path))
         self.save_io_specification(input_model_path)
 
     def get_framework(self) -> str:
@@ -122,3 +121,11 @@ class GPTQOptimizer(Optimizer):
         import auto_gptq
 
         return auto_gptq.__version__
+
+    def _get_quantization_config(self) -> Dict:
+        return {
+            "bits": self.bits,
+            "group_size": self.group_size,
+            "desc_act": self.desc_act,
+            "sym": self.symmetric,
+        }

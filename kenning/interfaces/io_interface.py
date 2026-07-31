@@ -545,10 +545,15 @@ class IOInterface(ABC):
         path : PathOrURI
             Path that is used to store the input/output specification.
         """
-        spec_path = path.with_suffix(path.suffix + ".json")
+        from pathlib import Path
 
-        if not spec_path.parent.exists():
-            spec_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path = Path(path)
+        # spec_path = path.with_suffix(path.suffix + ".json")
+
+        if path.is_dir():
+            spec_path = local_path / "kenning_io_spec.json"
+        else:
+            spec_path.with_suffix(path.suffix, +".json")
 
         with open(spec_path, "w") as f:
             json.dump(self.get_io_specification(), f)

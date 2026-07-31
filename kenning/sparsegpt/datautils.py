@@ -18,7 +18,7 @@ from transformers import AutoTokenizer
 def get_c4(
     n_samples: int,
     tokenizer: AutoTokenizer,
-    seqlen: int = 4096,
+    seqlen: int = 128,
     seed_constant: int = 5,
 ) -> List[Dict[str, torch.Tensor]]:
     """

@@ -286,6 +286,8 @@ class Optimizer(ArgumentsHandler, ABC):
         PathOrURI
             Path to the input/output specification of a given model.
         """
+        if model_path.is_dir():
+            return model_path / "kenning_io_spec.json"
         spec_path = model_path.with_suffix(model_path.suffix + ".json")
 
         return spec_path

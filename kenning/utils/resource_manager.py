@@ -326,6 +326,11 @@ class ResourceManager(metaclass=Singleton):
                 repo_id = parsed_uri.netloc + parsed_uri.path
                 repo_type = "model"
 
+            # Since transformers>=5.0.0, there's a 404 error regarding
+            # the repo_id if it contains `.json`. Ensure that this is empty.
+            if repo_type == "model" and repo_id.endswith(".json"):
+                repo_id = repo_id.replace(".json", "")
+
             # If 'local_dir_use_symlinks' is set to False, the files are copied
             # instead of being symlinked if the resource is
             # in huggingface's cache. If there are not, then the

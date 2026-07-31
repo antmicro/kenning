@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+ * Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -69,10 +69,6 @@ div.bk-tooltip-custom {
 .md-typeset h1, .md-typeset h2, .md-typeset h3 {
   overflow: clip;
   text-overflow: ellipsis;
-}
-
-.md-typeset .figure.align-center, .md-typeset .figure.align-right, .md-typeset figure.align-center, .md-typeset figure.align-right, .md-typeset img.align-center, .md-typeset img.align-right, .md-typeset object.align-center, .md-typeset object.align-right {
-  margin: 0;
 }
 
 /* DataTable styles */

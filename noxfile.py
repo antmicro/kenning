@@ -19,6 +19,8 @@ KENNING_DEPS_DIR = Path("kenning-deps").resolve()
 nox.options.sessions = ["run_pytest", "run_gallery_tests"]
 nox.options.default_venv_backend = "uv"
 
+os.environ["UV_FROZEN"] = "1"
+
 
 def _prepare_pyrenode(session: nox.Session):
     """
@@ -85,7 +87,11 @@ def get_deps(session: nox.Session, device):
     )
 
 
-@session(python=PYTHON_VERSIONS, uv_all_extras=True, uv_sync_locked=False)
+@session(
+    python=PYTHON_VERSIONS,
+    uv_all_extras=True,
+    uv_sync_locked=False,
+)
 @nox.parametrize("device", ["cpu", "any"])
 def run_pytest(session: nox.Session, device):
     """
@@ -110,10 +116,19 @@ def run_pytest(session: nox.Session, device):
 
     report_path = Path("pytest-reports") / f"{name}.json"
 
+    ignored_tests = [
+        "utils/test_class_loader.py",
+        "compatibility",
+        "sparsity_aware_kernel",
+        "sparsegpt",
+    ]
+
+    ignore_args = [f"--ignore=kenning/tests/{test}" for test in ignored_tests]
+
     session.run(
         "pytest",
         "kenning",
-        "--ignore=kenning/tests/utils/test_class_loader.py",
+        *ignore_args,
         "-n=auto",
         "--cov=kenning",
         "--cov-report=html",

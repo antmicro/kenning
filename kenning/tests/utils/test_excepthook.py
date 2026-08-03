@@ -31,6 +31,13 @@ IGNORED_MODULES = {
     "ai8x",
     # Python.NET modules
     "System",
+    # TODO: LLM quantization modules. Will be replaced
+    # after updating transformers
+    "auto_gptq",
+    "auto_awq",
+    "transformers",
+    "datasets",
+    "gptqmodel",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

@@ -22,8 +22,6 @@ from kenning.modelwrappers.object_detection.yolo_transfer_learning import (
     YOLOV4TL,
 )
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
-from kenning.optimizers.gptq import GPTQOptimizer
-from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
 from kenning.optimizers.model_inserter import ModelInserter
 from kenning.optimizers.nni_pruning import NNIPruningOptimizer
 from kenning.tests.conftest import (
@@ -78,9 +76,6 @@ EXPECTED_FAIL = [
     ("Dinov2ONNX", "TFLiteCompiler"),
     ("Dinov2ONNX", "TensorFlowClusteringOptimizer"),
     ("Dinov2ONNX", "TensorFlowPruningOptimizer"),
-    ("Llama", "AWQOptimizer"),
-    ("Llama", "GPTQOptimizer"),
-    ("Llama", "GPTQSparseGPTOptimizer"),
     ("MMPoseDetectionInput", "Ai8xCompiler"),
     ("MMPoseDetectionInput", "ExecuTorchOptimizer"),
     ("MMPoseDetectionInput", "IREECompiler"),
@@ -119,9 +114,6 @@ EXPECTED_FAIL = [
     ("ONNXYOLOV4", "ExecuTorchOptimizer"),
     ("ONNXYOLOV4", "TensorFlowClusteringOptimizer"),
     ("ONNXYOLOV4", "TensorFlowPruningOptimizer"),
-    ("PHI2", "AWQOptimizer"),
-    ("PHI2", "GPTQOptimizer"),
-    ("PHI2", "GPTQSparseGPTOptimizer"),
     ("PersonDetectionModelWrapper", "IREECompiler"),
     ("PersonDetectionModelWrapper", "Ai8xCompiler"),
     ("PersonDetectionModelWrapper", "ExecuTorchOptimizer"),
@@ -209,7 +201,6 @@ EXPECTED_FAIL = [
     ("SKLearnGenericDecisionTreeClassifier", "TVMCompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "TensorFlowClusteringOptimizer"),
     ("SKLearnGenericDecisionTreeClassifier", "TensorFlowPruningOptimizer"),
-    # some strange error with executorch
 ]
 
 SKIP = (
@@ -226,23 +217,24 @@ SKIP = (
         ("StubEmlearnModel", "TensorFlowClusteringOptimizer"),
         ("StubEmlearnModel", "TensorFlowPruningOptimizer"),
     ]
-    # Skip LLM specific optimizers for non-LLMs.
+    # Skip LLM-specific optimizers for non-LLMs
     + [
         (model.__name__, optimizer.__name__)
         for model, optimizer in product(NON_LLM_MODELWRAPPERS, LLM_OPTIMIZERS)
     ]
-    # Skip non-LLM specific optimizers for LLMs.
+    # Skip non-LLM-specific optimizers for LLMs
     + [
         (model.__name__, optimizer.__name__)
         for model, optimizer in product(LLM_MODELWRAPPERS, NON_LLM_OPTIMIZERS)
     ]
+    # Skip all LLMs
+    + [
+        (model.__name__, optimizer.__name__)
+        for model, optimizer in product(LLM_MODELWRAPPERS, LLM_OPTIMIZERS)
+    ]
 )
 
-USE_GPU = [
-    ("MistralInstruct", "AWQOptimizer"),
-    ("MistralInstruct", "GPTQOptimizer"),
-    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
-]
+USE_GPU = []
 
 expect_fail = pytest.mark.xfail(reason="Expected incompatible")
 skip = pytest.mark.skip(reason="Time or resource intensive")
@@ -299,9 +291,7 @@ def prepare_objects(
             model.save_model(model.model_path)
     model.save_io_specification(model.model_path)
 
-    kwargs = {}
-    if optimizer_cls not in (GPTQOptimizer, GPTQSparseGPTOptimizer):
-        kwargs["model_framework"] = model_type
+    kwargs = {"model_framework": model_type}
 
     if optimizer_cls is NNIPruningOptimizer:
         kwargs["finetuning_epochs"] = 0
@@ -450,9 +440,6 @@ class TestOptimizerModelWrapper:
         ):
             pytest.xfail("Tinygrad is not supported on Python 3.10")
         model, optimizer, platform = prepare_objects(model_cls, optimizer_cls)
-        if model_cls.__name__ == "PHI2":
-            if optimizer_cls.__name__ == "GPTQSparseGPTOptimizer":
-                pytest.xfail("Running this test is currently not supported")
 
         try:
             pipeline_runner = PipelineRunner(

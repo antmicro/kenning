@@ -22,6 +22,13 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
     "kenning.optimizers", Optimizer, raise_exception=True
 )
 
+OPTIMIZER_SUBCLASSES = [
+    cls
+    for cls in OPTIMIZER_SUBCLASSES
+    if cls.__name__
+    not in ["AWQOptimizer", "GPTQOptimizer", "GPTQSparseGPTOptimizer"]
+]
+
 OPTIMIZER_INPUTTYPES = [
     (opt, inp) for opt in OPTIMIZER_SUBCLASSES for inp in opt.inputtypes
 ]

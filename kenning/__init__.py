@@ -12,15 +12,11 @@ This module consists of benchmarking tools and scenarios for checking:
 * Deep Learning models' compilers.
 """
 
+import importlib.util
 import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
-import onnx2tf.utils.common_functions as cf
-
-from kenning.temporary_fixes.onnx2tf import (
-    download_test_image_data as new_download_func,
-)
 from kenning.utils.excepthook import kenning_missing_import_excepthook
 from kenning.utils.logger import KLogger
 
@@ -57,14 +53,25 @@ except PackageNotFoundError:
         __version__ = None
 
 
-# The new function loads a numpy array that was generated using
-# the script in kenning/temporary_fixes/gen_test_data.py
-old_download_func = cf.download_test_image_data
-cf.download_test_image_data = new_download_func
+if importlib.util.find_spec("onnx2tf") is not None:
+    # If kenning[onnx2tf] is installed
+    import onnx2tf.utils.common_functions as cf
 
-for name, module in sys.modules.items():
-    if name.startswith("onnx2tf") and hasattr(
-        module, "download_test_image_data"
-    ):
-        if getattr(module, "download_test_image_data") is old_download_func:
-            setattr(module, "download_test_image_data", new_download_func)
+    from kenning.temporary_fixes.onnx2tf import (
+        download_test_image_data as new_download_func,
+    )
+
+    # The new function loads a numpy array that was generated using
+    # the script in kenning/temporary_fixes/gen_test_data.py
+    old_download_func = cf.download_test_image_data
+    cf.download_test_image_data = new_download_func
+
+    for name, module in sys.modules.items():
+        if name.startswith("onnx2tf") and hasattr(
+            module, "download_test_image_data"
+        ):
+            if (
+                getattr(module, "download_test_image_data")
+                is old_download_func
+            ):
+                setattr(module, "download_test_image_data", new_download_func)

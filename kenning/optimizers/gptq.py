@@ -13,7 +13,6 @@ from typing import Dict, List, Literal, Optional
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
-from kenning.sparsegpt.datautils import get_c4
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -85,6 +84,8 @@ class GPTQOptimizer(Optimizer):
     ):
         from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
         from transformers import AutoTokenizer
+
+        from kenning.sparsegpt.datautils import get_c4
 
         tokenizer = AutoTokenizer.from_pretrained(
             str(input_model_path),

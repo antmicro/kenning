@@ -10,10 +10,6 @@ https://github.com/casper-hansen/AutoAWQ
 
 from typing import Dict, List, Literal, Optional
 
-from awq import AutoAWQForCausalLM
-from awq import __version__ as awq_version
-from transformers import AutoTokenizer
-
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
@@ -117,6 +113,9 @@ class AWQOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
+        from awq import AutoAWQForCausalLM
+        from transformers import AutoTokenizer
+
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
@@ -161,4 +160,6 @@ class AWQOptimizer(Optimizer):
 
     @classmethod
     def get_framework_version(cls) -> str:
+        from awq import __version__ as awq_version
+
         return awq_version

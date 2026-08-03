@@ -43,7 +43,6 @@ dependencies = [
     "scipy>1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
-    "kenning[onnx2tf]",
     "polars",
     "typeguard",
 ]
@@ -144,9 +143,6 @@ test = [
     "pytest-xdist",
     "pytest-timeout",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
-    "tf2onnx",
-    "kenning[onnx2tf]",
-    "kenning[executorch]",
 ]
 real_time_visualization = [
     "dearpygui>=1.6.2",
@@ -192,17 +188,16 @@ albumentations = [
     "albumentations",
 ]
 
-llm = [
-    "kenning[torch]",
-    "auto_gptq; python_version<'3.12'",
-    "autoawq==0.2.7; python_version<'3.12'",
-    "torch ; python_version=='3.12'",
-    "autoawq==0.2.7 ; python_version=='3.12'",
-    "rouge-score",
-    "transformers>=5.0.0",
-    "peft==0.10.0",
-    # "vllm; python_version<'3.12'",
-]
+# llm = [
+#     "gptqmodel[hf]>=5.8.0",
+#     # "torch ; python_version=='3.12'",
+#     "rouge-score",
+#     "transformers>=5.0.0",
+#     "peft==0.10.0",
+#     "protobuf>=7.34.0",
+#     "kenning[torch]"
+#     # "vllm; python_version<'3.12'",
+# ]
 
 onnx2tf = [
     "onnx2tf>=1.28.8",
@@ -220,9 +215,9 @@ onnx2tf = [
 ]
 
 executorch = [
-    "torch",
+    "kenning[torch]",
     "executorch>=0.6.0",
-    "torchao"
+    "torchao",
 ]
 
 sklearn = [
@@ -239,7 +234,7 @@ emlearn = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch,sklearn,emlearn]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

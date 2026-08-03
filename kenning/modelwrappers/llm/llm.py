@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 from jinja2 import Template
-from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import KenningModelWrapperError, NotSupportedError
@@ -266,6 +265,8 @@ class LLM(ModelWrapper, ABC):
 
     @classmethod
     def get_framework_version(cls) -> str:
+        from transformers import __version__ as transformers_version
+
         return transformers_version
 
     @classmethod

@@ -5,14 +5,17 @@
 import argparse
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
-from typing import Dict, Type
+from types import NoneType
+from typing import Dict, List, Tuple, Type, Union
 
 import jsonschema
 import pytest
 
+from kenning.core.exceptions import ArgsManagerConvertError
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.runtimes.onnx import ONNXRuntime
 from kenning.utils.args_manager import (
+    ArgumentsHandler,
     get_parsed_args_dict,
     get_parsed_json_dict,
 )
@@ -297,3 +300,302 @@ class TestArgsManagerWrapper:
 
             parsed_args_dict = get_parsed_args_dict(class_type, args)
             assert expected_result == parsed_args_dict
+
+    @pytest.mark.parametrize(
+        "value,type,desired_value, expectation",
+        [
+            (
+                (("323", "98.45"), ([1, 5, 1, 3], ["9.5", "1.4"], ["5"])),
+                Tuple[
+                    Tuple[int, float], Tuple[List[int], List[float], List[int]]
+                ],
+                ((323, 98.45), ([1, 5, 1, 3], [9.5, 1.4], [5])),
+                does_not_raise(),
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                Tuple[Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]],
+                ((((([Path("/dev/null"), Path("/proc")],),), 56.0),),),
+                does_not_raise(),
+            ),
+            (
+                ((((([6565, "/proc"],),), 56),),),
+                Tuple[Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]],
+                None,
+                pytest.raises(ValueError),
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                Tuple[Tuple[Tuple[Tuple[List[Path]]], float]],
+                None,
+                pytest.raises(ValueError),
+            ),
+            (
+                ((None, None),),
+                Tuple[Tuple[NoneType, NoneType]],
+                ((None, None),),
+                does_not_raise(),
+            ),
+            (
+                # Complex cast cannot change container type (only types of
+                # values inside the container).
+                [((((["/dev/null", "/proc"],),), 56),)],
+                Tuple[Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]],
+                [(((([Path("/dev/null"), Path("/proc")],),), 56.0),)],
+                does_not_raise(),
+            ),
+        ],
+    )
+    def test_cast_complex_type_success(
+        self, value, type, desired_value, expectation
+    ):
+        with expectation:
+            assert desired_value == ArgumentsHandler.cast_complex_type(
+                value, type
+            )
+
+    @pytest.mark.parametrize(
+        "value,spec,desired_value, expectation",
+        [
+            (
+                (("323", "98.45"), ([1, 5, 1, 3], ["9.5", "1.4"], ["5"])),
+                {
+                    "type": Union[
+                        str,
+                        Tuple[
+                            Tuple[int, float],
+                            Tuple[List[int], List[float], List[int]],
+                        ],
+                    ],
+                    "enum": None,
+                    "nullable": True,
+                },
+                ((323, 98.45), ([1, 5, 1, 3], [9.5, 1.4], [5])),
+                does_not_raise(),
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                {
+                    "type": Tuple[
+                        Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]
+                    ],
+                    "enum": [
+                        ((((([Path("/dev/null"), Path("/proc")],),), 56.0),),),
+                        "lorem",
+                    ],
+                },
+                ((((([Path("/dev/null"), Path("/proc")],),), 56.0),),),
+                does_not_raise(),
+            ),
+            (
+                ((((([6565, "/proc"],),), 56),),),
+                {
+                    "type": Tuple[
+                        Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]
+                    ],
+                    "enum": None,
+                },
+                None,
+                pytest.raises(ArgsManagerConvertError),
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                {
+                    "type": Tuple[Tuple[Tuple[Tuple[List[Path]]], float]],
+                    "enum": None,
+                },
+                None,
+                pytest.raises(ArgsManagerConvertError),
+            ),
+            (
+                ((None, None),),
+                {
+                    "type": Tuple[Tuple[NoneType, NoneType]],
+                    "enum": None,
+                },
+                ((None, None),),
+                does_not_raise(),
+            ),
+            (
+                # Complex cast cannot change container type (only types of
+                # values inside the container).
+                [((((["/dev/null", "/proc"],),), 56),)],
+                {
+                    "type": Union[
+                        Tuple[Path, float],
+                        Tuple[Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]],
+                    ],
+                    "enum": None,
+                },
+                [(((([Path("/dev/null"), Path("/proc")],),), 56.0),)],
+                does_not_raise(),
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": str,
+                    "enum": ["a", "b", "c", "d", "e"],
+                },
+                ["a", "b"],
+                does_not_raise(),
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": str,
+                    "enum": ["a", "c", "d", "e"],
+                },
+                None,
+                pytest.raises(ArgsManagerConvertError),
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": float,
+                    "enum": ["a", "b", "c", "d", "e"],
+                },
+                None,
+                pytest.raises(ArgsManagerConvertError),
+            ),
+        ],
+    )
+    def test_convert_value(self, value, spec, desired_value, expectation):
+        with expectation:
+            assert desired_value == ArgumentsHandler.convert_value(value, spec)
+
+    @pytest.mark.parametrize(
+        "value,spec,result",
+        [
+            (
+                (("323", "98.45"), ([1, 5, 1, 3], ["9.5", "1.4"], ["5"])),
+                {
+                    "type": Union[
+                        str,
+                        Tuple[
+                            Tuple[int, float],
+                            Tuple[List[int], List[float], List[int]],
+                        ],
+                    ],
+                    "enum": None,
+                    "nullable": True,
+                },
+                True,
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                {
+                    "type": Tuple[
+                        Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]
+                    ],
+                    "enum": [
+                        ((((([Path("/dev/null"), Path("/proc")],),), 56.0),),),
+                        "lorem",
+                    ],
+                },
+                True,
+            ),
+            (
+                ((((([6565, "/proc"],),), 56),),),
+                {
+                    "type": Tuple[
+                        Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]
+                    ],
+                    "enum": None,
+                },
+                False,
+            ),
+            (
+                (((((["/dev/null", "/proc"],),), 56),),),
+                {
+                    "type": Tuple[Tuple[Tuple[Tuple[List[Path]]], float]],
+                    "enum": None,
+                },
+                False,
+            ),
+            (
+                ((None, None),),
+                {
+                    "type": Tuple[Tuple[NoneType, NoneType]],
+                    "enum": None,
+                },
+                True,
+            ),
+            (
+                # Complex cast cannot change container type (only types of
+                # values inside the container).
+                [((((["/dev/null", "/proc"],),), 56),)],
+                {
+                    "type": Union[
+                        Tuple[Path, float],
+                        Tuple[Tuple[Tuple[Tuple[Tuple[List[Path]]], float]]],
+                    ],
+                    "enum": None,
+                },
+                True,
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": str,
+                    "enum": ["a", "b", "c", "d", "e"],
+                },
+                True,
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": List[str],
+                    "enum": ["a", "b", "c", "d", "e"],
+                },
+                True,
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": str,
+                    "enum": ["a", "c", "d", "e"],
+                },
+                False,
+            ),
+            (
+                ["a", "b"],
+                {
+                    "type": float,
+                    "enum": ["a", "b", "c", "d", "e"],
+                },
+                False,
+            ),
+            (
+                [2, 8],
+                {
+                    "type": List[float],
+                    "enum": None,
+                    "list_range": (1, 3),
+                    "item_range": (-1, 9),
+                },
+                True,
+            ),
+            (
+                [2, 10],
+                {
+                    "type": List[float],
+                    "enum": None,
+                    "list_range": (1, 3),
+                    "item_range": (-1, 9),
+                },
+                False,
+            ),
+            (
+                [2, 8, 2, 4, 4],
+                {
+                    "type": List[int],
+                    "enum": None,
+                    "list_range": (1, 3),
+                    "item_range": (-1, 9),
+                },
+                False,
+            ),
+        ],
+    )
+    def test_verify_type(self, value, spec, result):
+        assert result == ArgumentsHandler.verify_type(value, spec)

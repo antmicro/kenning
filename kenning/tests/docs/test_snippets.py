@@ -33,7 +33,7 @@ KENNING_LINK_RE = (
     # Kenning included in the repository URL
     r".*kenning.*\.git"
 )
-PIP_INSTALL_RE = r"pip3? (?:.* )?install (?:.*?)?"
+PIP_INSTALL_RE = r"(?:uv )?pip3? (?:.* )?install (?:.*?)?"
 # Regex for detecting Kenning installation from Git
 PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + KENNING_LINK_RE
 # Regex for detecting Kenning installation from current folder

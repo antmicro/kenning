@@ -72,6 +72,7 @@ extensions = list(
             # Extensions enabling save-as feature for directives
             "kenning.utils.sphinx_literalinclude",
             "kenning.utils.sphinx_codeblock",
+            "sphinx_tabs.tabs",
         ]
     )
 )

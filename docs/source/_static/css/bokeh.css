@@ -103,3 +103,36 @@ div.bk-tooltip-custom {
  .slick-row.even {
   background: none;
 }
+
+/* Tabs */
+:root,
+[data-md-color-scheme="default"] {
+  --md-tab-bg-color: #ededed;
+}
+
+@media screen {
+  [data-md-color-scheme="slate"] {
+    --md-tab-bg-color: #424454;
+  }
+}
+
+[role="tablist"] {
+  border-bottom-color: var(--md-primary-fg-color);
+}
+
+.sphinx-tabs-tab {
+  color: inherit;
+}
+
+.sphinx-tabs-tab[aria-selected="true"] {
+  background-color: var(--md-tab-bg-color);
+  border-color: var(--md-primary-fg-color);
+  border-bottom-color: var(--md-tab-bg-color);
+  box-shadow: var(--md-shadow-z1);
+}
+
+.sphinx-tabs-panel {
+  border-color: var(--md-primary-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: var(--md-shadow-z1);
+}

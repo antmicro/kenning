@@ -20,6 +20,7 @@ from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     ObjectDetectionSegmentationDataset,
+    SegmObject,
 )
 
 
@@ -380,7 +381,7 @@ class RandomizedDetectionSegmentationDataset(
         self.numclasses = numclasses
         self.dtype = dtype
         self.classnames = self.get_class_names()
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(root, batch_size, download_dataset, **kwargs)
 
     def get_class_names(self):
         return [str(i) for i in range(self.numclasses)]
@@ -394,19 +395,35 @@ class RandomizedDetectionSegmentationDataset(
         for i in range(self.samplescount):
             x_rand = np.random.random((2,))
             y_rand = np.random.random((2,))
-            self.dataY.append(
-                [
-                    DetectObject(
-                        clsname=str(classes[i]),
-                        xmin=x_rand.min(),
-                        ymin=y_rand.min(),
-                        xmax=x_rand.min(),
-                        ymax=y_rand.max(),
-                        score=1.0,
-                        iscrowd=(np.random.randint(0, 1) == 1),
-                    )
-                ]
-            )
+
+            if getattr(self, "task", None) == "instance_segmentation":
+                dummy_mask = np.zeros(
+                    (self.inputdims[1], self.inputdims[2]), dtype=np.uint8
+                )
+
+                obj = SegmObject(
+                    maskpath=None,
+                    clsname=str(classes[i]),
+                    xmin=x_rand.min(),
+                    ymin=y_rand.min(),
+                    xmax=x_rand.max(),
+                    ymax=y_rand.max(),
+                    score=1.0,
+                    iscrowd=(np.random.randint(0, 1) == 1),
+                    mask=dummy_mask,
+                )
+            else:
+                obj = DetectObject(
+                    clsname=str(classes[i]),
+                    xmin=x_rand.min(),
+                    ymin=y_rand.min(),
+                    xmax=x_rand.max(),
+                    ymax=y_rand.max(),
+                    score=1.0,
+                    iscrowd=(np.random.randint(0, 1) == 1),
+                )
+
+            self.dataY.append([obj])
 
     def download_dataset_fun(self):
         pass

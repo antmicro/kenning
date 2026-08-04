@@ -438,9 +438,10 @@ def get_dataset_random_mock(
     if dataset_cls is OpenImagesDatasetV6:
         return RandomizedDetectionSegmentationDataset(
             get_tmp_path(),
-            samplescount=600,
+            samplescount=16,
             numclasses=81,
             inputdims=(3, 550, 550),
+            task="instance_segmentation",
         )
 
     raise NotImplementedError

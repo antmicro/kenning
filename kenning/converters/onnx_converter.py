@@ -6,9 +6,14 @@
 Enables loading of ONNX models and conversion to other formats.
 """
 
+import logging
+import subprocess
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
+from kenning.core.exceptions import ConversionError, DynamicIOSpecError
+from kenning.utils.logger import KLogger
+from kenning.utils.onnx import apply_io_spec_to_model
 
 if TYPE_CHECKING:
     import onnx
@@ -158,7 +163,7 @@ class OnnxConverter(ModelConverter):
             else:
                 raise
         converted_path = self.source_model_path.with_suffix(
-            f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'
+            f".{datetime.now().strftime('%Y%m%d-%H%M%S')}.pb"
         )
         model.export(str(converted_path))
         converter = tf.lite.TFLiteConverter.from_saved_model(
@@ -242,3 +247,83 @@ class OnnxConverter(ModelConverter):
             Loaded ONNX model.
         """
         return self.to_onnx(model, **kwargs)
+
+    def to_mlir(
+        self,
+        io_spec: Dict[str, List[Dict]],
+        model: Optional["onnx.ModelProto"],
+        **kwargs,
+    ) -> str:
+        """
+        Converts model to MLIR format.
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
+        model: Optional["onnx.ModelProto"]
+            Optional model object. If not provided, model is
+            loaded from file.
+        **kwargs:
+            Keyword arguments passed between conversions.
+
+        Returns
+        -------
+        str
+            Model code in MLIR format.
+
+        Raises
+        ------
+        ConversionError
+            When conversion to MLIR fails.
+        """
+        import onnx
+
+        if not model:
+            model = self.to_onnx(model, **kwargs)
+
+        onnx_path = self.source_model_path.with_suffix(".onnx")
+        mlir_path = self.source_model_path.with_suffix(".mlir")
+
+        try:
+            apply_io_spec_to_model(model, io_spec)
+        except DynamicIOSpecError:
+            KLogger.warning(
+                "This compiler has known issues with support for dynamic "
+                "dimension sizes, please specify them in io_spec or the "
+                "comipilation can fail"
+            )
+        if model:
+            onnx.save(model, str(onnx_path))
+
+        if model:
+            onnx.save(model, str(onnx_path))
+
+        cmd = [
+            "iree-import-onnx",
+            str(onnx_path.resolve()),
+            "--opset-version",
+            "18",
+            "-o",
+            str(mlir_path.resolve()),
+        ]
+
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+
+        if result.returncode != 0:
+            error_msg = (
+                result.stdout
+                if KLogger.isEnabledFor(logging.DEBUG)
+                else "(set DEBUG verbosity level to see traceback)"
+            )
+            raise ConversionError(f"iree-import-onnx error: {error_msg}")
+
+        with open(mlir_path, "r") as f:
+            mlir_model = f.read()
+
+        return mlir_model

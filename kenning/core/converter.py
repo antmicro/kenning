@@ -184,3 +184,29 @@ class ModelConverter(ABC):
         tf.keras.Model
         """
         ...
+
+    def to_mlir(
+        self,
+        io_spec: Dict[str, List[Dict]],
+        model: Optional[Any] = None,
+        **kwargs,
+    ) -> "str":
+        """
+        Converts model to MLIR format.
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
+        model : Optional[Any]
+            Optional model object. If not provided, model is
+            loaded from file.
+        **kwargs:
+            Keyword arguments passed between conversions.
+
+        Returns
+        -------
+        str
+            Model code in a MLIR format.
+        """
+        ...

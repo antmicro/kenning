@@ -20,6 +20,7 @@ from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
+from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.random_dataset import (
     RandomizedAnomalyDetectionDataset,
@@ -434,6 +435,14 @@ def get_dataset_random_mock(
             inputdims=(128, 1),
         )
         return dataset
+    if dataset_cls is OpenImagesDatasetV6:
+        return RandomizedDetectionSegmentationDataset(
+            get_tmp_path(),
+            samplescount=600,
+            numclasses=81,
+            inputdims=(3, 550, 550),
+        )
+
     raise NotImplementedError
 
 

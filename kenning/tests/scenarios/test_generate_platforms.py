@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 import subprocess
 from copy import deepcopy
 from pathlib import Path
@@ -17,7 +18,7 @@ GROUND_TRUTH_PATH = Path(__file__).with_name("platforms_ground_truth.yml")
 
 def run_sys(cmd: List[str]):
     KLogger.info(f"\n=== RUN: {cmd}")
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, capture_output=True, text=True)
 
 
 @pytest.fixture(scope="session")
@@ -40,7 +41,7 @@ def generated_platforms(request) -> Dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def zephyr_workspace():
-    workspace = Path("zephyr-workspace")
+    workspace = Path(os.getenv("ZEPHYR_WORKSPACE") or "zephyr-workspace")
     workspace.mkdir(exist_ok=True)
     return workspace
 
@@ -95,7 +96,7 @@ runtime_builder:
     )
 
     fetch_model_commands = [
-        f"cd {kenning_zephyr_runtime_repo}"
+        f"cd {kenning_zephyr_runtime_repo}",
         "wget 'https://dl.antmicro.com/kenning/models/classification/magic_wand.h5.json'",
         "wget 'https://dl.antmicro.com/kenning/models/classification/magic_wand.tflite'",
         "mkdir -p output",
@@ -122,46 +123,6 @@ runtime_builder:
         SCENARIOS.append((name, scenerio_path))
 
     return SCENARIOS
-
-
-@pytest.fixture(scope="session")
-def zephyr_env(request, kenning_zephyr_runtime_repo: Path) -> Dict[str, Any]:
-    """
-    Prepared environment for kenning zephyr runtime scenarios.
-    Fetches repository, runs scripts, sets python env.
-
-    Returns Dict with set environment.
-    """
-    request.config.getoption("--generated-platforms-path", skip=True)
-
-    snapshot_name = ".env_snapshot"
-    snapshot_file = kenning_zephyr_runtime_repo / snapshot_name
-    get_env_commends = [
-        "set -euo pipefail",
-        f"cd {kenning_zephyr_runtime_repo}",
-        "./scripts/prepare_zephyr_env.sh",
-        "source .venv/bin/activate",
-        "./scripts/prepare_modules.sh",
-        "source ./scripts/prepare_renode.sh",
-        f"env > {snapshot_name}",
-        f"echo '=== ENV SNAPSHOT wrote to {snapshot_name}'",
-    ]
-
-    run_sys(["bash", "-lc", ";".join(get_env_commends)])
-
-    if not snapshot_file.exists():
-        raise RuntimeError(f"Missing env snapshot file: {snapshot_file}")
-
-    env_snapshot = {}
-    for entry in snapshot_file.read_text().split("\n"):
-        if not entry:
-            continue
-        key, _, val = entry.partition("=")
-        if not key or key == "_":
-            continue
-        env_snapshot[key] = val
-
-    return env_snapshot
 
 
 class TestGeneratedPlatformsSpecs:
@@ -231,13 +192,11 @@ class TestGeneratedPlatformsSpecs:
 
 
 class TestGeneratedPlatformsScenarios:
-    def test_inference_starting(
-        self, zephyr_simple_scenarios, zephyr_env, tmpfolder
-    ):
+    def test_inference_starting(self, zephyr_simple_scenarios, tmpfolder):
         """
         Tests whether inference starts for generated platform specification.
         """
-        for scenario, name in zephyr_simple_scenarios:
+        for name, scenario in zephyr_simple_scenarios:
             # niesprawdzone
             res = subprocess.run(
                 [
@@ -251,7 +210,6 @@ class TestGeneratedPlatformsScenarios:
                     "--",
                     "-DEXTRA_CONF_FILE=tflite.conf",
                 ],
-                env=zephyr_env,
             )
             print(res)
             print()
@@ -269,7 +227,6 @@ class TestGeneratedPlatformsScenarios:
                     "--measurements",
                     tmpfolder / f"measurements_{name}",
                 ],
-                env=zephyr_env,
             )
 
             print(res)

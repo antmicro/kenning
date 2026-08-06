@@ -7,6 +7,7 @@ Wrapper for GPTQ + sparseGPT optimizer that is compliant with
 sparsity_aware_kernel.
 """
 
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
@@ -49,6 +50,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         group_size: int = 128,
         context_length: int = 2048,
         calibration_samples: int = 128,
@@ -58,7 +60,13 @@ class GPTQSparseGPTOptimizer(Optimizer):
         self.context_length = context_length
         self.calibration_samples = calibration_samples
 
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,

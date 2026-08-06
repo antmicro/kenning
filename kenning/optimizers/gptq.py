@@ -8,6 +8,7 @@ Wrapper for AutoGPTQ quantizer.
 https://github.com/PanQiWei/AutoGPTQ
 """
 
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
@@ -61,6 +62,7 @@ class GPTQOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         bits: int = 4,
         group_size: int = 128,
         calibration_samples: int = 128,
@@ -74,7 +76,13 @@ class GPTQOptimizer(Optimizer):
         self.desc_act = desc_act
 
         self.symmetric = symmetric
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,

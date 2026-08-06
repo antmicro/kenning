@@ -9,6 +9,7 @@ Module implementing the ExecuTorch compiler.
 import itertools
 import warnings
 from math import ceil
+from pathlib import Path
 from typing import Dict, Generator, List, Literal, Optional, TypeVar
 
 from kenning.converters import converter_registry
@@ -89,6 +90,7 @@ class ExecuTorchOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
         model_framework: Literal["torch"] = "torch",
         quantize: bool = False,
@@ -99,6 +101,7 @@ class ExecuTorchOptimizer(Optimizer):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            compilation_metadata=compilation_metadata,
             model_wrapper=model_wrapper,
         )
         self.model_framework = model_framework

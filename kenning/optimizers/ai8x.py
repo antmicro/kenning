@@ -345,6 +345,7 @@ class Ai8xCompiler(Optimizer):
         ai8x_training_path: Optional[Path] = None,
         config_file: Optional[PathOrURI] = None,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_framework: str = "any",
         model_wrapper: Optional[ModelWrapper] = None,
     ):
@@ -370,6 +371,9 @@ class Ai8xCompiler(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_framework : str
             Framework of the input model, used to select a proper backend. If
             set to "any", then the optimizer will try to derive model framework
@@ -389,6 +393,7 @@ class Ai8xCompiler(Optimizer):
             compiled_model_path=compiled_model_path,
             location=location,
             model_wrapper=model_wrapper,
+            compilation_metadata=compilation_metadata,
         )
 
     @classmethod

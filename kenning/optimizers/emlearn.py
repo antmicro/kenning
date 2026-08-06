@@ -6,6 +6,7 @@
 Module implementing the emlearn compiler.
 """
 
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
@@ -51,12 +52,14 @@ class EmlearnCompiler(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            compilation_metadata=compilation_metadata,
             model_wrapper=model_wrapper,
         )
 

@@ -119,6 +119,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         target: str = "default",
         epochs: int = 10,
         batch_size: int = 32,
@@ -152,6 +153,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         target : str
             Target accelerator on which the model will be executed.
         epochs : int
@@ -211,6 +215,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            compilation_metadata=compilation_metadata,
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,

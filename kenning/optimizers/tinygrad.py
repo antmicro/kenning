@@ -80,6 +80,7 @@ class TinygradOptimizer(Optimizer):
         compiled_model_path: PathOrURI,
         model_framework: str = "any",
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.model_path = compiled_model_path
@@ -88,7 +89,13 @@ class TinygradOptimizer(Optimizer):
         self.model_framework = model_framework
         self.set_input_type(model_framework)
 
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def get_complete_model_structure_info(self) -> Tuple[str, str, str]:
         """

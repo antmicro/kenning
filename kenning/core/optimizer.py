@@ -58,6 +58,13 @@ class Optimizer(ArgumentsHandler, ABC):
             "default": "host",
             "enum": locations,
         },
+        "compilation_metadata": {
+            "description": "Path where compilation metadata "
+            "will be saved (in JSON format) if available",
+            "nullable": True,
+            "default": None,
+            "type": Path,
+        },
     }
 
     def __init__(
@@ -65,6 +72,7 @@ class Optimizer(ArgumentsHandler, ABC):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -80,6 +88,9 @@ class Optimizer(ArgumentsHandler, ABC):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
@@ -87,6 +98,7 @@ class Optimizer(ArgumentsHandler, ABC):
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.location = location
+        self.compilation_metadata = compilation_metadata
         self.model_wrapper = model_wrapper
 
     def init(self):

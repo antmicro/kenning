@@ -8,6 +8,7 @@ Wrapper for TensorFlow optimizers.
 
 import zipfile
 from abc import ABC
+from pathlib import Path
 from typing import List, Literal, Optional, Tuple
 
 import tensorflow as tf
@@ -60,6 +61,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         epochs: int = 10,
         batch_size: int = 32,
         optimizer: str = "adam",
@@ -83,6 +85,9 @@ class TensorFlowOptimizer(Optimizer, ABC):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         epochs : int
             Number of epochs used to fine-tune the model.
         batch_size : int
@@ -106,6 +111,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            compilation_metadata=compilation_metadata,
             model_wrapper=model_wrapper,
         )
         assert (

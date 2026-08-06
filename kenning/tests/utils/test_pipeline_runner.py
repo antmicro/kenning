@@ -101,6 +101,7 @@ def optimizer_mock():
     mock = Mock(spec=Optimizer)
     mock.get_framework.return_value = "framework_1"
     mock.get_framework_version.return_value = "0.0.1"
+    mock.compilation_metadata = None
     mock.get_optimized_model_size.side_effect = OptimizedModelSizeError()
     return mock
 

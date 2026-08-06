@@ -8,6 +8,7 @@ Wrapper for AutoAWQ quantizer.
 https://github.com/casper-hansen/AutoAWQ
 """
 
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
@@ -69,6 +70,7 @@ class AWQOptimizer(Optimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_framework: str = "safetensors-native",
         target_precision: int = 4,
         use_zero_point: bool = True,
@@ -88,6 +90,9 @@ class AWQOptimizer(Optimizer):
         location : Literal["host", "target"]
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         target_precision : int
@@ -105,7 +110,13 @@ class AWQOptimizer(Optimizer):
         self.use_zero_point = use_zero_point
         self.group_size = group_size
         self.mm_version = mm_version
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,

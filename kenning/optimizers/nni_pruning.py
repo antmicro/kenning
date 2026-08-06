@@ -9,6 +9,7 @@ import copy
 import inspect
 import logging
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type
 
 import dill
@@ -262,6 +263,7 @@ class NNIPruningOptimizer(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         pruner_type: str = list(prunertypes.keys())[0],
         config_list: List[Dict] = [
             {"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}
@@ -295,6 +297,9 @@ class NNIPruningOptimizer(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
             or ActivationMeanRankPruner.
@@ -334,7 +339,13 @@ class NNIPruningOptimizer(Optimizer):
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
         self.criterion_modulepath = criterion
         self.optimizer_modulepath = optimizer

@@ -5,6 +5,7 @@
 """
 Wrapper for TensorFlowClustering optimizer.
 """
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 import tensorflow as tf
@@ -61,6 +62,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         epochs: int = 10,
         batch_size: int = 32,
         optimizer: str = "adam",
@@ -87,6 +89,9 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         epochs : int
             Number of epochs used for fine-tuning.
         batch_size : int
@@ -122,6 +127,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            compilation_metadata=compilation_metadata,
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,

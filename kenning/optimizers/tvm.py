@@ -175,6 +175,7 @@ class TVMCompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_framework: str = "any",
         target: Optional[str] = None,
         target_attrs: str = "",
@@ -208,6 +209,9 @@ class TVMCompiler(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_framework : str
             Framework of the input model, used to select a proper backend. If
             set to "any", then the optimizer will try to derive model framework
@@ -302,7 +306,13 @@ class TVMCompiler(Optimizer):
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
         self.module_name = module_name
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def init(self):
         import tvm.micro.testing as mtvmt

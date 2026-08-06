@@ -6,6 +6,7 @@
 Wrapper for ONNX deep learning compiler.
 """
 
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 import onnx
@@ -50,6 +51,7 @@ class ONNXCompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_framework: str = "any",
         model_wrapper: Optional[ModelWrapper] = None,
     ):
@@ -65,6 +67,9 @@ class ONNXCompiler(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_framework : str
             Framework of the input model, used to select a proper backend. If
             set to "any", then the optimizer will try to derive model framework
@@ -74,7 +79,13 @@ class ONNXCompiler(Optimizer):
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,

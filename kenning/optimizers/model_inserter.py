@@ -8,6 +8,7 @@ in specified format to an existing flow.
 """
 
 import shutil
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
 from kenning.core.dataset import Dataset
@@ -48,6 +49,7 @@ class ModelInserter(Optimizer):
         model_framework: str,
         input_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -66,13 +68,22 @@ class ModelInserter(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.input_model_path = input_model_path
         self.outputtypes = [self.model_framework]
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,

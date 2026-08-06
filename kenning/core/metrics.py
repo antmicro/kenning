@@ -6,12 +6,13 @@
 A collection of methods for computing benchmark and quality metrics.
 """
 
+import inspect
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import numpy as np
 from sklearn.metrics import f1_score, roc_auc_score
@@ -811,19 +812,45 @@ class Metric(str, Enum):
     REG_THRESH_ACC = ""
 
 
-class ParametrizedMetric(ABC):
+class ParametrizedMetric(str, ABC):
     """
     Abstrack base class for parametrized metrics. The subclasses should
     implement the value property for compatibility with str enum entry.
     """
 
-    @property
+    def __new__(cls, *args, **kwargs):
+        # Resolve default arguments from subclass constructor
+        # The constructor will usually be generated from dataclass fields
+        init_args = inspect.signature(cls.__init__).bind_partial(
+            None, *args, **kwargs
+        )
+        init_args.apply_defaults()
+        return super().__new__(cls, cls._get_value(**init_args.arguments))
+
+    @staticmethod
     @abstractmethod
-    def value(self):
+    def _get_value(**kwargs: Any) -> str:
+        """
+        Returns the string value of the metric. It is the same value that would
+        be returned by running Metric.METRIC_NAME.value or using
+        Metric.METRIC_NAME as a string.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            The keyword arguments passed to the given metric constructor, with
+            default values resolved.
+
+        Returns
+        -------
+        str
+            The string value of the metric.
+        """
         pass
 
-    def __str__(self):
-        return self.value
+    @property
+    def value(self):
+        return self
 
 
 @dataclass(frozen=True)
@@ -836,9 +863,9 @@ class REG_THRESH_ACC(ParametrizedMetric):
 
     power_coefficient: float = 1.0
 
-    @property
-    def value(self):
-        return f"δ^{self.power_coefficient}"
+    @staticmethod
+    def _get_value(power_coefficient: float, **kwargs):
+        return f"δ^{power_coefficient}"
 
 
 @dataclass(frozen=True)
@@ -854,9 +881,9 @@ class NAB(ParametrizedMetric):
     afp: float = 0.25
     afn: float = -0.25
 
-    @property
-    def value(self):
-        return self.__repr__()
+    @staticmethod
+    def _get_value(atp: float, atn: float, afp: float, afn: float, **kwargs):
+        return f"NAB(atp={atp},atn={atn},afp={afp},afn={afn})"
 
 
 Metric.REG_THRESH_ACC = REG_THRESH_ACC

@@ -25,7 +25,7 @@ from kenning.inferenceloops.sensor_realtime import SensorRealtimeInferenceLoop
 DEFAULT_METRICS = [
     Metric.Hausdorff,
     Metric.MSD,
-    Metric.NAB,
+    Metric.NAB(),
     Metric.FDR,
     Metric.FAR,
     Metric.ADD,
@@ -340,7 +340,14 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
             output[Metric.MSD] = mean_signed_difference(x, y)
 
         if Metric.NAB.name.lower() in self.use_metrics:
-            output[Metric.NAB()] = nab_metric(
+            metric = Metric.NAB(
+                atp=self.nab_true_positive,
+                atn=self.nab_true_negative,
+                afp=self.nab_false_positive,
+                afn=self.nab_false_negative,
+            )
+
+            output[metric] = nab_metric(
                 x,
                 y,
                 self.nab_true_positive,

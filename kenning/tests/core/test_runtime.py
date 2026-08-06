@@ -151,6 +151,14 @@ class TestRuntime:
                 assert runtime.load_input(prepX)
                 runtime.run()
 
+            # Exclude measurements collected during optimization
+            if (
+                "compilation_metadata"
+                in MeasurementsCollector.measurements.data
+            ):
+                del MeasurementsCollector.measurements.data[
+                    "compilation_metadata"
+                ]
             assert runtime.statsmeasurements is None
             assert len(MeasurementsCollector.measurements.data) == 0
 

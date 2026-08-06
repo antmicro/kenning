@@ -6,11 +6,13 @@
 Wrapper for IREE compiler.
 """
 
+import json
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Dict, List, Literal, Optional, Tuple
 
 import onnx
@@ -124,6 +126,7 @@ class IREECompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        compilation_metadata: Optional[Path] = None,
         backend: Optional[str] = None,
         model_framework: str = "any",
         compiler_args: Optional[List[str]] = None,
@@ -144,6 +147,9 @@ class IREECompiler(Optimizer):
         location : Literal['host', 'target']
             Specifies where optimization should be performed in client-server
             scenario.
+        compilation_metadata : Optional[Path]
+            Path where compilation metadata will be saved (in JSON format)
+            if available.
         backend : Optional[str]
             Backend on which the model will be executed.
         model_framework : str
@@ -184,7 +190,17 @@ class IREECompiler(Optimizer):
         if self.linker_path is None:
             self.linker_path = os.environ.get("IREE_LINKER_PATH")
 
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
+        self._tmp_dir = None
+        self._tmp_alloc_report = None
+        self._tmp_affinity_report = None
+
+        super().__init__(
+            dataset,
+            compiled_model_path,
+            location,
+            compilation_metadata,
+            model_wrapper,
+        )
 
     def compile(
         self,
@@ -293,6 +309,8 @@ class IREECompiler(Optimizer):
                     if isinstance(e, subprocess.CalledProcessError)
                     else str(e)
                 )
+                if self._tmp_dir:
+                    self._tmp_dir.cleanup()
                 raise CompilationError(error or str(e)) from e
 
         else:
@@ -306,10 +324,28 @@ class IREECompiler(Optimizer):
                     target_backends=[backend_convert.get(backend, backend)],
                 )
             except ireecmp.CompilerToolError as e:
-                raise CompilationError(e)
+                if self._tmp_dir:
+                    self._tmp_dir.cleanup()
+                raise CompilationError(e) from e
 
             with open(self.compiled_model_path, "wb") as f:
                 f.write(compiled_buffer)
+
+        # Gather compilation metadata
+        if self.compilation_metadata and self._tmp_dir:
+            metadata = {"register_allocation": {}}
+            if self._tmp_affinity_report.exists():
+                with self._tmp_affinity_report.open("r") as fd:
+                    metadata |= json.load(fd)
+            for root, _, files in self._tmp_alloc_report.walk():
+                for f in files:
+                    with (root / f).open("r") as fd:
+                        metadata["register_allocation"][
+                            f.removesuffix(".json")
+                        ] = json.load(fd)
+            with self.compilation_metadata.open("w") as fd:
+                json.dump(metadata, fd)
+            self._tmp_dir.cleanup()
 
         self.save_io_specification(self.compiled_model_path, io_spec)
 
@@ -369,6 +405,22 @@ class IREECompiler(Optimizer):
                     self.parsed_compiler_args.append(linker_flag)
                     KLogger.debug(f"Added compilation flag {linker_flag}")
 
+                if self.compilation_metadata:
+                    self._tmp_dir = TemporaryDirectory(delete=False)
+                    self._tmp_affinity_report = (
+                        Path(self._tmp_dir.name) / "affinity_profile.json"
+                    )
+                    self._tmp_alloc_report = (
+                        Path(self._tmp_dir.name) / "register_allocation"
+                    )
+                    self._tmp_alloc_report.mkdir()
+
+                    self.parsed_compiler_args += [
+                        "--coralnpu-dump-affinity-profile-format=json",
+                        f"--coralnpu-dump-affinity-profile-file={self._tmp_affinity_report}",
+                        "--coralnpu-dump-register-allocation-report-format=json",
+                        f"--coralnpu-dump-register-allocation-report-dir={self._tmp_alloc_report}",
+                    ]
             case _:
                 KLogger.warning(
                     f"Unsupported platform: {type(platform).__name__}."

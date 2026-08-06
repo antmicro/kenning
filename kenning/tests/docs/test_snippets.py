@@ -431,7 +431,7 @@ def create_script(snippet: Snippet, working_dir: Path) -> str:
         _, tmpfile = tempfile.mkstemp()
         with open(tmpfile, "w") as fd:
             fd.write(snippet.text)
-        script = f"uv run python {tmpfile}"
+        script = f"uv run --active python {tmpfile}"
     elif "save-as" in snippet.meta:
         save_as = Path(snippet.meta["save-as"])
         script = f"mkdir -p {save_as.parent}"

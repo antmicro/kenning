@@ -7,6 +7,7 @@ Provides runner for optimization flows.
 """
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -301,6 +302,19 @@ class PipelineRunner(object):
         if hasattr(self.dataset, "classnames"):
             MeasurementsCollector.measurements += {
                 "class_names": self.dataset.get_class_names()
+            }
+        # Append compilation metadata
+        compilation_metadata = {}
+        for opt in self.optimizers:
+            if not (
+                opt.compilation_metadata and opt.compilation_metadata.exists()
+            ):
+                continue
+            with opt.compilation_metadata.open("r") as fd:
+                compilation_metadata[opt.get_framework()] = json.load(fd)
+        if compilation_metadata:
+            MeasurementsCollector.measurements += {
+                "compilation_metadata": compilation_metadata
             }
 
         model_size = None

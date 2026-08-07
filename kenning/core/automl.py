@@ -456,17 +456,17 @@ class AutoML(ArgumentsHandler, ABC):
         "general_info" - mapping of statisctics descriptions and values.
 
         Optional fields:
-        * "trained_model_metrics" - mapping of models to dictionaries
-          with datasets and metrics of trained models,
-        * "training_data" - mapping of models to losses from different
-          parts of training, containing dictionaries with timestamps
-          and loss values (averaged from batch or whole epoch). Possible
-          parts of training: "training", "training_epoch", "validation",
-          "validation_epoch", "test" and "test_epoch",
-        * "training_start_time" - mapping of models to a list of times,
-          marking the beginning of trainings,
-        * "model_params" - mapping of models to dictionaries with parameters
-          descriptions and values.
+            * "trained_model_metrics" - mapping of models to dictionaries
+              with datasets and metrics of trained models,
+            * "training_data" - mapping of models to losses from different
+              parts of training, containing dictionaries with timestamps
+              and loss values (averaged from batch or whole epoch). Possible
+              parts of training: "training", "training_epoch", "validation",
+              "validation_epoch", "test" and "test_epoch",
+            * "training_start_time" - mapping of models to a list of times,
+              marking the beginning of trainings,
+            * "model_params" - mapping of models to dictionaries with
+              parameters descriptions and values.
 
         Returns
         -------

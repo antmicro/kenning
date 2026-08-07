@@ -241,3 +241,10 @@ myst_substitutions = {
 }
 
 linkcheck_anchors_ignore_for_url = ("https:\/\/github\.com.*",)
+
+linkcheck_ignore = [
+    # Analog Devices seem to have implemented a strict anti-scrapping policy
+    # that causes our link testing to fail. That is why we ignore links to
+    # their website.
+    r"https:\/\/www\.analog\.com.*"
+]

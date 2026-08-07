@@ -6,13 +6,14 @@
 Wrapper for IREE compiler.
 """
 
+import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
 import onnx
-from iree.compiler import tools as ireecmp
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
@@ -59,10 +60,12 @@ backend_convert = {
     # CPU backends
     "dylib": "dylib-llvm-aot",
     "vmvx": "vmvx",
+    "llvm-cpu": "llvm-cpu",
     # GPU backends
     "vulkan": "vulkan-spirv",
     "cuda": "cuda",
-    "llvm-cpu": "llvm-cpu",
+    # NPU backends
+    "coralnpu": "coralnpu",
 }
 
 
@@ -72,6 +75,7 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = [
+        "flax",
         "keras",
         "tflite",
         "any",
@@ -99,6 +103,20 @@ class IREECompiler(Optimizer):
             "default": None,
             "nullable": True,
         },
+        "compiler_path": {
+            "argparse_name": "--compiler-path",
+            "description": "Path to the compiler executable",
+            "type": list[Path],
+            "default": None,
+            "nullable": True,
+        },
+        "linker_path": {
+            "argparse_name": "--linker-path",
+            "description": "Path to the linker executable",
+            "type": list[Path],
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -109,6 +127,8 @@ class IREECompiler(Optimizer):
         backend: Optional[str] = None,
         model_framework: str = "any",
         compiler_args: Optional[List[str]] = None,
+        compiler_path: Optional[Path] = None,
+        linker_path: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -136,6 +156,10 @@ class IREECompiler(Optimizer):
             <option>=<value>, or <option> for flags (example:
             'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
             listed by running 'iree-compile -h'.
+        compiler_path : Optional[Path]
+            Path to the compiler executable.
+        linker_path : Optional[Path]
+            Path to the linker executable.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
@@ -144,6 +168,8 @@ class IREECompiler(Optimizer):
         self.backend = backend
         self.platform_backend = None
         self.compiler_args = compiler_args
+        self.compiler_path = compiler_path
+        self.linker_path = linker_path
 
         if compiler_args is not None:
             self.parsed_compiler_args = [
@@ -151,6 +177,12 @@ class IREECompiler(Optimizer):
             ]
         else:
             self.parsed_compiler_args = []
+
+        if self.compiler_path is None:
+            self.compiler_path = os.environ.get("IREE_COMPILER_PATH")
+
+        if self.linker_path is None:
+            self.linker_path = os.environ.get("IREE_LINKER_PATH")
 
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
@@ -163,7 +195,12 @@ class IREECompiler(Optimizer):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
-        input_type = self.get_input_type(input_model_path)
+        backend = self._get_backend()
+
+        try:
+            input_type = self.get_input_type(input_model_path)
+        except Exception:
+            input_type = self.model_wrapper.get_framework()
 
         if input_type in ("keras", "tensorflow"):
             self.compiler_input_type = "mhlo"
@@ -175,63 +212,105 @@ class IREECompiler(Optimizer):
         if model_cls is None:
             KLogger.warning("Cannot get model class from model wrapper.")
 
-        conversion_kwargs = {
-            "io_spec": io_spec,
-            "model_cls": model_cls,
-        }
-
-        # To compile a model with IREE compiler, we first convert it to ONNX
-        # (that's because IREE TensorFlow workflow, as of version 3.6.0 is
-        # highly unstable, so trying to compile directly does not work).
-        onnx_model = converter_registry.convert(
-            input_model_path, input_type, "iree", **conversion_kwargs, **kwargs
-        )
-
-        intermediate_onnx_model_path = self.compiled_model_path.with_suffix(
-            ".tmp.onnx"
-        )
-
-        onnx.save(onnx_model, intermediate_onnx_model_path)
-        KLogger.debug(
-            "Saved model in intermediate onnx format at:"
-            f" {intermediate_onnx_model_path}"
-        )
-
-        # Compiled IREE models have an entry function, that has to be called to
-        # start inference. For compiled onnx models, name of that entry
-        # function is the same as the onnx graph name. 'module' is the default
-        # IREE bytecode module name.
-        io_spec["entry_func"] = "module." + onnx_model.graph.name
-
         intermediate_mlir_path = self.compiled_model_path.with_suffix(
             ".tmp.mlir"
         )
 
-        cmd = [
-            "iree-import-onnx",
-            str(intermediate_onnx_model_path.resolve()),
-        ]
-
-        if sys.version_info < (3, 12):
-            cmd.extend(["--opset-version", "17"])
-
-        cmd.extend(["-o", str(intermediate_mlir_path.resolve())])
-
-        subprocess.call(cmd)
-
-        try:
-            backend = self._get_backend()
-            compiled_buffer = ireecmp.compile_file(
-                str(intermediate_mlir_path.resolve()),
-                input_type="onnx",
-                extra_args=self.parsed_compiler_args,
-                target_backends=[backend_convert.get(backend, backend)],
+        if input_type == "flax":
+            conversion_input = self.model_wrapper or input_model_path
+            mlir_model = converter_registry.convert(
+                conversion_input,
+                "flax",
+                "mlir",
             )
-        except ireecmp.CompilerToolError as e:
-            raise CompilationError(e)
 
-        with open(self.compiled_model_path, "wb") as f:
-            f.write(compiled_buffer)
+            intermediate_mlir_path.write_text(mlir_model)
+
+        else:
+            conversion_kwargs = {
+                "io_spec": io_spec,
+                "model_cls": model_cls,
+            }
+
+            # To compile a model with IREE compiler, we first convert it to
+            # ONNX (that's because IREE TensorFlow workflow, as of version
+            # 3.6.0 is highly unstable, so trying to compile directly does not
+            # work).
+            onnx_model = converter_registry.convert(
+                input_model_path,
+                input_type,
+                "iree",
+                **conversion_kwargs,
+                **kwargs,
+            )
+
+            intermediate_onnx_model_path = (
+                self.compiled_model_path.with_suffix(".tmp.onnx")
+            )
+
+            onnx.save(onnx_model, intermediate_onnx_model_path)
+            KLogger.debug(
+                "Saved model in intermediate onnx format at:"
+                f" {intermediate_onnx_model_path}"
+            )
+
+            # Compiled IREE models have an entry function, that has to be
+            # called to start inference. For compiled onnx models, name of that
+            # entry function is the same as the onnx graph name. 'module' is
+            # the default IREE bytecode module name.
+            io_spec["entry_func"] = "module." + onnx_model.graph.name
+
+            cmd = [
+                "iree-import-onnx",
+                str(intermediate_onnx_model_path.resolve()),
+            ]
+
+            if sys.version_info < (3, 12):
+                cmd.extend(["--opset-version", "17"])
+
+            cmd.extend(["-o", str(intermediate_mlir_path.resolve())])
+
+            subprocess.call(cmd)
+
+        if self.compiler_path:
+            cmd = [
+                self.compiler_path,
+                *self.parsed_compiler_args,
+                str(intermediate_mlir_path),
+                "-o",
+                str(self.compiled_model_path),
+            ]
+            try:
+                subprocess.run(
+                    cmd,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            except (OSError, subprocess.CalledProcessError) as e:
+                error = (
+                    e.stderr
+                    if isinstance(e, subprocess.CalledProcessError)
+                    else str(e)
+                )
+                raise CompilationError(error or str(e)) from e
+
+        else:
+            from iree.compiler import tools as ireecmp
+
+            try:
+                compiled_buffer = ireecmp.compile_file(
+                    str(intermediate_mlir_path.resolve()),
+                    input_type="onnx",
+                    extra_args=self.parsed_compiler_args,
+                    target_backends=[backend_convert.get(backend, backend)],
+                )
+            except ireecmp.CompilerToolError as e:
+                raise CompilationError(e)
+
+            with open(self.compiled_model_path, "wb") as f:
+                f.write(compiled_buffer)
+
         self.save_io_specification(self.compiled_model_path, io_spec)
 
     @classmethod
@@ -240,9 +319,12 @@ class IREECompiler(Optimizer):
 
     @classmethod
     def get_framework_version(cls) -> str:
-        from iree.compiler import version
+        try:
+            from iree.compiler import version
 
-        return version.VERSION
+            return version.VERSION
+        except Exception:
+            return "unknown"
 
     def read_platform(self, platform: Platform):
         super().read_platform(platform)
@@ -272,6 +354,21 @@ class IREECompiler(Optimizer):
                 )
             case "BareMetalPlatform":
                 KLogger.info("BareMetalPlatform support still in development.")
+            case "CoralNPUPlatform":
+                if not self.parsed_compiler_args:
+                    if flags := getattr(platform, "compilation_flags", None):
+                        self.parsed_compiler_args = flags
+                        KLogger.debug(
+                            "Reading compilation flags from CoralNPU platform "
+                            f"{flags}"
+                        )
+                if self.linker_path:
+                    linker_flag = (
+                        f"--coralnpu-embedded-linker-path={self.linker_path}"
+                    )
+                    self.parsed_compiler_args.append(linker_flag)
+                    KLogger.debug(f"Added compilation flag {linker_flag}")
+
             case _:
                 KLogger.warning(
                     f"Unsupported platform: {type(platform).__name__}."

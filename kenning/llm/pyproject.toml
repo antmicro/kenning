@@ -1,20 +1,15 @@
-# Copyright (c) 2024-2026 Antmicro <www.antmicro.com>
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = [
-    "setuptools>=40.8.0",
-    "wheel",
-    "torch==2.11.0",
-    "nvidia-cutlass==3.5.1.0",
-]
+requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kenning_sparsity_aware_kernel"
+name = "kenning_llm"
 version = "0.0.1"
-description = "Implementation of sparsity aware CUDA kernel for vLLM runtime"
+description = "LLM support for kenning"
 authors = [
     {name = "Antmicro Ltd.", email = "contact@antmicro.com"},
 ]
@@ -22,6 +17,20 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
+]
+dependencies = [
+    "transformers>=5.0.0",  # version fixed for sparsegpt+gptq optimization
+    "rouge-score",
+    "peft==0.10.0",
+    "protobuf>=7.34.0",
+    "torch==2.11.0",
+    "vllm==0.21.0",
+    "safetensors==0.4.3",
+]
+
+[project.optional-dependencies]
+sparsity-aware-kernel = [
+    "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
 ]
 
 # Force the pytorch version compiled against CUDA 12.9 to
@@ -35,7 +44,4 @@ url = "https://download.pytorch.org/whl/cu129"
 torch = { index = "pytorch-cu129" }
 torchvision = { index = "pytorch-cu129" }
 vllm = { url = "https://wheels.vllm.ai/ad7125a431e176d4161099480a66f0169609a690/vllm-0.21.0%2Bcu129-cp38-abi3-manylinux_2_34_x86_64.whl" }
-
-[tool.setuptools.packages.find]
-include = ["kenning_sparsity_aware_kernel*"]
 

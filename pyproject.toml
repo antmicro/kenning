@@ -188,17 +188,6 @@ albumentations = [
     "albumentations",
 ]
 
-# llm = [
-#     "gptqmodel[hf]>=5.8.0",
-#     # "torch ; python_version=='3.12'",
-#     "rouge-score",
-#     "transformers>=5.0.0",
-#     "peft==0.10.0",
-#     "protobuf>=7.34.0",
-#     "kenning[torch]"
-#     # "vllm; python_version<'3.12'",
-# ]
-
 onnx2tf = [
     "onnx2tf>=1.28.8",
     "onnxruntime==1.23.2",

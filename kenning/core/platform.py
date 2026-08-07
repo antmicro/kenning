@@ -77,7 +77,7 @@ class Platform(ArgumentsHandler, ABC):
             with path(platforms, "platforms.yml") as platforms_path:
                 self.platforms_definitions = [
                     ResourceURI("kenning:///platforms/platforms.yml"),
-                    platforms_path,
+                    platforms_path.absolute(),
                 ]
         self.read_data_from_platforms_yaml()
         # Parameters to be set by `PipelineRunner`
@@ -108,7 +108,7 @@ class Platform(ArgumentsHandler, ABC):
                 data.append(yaml.safe_load(platforms_yaml).get(self.name, {}))
                 sources.append(platform_def)
 
-        if any(not platform for platform in data):
+        if all(not platform for platform in data):
             KLogger.warning(
                 f"Platform {self.name} not found in defined platforms"
             )

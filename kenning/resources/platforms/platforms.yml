@@ -154,3 +154,17 @@ jetson_thor_devkit:
     - "-thread_warp_size=32"
   default_optimizer:
     - TVMCompiler
+
+coralnpu:
+  display_name: CoralNPU
+  default_platform: CoralNPUPlatform
+  compilation_flags:
+    - "--iree-hal-target-device=local"
+    - "--iree-hal-local-target-device-backends=llvm-cpu"
+    - "--iree-llvmcpu-target-cpu=host"
+    - "--iree-hal-target-device=coralnpu"
+    - "--iree-global-opt-experimental-disable-conv-generalization"
+    - "--coralnpu-target-abi=ilp32"
+    - "--coralnpu-target-cpu-features=+m,+f,+zvl128b,+zve32f"
+  default_optimizer:
+    - IREECompiler

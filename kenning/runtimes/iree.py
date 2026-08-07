@@ -87,6 +87,7 @@ class IREERuntime(Runtime):
         """
         self.model_path = model_path
         self.model = None
+        self.entry_func = None
         self.io_spec = None
         self.input = None
         self.driver = driver
@@ -98,7 +99,7 @@ class IREERuntime(Runtime):
 
     def load_input(self, input_data: List[List[np.ndarray]]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")
-        if self.model is None:
+        if self.entry_func is None:
             raise ModelNotPreparedError
         if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
@@ -108,7 +109,87 @@ class IREERuntime(Runtime):
         return True
 
     def prepare_model(self, input_data: Optional[bytes]):
-        KLogger.info("loading model")
+        KLogger.info(f"Loading model, driver: {self.driver}")
+
+        if self.driver == "coralnpu":
+            self._prepare_model_coralnpu(input_data)
+        else:
+            self._prepare_model(input_data)
+
+        KLogger.info("Model loading ended successfully")
+
+    def run(self):
+        if self.entry_func is None:
+            raise ModelNotPreparedError
+        if self.input is None:
+            raise InputNotPreparedError
+
+        self.output = self.entry_func(*self.input)
+
+    def extract_output(self) -> List[np.ndarray]:
+        if self.entry_func is None:
+            raise ModelNotPreparedError
+
+        results = []
+        try:
+            results.append(self.output.to_host())
+        except AttributeError:
+            for out in self.output:
+                results.append(out.to_host())
+        return results
+
+    def read_platform(self, platform: Platform):
+        super().read_platform(platform)
+        if isinstance(platform, CUDAPlatform):
+            self.driver = "cuda"
+
+    def _prepare_model_coralnpu(self, input_data: Optional[bytes]):
+        instance = ireert.VmInstance()
+
+        try:
+            cpu_device = ireert.get_device("local-sync")
+            KLogger.info("Created CPU device")
+        except Exception as e:
+            KLogger.error(f"Failed to create CPU device: {e}")
+            raise
+
+        try:
+            npu_device = ireert.get_device("coralnpu")
+            KLogger.info("Created NPU device")
+        except Exception as e:
+            KLogger.error(f"Failed to create NPU device: {e}")
+            raise
+
+        hal_module = ireert.create_hal_module(
+            instance, devices=[cpu_device, npu_device]
+        )
+
+        class MultiDeviceConfig:
+            def __init__(self, device, instance, hal_module):
+                self.device = device  # Used by FunctionInvoker for arguments
+                self.vm_instance = instance
+                self.default_vm_modules = (hal_module,)
+
+        config = MultiDeviceConfig(cpu_device, instance, hal_module)
+
+        KLogger.info(f"Loading VMFB from {self.model_path}")
+        try:
+            vm_module = ireert.VmModule.mmap(
+                instance, str(self.model_path.resolve())
+            )
+        except Exception as e:
+            KLogger.warning(f"mmap failed: {e}. Trying from_flatbuffer...")
+            with open(self.model_path, "rb") as f:
+                vm_module = ireert.VmModule.from_flatbuffer(
+                    config.vm_instance, f.read()
+                )
+            KLogger.info("Successfully loaded VMFB from flatbuffer")
+
+        ctx = ireert.SystemContext(config=config)
+        ctx.add_vm_module(vm_module)
+        self.entry_func = ctx.modules.jit__lambda.main
+
+    def _prepare_model(self, input_data: Optional[bytes]):
         if input_data:
             with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)
@@ -135,30 +216,3 @@ class IREERuntime(Runtime):
                 f" function name: {entry_func_name}"
             )
         self.entry_func = getattr(self.model, entry_func_name)
-
-        KLogger.info("Model loading ended successfully")
-
-    def run(self):
-        if self.model is None:
-            raise ModelNotPreparedError
-        if self.input is None:
-            raise InputNotPreparedError
-
-        self.output = self.entry_func(*self.input)
-
-    def extract_output(self) -> List[np.ndarray]:
-        if self.model is None:
-            raise ModelNotPreparedError
-
-        results = []
-        try:
-            results.append(self.output.to_host())
-        except AttributeError:
-            for out in self.output:
-                results.append(out.to_host())
-        return results
-
-    def read_platform(self, platform: Platform):
-        super().read_platform(platform)
-        if isinstance(platform, CUDAPlatform):
-            self.driver = "cuda"

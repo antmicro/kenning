@@ -11,6 +11,7 @@ basic report parameters.
 from pathlib import Path
 from typing import List, Optional
 
+from kenning.core.model import ModelWrapper
 from kenning.core.report import Report
 
 
@@ -29,8 +30,15 @@ class StubReport(Report):
         report_name: Optional[str] = None,
         report_types: Optional[List[str]] = None,
         automl_stats: Optional[Path] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
-        super().__init__(measurements, report_name, report_types, automl_stats)
+        super().__init__(
+            measurements,
+            report_name,
+            report_types,
+            automl_stats,
+            model_wrapper,
+        )
 
     def generate_report(
         self,

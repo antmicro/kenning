@@ -81,6 +81,17 @@ def model_report(
     }
 
     input_type = model_wrapper.get_framework()
+
+    measurementsdata["base model type"] = input_type
+
+    measurementsdata[
+        "framework version"
+    ] = model_wrapper.get_framework_version()
+
+    ms = model_wrapper.get_model_size()
+
+    measurementsdata["base model size"] = int(ms * 1024)
+
     input_model_path = model_wrapper.get_path()
     try:
         onnx_model = converter_registry.convert(

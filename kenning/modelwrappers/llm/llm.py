@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -6,7 +6,7 @@
 Provides base methods for using LLMs in Kenning.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Dict, List, Optional
 
 from jinja2 import Template
@@ -25,6 +25,10 @@ class LLM(ModelWrapper, ABC):
     """
 
     default_dataset = CNNDailymailDataset
+    system_prompt_template = (
+        "Instruct: {{system_message}}. {{user_message}}\nOutput:"
+    )
+    user_prompt_template = "Instruct: {{user_message}}\nOutput:"
 
     def __init__(
         self,
@@ -58,7 +62,6 @@ class LLM(ModelWrapper, ABC):
         prompt_config = default_prompt_config | user_prompt_config
         return template.render(prompt_config)
 
-    @abstractmethod
     def message_to_instruction(
         self,
         prompt_config: Dict | str,
@@ -83,7 +86,14 @@ class LLM(ModelWrapper, ABC):
         str
             Formatted prompt for a given model.
         """
-        ...
+        prompt_config = LLM._transform_prompt_config(prompt_config)
+        if "system_message" in prompt_config:
+            template = self.system_prompt_template
+        else:
+            template = self.user_prompt_template
+        return LLM._template_to_str(
+            template=template, user_prompt_config=prompt_config
+        )
 
     def load_model(self, model_path: PathOrURI):
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -272,3 +282,6 @@ class LLM(ModelWrapper, ABC):
     @classmethod
     def get_output_formats(cls):
         return ["safetensors-native", "safetensors-awq"]
+
+    def train_model(self):
+        raise NotSupportedError("This model does not support training.")

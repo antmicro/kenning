@@ -30,6 +30,24 @@ class LLMOptimizer(Optimizer, ABC):
             "default": "safetensors",
             "enum": inputtypes,
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "The number of samples used in the batch during quantization",  # noqa: E501
+            "default": 8,
+            "type": int,
+        },
+        "seqlen": {
+            "argparse_name": "--seqlen",
+            "description": "The sequence length of samples in the calibration dataset (c4 by default)",  # noqa: E501
+            "default": 1024,
+            "type": int,
+        },
+        "calibration_samples": {
+            "argparse_name": "--calibration-samples",
+            "description": "The number of samples to be used from the calibration dataset",  # noqa: E501
+            "type": int,
+            "default": 256,
+        },
     }
 
     def __init__(
@@ -38,9 +56,15 @@ class LLMOptimizer(Optimizer, ABC):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_framework: str = "safetensors",
+        batch_size: int = 8,
+        seqlen: int = 1024,
+        calibration_samples: int = 256,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.model_framework = model_framework
+        self.batch_size = batch_size
+        self.seqlen = seqlen
+        self.calibration_samples = calibration_samples
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     @classmethod

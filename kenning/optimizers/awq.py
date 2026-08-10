@@ -60,6 +60,9 @@ class AWQOptimizer(LLMOptimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_framework: str = "safetensors",
+        batch_size: int = 8,
+        seqlen: int = 1024,
+        calibration_samples: int = 256,
         target_precision: int = 4,
         use_zero_point: bool = True,
         group_size: int = 128,
@@ -80,6 +83,13 @@ class AWQOptimizer(LLMOptimizer):
             scenario.
         model_framework : str
             Framework of the input model, used to select a proper backend.
+        batch_size : int
+            The number of samples used in the batch during quantization.
+        seqlen : int
+            The sequence length of samples in the calibration dataset
+            (c4 by default).
+        calibration_samples : int
+            The number of samples to be used from the calibration dataset.
         target_precision : int
             Target precision of the quantized model.
         use_zero_point : bool
@@ -100,6 +110,9 @@ class AWQOptimizer(LLMOptimizer):
             compiled_model_path,
             location,
             model_framework,
+            batch_size,
+            seqlen,
+            calibration_samples,
             model_wrapper,
         )
 
@@ -139,12 +152,12 @@ class AWQOptimizer(LLMOptimizer):
             from kenning.sparsegpt.datautils import get_c4
 
             calib_data = get_c4(
-                n_samples=256,
+                n_samples=self.calibration_samples,
                 tokenizer=tokenizer,
-                seqlen=128,
+                seqlen=self.seqlen,
             )
 
-        model.quantize(calib_data, batch_size=1)
+        model.quantize(calib_data, batch_size=self.batch_size)
 
         tokenizer.save_pretrained(str(self.compiled_model_path))
         model.save(str(self.compiled_model_path))

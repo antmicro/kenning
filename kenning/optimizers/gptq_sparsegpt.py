@@ -47,13 +47,13 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_framework: str = "safetensors",
+        batch_size: int = 256,
         group_size: int = 128,
-        context_length: int = 4096,
+        seqlen: int = 1024,
         calibration_samples: int = 128,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.group_size = group_size
-        self.context_length = context_length
         self.calibration_samples = calibration_samples
 
         super().__init__(
@@ -61,6 +61,9 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
             compiled_model_path,
             location,
             model_framework,
+            batch_size,
+            seqlen,
+            calibration_samples,
             model_wrapper,
         )
 
@@ -94,7 +97,7 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
         data = get_c4(
             n_samples=self.calibration_samples,
             tokenizer=tokenizer,
-            seqlen=self.context_length,
+            seqlen=self.seqlen,
             seed_constant=5,
         )
 

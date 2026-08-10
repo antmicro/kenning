@@ -27,15 +27,11 @@ class GPTQOptimizer(LLMOptimizer):
             "description": "Target quantization precision",
             "default": 4,
             "enum": [2, 3, 4, 8],
+            "type": int,
         },
         "group_size": {
             "description": "Number of tensors that share the same "
             + "quantization parameters",
-            "default": 128,
-            "type": int,
-        },
-        "calibration_samples": {
-            "description": "Number of samples in a calibration dataset",
             "default": 128,
             "type": int,
         },
@@ -57,8 +53,11 @@ class GPTQOptimizer(LLMOptimizer):
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
+        model_framework: str = "safetensors",
         bits: int = 4,
         group_size: int = 128,
+        batch_size: int = 8,
+        seqlen: int = 1024,
         calibration_samples: int = 256,
         desc_act: bool = True,
         symmetric: bool = True,
@@ -66,7 +65,6 @@ class GPTQOptimizer(LLMOptimizer):
     ):
         self.bits = bits
         self.group_size = group_size
-        self.calibration_samples = calibration_samples
         self.desc_act = desc_act
 
         self.symmetric = symmetric
@@ -75,6 +73,9 @@ class GPTQOptimizer(LLMOptimizer):
             compiled_model_path,
             location,
             "safetensors",
+            batch_size,
+            seqlen,
+            calibration_samples,
             model_wrapper,
         )
 
@@ -105,9 +106,10 @@ class GPTQOptimizer(LLMOptimizer):
         calibration_samples = get_c4(
             n_samples=self.calibration_samples,
             tokenizer=tokenizer,
+            seqlen=self.seqlen,
         )
 
-        model.quantize(calibration_samples)
+        model.quantize(calibration_samples, batch_size=self.batch_size)
         tokenizer.save_pretrained(str(self.compiled_model_path))
 
         model.save(str(self.compiled_model_path))

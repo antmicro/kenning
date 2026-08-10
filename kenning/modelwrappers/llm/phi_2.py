@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,11 +8,7 @@ Provides wrapper for Phi-2 model.
 https://huggingface.co/microsoft/phi-2
 """
 
-from typing import Dict
 
-from typing_extensions import override
-
-from kenning.core.exceptions import NotSupportedError
 from kenning.modelwrappers.llm.llm import LLM
 
 
@@ -25,20 +21,8 @@ class PHI2(LLM):
 
     pretrained_model_uri = "hf://microsoft/phi-2"
 
-    @override
-    def message_to_instruction(self, prompt_config: Dict | str) -> str:
-        prompt_config = LLM._transform_prompt_config(prompt_config)
+    system_prompt_template = (
+        "Instruct: {{system_message}}. {{user_message}}\nOutput:"
+    )
 
-        if "system_message" in prompt_config:
-            template = (
-                "Instruct: {{system_message}}. {{user_message}}\nOutput:"
-            )
-        else:
-            template = "Instruct: {{user_message}}\nOutput:"
-
-        return LLM._template_to_str(
-            template=template, user_prompt_config=prompt_config
-        )
-
-    def train_model(self):
-        raise NotSupportedError("This model does not support training.")
+    user_prompt_template = "Instruct: {{user_message}}\nOutput:"

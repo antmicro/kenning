@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -548,12 +548,13 @@ class IOInterface(ABC):
         from pathlib import Path
 
         local_path = Path(path)
-        # spec_path = path.with_suffix(path.suffix + ".json")
-
-        if path.is_dir():
+        if local_path.is_dir():
             spec_path = local_path / "kenning_io_spec.json"
         else:
-            spec_path.with_suffix(path.suffix, +".json")
+            spec_path = local_path.with_suffix(local_path.suffix + ".json")
+
+        if not spec_path.parent.exists():
+            spec_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(spec_path, "w") as f:
             json.dump(self.get_io_specification(), f)

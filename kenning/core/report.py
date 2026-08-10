@@ -38,6 +38,7 @@ class ReportTypes(str, Enum):
     ANOMALY = "anomaly"
     ZEPHYR_TRACES = "zephyr_traces"
     MODEL = "model"
+    IREE_COMPILATION = "iree_compilation"
 
 
 class Report(ArgumentsHandler, ABC):
@@ -183,6 +184,12 @@ class Report(ArgumentsHandler, ABC):
         def _append_type_if(_type: str, func: Callable):
             if all(map(func, measurements_data)):
                 report_types.append(_type)
+
+        _append_type_if(
+            ReportTypes.IREE_COMPILATION,
+            lambda data: "compilation_metadata" in data
+            and "iree" in data["compilation_metadata"],
+        )
 
         _append_type_if(
             ReportTypes.CLASSIFICATION,

@@ -38,6 +38,7 @@ from kenning.report.markdown_components import (
     depth_estimation_report,
     detection_report,
     generate_html_report,
+    iree_compilation_report,
     llm_performance_report,
     model_report,
     performance_report,
@@ -342,6 +343,7 @@ class MarkdownReport(Report):
             rep.ANOMALY: anomaly_detection_report,
             rep.ZEPHYR_TRACES: zephyr_traces_report,
             rep.MODEL: model_report,
+            rep.IREE_COMPILATION: iree_compilation_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,

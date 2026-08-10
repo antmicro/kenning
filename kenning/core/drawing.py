@@ -466,11 +466,6 @@ class Plot(ABC, object):
         """
         if values is None:
             values = [f"@{{{name}}}" for name in names]
-        else:
-            values = [
-                f"@{{{value[1:]}}}" if value[0] == "@" else value
-                for value in values
-            ]
         if units is None:
             units = ["" for _ in names]
         else:
@@ -2990,6 +2985,9 @@ class Barplot(Plot):
         colors: Optional[List] = None,
         color_offset: int = 0,
         vertical_x_labels: bool = True,
+        stacked: bool = False,
+        tooltips: Optional[Iterable[Tuple[str, str]]] = None,
+        tooltip_additional_label: str = "File",
     ):
         """
         Create barplot.
@@ -3022,6 +3020,8 @@ class Barplot(Plot):
             How many colors from default color list should be skipped.
         vertical_x_labels : bool
             Whether labels on x-axis should be vertiacal.
+        stacked : bool
+            Whether TODO
 
         Raises
         ------
@@ -3061,6 +3061,9 @@ class Barplot(Plot):
                 len(self.y_data),
             ).tolist()
         self.vertical_x_labels = vertical_x_labels
+        self.stacked = stacked
+        self.tooltips = tooltips
+        self.tooltip_additional_label = tooltip_additional_label
 
     def plot_matplotlib(
         self, output_path: Optional[Path], output_formats: Iterable[str]
@@ -3119,10 +3122,13 @@ class Barplot(Plot):
         from bokeh.plotting import figure
         from bokeh.transform import dodge
 
-        y_max = max([max(y) for y in self.y_data.values()]) * 1.01
+        if self.stacked:
+            y_max = max(map(sum, zip(*self.y_data.values()))) * 1.01
+        else:
+            y_max = max([max(y) for y in self.y_data.values()]) * 1.01
         y_min = 0
         # If data have similar values, decrease range
-        if self.y_data_std / y_max < 0.1:
+        if not self.stacked and self.y_data_std / y_max < 0.1:
             y_min = max(min([min(y) for y in self.y_data.values()]) * 0.95, 0)
 
         barplot_fig = figure(
@@ -3147,36 +3153,61 @@ class Barplot(Plot):
                 "max-width": "100%",
                 "max-height": "80vh",
             },
+            tooltips=self._create_custom_hover_template(
+                [t[0] for t in self.tooltips],
+                values=[t[1] for t in self.tooltips],
+            )
+            if self.tooltips
+            else None,
         )
         barplot_fig.toolbar.logo = None
 
         data = dict(self.y_data, xdata=self.x_data)
 
-        for i, label in enumerate(self.y_data.keys()):
-            vbar = barplot_fig.vbar(
-                x=dodge(
-                    "xdata", self.bar_offset[i], range=barplot_fig.x_range
-                ),
-                top=label,
-                source=data,
-                bottom=0,
-                fill_color=self.colors[i],
-                width=self.bar_width,
-                legend_label=label,
-            )
-            tooltips = [(self.x_label, "@xdata"), (self.y_label, f"@{label}")]
-            if len(self.y_data) > 1:
-                tooltips.insert(0, ("File", label))
+        from bokeh.plotting import ColumnDataSource
 
-            barplot_fig.add_tools(
-                HoverTool(
-                    renderers=[vbar],
-                    tooltips=self._create_custom_hover_template(
-                        [t[0] for t in tooltips],
-                        values=[t[1] for t in tooltips],
-                    ),
-                )
+        if self.stacked:
+            vbar_func = partial(barplot_fig.vbar_stack, self.stacked)
+            vbar = barplot_fig.vbar_stack(
+                self.stacked,
+                x="xdata",
+                source=ColumnDataSource(data=data),
+                fill_color=self.colors,
+                width=self.bar_width,
+                legend_label=self.stacked,
             )
+        else:
+            for i, label in enumerate(self.y_data.keys()):
+                vbar = barplot_fig.vbar(
+                    x=dodge(
+                        "xdata", self.bar_offset[i], range=barplot_fig.x_range
+                    ),
+                    source=data,
+                    bottom=0,
+                    top=label,
+                    fill_color=self.colors[i],
+                    width=self.bar_width,
+                    legend_label=label,
+                )
+                if not self.tooltips:
+                    tooltips = [
+                        (self.x_label, "@xdata"),
+                        (self.y_label, f"@{label}"),
+                    ]
+                    if len(self.y_data) > 1:
+                        tooltips.insert(
+                            0, (self.tooltip_additional_label, label)
+                        )
+
+                    barplot_fig.add_tools(
+                        HoverTool(
+                            renderers=[vbar],
+                            tooltips=self._create_custom_hover_template(
+                                [t[0] for t in tooltips],
+                                values=[t[1] for t in tooltips],
+                            ),
+                        )
+                    )
 
         if self.vertical_x_labels:
             barplot_fig.xaxis.major_label_orientation = "vertical"

@@ -405,7 +405,9 @@ class TestBlockConfig:
             BLOCK_CONFIGURATIONS_KEY: {
                 ConfigKey.optimizers: {
                     "ONNXCompiler": {
-                        BLOCK_CONFIG_PARAMETERS_KEY: {},
+                        BLOCK_CONFIG_PARAMETERS_KEY: {
+                            "param1": 4,
+                        },
                         BLOCK_DIRECT_ARGUMENTS_KEY: {},
                     },
                 },
@@ -429,6 +431,23 @@ class TestBlockConfig:
                         },
                     },
                 },
+                ConfigKey.dataset: {
+                    "MagicWandDataset": {
+                        BLOCK_CONFIG_PARAMETERS_KEY: {
+                            "path": "path/to/model/file",
+                        },
+                        BLOCK_DIRECT_ARGUMENTS_KEY: {
+                            "from_file": False,
+                            "other_number": 4.9,
+                        },
+                    },
+                    None: {
+                        BLOCK_CONFIG_PARAMETERS_KEY: {
+                            "param5": [1, 2, 3],
+                        },
+                        BLOCK_DIRECT_ARGUMENTS_KEY: {},
+                    },
+                },
             },
             UNAFFILIATED_PARAMETERS_KEY: {
                 "param1": 3434,
@@ -439,6 +458,7 @@ class TestBlockConfig:
             ConfigKey.optimizers: "ExecuTorchRuntime",
             ConfigKey.report: "StubReport",
             ConfigKey.model_wrapper: "GenericClassifier",
+            ConfigKey.dataset: "MagicWandDataset",
         }
         expected_dict = {
             BLOCK_CONFIGURATIONS_KEY: {
@@ -451,7 +471,7 @@ class TestBlockConfig:
                     },
                 },
                 ConfigKey.report: {
-                    "GenericClassifier": {
+                    "StubReport": {
                         BLOCK_CONFIG_PARAMETERS_KEY: {
                             "param1": 5,
                             "param2": "ui",
@@ -470,6 +490,23 @@ class TestBlockConfig:
                         },
                     },
                 },
+                ConfigKey.dataset: {
+                    "MagicWandDataset": {
+                        BLOCK_CONFIG_PARAMETERS_KEY: {
+                            "path": "path/to/model/file",
+                        },
+                        BLOCK_DIRECT_ARGUMENTS_KEY: {
+                            "from_file": False,
+                            "other_number": 4.9,
+                        },
+                    },
+                    None: {
+                        BLOCK_CONFIG_PARAMETERS_KEY: {
+                            "param5": [1, 2, 3],
+                        },
+                        BLOCK_DIRECT_ARGUMENTS_KEY: {},
+                    },
+                },
                 ConfigKey.model_wrapper: {
                     "GenericClassifier": {
                         BLOCK_CONFIG_PARAMETERS_KEY: {},
@@ -482,7 +519,7 @@ class TestBlockConfig:
                 "param3": "lorem",
             },
         }
-        expected_dict == apply_default_blocks_by_block_type(
+        assert expected_dict == apply_default_blocks_by_block_type(
             test_defaults, test_dict
         )
 

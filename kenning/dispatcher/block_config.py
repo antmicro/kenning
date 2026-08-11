@@ -315,21 +315,30 @@ def apply_default_blocks_by_block_type(
     KenningBlockConfigDict
         Changed dictionary, with the defaults applied where needed.
     """
-    for block_type, blocks in config_dict[BLOCK_CONFIGURATIONS_KEY].items():
-        if block_type not in defaults:
-            continue
+    block_configurations = config_dict[BLOCK_CONFIGURATIONS_KEY]
+    for block_type in defaults:
         default_block = defaults[block_type]
-        if len(blocks) == 0:
-            blocks = {
+        if (
+            block_type not in block_configurations
+            or len(block_configurations[block_type]) == 0
+        ):
+            block_configurations[block_type] = {
                 default_block: {
                     BLOCK_CONFIG_PARAMETERS_KEY: {},
                     BLOCK_DIRECT_ARGUMENTS_KEY: {},
                 }
             }
-        else:
-            if None in blocks:
-                blocks[default_block] = blocks[None]
-                del blocks[None]
+            continue
+        if None not in block_configurations[block_type]:
+            continue
+        if (
+            None in block_configurations[block_type]
+            and default_block not in block_configurations[block_type]
+        ):
+            block_configurations[block_type][
+                default_block
+            ] = block_configurations[block_type][None]
+            del block_configurations[block_type][None]
     return config_dict
 
 

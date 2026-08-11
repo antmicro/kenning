@@ -11,9 +11,6 @@ import re
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
-import tvm
-import tvm.relay as relay
-
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import CompilationError, NotSupportedError
@@ -263,6 +260,8 @@ class TVMCompiler(Optimizer):
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
+        import tvm
+
         assert not (
             use_fp16_precision and use_int8_precision
         ), "Compilation cannot use both FP16 and INT8 conversion"
@@ -305,6 +304,7 @@ class TVMCompiler(Optimizer):
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def init(self):
+        import tvm
         import tvm.micro.testing as mtvmt
 
         target = self._get_target()
@@ -338,6 +338,9 @@ class TVMCompiler(Optimizer):
         KLogger.debug(f"Using target: {self.target_obj}")
 
     def compile_model(self, mod, params, outputpath, io_spec):
+        import tvm
+        import tvm.relay as relay
+
         # additional regular optimizations applied to models
         transforms = [relay.transform.RemoveUnusedFunctions()]
 
@@ -624,6 +627,8 @@ class TVMCompiler(Optimizer):
         KLogger.info(f"Set TVMCompiler target to {self.platform_target}")
 
     def get_framework_and_version(self):
+        import tvm
+
         return ("tvm", tvm.__version__)
 
     def zpl_prepare_cmd_flags(self):
@@ -661,6 +666,8 @@ class TVMCompiler(Optimizer):
 
     @classmethod
     def get_framework_version(cls) -> str:
+        import tvm
+
         return tvm.__version__
 
     def _get_target(self):

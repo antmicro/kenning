@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,7 +12,6 @@ from typing import Any, Optional, Tuple
 
 import cv2
 import numpy as np
-from pycocotools.coco import COCO
 
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
@@ -143,6 +142,8 @@ class VisualWakeWordsDataset(Dataset):
         )
 
     def prepare(self):
+        from pycocotools.coco import COCO
+
         annotationspath = (
             self.root / f"annotations/instances_{self.dataset_type}.json"
         )

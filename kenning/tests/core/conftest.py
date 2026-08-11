@@ -11,7 +11,6 @@ from typing import Dict, Optional, Tuple, Type, Union
 from uuid import uuid4
 
 import pytest
-from tensorflow.keras.models import load_model as load_keras_model
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -185,6 +184,8 @@ class DatasetModelRegistry:
             Tuple with: dataset, model for given framework,
             and id for the resources.
         """
+        from tensorflow.keras.models import load_model as load_keras_model
+
         if framework == "keras":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = copy_model_to_tmp(

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
-import tensorflow as tf
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
@@ -169,6 +168,8 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         return X
 
     def prepare_model(self):
+        import tensorflow as tf
+
         if self.model_prepared:
             return None
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51
@@ -205,6 +206,8 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             self.save_model(self.model_path)
 
     def train_model(self):
+        import tensorflow as tf
+
         def convert_to_tf_dataset(features: List, labels: List):
             return tf.data.Dataset.from_tensor_slices(
                 (

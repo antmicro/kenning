@@ -12,7 +12,6 @@ from typing import Any, List, Optional, Tuple
 
 import cv2
 import numpy as np
-from pycocotools.coco import COCO
 
 from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
@@ -120,6 +119,8 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         extract_zip(self.root, self.resources[self.dataset_type, self.task])
 
     def prepare(self):
+        from pycocotools.coco import COCO
+
         annotationspath = (
             self.root / f"annotations/instances_{self.dataset_type}.json"
         )

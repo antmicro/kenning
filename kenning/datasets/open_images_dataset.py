@@ -23,8 +23,6 @@ from math import ceil, floor
 from pathlib import Path
 from typing import Any, Generator, List, Optional, Tuple, Union
 
-import boto3
-import botocore
 import cv2
 import numpy as np
 import pandas as pd
@@ -124,6 +122,8 @@ def download_one_image(
     download_folder : Path
         Target directory.
     """
+    import botocore
+
     try:
         bucket.download_file(
             f"{split}/{image_id}.jpg", str(download_folder / f"{image_id}.jpg")
@@ -150,6 +150,9 @@ def download_all_images(
     num_processes : int
         Number of threads to use for image download.
     """
+    import boto3
+    import botocore
+
     bucket = boto3.resource(
         "s3",
         config=botocore.config.Config(signature_version=botocore.UNSIGNED),

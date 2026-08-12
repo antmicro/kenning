@@ -43,8 +43,8 @@ class IREERuntime(Runtime):
         "driver": {
             "argparse_name": "--driver",
             "description": "Name of the runtime target",
-            "enum": ireert.HalDriver.query(),
-            "required": False,
+            "type": str,
+            "default": "local-sync",
         },
         "llext_binary_path": {
             "argparse_name": "--llext-binary-path",
@@ -86,6 +86,13 @@ class IREERuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
+        from iree import runtime as ireert
+
+        available_drivers = ireert.HalDriver.query()
+        assert (
+            driver in available_drivers
+        ), f"Unknown driver, select one of {available_drivers}"
+
         self.model = None
         self.entry_func = None
         self.io_spec = None

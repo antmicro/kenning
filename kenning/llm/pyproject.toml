@@ -24,24 +24,11 @@ dependencies = [
     "peft==0.10.0",
     "protobuf>=7.34.0",
     "torch==2.11.0",
-    "vllm==0.21.0",
-    "safetensors==0.4.3",
+    "vllm==0.24.0",
+    "safetensors",
 ]
 
 [project.optional-dependencies]
 sparsity-aware-kernel = [
     "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
 ]
-
-# Force the pytorch version compiled against CUDA 12.9 to
-# ensure a common cuda version in environments where full kenning and
-# this package are required to be installed.
-[[tool.uv.index]]
-name = "pytorch-cu129"
-url = "https://download.pytorch.org/whl/cu129"
-
-[tool.uv.sources]
-torch = { index = "pytorch-cu129" }
-torchvision = { index = "pytorch-cu129" }
-vllm = { url = "https://wheels.vllm.ai/ad7125a431e176d4161099480a66f0169609a690/vllm-0.21.0%2Bcu129-cp38-abi3-manylinux_2_34_x86_64.whl" }
-

@@ -8,6 +8,7 @@ from typing import Callable, Optional, Type
 import pytest
 
 from kenning.core.automl import AutoML
+from kenning.core.exceptions import InvalidArgumentsError
 from kenning.platforms.local import LocalPlatform
 from kenning.tests.core.conftest import (
     get_dataset_random_mock,
@@ -145,3 +146,45 @@ class TestAutoML:
                     "and cannot initialize the pipeline",
                     pytrace=True,
                 )
+
+    @automl_matrix_test("automl_cls", depend="test_initializer")
+    def test_update_automl_range(self, automl_cls: AutoML):
+        from kenning.datasets.anomaly_detection_dataset import (
+            AnomalyDetectionDataset,
+        )
+
+        model: AutoML = automl_cls(
+            get_dataset_random_mock(AnomalyDetectionDataset), None, Path(".")
+        )
+
+        arg_structure = model.use_models[0].arguments_structure
+
+        name = list(arg_structure.keys())[0]
+
+        key = list(arg_structure[name].keys())[0]
+
+        model.use_models[0].update_automl_range(name, {key: "mock"})
+
+        with pytest.raises(InvalidArgumentsError):
+            model.use_models[0].update_automl_range(
+                name, {key + "fail": "mock"}
+            )
+
+    @automl_matrix_test("automl_cls", depend="test_initializer")
+    def test_create_runner(self, automl_cls: AutoML):
+        from kenning.datasets.anomaly_detection_dataset import (
+            AnomalyDetectionDataset,
+        )
+        from kenning.modelwrappers.anomaly_detection.vae import (
+            PyTorchAnomalyDetectionVAE,
+        )
+
+        model = automl_cls(
+            get_dataset_random_mock(AnomalyDetectionDataset), None, Path(".")
+        )
+        assert model._create_runner(
+            model_wrapper=PyTorchAnomalyDetectionVAE(
+                "workspace/automl-results/13_12_10.0.pth",
+                get_dataset_random_mock(AnomalyDetectionDataset),
+            )
+        )

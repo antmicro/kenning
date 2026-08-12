@@ -9,7 +9,6 @@ Runtime implementation for IREE models.
 from typing import List, Optional
 
 import numpy as np
-from iree import runtime as ireert
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
@@ -42,8 +41,8 @@ class IREERuntime(Runtime):
         "driver": {
             "argparse_name": "--driver",
             "description": "Name of the runtime target",
-            "enum": ireert.HalDriver.query(),
-            "required": False,
+            "type": str,
+            "default": "local-sync",
         },
         "llext_binary_path": {
             "argparse_name": "--llext-binary-path",
@@ -85,6 +84,13 @@ class IREERuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
+        from iree import runtime as ireert
+
+        available_drivers = ireert.HalDriver.query()
+        assert (
+            driver in available_drivers
+        ), f"Unknown driver, select one of {available_drivers}"
+
         self.model = None
         self.entry_func = None
         self.io_spec = None
@@ -144,6 +150,8 @@ class IREERuntime(Runtime):
             self.driver = "cuda"
 
     def _prepare_model_coralnpu(self, input_data: Optional[bytes]):
+        from iree import runtime as ireert
+
         instance = ireert.VmInstance()
 
         try:
@@ -190,6 +198,8 @@ class IREERuntime(Runtime):
         self.entry_func = ctx.modules.jit__lambda.main
 
     def _prepare_model(self, input_data: Optional[bytes]):
+        from iree import runtime as ireert
+
         if input_data:
             with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)

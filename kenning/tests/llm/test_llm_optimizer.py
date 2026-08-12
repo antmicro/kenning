@@ -98,6 +98,7 @@ class TestLLMOptimizers:
                 "Skipping GPTQSparseGPTOptimizer test with "
                 f"modelwrapper: {modelwrapper_cls.__name__}"
             )
+
         model, optimizer = prepare_objects(modelwrapper_cls, optimizer_cls)
 
         try:

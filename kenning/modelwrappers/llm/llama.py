@@ -28,14 +28,14 @@ class Llama(LLM):
     )
     user_prompt_template = "<s>[INST] {user_message} [/INST] "
 
-    pretrained_model_uri = "hf://meta-llama/Llama-2-7B-chat-hf"
+    pretrained_model_uri = "hf://TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
     arguments_structure = {
         "model_version": {
             "description": "Version of the model to be used",
             "type": str,
-            "enum": ["7B", "13B", "70B"],
-            "default": "7B",
+            "enum": ["1.1B", "7B", "13B", "70B"],
+            "default": "1.1B",
         },
     }
 
@@ -45,7 +45,7 @@ class Llama(LLM):
         dataset: Optional[Dataset],
         from_file: bool = True,
         model_name: Optional[str] = None,
-        model_version: str = "7B",
+        model_version: str = "1.1B",
     ):
         """
         Initializes the Llama2 model wrapper.
@@ -64,7 +64,14 @@ class Llama(LLM):
             Version of the model to be used.
         """
         self.model_version = model_version
-        self.pretrained_model_uri = (
-            f"meta-llama/Llama-2-{self.model_version}-chat-hf"
-        )
+
+        if model_version == "1.1B":
+            self.pretrained_model_uri = (
+                "hf://TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            )
+        else:
+            self.pretrained_model_uri = (
+                f"hf://meta-llama/Llama-2-{self.model_version}-chat-hf"
+            )
+
         super().__init__(model_path, dataset, from_file, model_name)

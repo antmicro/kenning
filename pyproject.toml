@@ -72,6 +72,13 @@ torch = [
     "torch==2.8.0",
     "torchvision>=0.15.0",
 ]
+coralnpu = [
+    "flax",
+    "jax",
+    "optax",
+    "orbax",
+    "tensorstore"
+]
 nvidia_perf = [
     "pynvml>=8.0.4,<11.5.0",
 ]
@@ -223,7 +230,7 @@ emlearn = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

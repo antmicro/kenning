@@ -10,6 +10,7 @@ will have the role of server and client in their communication.
 import inspect
 from typing import Dict, List, Type, get_args, get_origin
 
+from kenning.core.exceptions import ConfigurationError
 from kenning.utils.class_loader import get_base_classes_dict, load_class
 
 
@@ -35,12 +36,25 @@ class DependencySolver:
         ----------
         block_configs : Dict
             Dictionary containing configurations of blocks to run.
+
+        Raises
+        ------
+        ConfigurationError
+            Raised when a passed block is not a name (string)
+            or the class type.
         """
         self.blocks = []
         # Iterate and save each block into a flat list.
         for _, blocks in block_configs.items():
             for block_name in blocks:
-                self.blocks.append(load_class(block_name))
+                if isinstance(block_name, str):
+                    self.blocks.append(load_class(block_name))
+                elif isinstance(block_name, Type):
+                    self.blocks.append(block_name)
+                else:
+                    raise ConfigurationError(
+                        "Kenning block should either be a name or its class"
+                    )
 
     def get_dependency_graph(self) -> Dict:
         """

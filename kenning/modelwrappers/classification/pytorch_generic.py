@@ -9,13 +9,16 @@ Module containing a generic PyTorch classification model wrapper.
 import importlib.util
 import sys
 from functools import partial
+from typing import Optional
 
 import numpy as np
 
 from kenning.core import metrics
+from kenning.core.dataset import Dataset
 from kenning.core.exceptions import TrainingParametersMissingError
 from kenning.datasets.tabular_dataset import TabularDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchGenericClassification(PyTorchWrapper):
@@ -62,8 +65,8 @@ class PyTorchGenericClassification(PyTorchWrapper):
 
     def __init__(
         self,
-        model_path,
-        dataset,
+        model_path: PathOrURI,
+        dataset: Optional[Dataset] = None,
         batch_size=1,
         from_file=True,
         model_name=None,

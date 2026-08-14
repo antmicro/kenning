@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2024-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -18,6 +18,28 @@ from kenning.core.exceptions import KenningOptimizerError, NotSupportedError
 
 INT32_BITS = 32
 METADATA_ELEMENTS_PER_INT16 = 8
+
+
+def _pack_into_int32(array: np.ndarray, bits: int, axis: int) -> np.ndarray:
+    """
+    Packs elements of a uint32 array into 32-bit integers along a given axis.
+    """
+    pack_factor = INT32_BITS // bits
+    new_shape = list(array.shape)
+    new_shape[axis] = new_shape[axis] // pack_factor
+    new_shape.insert(axis + 1, pack_factor)
+
+    reshaped = array.reshape(new_shape)
+    shifts = np.arange(pack_factor, dtype=np.uint32) * bits
+
+    shift_shape = [1] * len(new_shape)
+    shift_shape[axis + 1] = pack_factor
+
+    return (
+        (reshaped << shifts.reshape(shift_shape))
+        .sum(axis=axis + 1)
+        .astype(np.int32)
+    )
 
 
 class PackingError(KenningOptimizerError):
@@ -281,25 +303,17 @@ class QuantLinear(nn.Module):
             self.g_idx[:] = g_idx
 
         # Quantizing weights
-        intweight = []
-        for idx in range(self.infeatures):
-            intweight_row = torch.round(
-                (W[:, idx] + scale_zeros[g_idx[idx]]) / self.scales[g_idx[idx]]
-            ).to(torch.int)[:, None]
+        intweight = torch.round(
+            (W + scale_zeros[g_idx].t()) / self.scales[g_idx].t()
+        ).to(torch.int)
 
-            if self.development_mode and sparsity_metadata is not None:
-                dequantized = (
-                    intweight_row[:, 0] - zeros[g_idx[idx]]
-                ) * scales[g_idx[idx]]
-
-                if dequantized[sparsity_metadata[:, idx]].sum() != 0:
-                    raise PackingError(
-                        "Error in quantization. "
-                        + "Dequantized weights are not zero at zeroed indices."
-                    )
-
-            intweight.append(intweight_row)
-        intweight = torch.cat(intweight, dim=1)
+        if self.development_mode and sparsity_metadata is not None:
+            dequantized = (intweight - zeros[g_idx].t()) * scales[g_idx].t()
+            if dequantized[sparsity_metadata].sum() != 0:
+                raise PackingError(
+                    "Error in quantization. "
+                    "Dequantized weights are not zero at zeroed indices."
+                )
 
         if self.development_mode and self.qsparsity_metadata is not None:
             # Storing uncompressed weights as well as compressed ones
@@ -309,15 +323,9 @@ class QuantLinear(nn.Module):
                 np.uint32
             )
 
-            i = 0
-            row = 0
-            while row < self.qweight_uncompressed.shape[0]:
-                for j in range(i, i + (INT32_BITS // self.bits)):
-                    self.qweight_uncompressed[row] |= intweight_uncompressed[
-                        j
-                    ] << (self.bits * (j - i))
-                i += INT32_BITS // self.bits
-                row += 1
+            self.qweight_uncompressed[:] = torch.from_numpy(
+                _pack_into_int32(intweight_uncompressed, self.bits, axis=0)
+            )
 
         if self.qsparsity_metadata is not None:
             # Compressing weight matrix
@@ -328,13 +336,9 @@ class QuantLinear(nn.Module):
         intweight = intweight.t().contiguous()
         intweight = intweight.numpy().astype(np.uint32)
 
-        i = 0
-        row = 0
-        while row < self.qweight.shape[0]:
-            for j in range(i, i + (INT32_BITS // self.bits)):
-                self.qweight[row] |= intweight[j] << (self.bits * (j - i))
-            i += INT32_BITS // self.bits
-            row += 1
+        self.qweight[:] = torch.from_numpy(
+            _pack_into_int32(intweight, self.bits, axis=0)
+        )
 
         # Zeros matrix has to be converted to ndarray, as torch
         # does not support required bitwise operations
@@ -350,13 +354,9 @@ class QuantLinear(nn.Module):
             )
 
         # Packing zeros
-        i = 0
-        col = 0
-        while col < self.qzeros.shape[1]:
-            for j in range(i, i + (INT32_BITS // self.bits)):
-                self.qzeros[:, col] |= zeros[:, j] << (self.bits * (j - i))
-            i += INT32_BITS // self.bits
-            col += 1
+        self.qzeros[:] = torch.from_numpy(
+            _pack_into_int32(zeros, self.bits, axis=1)
+        )
 
         # Packing sparsity metadata
         if self.qsparsity_metadata is not None:

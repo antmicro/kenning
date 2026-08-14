@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import sys
 from pathlib import Path
 from typing import Optional, Type
 from unittest.mock import patch
@@ -133,6 +134,11 @@ class TestModelWrapper:
         """
         Tests model initialization without specified dataset.
         """
+        if model_cls.__name__ == "TinygradImageNet" and sys.version_info < (
+            3,
+            11,
+        ):
+            pytest.xfail("Tinygrad is not supported on Python 3.10")
         _ = create_model(model_cls, None)
 
     @pytest.mark.parametrize(
@@ -156,6 +162,11 @@ class TestModelWrapper:
         """
         Tests model initialization with specified dataset.
         """
+        if model_cls.__name__ == "TinygradImageNet" and sys.version_info < (
+            3,
+            11,
+        ):
+            pytest.xfail("Tinygrad is not supported on Python 3.10")
         dataset_cls = model_cls.default_dataset
         if dataset_cls is None:
             pytest.xfail("default dataset was not defined")

@@ -6,7 +6,6 @@ import csv
 import os
 import random
 import shutil
-import tempfile
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Type, Union
 from uuid import uuid4
@@ -452,7 +451,9 @@ def define_anomaly_detection_csv_file():
         data.append([random.random() for _ in range(columns)])
 
     # Save data to tmp file
-    tmp_dir = Path(tempfile.mkdtemp())
+    cwd = Path(".").resolve()
+    os.makedirs(cwd / "tmp", exist_ok=True)
+    tmp_dir = cwd / "tmp"
     tmp_file = tmp_dir / "data.csv"
     with tmp_file.open("w") as fd:
         writer = csv.writer(fd)
@@ -465,7 +466,6 @@ def define_anomaly_detection_csv_file():
         kwargs["csv_file"] = str(tmp_file)
         return default_anomaly_init(*args, **kwargs)
 
-    shutil.rmtree(tmp_dir)
     AnomalyDetectionDataset.__init__ = mock_anomaly_init
     yield
 

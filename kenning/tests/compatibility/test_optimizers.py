@@ -1,22 +1,8 @@
+import sys
 from pathlib import Path
 from typing import Tuple, Type
 
 import pytest
-
-from kenning.utils.logger import KLogger
-
-# DO NOT REMOVE
-# removing this import will result in SegFault when running all compatibility
-# test, caused by the tests involving tinygrad and onnx changing some global
-# state. It has the outcome of pyarrow segfaulting when pytest ends.
-try:
-    import tinygrad.frontend.onnx  # noqa: F401
-except ImportError:
-    KLogger.warning(
-        "Could not import onnx frontend for tinygrad, this may influence the "
-        "outcome of this test suite. Try installing the correct version of "
-        "tinygrad with onnx frontend enabled."
-    )
 
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
@@ -131,6 +117,11 @@ class TestOptimizersCompatibility:
         optimizer_cls1: Type[Optimizer],
         optimizer_cls2: Type[Optimizer],
     ):
+        if (
+            optimizer_cls1.__name__ == "TinygradOptimizer"
+            or optimizer_cls2.__name__ == "TinygradOptimizer"
+        ) and sys.version_info < (3, 11):
+            pytest.xfail("Tinygrad is not supported on Python 3.10")
         compiled_model_path = get_tmp_path()
         dataset, model, optimizer1, optimizer2 = prepare_objects(
             optimizer_cls1,

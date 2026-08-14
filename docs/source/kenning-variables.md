@@ -17,7 +17,7 @@ The default value is 50GB.
 If `KENNING_USE_DEFAULT_EXCEPTHOOK` environmental variable is defined, `sys.excepthook` will not be overridden.
 
 This function is overridden in order to enable mechanism for deducing which optional dependencies are missing.
-For instance, if `gluoncv` is not available, Kenning will suggest installing `kenning[mxnet]` which contains missing package with defined version restriction and other requirements.
+For instance, if `jinja2` is not available, Kenning will suggest installing `kenning[reports]` which contains missing package with defined version restriction and other requirements.
 
 Kenning CLI does not require custom `sys.excepthook`, so it will not be affected by `USE_DEFAULT_EXCEPTHOOK` variable.
 

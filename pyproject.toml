@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy<2.0.0"]
+requires = ["setuptools>=40.8.0", "wheel", "cython>=3.0.0", "numpy>=2.2.6"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,7 +29,7 @@ dependencies = [
     "isort>=5.12.0",
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
-    "numpy>=1.21.3,<2.0.0",
+    "numpy>=2.2.6",
     "onnx==1.21.0",
     "importlib-resources",
     "pandoc",
@@ -38,8 +38,9 @@ dependencies = [
     "pyyaml",
     "requests",
     "rich",
-    "scikit_learn>=1.7.2",
-    "scipy<1.12.0",
+    # auto-pytorch constraint
+    "scikit_learn>=1.7.2,<=1.8.0",
+    "scipy>1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
     "kenning[onnx2tf]",
@@ -58,10 +59,8 @@ docs = [
 ]
 tensorflow = [
     "kenning[onnx2tf]",
-    "tf-keras==2.18.0; python_version<'3.12'",
-    "tf-keras==2.21.0; python_version=='3.12'",
-    "tensorflow_addons; python_version<'3.12'",
-    "tensorflow>=2.18.1",
+    "tf-keras>=2.21.0",
+    "tensorflow>=2.21.0",
     "tensorflow_model_optimization",
     "h5py",
     "h5py==3.14.0; python_version=='3.12'",
@@ -74,19 +73,15 @@ torch = [
     "torch==2.8.0",
     "torchvision>=0.15.0",
 ]
-mxnet = [
-    "gluoncv>=0.10.2",
-    "mxnet",
-]
 nvidia_perf = [
     "pynvml>=8.0.4,<11.5.0",
 ]
 object_detection = [
     "boto3>=1.17.5",
     "botocore>=1.20.5",
-    "cython<3.0.0; python_version<'3.12'",
-    "cython>=3.0.0; python_version=='3.12'",
-    "opencv_python>=4.5.2,<4.8.0",
+    "cython>=3.0.0",
+    "opencv_python>=4.10.0.84,<5.0.0.0",
+    "numpy>=2.2.6",
     "pandas>=1.2.1",
     "pycocotools",
 ]
@@ -96,6 +91,7 @@ pose_estimation = [
 speech_to_text = [
     "librosa",
     "pydub",
+    "numba>=0.66.0"
 ]
 anomaly_detection = [
     "kenning[torch]",
@@ -105,8 +101,11 @@ anomaly_detection = [
 auto_pytorch = [
     "kenning[torch]",
     "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
+    "smac @ git+https://github.com/antmicro/smac3.git@1.4.0-numpy-2",
+    # auto-pytorch constraint
+    "scikit_learn>=1.7.2,<=1.8.0",
     "ConfigSpace>=1.2.1",
-    "smac>=1.4,<2.0.0",
+    "opencv_python>=4.10.0.84,<5.0.0.0",
 ]
 tflite = [
     "tflite",
@@ -117,8 +116,7 @@ tvm = [
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
 ]
 tinygrad = [
-    "tinygrad==0.11.0 ; python_version<'3.12'",
-    "tinygrad==0.12.0 ; python_version>='3.12'", # Fixing version, because of a bug in 0.13.0.
+    "tinygrad==0.12.0 ; python_version>='3.11'", # Fixing version, because of a bug in 0.13.0.
 ]
 iree = [
     "iree-base-compiler[onnx]==3.6.0",
@@ -128,10 +126,10 @@ iree = [
     "tf2onnx",
 ]
 onnxruntime = [
-    "onnxruntime>=1.12.0",
+    "onnxruntime==1.23.2",
 ]
 onnxruntime_gpu = [
-    "onnxruntime-gpu==1.18.0",
+    "onnxruntime-gpu==1.23.2",
 ]
 test = [
     "filelock",
@@ -207,18 +205,17 @@ llm = [
 ]
 
 onnx2tf = [
-    "onnx2tf==1.26.9",
-    "onnxruntime==1.21.1",
+    "onnx2tf>=1.28.8",
+    "onnxruntime==1.23.2",
     "onnxsim==0.4.33; python_version < '3.12'",
     "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
-    "tensorflow>=2.18.1",
-    "tf-keras==2.18.0; python_version<'3.12'",
-    "tf-keras==2.21.0; python_version=='3.12'",
-    "ai-edge-litert==1.2.0",
+    "tensorflow>=2.21.0",
+    "tf-keras>=2.21.0",
+    "ai-edge-litert>=2.1.6",
     "psutil==5.9.5",
-    "ml_dtypes>=0.2.0,<=0.5.4",
+    "ml_dtypes>=0.5.4,<1.0.0",
     "flatbuffers>=23.1.21",
 ]
 
@@ -230,7 +227,8 @@ executorch = [
 
 sklearn = [
     "joblib",
-    "scikit-learn",
+    # auto-pytorch constraint
+    "scikit_learn>=1.7.2,<=1.8.0",
     "skl2onnx",
 ]
 
@@ -241,7 +239,7 @@ emlearn = [
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch,sklearn,emlearn]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf,executorch,sklearn,emlearn]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets
@@ -354,8 +352,3 @@ directory = "docs/source/generated/coverage"
 [tool.typos.default.extend-identifiers]
 __Pyx_LocalBuf_ND = "__Pyx_LocalBuf_ND"
 nd = "nd"
-
-[tool.uv]
-override-dependencies = [
-    "numpy>=1.23.2,<2.0.0",  # Enforce that numpy version for all packages.
-]

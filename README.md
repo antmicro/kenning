@@ -58,7 +58,6 @@ We can distinguish the following groups of extra requirements:
 
 * `tensorflow` - modules for work with TensorFlow models (ONNX conversions, addons, and TensorFlow framework),
 * `torch` - modules for work with PyTorch models,
-* `mxnet` - modules for work with MXNet models,
 * `nvidia_perf` - modules for performance measurements for NVIDIA GPUs,
 * `object_detection` - modules for work with YOLOv3 object detection and the Open Images Dataset V6 computer vision dataset,
 * `speech_to_text` - modules for work with audio samples and speech-to-text models,

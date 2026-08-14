@@ -20,7 +20,7 @@
             "type": "kenning.optimizers.gptq_sparsegpt.GPTQSparseGPTOptimizer",
             "parameters": {
                 "compiled_model_path": "./build/mistral_pruned_quantized",
-                "context_length": 4096
+                "seqlen": 4096
             }
         }
     ],

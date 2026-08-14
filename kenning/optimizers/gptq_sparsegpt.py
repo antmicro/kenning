@@ -22,6 +22,8 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
     into format that is compliant with sparsity_aware_kernel.
     """
 
+    outputtypes = ["safetensors-sparsity-aware-kernel"]
+
     arguments_structure = {
         "group_size": {
             "description": "Number of tensors that share the same "
@@ -29,9 +31,9 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
             "default": 128,
             "type": int,
         },
-        "context_length": {
+        "seqlen": {
             "description": "Length of the context for the model",
-            "default": 2048,
+            "default": 1024,
             "type": int,
         },
         "calibration_samples": {
@@ -90,8 +92,20 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
             maxlayer=None,
         )
         model = AutoSparseGPTForCausalML.from_pretrained(
-            str(input_model_path), config
+            str(input_model_path),
+            config,
         )
+        model.seqlen = self.seqlen
+        inner_model = getattr(model, "model", None)
+        if inner_model is not None:
+            inner_model.seqlen = self.seqlen
+
+        inner_config = getattr(inner_model, "config", None)
+        if inner_config is not None:
+            inner_config.seqlen = self.seqlen
+            if hasattr(inner_config, "max_position_embeddings"):
+                inner_config.max_position_embeddings = self.seqlen
+
         tokenizer = AutoTokenizer.from_pretrained(str(input_model_path))
 
         data = get_c4(
@@ -108,7 +122,7 @@ class GPTQSparseGPTOptimizer(LLMOptimizer):
         self.save_io_specification(input_model_path)
 
     def get_framework(self) -> str:
-        return "kenning"
+        return "safetensors"
 
     @classmethod
     def get_framework_version(cls) -> str:

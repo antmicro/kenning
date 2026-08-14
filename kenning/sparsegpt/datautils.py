@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,9 +16,9 @@ from transformers import AutoTokenizer
 
 
 def get_c4(
-    n_samples: int,
+    n_samples: str,
     tokenizer: AutoTokenizer,
-    seqlen: int = 128,
+    seqlen: int = 4096,
     seed_constant: int = 5,
 ) -> List[Dict[str, torch.Tensor]]:
     """
@@ -27,7 +27,7 @@ def get_c4(
 
     Parameters
     ----------
-    n_samples : int
+    n_samples : str
         Number of samples in the calibration dataset
     tokenizer : AutoTokenizer
         Tokenizer that is used by the model
@@ -49,10 +49,6 @@ def get_c4(
     verbosity = logger.level
     logger.setLevel(logging.ERROR)
 
-    target_n_tokens = seqlen * n_samples * seed_constant
-    tokenized_input_ids_list = []
-    sep_tokens = tokenizer(" ")["input_ids"]
-
     dataset = load_dataset(
         "allenai/c4",
         "en",
@@ -61,25 +57,30 @@ def get_c4(
     )
 
     tokenized_input_ids = None
-    # Batch load so that there is no network request for each
-    # document
-    for batch in dataset.iter(batch_size=1000):
-        batch_tokens = tokenizer(batch["text"])["input_ids"]
+    for sample in dataset:
+        tokenized_sample_input_ids = tokenizer(
+            sample["text"], return_tensors="pt"
+        ).input_ids
 
-        reached_target = False
+        if tokenized_input_ids is None:
+            tokenized_input_ids = tokenized_sample_input_ids
+        else:
+            tokenized_input_ids = torch.cat(
+                (tokenized_input_ids, tokenized_sample_input_ids), dim=1
+            )
 
-        for sample_tokens in batch_tokens:
-            tokenized_input_ids_list.extend(sample_tokens)
-            if len(tokenized_input_ids_list) >= target_n_tokens:
-                reached_target = True
-                break
-            tokenized_input_ids_list.extend(sep_tokens)
-        if reached_target:
+        if tokenized_input_ids.shape[1] >= seqlen * n_samples * seed_constant:
             break
 
-    tokenized_input_ids = torch.tensor(
-        tokenized_input_ids_list, dtype=torch.int64
-    ).unsqueeze(0)
+        # Appending a whitespace token to the end of the input_ids
+        # to separate the samples. This is needed because the tokenizer
+        # does not add a whitespace token at the end of the input_ids
+        tokenized_whitespace_input_ids = tokenizer(
+            " ", return_tensors="pt"
+        ).input_ids
+        tokenized_input_ids = torch.cat(
+            (tokenized_input_ids, tokenized_whitespace_input_ids), dim=1
+        )
 
     samples = []
     for _ in range(n_samples):

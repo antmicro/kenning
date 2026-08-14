@@ -118,12 +118,6 @@ class GPTQOptimizer(LLMOptimizer):
     def get_framework(self) -> str:
         return "safetensors"
 
-    @classmethod
-    def get_framework_version(cls) -> str:
-        import auto_gptq
-
-        return auto_gptq.__version__
-
     def _get_quantization_config(self) -> Dict:
         return {
             "bits": self.bits,

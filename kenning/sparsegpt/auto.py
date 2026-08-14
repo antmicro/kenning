@@ -58,7 +58,8 @@ class PhiGPTQForCausalLM(BaseSparseGPTForCausalML):
     ]
     compressible_modules = [
         "mlp.fc1",
-        "mlp.fc2" "self_attn.q_proj",
+        "mlp.fc2",
+        "self_attn.q_proj",
         "self_attn.k_proj",
         "self_attn.v_proj",
         "self_attn.dense",

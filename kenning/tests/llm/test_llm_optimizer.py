@@ -94,10 +94,14 @@ class TestLLMOptimizers:
         Test compilation of the optimizer given the modelwrapper.
         """
         if optimizer_cls.__name__ == "GPTQSparseGPTOptimizer":
-            pytest.skip(
-                "Skipping GPTQSparseGPTOptimizer test with "
-                f"modelwrapper: {modelwrapper_cls.__name__}"
-            )
+            if modelwrapper_cls.__name__ in [
+                "Llama",
+                "SmolLM2",
+            ]:
+                pytest.xfail(
+                    f"{modelwrapper_cls.__name__} is not compatible"
+                    " with GPTQSparseGPTOptimizer."
+                )
 
         model, optimizer = prepare_objects(modelwrapper_cls, optimizer_cls)
 

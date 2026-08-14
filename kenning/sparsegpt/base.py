@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -456,11 +456,11 @@ class BaseSparseGPTForCausalML(nn.Module):
             device=self.dev,
         )
 
-        cache = {"i": 0, "attention_mask": None}
+        cache = {"i": 0, "kwargs": {}}
 
         class HijackModule(nn.Module):
             """
-            Wrapper for the first layer to catch the input and attention_mask.
+            Wrapper for the first layer to catch the input and kwargs.
             """
 
             def __init__(self, module):
@@ -470,7 +470,7 @@ class BaseSparseGPTForCausalML(nn.Module):
             def forward(self, inp, **kwargs):
                 inps[cache["i"]] = inp
                 cache["i"] += 1
-                cache["attention_mask"] = kwargs["attention_mask"]
+                cache["kwargs"] = kwargs
                 raise HijackException
 
         layers = self.model.model.layers
@@ -506,7 +506,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         torch.cuda.empty_cache()
 
         outs = torch.zeros_like(inps)
-        attention_mask = cache["attention_mask"]
+        layer_kwargs = cache["kwargs"]
 
         self.logger.info(
             "Optimizing with configuration: \n" + pformat(self.config.__dict__)
@@ -561,7 +561,7 @@ class BaseSparseGPTForCausalML(nn.Module):
                         subset[name].register_forward_hook(add_batch(name))
                     )
                 for j in range(self.config.n_samples):
-                    layer(inps[j].unsqueeze(0), attention_mask=attention_mask)
+                    layer(inps[j].unsqueeze(0), **layer_kwargs)
                 for h in handles:
                     h.remove()
 
@@ -610,9 +610,7 @@ class BaseSparseGPTForCausalML(nn.Module):
             )
 
             for j in range(self.config.n_samples):
-                outs[j] = layer(
-                    inps[j].unsqueeze(0), attention_mask=attention_mask
-                )[0]
+                outs[j] = layer(inps[j].unsqueeze(0), **layer_kwargs)[0]
 
             layers[i] = layer.cpu()
             del layer

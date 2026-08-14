@@ -736,15 +736,15 @@ If you want to create a runner with outputs, this method should return a similar
 To create an AutoML model the default {doc}`modelwrapper-api` has to implement {doc}`automl-model-api` interface.
 The description of the ModelWrapper implementation can be found in {doc}`model-io-metadata` section.
 But it has to be extended with a few additional steps, like in the [AutoPyTorch](https://github.com/antmicro/auto-pytorch)-based [example with a simple fully-connected neural network](automl-model-example):
-* add {py:class}`kenning.core.automl.AutoMLModel` based class inheritance to the ModelWrapper (line 35),
-* implement the model class with parameters that can be tuned by AutoML (lines 14-32),
-* point to the model class in the ModelWrapper using full class path (line 52),
-* define which ModelWrapper arguments can be tuned (lines 41-49),
+* add {py:class}`kenning.core.automl.AutoMLModel` based class inheritance to the ModelWrapper (line 46),
+* implement the model class with parameters that can be tuned by AutoML (lines 14-43),
+* point to the model class in the ModelWrapper using full class path (line 63),
+* define which ModelWrapper arguments can be tuned (lines 52-60),
   * names have to match with the model class parameters,
   * AutoML-specific configuration is described in [](defining-arguments-for-core-classes),
 * implement or override inherited methods, in case of `AutoPyTorchModel`, they are:
-  * (required) `get_io_specification_from_dataset` - creates IO spec based on the dataset (lines 119-129),
-  * (optional) `model_params_from_context` - generates additional parameters for the model based on the dataset and optional platform (lines 65-75),
+  * (required) `get_io_specification_from_dataset` - creates IO spec based on the dataset (lines 138-148),
+  * (optional) `model_params_from_context` - generates additional parameters for the model based on the dataset and optional platform (lines 76-86),
   * (optional) `define_forbidden_clauses` - adds forbidden configurations to the search space,
   * (optional) `register_components` - adds custom components to AutoPyTorch.
 
@@ -752,7 +752,7 @@ But it has to be extended with a few additional steps, like in the [AutoPyTorch]
 ---
 name: "automl-model-example"
 linenos:
-emphasize-lines: 20-25,35,41-49,51-52,65-75,119-129
+emphasize-lines: 21-26,46,52-60,62-63,76-86,138-148
 ---
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -772,6 +772,7 @@ class FCNetwork(nn.Sequential):
     """
     The simple fully-connected neural network model.
     """
+
     def __init__(
         self,
         # The input shape is provided by AutoPyTorch
@@ -782,10 +783,20 @@ class FCNetwork(nn.Sequential):
         outputs: int,
     ):
         self.neurons = neurons
-        super().__init__(
-            *[nn.Linear(in_, out) for in_, out in zip(
+        linears = [
+            nn.Linear(in_, out)
+            for in_, out in zip(
                 [input_shape[-1]] + neurons, neurons + [outputs]
-            )]
+            )
+        ]
+        super().__init__(
+            *[
+                module
+                for linear in linears[:-1]
+                for module in (linear, nn.ReLU())
+            ],
+            linears[-1],
+            nn.Softmax(dim=-1),
         )
 
 
@@ -835,10 +846,10 @@ class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
         self.model = FCNetwork(
             input_shape=(
                 -1,
-                self.dataset.window_size * self.dataset.num_features
+                self.dataset.window_size * self.dataset.num_features,
             ),
             neurons=self.neurons,
-            **self.model_params_from_context(self.dataset)
+            **self.model_params_from_context(self.dataset),
         )
 
     def prepare_model(self):
@@ -852,13 +863,17 @@ class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
             self.create_model_structure()
 
             def weights_init(m):
-                torch.nn.init.xavier_uniform_(m.weight)
-                torch.nn.init.zeros_(m.bias)
+                if isinstance(m, nn.Linear):
+                    torch.nn.init.xavier_uniform_(m.weight)
+                    torch.nn.init.zeros_(m.bias)
 
-            self.model.classifier.apply(weights_init)
+            self.model.apply(weights_init)
             self.model_prepared = True
             self.save_model(self.model_path)
         self.model.to(self.device)
+
+    def train_model(self):
+        raise NotImplementedError
 
     def preprocess_input(self, X: List[Any]) -> List[Any]:
         import torch
@@ -867,10 +882,14 @@ class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
         return [torch.from_numpy(X.reshape(X.shape[0], -1)).to(self.device)]
 
     def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
-        output = np.argmax(
-            y[0].detach().cpu().numpy(),
-            axis=-1,
-        ).reshape(-1).astype(np.int8)
+        output = (
+            np.argmax(
+                y[0].detach().cpu().numpy(),
+                axis=-1,
+            )
+            .reshape(-1)
+            .astype(np.int8)
+        )
         return (output,)
 
     # Required: Method generating IO specification
@@ -939,7 +958,7 @@ class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
     def derive_io_spec_from_json_params(
         cls, json_dict: Dict
     ) -> Dict[str, List[Dict]]:
-        cls.get_io_specification(-1, -1)
+        return cls._get_io_specification(-1, -1)
 ```
 
 ### Using the implemented model

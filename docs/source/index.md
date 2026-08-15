@@ -14,7 +14,7 @@ kenning-measurements
 pipeline-optimizer
 sample-report
 sample-automl-report
-sample-zephyr-tracing-report
+sample-riscv-zephyr-tracing-report
 kenning-flow
 kenning-zephyr-runtime
 kenning-development

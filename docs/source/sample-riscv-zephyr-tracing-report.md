@@ -12,5 +12,6 @@ Testing configuration:
 
 
 ```{include} generated/sample-riscv-zephyr-tracing-report.md
+:heading-offset: 1
 ```
 

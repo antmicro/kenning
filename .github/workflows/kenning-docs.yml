@@ -83,19 +83,62 @@ jobs:
           export AUTOML_SCENARIO_CONFIG=$(realpath ./scripts/configs/automl-scenario.yml)
           export DOCS_DIR=$(realpath $DOCS_DIR)
           ./scripts/zephyr-automl-report.sh
-          cp $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/workspace/automl-results/vae.0.tflite $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/vae.tflite
-          cp $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/workspace/automl-results/vae.0.tflite.json $ZEPHYR_WORKSPACE/kenning-zephyr-runtime/vae.tflite.json
-          uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
-          ./scripts/renode-zephelin-tflite-anomaly-detection-vae.sh vae.tflite kenning:///datasets/anomaly_detection/cats_nano.csv $DOCS_DIR/source/generated/sample-zephyr-tracing.md
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: automltest
           path: docs/source/generated
 
+  riscv-zephelin-report:
+    runs-on: ubuntu-latest
+    env:
+      ZEPHYR_WORKSPACE: zephyr-workspace
+      REPORT_NAME: sample-riscv-zephyr-tracing-report.md
+      DOCS_DIR: docs
+    steps:
+      - name: Free space in the runner
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ggc
+          sudo rm -rf /usr/local/.ghcup
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
+            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make cmake ninja-build \
+            python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
+            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler
+          FLATC_URL=https://github.com/google/flatbuffers/releases/download/v25.2.10/Linux.flatc.binary.g++-13.zip
+          wget ${FLATC_URL} -O flatc.zip
+          sudo unzip flatc.zip -d /usr/bin
+          rm flatc.zip
+          wget -qO- https://astral.sh/uv/install.sh | sh
+      - name: Prepare Kenning Zephyr Runtime and run AutoML
+        run: |
+          export SCENARIO_PATH=$(realpath ./scripts/configs/zephyr-tvm-magic-wand-hifive-unmatched-report.yml)
+          source ./scripts/prepare-kenning-zephyr-runtime.sh
+          uv sync --extra "tvm,tensorflow,reports,renode" --frozen --active
+          uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
+          ./scripts/zephyr-tvm-magic-wand-hifive-unmatched-report.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: riscvzephelinreport
+          path: docs/source/generated
+
   docs-generation:
     runs-on: ubuntu-latest
-    needs: [inference-test, automl-test]
+    needs: [inference-test, automl-test, riscv-zephelin-report]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -111,6 +154,7 @@ jobs:
         run: |
           cp -r inferencetest docs/source/generated
           cp -r automltest/. docs/source/generated
+          cp -r riscvzephelinreport/. docs/source/generated
           cd docs
           make html latexpdf
           cp build/latex/*.pdf build/html/

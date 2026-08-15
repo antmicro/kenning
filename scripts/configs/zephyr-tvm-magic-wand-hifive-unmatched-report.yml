@@ -5,6 +5,8 @@ platform:
     simulated: true
     enable_zephelin: true
     zephyr_build_path: ./build
+    post_start_commands:
+      - "logLevel 3 sysbus.uart1"
 
 model_wrapper:
   type: PyTorchMagicWandModelWrapper

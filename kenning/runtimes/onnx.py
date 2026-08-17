@@ -71,11 +71,11 @@ class ONNXRuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
-        self.model_path = model_path
         self.session = None
         self.input = None
         self.execution_providers = execution_providers
         super().__init__(
+            model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
             batch_size=batch_size,
         )

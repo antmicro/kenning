@@ -41,7 +41,7 @@ class Ai8xRuntime(Runtime):
 
     def __init__(
         self,
-        model_path: Optional[PathOrURI] = None,
+        model_path: PathOrURI,
         disable_performance_measurements: bool = False,
         batch_size: int = 1,
     ):
@@ -50,7 +50,7 @@ class Ai8xRuntime(Runtime):
 
         Parameters
         ----------
-        model_path : Optional[PathOrURI]
+        model_path : PathOrURI
             Path or URI to the model file.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
@@ -58,8 +58,8 @@ class Ai8xRuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
-        self.model_path = model_path
         super().__init__(
+            model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
             batch_size=batch_size,
         )

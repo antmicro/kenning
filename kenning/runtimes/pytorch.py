@@ -77,12 +77,12 @@ class PyTorchRuntime(Runtime):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
-        self.model_path = model_path
         self.model = None
         self.skip_jit = skip_jit
         self.input: Optional[List] = None
         self.output: Optional[List] = None
         super().__init__(
+            model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
             batch_size=batch_size,
         )

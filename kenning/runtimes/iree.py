@@ -85,7 +85,6 @@ class IREERuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
-        self.model_path = model_path
         self.model = None
         self.entry_func = None
         self.io_spec = None
@@ -93,6 +92,7 @@ class IREERuntime(Runtime):
         self.driver = driver
         self.llext_binary_path = llext_binary_path
         super().__init__(
+            model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
             batch_size=batch_size,
         )

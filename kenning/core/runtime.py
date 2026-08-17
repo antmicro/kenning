@@ -68,6 +68,7 @@ class Runtime(ArgumentsHandler, ABC):
 
     def __init__(
         self,
+        model_path: PathOrURI = Path(""),
         disable_performance_measurements: bool = False,
         batch_size: int = 1,
     ):
@@ -76,6 +77,8 @@ class Runtime(ArgumentsHandler, ABC):
 
         Parameters
         ----------
+        model_path : PathOrURI
+            Path or URI to the model file.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         batch_size : int
@@ -83,6 +86,7 @@ class Runtime(ArgumentsHandler, ABC):
             in a single batch.
         """
         self.statsmeasurements = None
+        self.model_path = model_path
         self.disable_performance_measurements = (
             disable_performance_measurements
         )

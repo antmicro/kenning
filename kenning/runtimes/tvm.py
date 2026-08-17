@@ -105,7 +105,6 @@ class TVMRuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
-        self.model_path = model_path
         self.contextname = contextname
         self.contextid = contextid
         self.module = None
@@ -115,6 +114,7 @@ class TVMRuntime(Runtime):
         self.use_tvm_vm = use_tvm_vm
         self.llext_binary_path = llext_binary_path
         super().__init__(
+            model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
             batch_size=batch_size,
         )

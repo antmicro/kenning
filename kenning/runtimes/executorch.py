@@ -57,10 +57,13 @@ class ExecuTorchRuntime(Runtime):
     ):
         import torch
 
-        super().__init__(disable_performance_measurements, batch_size)
+        super().__init__(
+            model_path=model_path,
+            disable_performance_measurements=disable_performance_measurements,
+            batch_size=batch_size,
+        )
         # Currently, only CPU-capable backends are supported.
         self.device = torch.device("cpu")
-        self.model_path = model_path
         self.model = None
         self.input = None
         self.output = None

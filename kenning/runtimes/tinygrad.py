@@ -118,7 +118,6 @@ class TinygradRuntime(Runtime):
         disable_opt: bool = False,
         disable_performance_measurements: bool = False,
     ):
-        self.model_path = model_path
         self.input_spec = None
         self.workdir = None
         self.use_tinyjit = not skip_jit
@@ -133,7 +132,8 @@ class TinygradRuntime(Runtime):
             os.environ["NOOPT"] = "1"
 
         super().__init__(
-            disable_performance_measurements=disable_performance_measurements
+            model_path=model_path,
+            disable_performance_measurements=disable_performance_measurements,
         )
 
     def load_metadata(self):

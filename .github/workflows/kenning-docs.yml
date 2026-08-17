@@ -125,11 +125,13 @@ jobs:
           wget -qO- https://astral.sh/uv/install.sh | sh
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
+          export OUTPUT_DIR=$(realpath $DOCS_DIR)
           export SCENARIO_PATH=$(realpath ./scripts/configs/zephyr-tvm-magic-wand-hifive-unmatched-report.yml)
           source ./scripts/prepare-kenning-zephyr-runtime.sh
           uv sync --extra "tvm,tensorflow,reports,renode" --frozen --active
           uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
           ./scripts/zephyr-tvm-magic-wand-hifive-unmatched-report.sh
+          cp $OUTPUT_DIR/source/zephyr_traces_report.html $OUTPUT_DIR/source/generated/
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -158,6 +160,7 @@ jobs:
           cd docs
           make html latexpdf
           cp build/latex/*.pdf build/html/
+          cp -r riscvzephelinreport/zephyr_traces_report.html build/html/
       - uses: actions/upload-artifact@v4
         with:
           name: gh-page

@@ -60,18 +60,34 @@ class InferenceLoop(ArgumentsHandler, ABC):
         self._dataconverter: DataConverter = dataconverter
         self._runtime = runtime
         self.inference_limit = inference_limit
+        self._cleanup_completed = False
+
+    def prepare(self):
+        """
+        Prepare inference loop. Resets cleanup flag.
+        """
+        self._cleanup_completed = False
+        self._prepare()
 
     @abstractmethod
     def _prepare(self):
         """
-        Prepare inference loop. Called before entering the inference loop.
+        Modifies inference loop preparation in inherited classes.
         """
         ...
+
+    def cleanup(self):
+        """
+        Cleanup inference loop. Called after exiting the inference loop.
+        """
+        if not self._cleanup_completed:
+            self._cleanup()
+            self._cleanup_completed = True
 
     @abstractmethod
     def _cleanup(self):
         """
-        Cleanup inference loop. Called after exiting the inference loop.
+        Modifies cleanup behaviour in inherited classes.
         """
         ...
 
@@ -125,14 +141,14 @@ class InferenceLoop(ArgumentsHandler, ABC):
         KLogger.info("Starting inference loop")
 
         try:
-            self._prepare()
+            self.prepare()
             self._pre_loop_hook(measurements)
             self._run_loop(measurements)
             self._post_loop_hook(measurements)
         except KeyboardInterrupt:
             KLogger.info("Stopping inference...")
         finally:
-            self._cleanup()
+            self.cleanup()
             self._compute_metrics(measurements)
 
         return measurements

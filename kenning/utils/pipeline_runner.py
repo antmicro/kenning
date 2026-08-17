@@ -458,6 +458,7 @@ class PipelineRunner(object):
                 # handle platform init
                 self._handle_platform_init()
                 measurements = Measurements()
+                inference_loop = None
 
                 try:
                     if (
@@ -481,14 +482,22 @@ class PipelineRunner(object):
                     # Handle LLEXT upload
                     self._handle_runtime_upload()
 
-                    self._run_inference_loop(
-                        measurements, model_path, remote=protocol_required
+                    KLogger.info("Starting inference loop")
+                    inference_loop = self._get_inference_loop(
+                        model_path=model_path,
+                        remote=protocol_required,
                     )
+                    measurements += inference_loop.run()
+
                 except Exception:
                     raise
                 finally:
                     if measurements is None:
                         measurements = Measurements()
+
+                    if inference_loop is not None:
+                        inference_loop.cleanup()
+
                     # handle platform deinit
                     self._handle_platform_deinit(measurements)
 
@@ -751,7 +760,22 @@ class PipelineRunner(object):
 
     def _get_inference_loop(
         self, model_path: Optional[str] = None, remote: bool = False
-    ):
+    ) -> InferenceLoop:
+        """
+        Gets inference loop object.
+
+        Parameters
+        ----------
+        model_path : Optional[str]
+            Path to the model used for inference.
+        remote : bool
+            True if the inference is performed on remote platform.
+
+        Returns
+        -------
+        InferenceLoop
+            Inference loop child class.
+        """
         if self.inference_loop:
             from kenning.inferenceloops.remote_sequential import (
                 RemoteSequentialInferenceLoop,

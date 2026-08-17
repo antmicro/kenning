@@ -10,6 +10,7 @@ import itertools
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import dataclass
 from math import pi
 from pathlib import Path
@@ -872,7 +873,8 @@ class RadarChart(Plot):
 
         super().__init__(width, height, title, colors=colors[color_offset:])
 
-        self.metric_data = metric_data
+        self.original_data = metric_data
+        self.scaled_data = deepcopy(metric_data)
         self.metric_labels = metric_labels
 
         if len(self.metric_labels) == 0:
@@ -880,6 +882,26 @@ class RadarChart(Plot):
                 "RadarChart rendering error: "
                 "please provide non-empty sequences to plot"
             )
+
+        for key, vals in self.scaled_data.items():
+            if len(vals) != len(self.metric_labels):
+                raise ValueError(
+                    f"Metric count for {key} does not match the label count"
+                )
+
+        # If values go beyond 1 for any metric, normalize them
+        self.was_metric_normalized = []
+
+        for i in range(len(self.metric_labels)):
+            max_val = max(vals[i] for vals in self.scaled_data.values())
+
+            if max_val > 1:
+                self.was_metric_normalized.append(True)
+
+                for vals in self.scaled_data.values():
+                    vals[i] /= max_val
+            else:
+                self.was_metric_normalized.append(False)
 
     def plot_matplotlib(
         self, output_path: Path, output_formats: Iterable[str]
@@ -906,7 +928,7 @@ class RadarChart(Plot):
         angles += [0]
         linestyles = ["-", "--", "-.", ":"]
         for i, (color, (sample_name, sample)) in enumerate(
-            zip(self.colors, self.metric_data.items())
+            zip(self.colors, self.scaled_data.items())
         ):
             sample += sample[:1]
             ax.plot(
@@ -1027,10 +1049,10 @@ class RadarChart(Plot):
                 )
             )
 
-        sorted_metric_data = list(enumerate(self.metric_data.items()))
+        sorted_metric_data = list(enumerate(self.scaled_data.items()))
         sorted_metric_data.sort(key=lambda m: sum(m[1][1]), reverse=True)
 
-        legend_items = {name: [] for name in self.metric_data.keys()}
+        legend_items = {name: [] for name in self.scaled_data.keys()}
         for color_id, (sample_name, samples) in sorted_metric_data:
             x = []
             y = []
@@ -1054,13 +1076,28 @@ class RadarChart(Plot):
                     line_color=self.colors[color_id],
                 ),
             )
+
+            tooltip_values = []
+            tooltip_units = []
+
+            for metric_idx in range(len(samples)):
+                original_val = self.original_data[sample_name][metric_idx]
+
+                # Don't display metrics that are >1 in percent
+                if self.was_metric_normalized[metric_idx]:
+                    tooltip_values.append(f"{original_val:.2f}")
+                    tooltip_units.append("")
+                else:
+                    tooltip_values.append(f"{original_val * 100:.2f}")
+                    tooltip_units.append("%")
+
             radar_fig.add_tools(
                 HoverTool(
                     renderers=[renderer],
                     tooltips=self._create_custom_hover_template(
                         self.metric_labels,
-                        values=[f"{100 * s:.2f}" for s in samples],
-                        units=["%" for _ in samples],
+                        values=tooltip_values,
+                        units=tooltip_units,
                     ),
                     toggleable=False,
                 )

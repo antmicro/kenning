@@ -12,8 +12,6 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
-import onnx
-
 from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -191,6 +189,9 @@ class IREECompiler(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
+        import onnx
+        from iree.compiler import tools as ireecmp
+
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 

@@ -9,7 +9,6 @@ Runtime implementation for IREE models.
 from typing import List, Optional
 
 import numpy as np
-from iree import runtime as ireert
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
@@ -29,6 +28,8 @@ class IREERuntime(Runtime):
     Runtime subclass that provides an API
     for testing inference on IREE models.
     """
+
+    from iree import runtime as ireert
 
     inputtypes = ["iree"]
 
@@ -144,6 +145,8 @@ class IREERuntime(Runtime):
             self.driver = "cuda"
 
     def _prepare_model_coralnpu(self, input_data: Optional[bytes]):
+        from iree import runtime as ireert
+
         instance = ireert.VmInstance()
 
         try:
@@ -190,6 +193,9 @@ class IREERuntime(Runtime):
         self.entry_func = ctx.modules.jit__lambda.main
 
     def _prepare_model(self, input_data: Optional[bytes]):
+        from iree import runtime as ireert
+
+        KLogger.info("loading model")
         if input_data:
             with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)

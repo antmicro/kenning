@@ -3,14 +3,13 @@ model_wrapper:
   parameters:
     model_path: kenning:///models/object_detection/yolov4.pth
     model_name: yolov4
-    # if this is set to true the wrapper will download pre-trained weights
-    reset_last_layers: true
-    classes: ./build/oid_classes
+    # classes: ./build/oid_classes
     batch_size: 1
 dataset:
   type: kenning.datasets.coco_dataset.COCODataset2017
   parameters:
     dataset_root: ./build/COCODataset2017
+    # show_predictions_on_eval: true
     dataset_type: val2017
     image_width: 608
     image_height: 608
@@ -27,6 +26,42 @@ optimizers:
               - Conv2d
           - exclude: true
             op_names:
+              # down3
+              - down3.conv1.conv.0
+              - down3.conv1.conv.1
+              - down3.conv2.conv.0
+              - down3.conv2.conv.1
+              - down3.conv3.conv.0
+              - down3.conv3.conv.1
+              - down3.conv4.conv.0
+              - down3.conv4.conv.1
+              - down3.conv5.conv.0
+              - down3.conv5.conv.1
+
+              # down4
+              - down4.conv1.conv.0
+              - down4.conv1.conv.1
+              - down4.conv2.conv.0
+              - down4.conv2.conv.1
+              - down4.conv3.conv.0
+              - down4.conv3.conv.1
+              - down4.conv4.conv.0
+              - down4.conv4.conv.1
+              - down4.conv5.conv.0
+              - down4.conv5.conv.1
+
+              # down5
+              - down5.conv1.conv.0
+              - down5.conv1.conv.1
+              - down5.conv2.conv.0
+              - down5.conv2.conv.1
+              - down5.conv3.conv.0
+              - down5.conv3.conv.1
+              - down5.conv4.conv.0
+              - down5.conv4.conv.1
+              - down5.conv5.conv.0
+              - down5.conv5.conv.1
+
               # Neck
               - neek.conv1.conv.0
               - neek.conv1.conv.1
@@ -114,16 +149,22 @@ optimizers:
       optimizer: torch.optim.SGD
       pruning_on_cuda: true
       finetuning_learning_rate: 0.0001
-      exclude_last_layer: false
   - type: kenning.optimizers.tvm.TVMCompiler
     parameters:
-      target: llvm -mcpu=core-avx2
-      use_fp16_precision: true
+      target: llvm
+      use_int8_precision: true
       opt_level: 3
-      compiled_model_path: ./build/int8_tvm.tar
-      conv2d_data_layout: NCHW
-      conv2d_kernel_layout: OIHW
+      compiled_model_path: ./build/yolo_tvm.tar
 runtime:
   type: kenning.runtimes.tvm.TVMRuntime
   parameters:
-    save_model_path: ./build/int8_tvm.tar
+    save_model_path: ./build/yolo_tvm.tar
+    target_device_context: cpu
+report:
+  type: MarkdownReport
+  parameters:
+    measurements: ./build/yolov4-pruning-int8.json
+    report_path: ./build/yolo-report/yolov4-pruning-int8.md
+    report_name: YOLOv4 pruning and quantization report
+    root_dir: ./build/yolo-report
+    img_dir: ./build/yolo-report/imgs

@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 import numpy as np
-import torch
 from tqdm import tqdm
 
 from kenning.cli.command_template import TEST, TRAIN
@@ -38,6 +37,7 @@ from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 if TYPE_CHECKING:
+    import torch
     from torch.optim import Optimizer
     from torch.utils.data import DataLoader
 
@@ -319,7 +319,7 @@ class YOLOV4TL(ONNXYOLOV4):
         criterion: Callable[[torch.Tensor], torch.Tensor],
         train_loader: DataLoader,
         val_loader: DataLoader,
-        lr_scheduler: Optional[torch.optim.lr_scheduler],
+        lr_scheduler: Optional[torch.optim.lr_scheduler.LRScheduler],
         log_train: Optional[TextIOWrapper],
         log_eval: Optional[TextIOWrapper],
     ) -> float:
@@ -338,7 +338,7 @@ class YOLOV4TL(ONNXYOLOV4):
             Train dataset DataLoader.
         val_loader : DataLoader
             Validation dataset DataLoader.
-        lr_scheduler : Optional[torch.optim.lr_scheduler]
+        lr_scheduler : Optional[torch.optim.lr_scheduler.LRScheduler]
             Scheduler for learning rate.
         log_train : Optional[TextIOWrapper]
             File for logging training statistics
@@ -632,6 +632,8 @@ class YOLOV4TL(ONNXYOLOV4):
 
     @classmethod
     def get_framework_version(cls) -> str:
+        import torch
+
         return str(torch.__version__)
 
     @classmethod

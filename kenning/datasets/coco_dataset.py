@@ -180,7 +180,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         def _list_depth(lst):
             if not isinstance(lst, list):
                 return 0
-            return 1 + max(_list_depth(_l) for _l in lst)
+            return 1 + (max(_list_depth(_l) for _l in lst) if lst else 0)
 
         if _list_depth(predictions) == 2:
             predictions = [predictions]

@@ -10,7 +10,7 @@ https://github.com/Tianxiaomo/pytorch-YOLOv4.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 

@@ -1,0 +1,33 @@
+model_wrapper:
+  type: kenning.modelwrappers.object_detection.yolo_transfer_learning.YOLOV4TL
+  parameters:
+    model_path: kenning:///models/object_detection/yolov4.pth
+    model_name: yolov4
+    # if this is set to true the wrapper will download pre-trained weights
+    reset_last_layers: true
+    batch_size: 1
+dataset:
+  type: kenning.datasets.coco_dataset.COCODataset2017
+  parameters:
+    dataset_root: ./build/COCODataset2017
+    dataset_type: val2017
+    image_width: 608
+    image_height: 608
+optimizers:
+- type: kenning.optimizers.onnx.ONNXCompiler
+  parameters:
+    compiled_model_path: ./build/compiled_model.onnx
+runtime:
+  type: kenning.runtimes.onnx.ONNXRuntime
+  parameters:
+    save_model_path: ./build/compiled_model.onnx
+    execution_providers:
+    - CPUExecutionProvider
+report:
+  type: MarkdownReport
+  parameters:
+    measurements: ./build/yolov4-onnx.json
+    report_path: ./build/yolo-report/yolov4-onnx.md
+    report_name: YOLOv4 ONNX report
+    root_dir: ./build/yolo-report
+    img_dir: ./build/yolo-report/imgs

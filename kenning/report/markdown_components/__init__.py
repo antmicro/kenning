@@ -43,6 +43,7 @@ from kenning.report.markdown_components.general import (
     get_plot_wildcard_path,
 )
 from kenning.report.markdown_components.iree_compilation import (
+    comparison_iree_compilation_report,
     iree_compilation_report,
 )
 from kenning.report.markdown_components.llm_performance_report import (
@@ -90,4 +91,5 @@ __all__ = [
     "zephyr_traces_report",
     "model_report",
     "iree_compilation_report",
+    "comparison_iree_compilation_report",
 ]

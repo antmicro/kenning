@@ -30,6 +30,7 @@ from kenning.report.markdown_components import (
     classification_report,
     comparison_classification_report,
     comparison_detection_report,
+    comparison_iree_compilation_report,
     comparison_llm_performance_report,
     comparison_performance_report,
     comparison_renode_stats_report,
@@ -364,6 +365,7 @@ class MarkdownReport(Report):
                 default_quality_metric=Metric.RMSE,
             ),
             rep.LLM_PERFORMANCE: comparison_llm_performance_report,
+            rep.IREE_COMPILATION: comparison_iree_compilation_report,
         }
 
         header_data = {

@@ -2985,8 +2985,8 @@ class Barplot(Plot):
         colors: Optional[List] = None,
         color_offset: int = 0,
         vertical_x_labels: bool = True,
-        stacked: bool = False,
-        tooltips: Optional[Iterable[Tuple[str, str]]] = None,
+        stacked: Optional[List[Any]] = None,
+        tooltip: Optional[Iterable[Tuple[str, str]]] = None,
         tooltip_additional_label: str = "File",
     ):
         """
@@ -3020,8 +3020,14 @@ class Barplot(Plot):
             How many colors from default color list should be skipped.
         vertical_x_labels : bool
             Whether labels on x-axis should be vertiacal.
-        stacked : bool
-            Whether TODO
+        stacked : Optional[List[Any]]
+            List of categories that will be stacked into one bar,
+            supported only by Bokeh
+        tooltip : Optional[Iterable[Tuple[str, str]]]
+            Custom content of the tooltip - supported only by Bokeh
+        tooltip_additional_label : str
+            Label for grouped dimension in the tooltip,
+            it has no effect if the `tooltip` argument is defined
 
         Raises
         ------
@@ -3062,12 +3068,17 @@ class Barplot(Plot):
             ).tolist()
         self.vertical_x_labels = vertical_x_labels
         self.stacked = stacked
-        self.tooltips = tooltips
+        self.tooltip = tooltip
         self.tooltip_additional_label = tooltip_additional_label
 
     def plot_matplotlib(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
+        if self.stacked:
+            KLogger.warn(
+                "Stacked barplots are currently not supported"
+                "with matplotlib backend"
+            )
         x_data = self.x_data
         y_data = self.y_data
         if self.max_bars_matplotlib is not None:
@@ -3118,7 +3129,7 @@ class Barplot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.models import HoverTool, Range1d
+        from bokeh.models import FactorRange, HoverTool, Range1d
         from bokeh.plotting import figure
         from bokeh.transform import dodge
 
@@ -3133,7 +3144,7 @@ class Barplot(Plot):
 
         barplot_fig = figure(
             title=self.title,
-            x_range=self.x_data,
+            x_range=FactorRange(*self.x_data),
             y_range=Range1d(y_min, y_max),
             tools="pan,box_zoom,wheel_zoom,reset,save",
             toolbar_location="above",
@@ -3154,10 +3165,10 @@ class Barplot(Plot):
                 "max-height": "80vh",
             },
             tooltips=self._create_custom_hover_template(
-                [t[0] for t in self.tooltips],
-                values=[t[1] for t in self.tooltips],
+                [t[0] for t in self.tooltip],
+                values=[t[1] for t in self.tooltip],
             )
-            if self.tooltips
+            if self.tooltip
             else None,
         )
         barplot_fig.toolbar.logo = None
@@ -3167,7 +3178,6 @@ class Barplot(Plot):
         from bokeh.plotting import ColumnDataSource
 
         if self.stacked:
-            vbar_func = partial(barplot_fig.vbar_stack, self.stacked)
             vbar = barplot_fig.vbar_stack(
                 self.stacked,
                 x="xdata",
@@ -3189,7 +3199,7 @@ class Barplot(Plot):
                     width=self.bar_width,
                     legend_label=label,
                 )
-                if not self.tooltips:
+                if not self.tooltip:
                     tooltips = [
                         (self.x_label, "@xdata"),
                         (self.y_label, f"@{label}"),
@@ -3211,6 +3221,7 @@ class Barplot(Plot):
 
         if self.vertical_x_labels:
             barplot_fig.xaxis.major_label_orientation = "vertical"
+            barplot_fig.xaxis.group_label_orientation = -7 / 16 * pi
 
         self._output_bokeh_figure(barplot_fig, output_path, output_formats)
 

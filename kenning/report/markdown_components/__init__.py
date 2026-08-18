@@ -31,6 +31,10 @@ from kenning.report.markdown_components.comp_renode_stats_report import (
 from kenning.report.markdown_components.comp_text_summarization_report import (
     comparison_text_summarization_report,
 )
+from kenning.report.markdown_components.compilation import (
+    comparison_compilation_report,
+    compilation_report,
+)
 from kenning.report.markdown_components.depth_estimation import (
     depth_estimation_report,
 )
@@ -41,9 +45,6 @@ from kenning.report.markdown_components.general import (
     create_report_from_measurements,
     generate_html_report,
     get_plot_wildcard_path,
-)
-from kenning.report.markdown_components.iree_compilation import (
-    iree_compilation_report,
 )
 from kenning.report.markdown_components.llm_performance_report import (
     llm_performance_report,
@@ -89,5 +90,6 @@ __all__ = [
     "anomaly_detection_report",
     "zephyr_traces_report",
     "model_report",
-    "iree_compilation_report",
+    "compilation_report",
+    "comparison_compilation_report",
 ]

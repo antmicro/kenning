@@ -1,4 +1,4 @@
-## CoralNPU compilation
+## CoralNPU compilation{% if data["model_name"] %} of {{data["model_name"]}}{% endif %}
 
 {%- if "affinities" in data %}
 
@@ -115,11 +115,11 @@ align: center
 {%- endfor %}
 {%- if "register_allocation_summary" in data %}
 * - Summary
-  - {{ data["register_allocation_summary"]["total_spills"] }}
-  - {{ data["register_allocation_summary"]["has_scalar_spills"] }}
-  - {{ data["register_allocation_summary"]["total_reloads"] }}
-  - {{ data["register_allocation_summary"]["used_vector_registers_count"] }}
-  - `{{ "`, `".join(data["register_allocation_summary"]["used_vector_registers"]) }}`
+  - {{ data["register_allocation_summary"][name]["total_spills"] }}
+  - {{ data["register_allocation_summary"][name]["has_scalar_spills"] }}
+  - {{ data["register_allocation_summary"][name]["total_reloads"] }}
+  - {{ data["register_allocation_summary"][name]["used_vector_registers_count"] }}
+  - `{{ "`, `".join(data["register_allocation_summary"][name]["used_vector_registers"]) }}`
 {%- endif %}
 ```
 

@@ -65,7 +65,9 @@ def create_report_from_measurements(
         resourcetemplate = resourcetemplatefile.read()
         tm = Template(resourcetemplate)
 
-        content = tm.render(data=measurementsdata, zip=zip, Metric=Metric)
+        content = tm.render(
+            data=measurementsdata, zip=zip, enumerate=enumerate, Metric=Metric
+        )
 
         return content
 

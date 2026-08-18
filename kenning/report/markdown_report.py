@@ -29,16 +29,17 @@ from kenning.report.markdown_components import (
     automl_report,
     classification_report,
     comparison_classification_report,
+    comparison_compilation_report,
     comparison_detection_report,
     comparison_llm_performance_report,
     comparison_performance_report,
     comparison_renode_stats_report,
     comparison_text_summarization_report,
+    compilation_report,
     create_report_from_measurements,
     depth_estimation_report,
     detection_report,
     generate_html_report,
-    iree_compilation_report,
     llm_performance_report,
     model_report,
     performance_report,
@@ -355,7 +356,7 @@ class MarkdownReport(Report):
             rep.ANOMALY: anomaly_detection_report,
             rep.ZEPHYR_TRACES: zephyr_traces_report,
             rep.MODEL: model_report,
-            rep.IREE_COMPILATION: iree_compilation_report,
+            rep.COMPILATION: compilation_report,
         }
         comparereptypes = {
             rep.PERFORMANCE: comparison_performance_report,
@@ -376,6 +377,7 @@ class MarkdownReport(Report):
                 default_quality_metric=Metric.RMSE,
             ),
             rep.LLM_PERFORMANCE: comparison_llm_performance_report,
+            rep.COMPILATION: comparison_compilation_report,
         }
 
         header_data = {

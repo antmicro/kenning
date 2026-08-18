@@ -190,7 +190,6 @@ class IREECompiler(Optimizer):
         **kwargs: Dict,
     ):
         import onnx
-        from iree.compiler import tools as ireecmp
 
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
@@ -233,9 +232,7 @@ class IREECompiler(Optimizer):
             }
 
             # To compile a model with IREE compiler, we first convert it to
-            # ONNX (that's because IREE TensorFlow workflow, as of version
-            # 3.6.0 is highly unstable, so trying to compile directly does not
-            # work).
+            # ONNX, as direct TensorFlow import is unstable
             onnx_model = converter_registry.convert(
                 input_model_path,
                 input_type,

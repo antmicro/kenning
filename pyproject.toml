@@ -129,10 +129,10 @@ tinygrad = [
     "tinygrad==0.12.0 ; python_version>='3.11'", # Fixing version, because of a bug in 0.13.0.
 ]
 iree = [
-    "iree-base-compiler[onnx]==3.6.0",
-    "iree-base-runtime==3.6.0",
-    "iree-tools-tf==20250718.1326",
-    "iree-tools-tflite==20250718.1326",
+    "iree-base-compiler[onnx]==3.11.0",
+    "iree-base-runtime==3.11.0",
+    "iree-tools-tf",
+    "iree-tools-tflite",
 ]
 onnxruntime = [
     "onnxruntime==1.23.2; python_version < '3.11'",

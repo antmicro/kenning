@@ -38,8 +38,10 @@ dependencies = [
     "pyyaml",
     "requests",
     "rich",
-    # auto-pytorch constraint
-    "scikit_learn>=1.7.2,<=1.8.0",
+    # TODO: On November 1st 2026 Python 3.10 will become End-Of-Life
+    # kenning-auto-pytorch has in `base_pipeline.py` compatibility
+    # code with versions [1.7.2 - 1.9.0). It should also removed.
+    "scikit_learn>=1.7.2",
     "scipy>1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
@@ -106,8 +108,6 @@ auto_pytorch = [
     "kenning[torch]",
     "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
     "smac @ git+https://github.com/antmicro/smac3.git@1.4.0-numpy-2",
-    # auto-pytorch constraint
-    "scikit_learn>=1.7.2,<=1.8.0",
     "ConfigSpace>=1.2.1",
     "opencv_python>=4.10.0.84,<5.0.0.0",
 ]
@@ -216,8 +216,6 @@ executorch = [
 
 sklearn = [
     "joblib",
-    # auto-pytorch constraint
-    "scikit_learn>=1.7.2,<=1.8.0",
     "skl2onnx",
 ]
 

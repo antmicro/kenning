@@ -299,14 +299,15 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         masks = y[4] @ y[1].T
         masks = sigmoid(masks)
         masks = crop(masks, y[0])
-        # Resize masks to original image size in batches of 512 to avoid OOM
+        # Resize masks to original image size in batches of 128
+        # to avoid OpenCV batch conversion error
         masks = [
             cv2.resize(
-                masks[:, :, i : i + 512],
+                masks[:, :, i : i + 128],
                 (self.h, self.w),
                 interpolation=cv2.INTER_LINEAR,
             )
-            for i in range(0, masks.shape[2], 512)
+            for i in range(0, masks.shape[2], 128)
         ]
         masks = [
             np.expand_dims(m, axis=2) if len(m.shape) == 2 else m
@@ -461,14 +462,15 @@ class YOLACT(YOLACTWrapper):
 
         masks = sigmoid(y["proto"] @ y["mask"].T)
         masks = crop(masks, y["box"])
-        # Resize masks to original image size in batches of 512 to avoid OOM
+        # Resize masks to original image size in batches of 128
+        # to avoid OpenCV batch conversion error
         masks = [
             cv2.resize(
-                masks[:, :, i : i + 512],
+                masks[:, :, i : i + 128],
                 (self.h, self.w),
                 interpolation=cv2.INTER_LINEAR,
             )
-            for i in range(0, masks.shape[2], 512)
+            for i in range(0, masks.shape[2], 128)
         ]
         masks = [
             np.expand_dims(m, axis=2) if len(m.shape) == 2 else m

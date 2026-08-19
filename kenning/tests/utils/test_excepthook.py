@@ -41,6 +41,9 @@ IGNORED_MODULES = {
     "transformers",
     "datasets",
     "gptqmodel",
+    # Optional AMD GPU drivers
+    "amdsmi",
+    "rocm_smi",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

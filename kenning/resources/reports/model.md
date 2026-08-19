@@ -7,19 +7,18 @@
 header-rows: 1
 align: center
 ---
-* - Information
-  - Value
-
-* - Layer Count
-  - **{{data["layer count"]}}**
-* - Number of parameters
-  - **{{data["total parameters"]}}**
-* - ONNX-converted model size (in bytes)
-  - **{{data["total bytes"]}}**
-* - Input model framework (version)
-  - **{{data["base model type"]}} ({{data["framework version"]}})**
-* - Input model size (in bytes)
-  - **{{data["base model size"]}}**
+* - Model name
+  - Layer count
+  - Number of parameters
+  - ONNX-converted model size (in bytes)
+  - Model Framework (version)
+{% for result in data["layer_tables"] %}
+* - {{ result["model_name"] }}
+  - **{{ result["total"]["layer_count"] }}**
+  - **{{ result["total"]["parameters"] }}**
+  - **{{ result["total"]["bytes"] }}**
+  - **{{ result["model_type"] }} ({{ data["framework_version"] }})**
+{%- endfor %}
 ```
 
 ### Layers
@@ -36,15 +35,18 @@ Layer operation type counts
 ```
 {% endif %}
 
-```{table} Model's layers
+```{table}
+{% for result in data["layer_tables"] %}
+```{table} {{ result["model_name"] }} model layers
 ---
 align: center
 ---
 
-|{% for param in data["layer statistics"] %} {{param}} |{% endfor %}
-|{% for param in data["layer statistics"] %} :--- |{% endfor %}
-{%- for layer in data["layers"] %}
+|{% for param in result["columns"] %} {{param}} |{% endfor %}
+|{% for param in result["columns"] %} :--- |{% endfor %}
+{%- for layer in result["rows"] %}
 |{% for param in layer %} {{param}} |{% endfor %}
 {%- endfor %}
 
 ```
+{% endfor %}

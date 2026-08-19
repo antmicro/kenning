@@ -62,8 +62,6 @@ tensorflow = [
     "tensorflow>=2.21.0",
     "tensorflow_model_optimization",
     "h5py",
-    "h5py==3.14.0; python_version=='3.12'",
-    "protobuf==7.34.1; python_version=='3.12'",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
     "tf2onnx",
 ]

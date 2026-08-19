@@ -18,6 +18,9 @@ from kenning.report.markdown_components.general import (
     create_report_from_measurements,
     get_plot_wildcard_path,
 )
+from kenning.report.markdown_components.model_structure import (
+    ModelStructure,
+)
 from kenning.resources import reports
 from kenning.utils.logger import KLogger
 
@@ -57,14 +60,14 @@ def model_report(
     color_offset : int
         How many colors from default color list should be skipped.
     model_wrapper: Optional[ModelWrapper]
-        ModelWrapper of the reported model
+        ModelWrapper of the reported model.
     **kwargs : Any
         Additional keyword arguments.
 
     Returns
     -------
     Tuple[str, Dict]
-        Content of the report in MyST format.
+        Content of the report in MyST format and metrics stub.
     """
     KLogger.info(f'Running model_report for {measurementsdata["model_name"]}')
 
@@ -121,8 +124,6 @@ def model_report(
     total_bytes = 0
     layer_count = 0
 
-    layers = list()
-
     from onnx import numpy_helper
 
     for node in onnx_model.graph.node:
@@ -140,18 +141,7 @@ def model_report(
 
         total_params += layer_params
         total_bytes += layer_bytes
-        dtype_str = ", ".join(sorted(dtypes)) if dtypes else "-"
         layer_count += 1
-
-        layers.append(
-            (
-                layer_count,
-                node.name or node.output[0],
-                layer_params,
-                layer_bytes,
-                dtype_str,
-            )
-        )
 
     from kenning.core.drawing import Barplot
 
@@ -180,14 +170,12 @@ def model_report(
     measurementsdata["total parameters"] = total_params
     measurementsdata["total bytes"] = total_bytes
 
-    measurementsdata["layers"] = layers
-    measurementsdata["layer statistics"] = [
-        "Number",
-        "Name",
-        "Parameters",
-        "Bytes",
-        "Data type",
-    ]
+    layer_table = ModelStructure(onnx_model).build_layer_table()
+    for table in layer_table:
+        table["model_type"] = model_wrapper.get_framework()
+        table["framework version"] = model_wrapper.get_framework_version()
+
+    measurementsdata["layer_tables"] = layer_table
 
     with path(reports, "model.md") as report_template:
         report = create_report_from_measurements(

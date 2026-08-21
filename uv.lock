@@ -7056,7 +7056,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:aa94df949ebd12268f6ec9d56d6702147369c243efd3a4a818136e9ea744ae83" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3aa82ffbce36ae8663d82220f66766b596224fda8b71f792a4e64fc94f6398e5" },
 ]
 
 [package.metadata]
@@ -7185,7 +7185,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c337b2baa74ef3101017513556fe1dca792af7c1c74f0ab8fd130bafbaeb92c0" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:332d024cddaf92ef36eff25e3aff5c12cd2140d317a191b589fd40edb315d318" },
 ]
 
 [package.metadata]
@@ -7314,7 +7314,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:470df508150daf4dcb09c59e2790992b7e72f4ace8fa4d1d6f5f93ff3bc3089e" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:64689da4289896994ecfa853a7fe925f1b64498047970decec47c85eb57fc4b9" },
 ]
 
 [package.metadata]

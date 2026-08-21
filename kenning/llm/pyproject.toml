@@ -18,13 +18,14 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
+
 dependencies = [
     "transformers>=5.0.0",  # version fixed for sparsegpt+gptq optimization
     "rouge-score",
     "peft==0.10.0",
     "protobuf>=7.34.0",
-    "torch==2.11.0",
-    "vllm==0.24.0",
+    "torch==2.13.0",
+    "vllm==0.26.0",
     "safetensors",
 ]
 

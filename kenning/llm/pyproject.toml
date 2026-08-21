@@ -20,16 +20,26 @@ classifiers = [
 ]
 
 dependencies = [
+    "gptqmodel>=7",
     "transformers>=5.0.0",  # version fixed for sparsegpt+gptq optimization
     "rouge-score",
     "peft==0.10.0",
-    "protobuf>=7.34.0",
+    "protobuf",
     "torch==2.13.0",
-    "vllm==0.26.0",
     "safetensors",
+]
+
+
+[tool.uv]
+override-dependencies = [
+    "protobuf>=7.34.0"
 ]
 
 [project.optional-dependencies]
 sparsity-aware-kernel = [
     "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
+]
+
+vllm = [
+    "vllm==0.27.1",
 ]

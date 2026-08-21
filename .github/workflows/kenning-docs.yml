@@ -123,12 +123,12 @@ jobs:
           sudo unzip flatc.zip -d /usr/bin
           rm flatc.zip
           wget -qO- https://astral.sh/uv/install.sh | sh
-      - name: Prepare Kenning Zephyr Runtime and run AutoML
+      - name: Prepare Kenning Zephyr Runtime and run evaluation
         run: |
           export OUTPUT_DIR=$(realpath $DOCS_DIR)
           export SCENARIO_PATH=$(realpath ./scripts/configs/zephyr-tvm-magic-wand-hifive-unmatched-report.yml)
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "tvm,tensorflow,reports,renode" --frozen --active
+          uv sync --extra "torch,tvm,tensorflow,reports,renode,uart" --frozen --active
           uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
           ./scripts/zephyr-tvm-magic-wand-hifive-unmatched-report.sh
           cp $OUTPUT_DIR/source/zephyr_traces_report.html $OUTPUT_DIR/source/generated/

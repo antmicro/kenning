@@ -160,7 +160,7 @@ jobs:
           cd docs
           make html latexpdf
           cp build/latex/*.pdf build/html/
-          cp -r riscvzephelinreport/zephyr_traces_report.html build/html/
+          cp -r ../riscvzephelinreport/zephyr_traces_report.html build/html/
       - uses: actions/upload-artifact@v4
         with:
           name: gh-page

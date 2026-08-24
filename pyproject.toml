@@ -127,8 +127,6 @@ iree = [
     "iree-base-runtime==3.6.0",
     "iree-tools-tf==20250718.1326",
     "iree-tools-tflite==20250718.1326",
-    # "tf2onnx",
-    # "kenning[tensorflow]",
 ]
 onnxruntime = [
     "onnxruntime==1.23.2",

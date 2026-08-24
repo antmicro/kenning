@@ -45,6 +45,13 @@ class ModelTooLargeError(KenningError):
     """
 
 
+class DynamicIOSpecError(KenningError):
+    """
+    Io specification with dynamic dimension sizes was used when all dimension
+    sizes were expected to be known.
+    """
+
+
 """
 Errors related to configuration and compatibility of different Kenning modules,
 as well as the general process of building a pipeline from Kenning modules.

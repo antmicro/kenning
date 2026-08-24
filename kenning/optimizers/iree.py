@@ -16,6 +16,7 @@ from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
+    DynamicIOSpecError,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
@@ -23,6 +24,7 @@ from kenning.core.optimizer import (
 )
 from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
+from kenning.utils.onnx import apply_io_spec_to_model
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -240,6 +242,15 @@ class IREECompiler(Optimizer):
                 **conversion_kwargs,
                 **kwargs,
             )
+
+            try:
+                apply_io_spec_to_model(onnx_model, io_spec)
+            except DynamicIOSpecError:
+                KLogger.warning(
+                    "This compiler has known issues with support for dynamic "
+                    "dimension sizes, please specify them in io_spec or the "
+                    "comipilation can fail"
+                )
 
             intermediate_onnx_model_path = (
                 self.compiled_model_path.with_suffix(".tmp.onnx")

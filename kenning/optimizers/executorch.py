@@ -276,6 +276,13 @@ class ExecuTorchOptimizer(Optimizer):
             **kwargs,
         )
         self.model.eval()
+        try:
+            from torch.ao.quantization.quantize_fx import fuse_fx
+
+            self.model = fuse_fx(self.model)
+            KLogger.warning("Successfully fused Conv-BN")
+        except Exception as e:
+            KLogger.warning(f"Automatic Conv-BN fusion failed: {e}")
 
         sample_inputs = (self._generate_sample_inputs(io_spec),)
         dynamic_shapes = self._extract_shapes_from_io_specification(

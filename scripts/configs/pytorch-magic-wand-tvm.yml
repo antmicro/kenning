@@ -1,0 +1,35 @@
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: stm32f746g_disco
+    simulated: false
+    llext_binary_path: ./output/llext/tvm.llext
+    uart_port: /tmp/uart
+
+model_wrapper:
+  type: PyTorchMagicWandModelWrapper
+  parameters:
+    model_path: ./output/magic_wand.pth
+    model_name: torch-native
+    learning_rate: 0.0001
+    num_epochs: 500
+    logdir: ./output/logs
+    batch_size: 32
+    export_dict: False
+
+dataset:
+  type: MagicWandDataset
+  parameters:
+    dataset_root: ./output/MagicWandDataset
+
+optimizers:
+  - type: TVMCompiler
+    parameters:
+      compiled_model_path: ./output/microtvm-magic-wand.graph_data
+      dataset_percentage: 1.0
+      opt_level: 3
+
+runtime:
+  type: TVMRuntime
+  parameters:
+    save_model_path: ./output/microtvm-magic-wand.graph_data

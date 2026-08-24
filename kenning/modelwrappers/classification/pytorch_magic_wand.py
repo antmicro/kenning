@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -148,30 +148,32 @@ class PyTorchMagicWandModelWrapper(PyTorchWrapper):
         return [X]
 
     def create_model_structure(self):
-        import torch
+        import torch.nn as nn
 
-        self.model = torch.nn.Sequential(
-            torch.nn.Conv2d(1, 8, (4, 3), padding="same"),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d((3, 3)),
-            torch.nn.Dropout(0.1),
-            torch.nn.Conv2d(8, 16, (4, 1), padding="same"),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d((3, 1)),
-            torch.nn.Dropout(0.1),
-            torch.nn.Flatten(),
-            torch.nn.Linear(224, 16),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(16, 4),
-            torch.nn.Linear(4, self.numclasses),
+        self.model = nn.Sequential(
+            nn.Conv2d(1, 8, (4, 3), padding="same"),
+            nn.BatchNorm2d(8),
+            nn.ReLU(),
+            nn.MaxPool2d((3, 3)),
+            nn.Dropout(0.1),
+            nn.Conv2d(8, 16, (4, 1), padding="same"),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d((3, 1)),
+            nn.Dropout(0.1),
+            nn.Flatten(),
+            nn.Linear(224, 16),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(16, 16),
+            nn.ReLU(),
+            nn.Linear(16, self.numclasses),
         )
 
     def prepare_model(self):
         if self.model_prepared:
             return None
-        import torch
+        import torch.nn as nn
 
         if self.from_file:
             self.load_model(self.model_path)
@@ -180,11 +182,11 @@ class PyTorchMagicWandModelWrapper(PyTorchWrapper):
             self.create_model_structure()
 
             def weights_init(m):
-                if isinstance(m, torch.nn.Linear) or isinstance(
-                    m, torch.nn.Conv2d
-                ):
-                    torch.nn.init.xavier_uniform_(m.weight)
-                    torch.nn.init.zeros_(m.bias)
+                if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+                    nn.init.kaiming_uniform_(
+                        m.weight, nonlinearity="leaky_relu"
+                    )
+                    nn.init.zeros_(m.bias)
 
             self.model.apply(weights_init)
             self.model_prepared = True
@@ -243,7 +245,11 @@ class PyTorchMagicWandModelWrapper(PyTorchWrapper):
                 ):
                     X = X[..., np.newaxis]
                 X = torch.from_numpy(X.transpose((2, 0, 1)).astype("float32"))
-                y = torch.from_numpy(y)
+                y = np.array(self.labels[idx])
+                if y.ndim > 0:  # Convert 1D one-hot to class index
+                    y = np.argmax(y)
+                y = torch.tensor(y, dtype=torch.long)
+
                 return (X, y)
 
         mean, std = self.dataset.get_input_mean_std()

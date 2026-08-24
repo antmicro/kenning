@@ -1,8 +1,14 @@
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: khadas_edgev/rk3399
+    simulated: false
+    uart_port: /dev/ttyUSB1
 
 model_wrapper:
   type: PyTorchMagicWandModelWrapper
   parameters:
-    model_path: build/magic_wand.pth
+    model_path: ./output/magic_wand.pth
     model_name: torch-native
     learning_rate: 0.01
     num_epochs: 30
@@ -13,15 +19,15 @@ model_wrapper:
 dataset:
   type: MagicWandDataset
   parameters:
-    dataset_root: ./build/MagicWandDataset
+    dataset_root: ./output/MagicWandDataset
 
 optimizers:
   - type: ExecuTorchOptimizer
     parameters:
-      compiled_model_path: ./build/optimized_magicwand.pte
+      compiled_model_path: ./output/optimized_magicwand.pte
       quantize: false
 
 runtime:
   type: ExecuTorchRuntime
   parameters:
-    save_model_path: build/optimized_magicwand.pte
+    save_model_path: ./output/optimized_magicwand.pte

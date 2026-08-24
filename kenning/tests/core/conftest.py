@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +31,9 @@ from kenning.datasets.random_dataset import (
 )
 from kenning.datasets.tabular_dataset import TabularDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
+from kenning.modelwrappers.classification.pytorch_generic_ae import (
+    PyTorchGenericAutoencoderClassification,
+)
 from kenning.modelwrappers.classification.pytorch_pet_dataset import (
     PyTorchPetDatasetMobileNetV2,
 )
@@ -428,13 +431,16 @@ def get_dataset_random_mock(
             window_size=5,
         )
     if dataset_cls is TabularDataset:
-        dataset = RandomizedClassificationDataset(
+        return RandomizedClassificationDataset(
             get_tmp_path(),
             samplescount=4 * 10,
-            numclasses=4,
+            numclasses=(
+                128
+                if modelwrapper_cls is PyTorchGenericAutoencoderClassification
+                else 4
+            ),
             inputdims=(128, 1),
         )
-        return dataset
     if dataset_cls is OpenImagesDatasetV6:
         return RandomizedDetectionSegmentationDataset(
             get_tmp_path(),

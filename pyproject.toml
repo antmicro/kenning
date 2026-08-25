@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "kenning"
 version = "0.8.2"
 description = "Kenning - a framework for implementing and testing deployment pipelines for deep learning applications on edge devices"
-requires-python = ">= 3.10,<3.13"
+requires-python = ">= 3.10,<3.14"
 authors = [
     {name = "Antmicro Ltd.", email = "contact@antmicro.com"},
 ]

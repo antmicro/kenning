@@ -791,12 +791,15 @@ class ResourceURI(Path):
     Handle access to resource used in Kenning.
     """
 
-    _flavour = type(Path())._flavour
     _uri: Optional[ParseResult]
     _origin: str
     _raw_paths: list[str]
 
     def __new__(cls, uri_or_path: Union[str, Path, "ResourceURI"]):
+        if sys.version_info.minor < 13:
+            setattr(cls, "_flavour", type(Path())._flavour)
+        else:
+            setattr(cls, "parser", type(Path()).parser)
         if isinstance(uri_or_path, str) and ":/" in uri_or_path:
             uri = urlparse(uri_or_path)
             path = ResourceManager().cache_dir / Path(uri.path).relative_to(

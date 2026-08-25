@@ -2,6 +2,23 @@
 
 {% set basename = data["report_name_simple"] if "model_name" not in data else data["report_name_simple"] + data["model_name"] %}
 
+{%- if "compilation_duration" in data %}
+### Duration of compilation
+
+```{list-table} Comparison of compilation times
+---
+header-rows: 1
+align: center
+---
+* - Model
+  - Compilation time [s]
+{%- for name, t in data["compilation_duration"].items() %}
+* - {{ name }}
+  - {{ "{:.3f}".format(t) }}
+{%- endfor %}
+```
+{%- endif %}
+
 {%- if "dispatch_distribution_path" in data %}
 ### Dispatch distribution
 

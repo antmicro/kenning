@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Dict, List, Literal, Optional, Tuple
@@ -288,6 +289,7 @@ class IREECompiler(Optimizer):
 
             subprocess.call(cmd)
 
+        start_time, end_time = None, None
         if self.compiler_path:
             cmd = [
                 self.compiler_path,
@@ -297,12 +299,14 @@ class IREECompiler(Optimizer):
                 str(self.compiled_model_path),
             ]
             try:
+                start_time = time.perf_counter()
                 subprocess.run(
                     cmd,
                     check=True,
                     capture_output=True,
                     text=True,
                 )
+                end_time = time.perf_counter()
             except (OSError, subprocess.CalledProcessError) as e:
                 error = (
                     e.stderr
@@ -317,12 +321,14 @@ class IREECompiler(Optimizer):
             from iree.compiler import tools as ireecmp
 
             try:
+                start_time = time.perf_counter()
                 compiled_buffer = ireecmp.compile_file(
                     str(intermediate_mlir_path.resolve()),
                     input_type="onnx",
                     extra_args=self.parsed_compiler_args,
                     target_backends=[backend_convert.get(backend, backend)],
                 )
+                end_time = time.perf_counter()
             except ireecmp.CompilerToolError as e:
                 if self._tmp_dir:
                     self._tmp_dir.cleanup()
@@ -334,6 +340,8 @@ class IREECompiler(Optimizer):
         # Gather compilation metadata
         if self.compilation_metadata and self._tmp_dir:
             metadata = {"register_allocation": {}}
+            if end_time and start_time:
+                metadata["compilation_duration"] = end_time - start_time
             if self._tmp_affinity_report.exists():
                 with self._tmp_affinity_report.open("r") as fd:
                     metadata |= json.load(fd)

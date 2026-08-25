@@ -1,5 +1,11 @@
 ## CoralNPU compilation{% if data["model_name"] %} of {{data["model_name"]}}{% endif %}
 
+{%- if "compilation_duration" in data %}
+### Duration of compilation
+
+The compilation took **{{ '{:.3f}'.format(data["compilation_duration"]) }}** seconds.
+{%- endif %}
+
 {%- if "affinities" in data %}
 
 ### Distribution of dispatches

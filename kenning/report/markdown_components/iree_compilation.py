@@ -323,6 +323,13 @@ def comparison_iree_compilation_report(
             ] = register_allocation_summary
         report_variables["regalloc_types"] = types
 
+    if sum("compilation_duration" in data for data in iree_metadata) > 1:
+        report_variables["compilation_duration"] = {
+            name: data["compilation_duration"]
+            for name, data in zip(names, iree_metadata)
+            if "compilation_duration" in data
+        }
+
     with path(reports, "coralnpu_compilation_comparison.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,

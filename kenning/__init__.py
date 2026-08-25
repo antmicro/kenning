@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -52,6 +52,13 @@ except PackageNotFoundError:
         )
         __version__ = None
 
+
+# TODO: pinned version of triton is compiled
+# against LLVM 23 while tensorflow is compiled against
+# LLVM 18, which causes symbol collision errors.
+# We import triton first to load the newer LLVM symbols.
+with contextlib.suppress(ImportError):
+    import triton  # noqa: F401
 
 with contextlib.suppress(ImportError):
     import onnx2tf.utils.common_functions as cf

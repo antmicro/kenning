@@ -17,6 +17,7 @@ from kenning.converters import converter_registry
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.core.platform import Platform
+from kenning.modelwrappers.instance_segmentation.yolact import YOLACT
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.modelwrappers.object_detection.yolo_transfer_learning import (
     YOLOV4TL,
@@ -444,6 +445,16 @@ class TestOptimizerModelWrapper:
         ):
             pytest.xfail("Tinygrad is not supported on Python 3.10")
         model, optimizer, platform = prepare_objects(model_cls, optimizer_cls)
+
+        if isinstance(model, YOLACT):
+            for output in model.io_specification["output"]:
+                # Explicitly set the number of anchor boxes
+                # Will no longer be necessary once IREE fixes dynamic shape
+                # support
+                new_shape = tuple(
+                    val if val != -1 else 19248 for val in output["shape"]
+                )
+                output["shape"] = new_shape
 
         try:
             pipeline_runner = PipelineRunner(

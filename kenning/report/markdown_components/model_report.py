@@ -14,7 +14,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from kenning.converters import converter_registry
 from kenning.core.exceptions import ConversionError
 from kenning.core.model import ModelWrapper
-from kenning.report import model_visualizer
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
     get_plot_wildcard_path,
@@ -36,6 +35,7 @@ def model_report(
     colors: Optional[List] = None,
     color_offset: int = 0,
     model_wrapper: Optional[ModelWrapper] = None,
+    remove_layer_prefix: Optional[str] = "",
     **kwargs: Any,
 ) -> Tuple[str, Dict]:
     """
@@ -61,7 +61,9 @@ def model_report(
     color_offset : int
         How many colors from default color list should be skipped.
     model_wrapper: Optional[ModelWrapper]
-        ModelWrapper of the reported model.
+        ModelWrapper of the reported model
+    remove_layer_prefix: Optional[str]
+        Prefix that should be removed from layer names in model visualization
     **kwargs : Any
         Additional keyword arguments.
 
@@ -70,6 +72,14 @@ def model_report(
     Tuple[str, Dict]
         Content of the report in MyST format and metrics stub.
     """
+    from kenning.report import model_visualizer
+
+    if remove_layer_prefix is None:
+        remove_layer_prefix = ""
+
+    if report_path is None:
+        report_path = Path(".")
+
     KLogger.info(f'Running model_report for {measurementsdata["model_name"]}')
 
     if model_wrapper is None:
@@ -118,7 +128,7 @@ def model_report(
         return "", {}
 
     spec, graph = model_visualizer.create_visualization_from_onnx(
-        onnx_model, Path("./build/")
+        onnx_model, Path("./build/"), remove_layer_prefix=remove_layer_prefix
     )
 
     measurementsdata["spec"] = spec
@@ -131,6 +141,8 @@ def model_report(
     total_params = 0
     total_bytes = 0
     layer_count = 0
+
+    layers = list()
 
     from onnx import numpy_helper
 
@@ -149,7 +161,18 @@ def model_report(
 
         total_params += layer_params
         total_bytes += layer_bytes
+        dtype_str = ", ".join(sorted(dtypes)) if dtypes else "-"
         layer_count += 1
+
+        layers.append(
+            (
+                layer_count,
+                node.name or node.output[0],
+                layer_params,
+                layer_bytes,
+                dtype_str,
+            )
+        )
 
     from kenning.core.drawing import Barplot
 

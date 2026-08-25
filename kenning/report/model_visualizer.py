@@ -10,6 +10,7 @@ model visualization in pipeline-manager based on an ONNX model.
 
 import json
 from pathlib import Path
+from typing import Optional
 
 import onnx
 from onnx import defs
@@ -96,7 +97,9 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
 
 
 def create_visualization_from_onnx(
-    model: onnx.ModelProto, savedir: Path
+    model: onnx.ModelProto,
+    savedir: Path,
+    remove_layer_prefix: Optional[str] = "",
 ) -> (Path, Path):
     """
     Generate a model visualiation based on a ONNX model using pipeline-manager.
@@ -107,6 +110,8 @@ def create_visualization_from_onnx(
         onnx model used for creatng the visualization.
     savedir : Path
         Path to the directory for saving pipeline-manager files.
+    remove_layer_prefix: Optional[str]
+        Prefix that should be removed from layer names in model visualization
 
     Returns
     -------
@@ -238,7 +243,7 @@ def create_visualization_from_onnx(
 
     for i, layer in enumerate(layers):
         node = graph.create_node(layer["op_type"])
-        node.instance_name = layer["name"]
+        node.instance_name = layer["name"].removeprefix(remove_layer_prefix)
 
         node.set_property("ID", layer["number"])
 

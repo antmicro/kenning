@@ -193,6 +193,13 @@ class MarkdownReport(Report):
             "nullable": True,
             "default": None,
         },
+        "remove_layer_prefix": {
+            "description": "Prefix that should be removed from layer "
+            "names in model visualization",
+            "type": str,
+            "nullable": True,
+            "default": "",
+        },
     }
 
     def __init__(
@@ -219,6 +226,7 @@ class MarkdownReport(Report):
         zephyr_build_path: Optional[Path] = None,
         zephyr_base: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        remove_layer_prefix: Optional[str] = "",
     ):
         super().__init__(
             measurements,
@@ -246,6 +254,7 @@ class MarkdownReport(Report):
         self.zephyr_build_path = zephyr_build_path
         # This is set directly by the PipelineRunner
         self.last_optimizer = None
+        self.remove_layer_prefix = remove_layer_prefix
 
         KLogger.debug(f"Report measurements: {self.measurements}")
 
@@ -449,6 +458,7 @@ class MarkdownReport(Report):
                         last_optimizer=self.last_optimizer,
                         cfg=self.cfg_name,
                         model_wrapper=self.model_wrapper,
+                        remove_layer_prefix=self.remove_layer_prefix,
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():

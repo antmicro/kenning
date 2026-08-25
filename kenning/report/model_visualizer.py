@@ -14,13 +14,18 @@ from typing import Optional
 
 import onnx
 from onnx import defs
+from pipeline_manager.dataflow_builder.data_structures import (
+    MissingPropertyError,
+)
 from pipeline_manager.dataflow_builder.dataflow_builder import (
     GraphBuilder,
 )
+
+# from pipeline_manager.dataflow_builder.entities import Interface
 from pipeline_manager.specification_builder import SpecificationBuilder
 
 
-def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
+def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int, list):
     """
     Extracts model information from onnx file.
 
@@ -31,9 +36,9 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
 
     Returns
     -------
-    (list, int)
-        List of layers with information and the maximum number of connections
-        from one node.
+    (list, int, list)
+        List of layers with information, the maximum number of connections
+        from one node and the list of input data shapes.
     """
     initializer_map = {init.name: init for init in model.graph.initializer}
 
@@ -45,7 +50,24 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
     max_connections = 1
     output_count = dict()
 
-    for node in model.graph.node:
+    import onnx.shape_inference
+
+    model = onnx.shape_inference.infer_shapes(model)
+    shapes = list()
+
+    for node in model.graph.value_info:
+        t_dim = list()
+        for dim in node.type.tensor_type.shape.dim:
+            t_dim.append(dim.dim_value)
+        shapes.append(t_dim)
+    outputs = []
+    for output in model.graph.output:
+        output_dimensions = list()
+        for dim in output.type.tensor_type.shape.dim:
+            output_dimensions.append(dim.dim_value)
+        outputs.append(output_dimensions)
+    shapes += outputs
+    for i, node in enumerate(model.graph.node):
         schema = defs.get_schema(node.op_type)
         version = schema.since_version
         layer_params = 0
@@ -78,7 +100,7 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
                 output_count[input] += 1
             else:
                 output_count[input] = 1
-
+        output_shape = shapes[i]
         layers.append(
             {
                 "number": layer_count,
@@ -90,10 +112,17 @@ def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int):
                 "op_version": version,
                 "input": inputs,
                 "output": outputs,
+                "output_shape": output_shape,
             }
         )
+    inputs = []
+    for input in model.graph.input:
+        input_dimensions = list()
+        for dim in input.type.tensor_type.shape.dim:
+            input_dimensions.append(dim.dim_value)
+        inputs.append(input_dimensions)
 
-    return (layers, max(max_connections, max(output_count.values())))
+    return (layers, max(max_connections, max(output_count.values())), inputs)
 
 
 def create_visualization_from_onnx(
@@ -120,7 +149,9 @@ def create_visualization_from_onnx(
     """
     from pipeline_manager import frontend_builder
 
-    layers, max_connections = _get_layer_information_from_onnx(model)
+    layers, max_connections, inputs_shape = _get_layer_information_from_onnx(
+        model
+    )
 
     SPECIFICATION_VERSION = "20260623.14"
     ASSETS_DIRECTORY = Path("./assets")
@@ -158,9 +189,17 @@ def create_visualization_from_onnx(
         name="input",
         interfacename="output",
         side="right",
+        direction="output",
         maxcount=MAX_CONNECTION_COUNT,
     )
-
+    if len(inputs_shape) > 0 and len(inputs_shape[0]) > 0:
+        specification_builder.add_node_type_property(
+            name="input",
+            propname="shape",
+            proptype="text",
+            default="-",
+            hidden=False,
+        )
     for layer in layers:
         type = layer["op_type"]
         if type in node_types:
@@ -172,11 +211,15 @@ def create_visualization_from_onnx(
             name=type,
             interfacename=str("input"),
             maxcount=MAX_CONNECTION_COUNT,
+            direction="input",
+            side="right",
         )
         specification_builder.add_node_type_interface(
             name=type,
             interfacename=str("output"),
             maxcount=MAX_CONNECTION_COUNT,
+            direction="output",
+            side="right",
         )
 
         specification_builder.add_node_type_category(
@@ -205,6 +248,12 @@ def create_visualization_from_onnx(
         )
         specification_builder.add_node_type_property(
             name=type, propname="data type", proptype="text", default="-"
+        )
+        specification_builder.add_node_type_property(
+            name=type, propname="input shape", proptype="text", default="-"
+        )
+        specification_builder.add_node_type_property(
+            name=type, propname="output shape", proptype="text", default="-"
         )
 
     specification_builder.metadata_add_param(
@@ -267,36 +316,58 @@ def create_visualization_from_onnx(
         input_interface = node.get_interfaces_by_regex("input")[0]
         output_interface = node.get_interfaces_by_regex("output")[0]
 
+        node.set_property(
+            "output shape", "x".join([str(x) for x in layer["output_shape"]])
+        )
+
         inputs = layer["input"]
         outputs = layer["output"]
 
         for output in outputs:
-            connections[output] = {"from": output_interface, "to": list()}
+            connections[output] = {
+                "from": output_interface,
+                "from_node": node,
+                "to": list(),
+            }
 
         for input in inputs:
             if input == "":
                 continue
 
             if input in connections:
-                connections[input]["to"].append(input_interface)
+                connections[input]["to"].append((input_interface, node))
             else:
                 input_node = graph.create_node("input")
+                input_node.set_property(
+                    "shape", "x".join([str(x) for x in inputs_shape[0]])
+                )
                 input_node_interface = input_node.get_interfaces_by_regex(
                     "output"
                 )[0]
-
+                input_node.set_property(
+                    "shape", "x".join([str(x) for x in inputs_shape[0]])
+                )
                 connections[input] = {
                     "from": input_node_interface,
-                    "to": [input_interface],
+                    "from_node": input_node,
+                    "to": [(input_interface, node)],
                 }
 
     used_connections = set()
     for connection_type in connections.values():
         from_interface = connection_type["from"]
-
-        for to_interface in connection_type["to"]:
+        from_node = connection_type["from_node"]
+        for to_interface, to_node in connection_type["to"]:
             if (from_interface.id, to_interface.id) not in used_connections:
                 graph.create_connection(from_interface, to_interface)
+                try:
+                    to_node.set_property(
+                        "input shape", from_node.get_property("output shape")
+                    )
+                except MissingPropertyError:
+                    to_node.set_property(
+                        "input shape", from_node.get_property("shape")
+                    )
                 used_connections.add((from_interface.id, to_interface.id))
 
     graph_path = savedir / "graph.json"

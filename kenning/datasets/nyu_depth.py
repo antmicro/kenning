@@ -341,7 +341,7 @@ class NYUDepthDatasetV2(Dataset):
 
             pred_sample = None
 
-            if (
+            if self.report_save_n_best > 0 and (
                 len(self.best_eval_preds) < self.report_save_n_best
                 or score < self.best_eval_preds[-1].score
             ):
@@ -356,7 +356,7 @@ class NYUDepthDatasetV2(Dataset):
                     : self.report_save_n_best
                 ]
 
-            if (
+            if self.self.report_save_n_worst > 0 and (
                 len(self.worst_eval_preds) < self.report_save_n_worst
                 or score > self.worst_eval_preds[-1].score
             ):

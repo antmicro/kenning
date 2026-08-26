@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,19 +16,19 @@ cdef inline np.float32_t min(np.float32_t a, np.float32_t b) nogil:
 @cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
-def nms(np.ndarray[np.float32_t, ndim=2] boxes,
-        np.ndarray[np.float32_t, ndim=1] scores,
+def nms(np.float32_t[:, :] boxes,
+        np.float32_t[:] scores,
         np.float32_t thresh) -> np.array:
     """
     Performs non-maximum suppression on the bounding boxes
 
     Parameters
     ----------
-    boxes : np.ndarray[np.float32_t, ndim=2]
+    boxes : np.float32_t[:, :]
         Array of shape (ndets, 4) with coordinates of the bounding boxes
-    scores : np.ndarray[np.float32_t, ndim=1]
+    scores : np.float32_t[:]
         Array of shape (ndets,) with scores of the detections
-    thresh : float
+    thresh : np.float32_t
         Threshold for NMS
 
     Returns
@@ -42,19 +42,19 @@ def nms(np.ndarray[np.float32_t, ndim=2] boxes,
         return np.array([], dtype=int)
 
     # Indices of detections to be suppressed
-    cdef np.ndarray[np.int32_t, ndim=1] suppressed = \
+    cdef np.int32_t[:] suppressed = \
             np.zeros((ndets,), dtype=np.int32)
 
     # Areas of detections
-    cdef np.ndarray[np.float32_t, ndim=1] areas = np.array(
-            [calc_area(box) for box in boxes],
+    cdef np.float32_t[:] areas = np.array(
+            [calc_area(boxes[i]) for i in range(ndets)],
             dtype=np.float32
     )
 
     # Order to iterate over detections (sorted by score)
-    cdef np.ndarray[np.int64_t, ndim=1] order = np.argsort(
-            scores,
-    )[::-1]
+    cdef np.int64_t[:] order = np.argsort(
+            np.asarray(scores),
+    )[::-1].copy()
 
     cdef np.float32_t iou
 
@@ -68,10 +68,10 @@ def nms(np.ndarray[np.float32_t, ndim=2] boxes,
             iou = calc_iou(areas[order[i]], areas[order[j]], boxes[order[i]], boxes[order[j]])
             if iou >= thresh:
                 suppressed[order[j]] = 1
-    return np.where(suppressed == 0)[0]
+    return np.where(np.asarray(suppressed) == 0)[0]
 
 @cython.boundscheck(False)
-def calc_area(np.ndarray[np.float32_t, ndim=1] box) -> np.float32_t:
+def calc_area(np.float32_t[:] box) -> np.float32_t:
     """
     Calculates area of given bounding box
 
@@ -92,8 +92,8 @@ def calc_area(np.ndarray[np.float32_t, ndim=1] box) -> np.float32_t:
     return (xmax - xmin + 1) * (ymax - ymin + 1)
 
 @cython.boundscheck(False)
-def calc_iou(np.float32_t iarea, np.float32_t jarea, np.ndarray[np.float32_t, ndim=1] ibox,
-             np.ndarray[np.float32_t, ndim=1] jbox) -> np.float32_t:
+def calc_iou(np.float32_t iarea, np.float32_t jarea, np.float32_t[:] ibox,
+             np.float32_t[:] jbox) -> np.float32_t:
     """
     Calculates intersection over union of two detections
 

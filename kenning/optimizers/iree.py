@@ -9,7 +9,6 @@ Wrapper for IREE compiler.
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
@@ -263,12 +262,11 @@ class IREECompiler(Optimizer):
             cmd = [
                 "iree-import-onnx",
                 str(intermediate_onnx_model_path.resolve()),
+                "--opset-version",
+                "18",
+                "-o",
+                str(intermediate_mlir_path.resolve()),
             ]
-
-            if sys.version_info < (3, 12):
-                cmd.extend(["--opset-version", "17"])
-
-            cmd.extend(["-o", str(intermediate_mlir_path.resolve())])
 
             subprocess.call(cmd)
 

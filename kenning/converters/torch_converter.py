@@ -156,9 +156,10 @@ class TorchConverter(ModelConverter):
             model,
             sample_input,
             mem_buffer,
-            opset_version=11,
+            opset_version=18,
             input_names=input_names,
             output_names=output_names,
+            dynamo=True,
         )
         onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
         return onnx_model

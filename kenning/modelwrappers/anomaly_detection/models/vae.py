@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -140,7 +140,8 @@ class AnomalyDetectionVAE(VAEModel):
         if len(x.shape) > 2:
             x = x.view(x.shape[0], -1)
         x_recon, _, _ = super().forward(x)
-        euclidean_sq = torch.square(x_recon - x[:, -self.feature_size :])
+        diff = x_recon - x[:, -self.feature_size :]
+        euclidean_sq = diff * diff
         distance = torch.sqrt(torch.sum(euclidean_sq, axis=1)).reshape((-1, 1))
         return distance
 

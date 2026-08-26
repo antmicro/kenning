@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -60,6 +60,13 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             num_classes=91,
             pretrained_backbone=True,  # downloads backbone to torchhub dir
         )
+
+        # TODO: Find a better solution. Mask-RCNN internally has branching
+        # which causes torch dynamo to fail. When optimizing with ONNX,
+        # we use legacy torch JIT.
+        # See: https://github.com/pytorch/vision/blob/main/torchvision/ops/boxes.py#L86
+        # and https://docs.pytorch.org/docs/main/user_guide/torch_compiler/compile/dynamic_shapes_troubleshooting_guardon_errors.html
+        self.model.kenning_use_dynamo = False
 
     def prepare_model(self):
         if self.model_prepared:

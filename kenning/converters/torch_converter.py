@@ -159,7 +159,7 @@ class TorchConverter(ModelConverter):
             opset_version=18,
             input_names=input_names,
             output_names=output_names,
-            dynamo=True,
+            dynamo=getattr(model, "kenning_use_dynamo", True),
         )
         onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
         return onnx_model

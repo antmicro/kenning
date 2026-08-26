@@ -27,7 +27,7 @@ dependencies = [
     "datasets>=4.0.0",
     "importlib_resources>=5.1.4; python_version<'3.9'",
     "isort>=5.12.0",
-    "jsonschema>=4.16.0",
+    "jsonschema>=4.23.0",
     "matplotlib>=3.3.4",
     "numpy>=2.2.6",
     "onnx==1.22.0",
@@ -69,6 +69,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch",
+    "onnxscript",
     "torch==2.13.0",
     "torchvision>=0.15.0",
 ]
@@ -182,7 +183,7 @@ zephyr = [
 nni = [
     "kenning[torch]",
     "dill",
-    "nni~=2.10.1",
+    "nni>=2.10",
     "tensorboard",
 ]
 ros2 = [
@@ -222,6 +223,21 @@ emlearn = [
     "emlearn",
     "kenning[sklearn]",
     "jinja2",
+]
+
+llm = [
+    "transformers>=5.0.0",
+    "rouge-score",
+    "peft==0.10.0",
+    "kenning[torch]",
+    "safetensors",
+    "vllm==0.27.1",
+    "gptqmodel>=7.3.2",
+]
+
+sparsity_aware_kernel = [
+    "kenning[llm]",
+    "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
 ]
 
 all = [
@@ -338,3 +354,11 @@ directory = "docs/source/generated/coverage"
 [tool.typos.default.extend-identifiers]
 __Pyx_LocalBuf_ND = "__Pyx_LocalBuf_ND"
 nd = "nd"
+
+[tool.uv]
+override-dependencies = [
+    "jinja2>=3.1.5",
+    "jsonschema>=4.23.0",
+    "protobuf>=7.34.0",
+    "click>=8.1.7",
+]

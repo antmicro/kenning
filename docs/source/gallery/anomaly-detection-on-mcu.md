@@ -42,7 +42,7 @@ source .venv/bin/activate
 Optionally, to use the latest Kenning version, install it in the image and reload the virtual environment:
 
 ```bash
-uv pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart,zephyr,auto_pytorch] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,litert,reports,renode,uart,zephyr,auto_pytorch] @ git+https://github.com/antmicro/kenning.git"
 ```
 :::
 

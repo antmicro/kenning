@@ -107,7 +107,7 @@ cd kenning/
 Then install using:
 
 ```bash
-uv sync --extra tensorflow,tflite,tvm,reports
+uv sync --extra tensorflow,litert,tvm,reports
 ```
 
 ### Dependency groups
@@ -205,7 +205,7 @@ The available subcommands are:
 Let's start off with installing the module and its necessary dependencies:
 
 ```bash test-skip
-uv pip install "kenning[tensorflow,tflite,tvm,pipeline_manager,reports] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[tensorflow,litert,tvm,pipeline_manager,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 Kenning provides two tools for displaying information about available classes: `kenning list` and `kenning info`.

@@ -5335,7 +5335,6 @@ all = [
     { name = "tensorstore" },
     { name = "tf-keras" },
     { name = "tf2onnx" },
-    { name = "tflite" },
     { name = "tinygrad" },
     { name = "torch" },
     { name = "torchao" },
@@ -5418,6 +5417,9 @@ iree = [
     { name = "iree-base-runtime" },
     { name = "iree-tools-tf" },
     { name = "iree-tools-tflite" },
+]
+litert = [
+    { name = "ai-edge-litert" },
 ]
 llm = [
     { name = "gptqmodel" },
@@ -5570,9 +5572,6 @@ test = [
     { name = "pytest-xdist" },
     { name = "tuttest" },
 ]
-tflite = [
-    { name = "tflite" },
-]
 tinygrad = [
     { name = "tinygrad" },
 ]
@@ -5615,6 +5614,7 @@ tvm-relax = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ai-edge-litert", marker = "extra == 'litert'" },
     { name = "ai-edge-litert", marker = "extra == 'onnx2tf'", specifier = ">=2.1.6" },
     { name = "albumentations", marker = "extra == 'albumentations'" },
     { name = "antmicro-sphinx-utils", marker = "extra == 'docs'", url = "https://github.com/antmicro/antmicro-sphinx-utils/archive/094a9c2d53daf072d17d2aab48d925f4573c1a04.zip" },
@@ -5664,7 +5664,7 @@ requires-dist = [
     { name = "junitparser", marker = "extra == 'zephyr'", specifier = ">3.1.0" },
     { name = "kenning", extras = ["docs"], marker = "extra == 'reports'" },
     { name = "kenning", extras = ["llm"], marker = "extra == 'sparsity-aware-kernel'" },
-    { name = "kenning", extras = ["nvidia-perf", "docs", "tensorflow", "torch", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "tflite", "tvm", "tinygrad", "iree", "onnxruntime", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "onnx2tf", "executorch", "sklearn", "emlearn", "coralnpu"], marker = "extra == 'all'" },
+    { name = "kenning", extras = ["nvidia-perf", "docs", "tensorflow", "torch", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "litert", "tvm", "tinygrad", "iree", "onnxruntime", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "onnx2tf", "executorch", "sklearn", "emlearn", "coralnpu"], marker = "extra == 'all'" },
     { name = "kenning", extras = ["onnx2tf"], marker = "extra == 'tensorflow'" },
     { name = "kenning", extras = ["pipeline-manager"], marker = "extra == 'docs'" },
     { name = "kenning", extras = ["pipeline-manager"], marker = "extra == 'reports'" },
@@ -5760,7 +5760,6 @@ requires-dist = [
     { name = "tf-keras", marker = "extra == 'onnx2tf'", specifier = ">=2.21.0" },
     { name = "tf-keras", marker = "extra == 'tensorflow'", specifier = ">=2.21.0" },
     { name = "tf2onnx", marker = "extra == 'tensorflow'" },
-    { name = "tflite", marker = "extra == 'tflite'", specifier = ">=2.1" },
     { name = "tinygrad", marker = "extra == 'tinygrad'", specifier = "==0.12.0" },
     { name = "torch", marker = "extra == 'torch'", specifier = "==2.13.0" },
     { name = "torchao", marker = "extra == 'executorch'" },
@@ -5777,7 +5776,7 @@ requires-dist = [
     { name = "vllm", marker = "extra == 'llm'", specifier = ">=0.32.0" },
     { name = "west", marker = "extra == 'zephyr'" },
 ]
-provides-extras = ["docs", "tensorflow", "torch", "coralnpu", "nvidia-perf", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "tflite", "tvm", "tinygrad", "iree", "onnxruntime", "onnxruntime-gpu", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "onnx2tf", "executorch", "sklearn", "emlearn", "llm", "sparsity-aware-kernel", "mypy", "gemma", "all"]
+provides-extras = ["docs", "tensorflow", "torch", "coralnpu", "nvidia-perf", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "litert", "tvm", "tinygrad", "iree", "onnxruntime", "onnxruntime-gpu", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "onnx2tf", "executorch", "sklearn", "emlearn", "llm", "sparsity-aware-kernel", "mypy", "gemma", "all"]
 
 [package.metadata.requires-dev]
 tvm-cuda = [
@@ -13153,20 +13152,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8e/62/09bc2e8a91c717a2b37b6631ad08535f1f04d951010abbc5b6e446c988eb/tf2onnx-1.17.0.tar.gz", hash = "sha256:998dc1841d5e2405226d985f28287570569034b7609924a52fb297b42462c1c1", size = 591633, upload-time = "2026-03-04T19:37:23.256Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/98/83/05d2b28b2246118105c48a7a8c02e3419f2ea0fff0bb49a8bd7876e7373c/tf2onnx-1.17.0-py3-none-any.whl", hash = "sha256:64506e0ff12ddb21918b5659541577a4e9eec06d6bb1f2c7c4ebba5b09f30dba", size = 839132, upload-time = "2026-03-04T19:37:21.236Z" },
-]
-
-[[package]]
-name = "tflite"
-version = "2.18.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "flatbuffers" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/93/0e/186beaed34ce9a740d7add374118b206fac75631c94bb4fa72d63ec32f7f/tflite-2.18.0.tar.gz", hash = "sha256:07e9478e0d0fb4d3082d0ce8e7e6eab4a90a7174412faec7702e24bfcbf4190d", size = 49232, upload-time = "2025-01-28T11:32:59.034Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/9b/f35d52989cb458a911f1ed4164b37dcf6559237b73c962c09ed0b6cecd4f/tflite-2.18.0-py2.py3-none-any.whl", hash = "sha256:a49a4316530377c597bb272176c12d5d3c4453640118b068c93a8c3cc6c5c2c1", size = 153155, upload-time = "2025-01-28T11:32:57.201Z" },
 ]
 
 [[package]]

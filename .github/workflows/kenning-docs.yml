@@ -79,7 +79,7 @@ jobs:
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart" --frozen --active
+          uv sync --extra "torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart" --frozen --active
           export AUTOML_SCENARIO_CONFIG=$(realpath ./scripts/configs/automl-scenario.yml)
           export DOCS_DIR=$(realpath $DOCS_DIR)
           ./scripts/zephyr-automl-report.sh

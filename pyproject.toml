@@ -123,8 +123,8 @@ auto_pytorch = [
     "ConfigSpace>=1.2.1",
     "opencv_python>=5.0.0.0",
 ]
-tflite = [
-    "tflite>=2.1",
+litert = [
+    "ai-edge-litert",
 ]
 tvm = [
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
@@ -258,7 +258,7 @@ gemma = [
     "etils"
 ]
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,litert,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
 ]
 
 [dependency-groups]

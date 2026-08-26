@@ -50,7 +50,7 @@ west sdk install --toolchains x86_64-zephyr-elf aarch64-zephyr-elf arm-zephyr-ea
 To make sure you have the latest version of the Kenning with AutoML features, run:
 
 ```bash
-uv pip install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[iree,tvm,torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
 ```
 :::
 

@@ -41,6 +41,10 @@ EXPECTED_FAIL = [
     ("ExecuTorchOptimizer", "TFLiteCompiler"),
     ("ExecuTorchOptimizer", "TVMCompiler"),
     ("ExecuTorchOptimizer", "TinygradOptimizer"),
+    # TODO: This test currently fails because of adaptive_avg_pool2d
+    # in the forward layer of MobileNetV2. TVM is failing to compile
+    # this since upgrading to torch==2.13
+    ("NNIPruningOptimizer", "TVMCompiler"),
 ]
 
 SKIP = [

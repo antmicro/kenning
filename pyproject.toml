@@ -63,6 +63,7 @@ tensorflow = [
     "tf-keras>=2.21.0",
     "tensorflow>=2.21.0",
     "tensorflow_model_optimization",
+    "tensorboard",
     "h5py",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
     "tf2onnx",
@@ -71,6 +72,7 @@ torch = [
     "onnx2torch",
     "onnxscript",
     "torch==2.13.0",
+    "tensorboard",
     "torchvision>=0.15.0",
 ]
 coralnpu = [

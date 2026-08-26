@@ -90,6 +90,7 @@ def get_deps(session: nox.Session, device):
 @session(
     python=PYTHON_VERSIONS,
     uv_all_extras=True,
+    uv_no_extras=["llm", "sparsity-aware-kernel"],
     uv_sync_locked=False,
 )
 @nox.parametrize("device", ["cpu", "any"])

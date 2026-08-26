@@ -6,6 +6,8 @@
 Runtime implementation for ONNX models.
 """
 
+import tempfile
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -13,13 +15,14 @@ import onnxruntime as ort
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
+    KenningRuntimeError,
     ModelNotPreparedError,
 )
 from kenning.core.runtime import (
     Runtime,
 )
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI, extract_tar
 
 
 class ONNXRuntime(Runtime):
@@ -73,6 +76,7 @@ class ONNXRuntime(Runtime):
         """
         self.session = None
         self.input = None
+        self.tempdir: tempfile.TemporaryDirectory | None = None
         self.execution_providers = execution_providers
         super().__init__(
             model_path=model_path,
@@ -98,8 +102,33 @@ class ONNXRuntime(Runtime):
             with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)
 
+        if Path(self.model_path).suffix in [".tar", ".gz"]:
+            KLogger.info("Identified model as a tar archive")
+            self.tempdir = tempfile.TemporaryDirectory()
+            self.tempdir.__enter__()
+            KLogger.info(f"Extracting model to {self.tempdir}")
+            try:
+                extract_tar(
+                    src_path=self.model_path,
+                    target_dir=self.tempdir.name,
+                )
+            except Exception:
+                KLogger.error(
+                    f"Failed to extract model archive: {self.model_path} to {self.tempdir}"  #  noqa E501
+                )
+                raise
+            model = next(Path(self.tempdir.name).glob("**/*.onnx"))
+            if model is None:
+                raise KLogger.error_prepare_exception(
+                    "Failed to identify the main onnx file",
+                    KenningRuntimeError,
+                )
+            KLogger.info(f"Identified {model} as the main model file")
+        else:
+            model = self.model_path
+
         self.session = ort.InferenceSession(
-            str(self.model_path), providers=self.execution_providers
+            str(model), providers=self.execution_providers
         )
 
         # Input dtype can come either as a valid np.dtype
@@ -148,6 +177,10 @@ class ONNXRuntime(Runtime):
         )
 
         KLogger.info("Model loading ended successfully")
+
+    def __del__(self):
+        if self.tempdir is not None:
+            self.tempdir.__exit__(None, None, None)
 
     def run(self):
         if self.session is None:

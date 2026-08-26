@@ -154,7 +154,7 @@ class LLM(ModelWrapper, ABC):
         """
         conversations = []
         for message in X[0]:
-            prompt_config = {"user_message", message}
+            prompt_config = {"user_message": message}
             if hasattr(self.dataset, "system_message"):
                 prompt_config["system_message"] = self.dataset.system_message
             message = self.message_to_instruction(prompt_config)

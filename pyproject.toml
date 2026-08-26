@@ -51,7 +51,7 @@ dependencies = [
 
 [project.optional-dependencies]
 docs = [
-    "antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git",
+    "antmicro-sphinx-utils @ https://github.com/antmicro/antmicro-sphinx-utils/archive/094a9c2d53daf072d17d2aab48d925f4573c1a04.zip",
     "docutils",
     "sphinxcontrib-napoleon",
     "sphinx>=8.1.3; python_version<='3.11'",
@@ -160,7 +160,7 @@ pipeline_manager = [
 reports = [
     "kenning[docs]",
     "Jinja2>=2.11.2",
-    "servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis.git",
+    "servis[bokeh,matplotlib] @ https://github.com/antmicro/servis/archive/e774d246b791b8223bd0bef45305a0e092b42b09.zip",
     "bs4",
 ]
 uart = [

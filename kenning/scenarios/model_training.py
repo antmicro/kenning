@@ -13,26 +13,21 @@ import argparse
 import sys
 from typing import List, Optional, Tuple
 
-import yaml
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
     TEST,
     ArgumentsGroups,
     CommandTemplate,
-    ParserHelpException,
     generate_command_type,
 )
-from kenning.core.model import ModelWrapper
-from kenning.core.platform import Platform
+from kenning.core.exceptions import ConfigurationError
 from kenning.dispatcher.block_config import (
     ConfigKey,
+    set_block_direct_argument,
 )
-from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import (
-    get_command,
-    load_class,
-    obj_from_json,
+    objs_from_full_dict_config,
 )
 from kenning.utils.resource_manager import ResourceURI
 
@@ -87,112 +82,28 @@ class TrainModel(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def prepare_args(args: argparse.Namespace):
-        """
-        Prepares and validates parased arguments.
-
-        Parameters
-        ----------
-        args : argparse.Namespace
-            Parsed arguments.
-        """
-        TrainModel._ensure_args_in_namespace(args)
-        TrainModel._ensure_exclusive_cfg_or_flags(args)
-
-    @staticmethod
-    def _ensure_args_in_namespace(args):
-        if "json_cfg" not in args:
-            args.json_cfg = None
-
-    @staticmethod
-    def _ensure_exclusive_cfg_or_flags(args: argparse.Namespace):
-        flag_config_args = ("modelwrapper_cls", "dataset_cls")
-        ensure_exclusive_cfg_or_flags(args, flag_config_args)
-
-    @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        TrainModel.prepare_args(args)
-        if args.json_cfg:
-            if args.help:
-                raise ParserHelpException
-            return TrainModel._run_from_cfg(args, not_parsed, **kwargs)
-        return TrainModel._run_from_flags(args, not_parsed, **kwargs)
+        config = TrainModel.parse_configuration(
+            args,
+            not_parsed,
+            [ConfigKey.model_wrapper, ConfigKey.platform, ConfigKey.dataset],
+        )
+        config = set_block_direct_argument(
+            "from_file", False, config, ConfigKey.model_wrapper
+        )
+        objs = objs_from_full_dict_config(config)
 
-    @staticmethod
-    def _run_from_cfg(
-        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
-    ):
-        if not_parsed:
-            raise argparse.ArgumentError(
-                None, f"unrecognized arguments: {' '.join(not_parsed)}"
+        if ConfigKey.model_wrapper not in objs:
+            raise ConfigurationError(
+                "Missing ModelWrapper (required for training)"
             )
 
-        with open(args.json_cfg, "r") as f:
-            cfg = yaml.safe_load(f)
-
-        dataset = obj_from_json(cfg, ConfigKey.dataset)
-        model = obj_from_json(
-            cfg, ConfigKey.model_wrapper, dataset=dataset, from_file=False
-        )
-        platform = obj_from_json(cfg, ConfigKey.platform)
-
-        TrainModel._run(model, platform)
-
-    @staticmethod
-    def _run_from_flags(
-        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
-    ):
-        modelwrappercls = (
-            load_class(args.modelwrapper_cls)
-            if args.modelwrapper_cls
-            else None
-        )
-        datasetcls = load_class(args.dataset_cls) if args.dataset_cls else None
-        platformcls = (
-            load_class(args.platform_cls) if args.platform_cls else None
-        )
-
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
-            parents=[]
-            + (
-                [modelwrappercls.form_argparse(args)[0]]
-                if modelwrappercls
-                else []
-            )
-            + ([datasetcls.form_argparse(args)[0]] if datasetcls else [])
-            + ([platformcls.form_argparse(args)[0]] if platformcls else []),
-            add_help=False,
-        )
-
-        if args.help:
-            raise ParserHelpException(parser)
-        args = parser.parse_known_args(not_parsed, namespace=args)
-
-        dataset = datasetcls.from_argparse(args[0])
-
-        model = modelwrappercls.from_argparse(
-            dataset, args[0], from_file=False
-        )
-        platform = None
-        if platformcls:
-            platform = platformcls.from_argparse(args[0])
-
-        TrainModel._run(model, platform)
-
-    @staticmethod
-    def _run(model: ModelWrapper, platform: Optional[Platform]):
-        if platform:
-            model.read_platform(platform)
+        model = objs[ConfigKey.model_wrapper]
+        if ConfigKey.platform in objs:
+            model.read_platform(objs[ConfigKey.platform])
         model.prepare_model()
         model.train_model()
         model.save_model(model.get_path())
-
-    @staticmethod
-    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
-        return [
-            ConfigKey.model_wrapper,
-        ]
 
 
 if __name__ == "__main__":

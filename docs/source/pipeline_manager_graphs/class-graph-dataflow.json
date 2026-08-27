@@ -223,35 +223,6 @@
                             "sidePosition": 1
                         },
                         {
-                            "name": "Optimized model output",
-                            "id": "fafbeb45-b3e4-464c-9dfd-fde35d885444",
-                            "direction": "output",
-                            "side": "right",
-                            "sidePosition": 0
-                        }
-                    ],
-                    "properties": [],
-                    "enabledInterfaceGroups": [],
-                    "name": "Optimizer",
-                    "instanceName": "Optimizer"
-                },
-                {
-                    "id": "e110e870-6444-468a-af2f-56a0d16e99d0",
-                    "position": {
-                        "x": 1086,
-                        "y": 1528
-                    },
-                    "width": 300,
-                    "twoColumn": false,
-                    "interfaces": [
-                        {
-                            "name": "Model input",
-                            "id": "c94b8584-d14e-4b3d-be1d-58dafa797def",
-                            "direction": "input",
-                            "side": "left",
-                            "sidePosition": 0
-                        },
-                        {
                             "name": "Model output",
                             "id": "3c34ba03-829b-40c7-b4a0-3f3d3efd0522",
                             "direction": "output",
@@ -261,8 +232,8 @@
                     ],
                     "properties": [],
                     "enabledInterfaceGroups": [],
-                    "name": "Compiler",
-                    "instanceName": "Compiler"
+                    "name": "Optimizer",
+                    "instanceName": "Optimizer"
                 },
                 {
                     "id": "4920e89c-4652-42ee-956f-eb75f8856540",
@@ -634,7 +605,7 @@
                 {
                     "id": "be907777-f048-4773-9451-fb27712f2996",
                     "position": {
-                        "x": 1266,
+                        "x": 1040,
                         "y": 1823
                     },
                     "twoColumn": false,
@@ -679,8 +650,7 @@
                     "color": "#990099",
                     "name": "Model Optimizer",
                     "nodes": [
-                        "c5071084-ac73-402f-8621-b52e1775e730",
-                        "e110e870-6444-468a-af2f-56a0d16e99d0"
+                        "c5071084-ac73-402f-8621-b52e1775e730"
                     ]
                 },
                 {
@@ -739,11 +709,6 @@
                     "id": "f3fc17ab-cbb3-4da4-b284-820f20d8fdca",
                     "from": "43aa6a8f-3cd2-423b-b659-bb19617ec70a",
                     "to": "6d9e6efc-4323-4079-970b-082ceb499b69"
-                },
-                {
-                    "id": "77fd30a9-9f02-437f-80bf-09b37213c0cc",
-                    "from": "fafbeb45-b3e4-464c-9dfd-fde35d885444",
-                    "to": "c94b8584-d14e-4b3d-be1d-58dafa797def"
                 },
                 {
                     "id": "2aa2ff39-601f-4e07-9ca0-bff3fd5bd8e8",

@@ -287,27 +287,9 @@
                     "type": "model"
                 },
                 {
-                    "direction": "output",
-                    "name": "Optimized model output",
-                    "type": "model"
-                },
-                {
                     "direction": "input",
                     "name": "Config",
                     "type": "configuration"
-                }
-            ],
-            "name": "Optimizer"
-        },
-        {
-            "abstract": false,
-            "category": "ModelCompiler",
-            "color": "#FF00FF",
-            "interfaces": [
-                {
-                    "direction": "input",
-                    "name": "Model input",
-                    "type": "model"
                 },
                 {
                     "direction": "output",
@@ -315,7 +297,7 @@
                     "type": "host_ready_model"
                 }
             ],
-            "name": "Compiler"
+            "name": "Optimizer"
         },
         {
             "abstract": false,

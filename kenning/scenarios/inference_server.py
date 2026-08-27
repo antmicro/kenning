@@ -22,7 +22,7 @@ import signal
 import sys
 from pathlib import Path
 from threading import Event
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from argcomplete.completers import FilesCompleter
@@ -38,19 +38,18 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
-from kenning.core.exceptions import ModelNotPreparedError, NotSupportedError
+from kenning.core.exceptions import (
+    ConfigurationError,
+    ModelNotPreparedError,
+    NotSupportedError,
+)
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, ServerAction, ServerStatus
 from kenning.core.runtime import Runtime
-from kenning.dispatcher.block_config import CONFIG_KEY_TO_CLS_FLAG
+from kenning.dispatcher.block_config import yaml_or_json_to_config_dict
 from kenning.platforms.local import LocalPlatform
-from kenning.utils.args_manager import (
-    report_missing,
-)
 from kenning.utils.class_loader import (
     ConfigKey,
-    objs_from_argparse,
-    objs_from_json,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
@@ -320,7 +319,10 @@ class InferenceServer(object):
         )
         optimizers_cls = [load_class(cfg["type"]) for cfg in optimizers_cfg]
         self.optimizers = [
-            cls.from_json(cfg["parameters"], dataset=None)
+            cls.build_from_config(
+                yaml_or_json_to_config_dict({"optimizers": optimizers_cfg}),
+                dataset=None,
+            )
             for cls, cfg in zip(optimizers_cls, optimizers_cfg)
         ]
 
@@ -394,8 +396,8 @@ class InferenceServer(object):
         model_data = None
         try:
             prev_block = self.prev_block
-            model_path = prev_block.compiled_model_path
             for optimizer in self.optimizers:
+                model_path = prev_block.compiled_model_path
                 KLogger.info(f"Processing block: {type(optimizer).__name__}")
 
                 model_type = prev_block.get_framework()
@@ -477,23 +479,12 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        keys = {ConfigKey.platform, ConfigKey.runtime, ConfigKey.protocol}
-
-        if args.json_cfg is not None:
-            with open(args.json_cfg, "r") as f:
-                json_cfg = yaml.safe_load(f)
-
-            objs = objs_from_json(json_cfg, keys, (args, not_parsed))
-        else:
-
-            def required(classes: Dict[ConfigKey, Type]):
-                if ConfigKey.runtime not in classes:
-                    report_missing([CONFIG_KEY_TO_CLS_FLAG[ConfigKey.runtime]])
-
-            objs = objs_from_argparse(
-                args, not_parsed, keys, required=required
+        keys = [ConfigKey.platform, ConfigKey.runtime, ConfigKey.protocol]
+        objs = InferenceServerRunner.initialize_blocks(args, not_parsed, keys)
+        if ConfigKey.runtime not in objs:
+            raise ConfigurationError(
+                "Missing Runtime (required to run the server)"
             )
-
         return InferenceServerRunner._run_server(objs)
 
     @staticmethod
@@ -520,14 +511,6 @@ class InferenceServerRunner(CommandTemplate):
 
         KLogger.info("Starting server...")
         server.run()
-
-    @staticmethod
-    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
-        return [
-            ConfigKey.runtime,
-            ConfigKey.protocol,
-            ConfigKey.platform,
-        ]
 
 
 if __name__ == "__main__":

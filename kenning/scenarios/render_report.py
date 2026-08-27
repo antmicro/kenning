@@ -100,31 +100,6 @@ class RenderReport(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def _fill_missing_namespace_args(args: argparse.Namespace):
-        if "json_cfg" not in args:
-            args.json_cfg = None
-        if "evaluate_unoptimized" not in args:
-            args.evaluate_unoptimized = False
-
-    @staticmethod
-    def prepare_args(args: argparse.Namespace) -> argparse.Namespace:
-        """
-        Prepares and validates parased arguments.
-
-        Parameters
-        ----------
-        args : argparse.Namespace
-            Parsed arguments.
-
-        Returns
-        -------
-        argparse.Namespace
-            Validated parsed arguments.
-        """
-        RenderReport._fill_missing_namespace_args(args)
-        return args
-
-    @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
         if hasattr(args, "parsed_report"):

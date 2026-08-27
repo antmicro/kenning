@@ -366,7 +366,6 @@ class CommandTemplate(ABC):
             parameters. See 'block_config' module for details on the format.
         """
         KLogger.info(f"Parsing configuration for scenario {cls.__name__}...")
-        args = cls.prepare_args(args)
         config = argparse_to_config_dict(args)
         if args.json_cfg is not None:
             KLogger.debug(f"Config file detected at {args.json_cfg}.")

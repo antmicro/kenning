@@ -206,10 +206,9 @@
                     "type": "performance_metrics"
                 }
             ],
-            "name": "RST report",
+            "name": "MyST report",
             "pill": {
-                "text": "user",
-                "color": "#999999"
+                "text": "user"
             }
         },
         {

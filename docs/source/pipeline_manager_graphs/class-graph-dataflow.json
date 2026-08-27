@@ -420,8 +420,8 @@
                     ],
                     "properties": [],
                     "enabledInterfaceGroups": [],
-                    "name": "RST report",
-                    "instanceName": "RST report"
+                    "name": "MyST report",
+                    "instanceName": "MyST report"
                 },
                 {
                     "id": "4cd29ef5-65cd-47ed-9224-8d49a8a9023e",
@@ -656,7 +656,7 @@
                 {
                     "id": "27ae29ee-c0aa-4ef5-900d-795fce2820b5",
                     "color": "#006000",
-                    "name": "Runtime Protocol - Host",
+                    "name": "Protocol - Host",
                     "nodes": [
                         "4920e89c-4652-42ee-956f-eb75f8856540",
                         "f809a1f7-0f87-4d5a-a67b-8a0648bad013",
@@ -666,7 +666,7 @@
                 {
                     "id": "2b0c9a1f-4081-4e3c-b1b7-32877b42efde",
                     "color": "#606000",
-                    "name": "Runtime Protocol - Target",
+                    "name": "Protocol - Target",
                     "nodes": [
                         "4c95acc0-03a4-4277-bfb2-dccdf1afcc43",
                         "ea8d2b19-2e39-4521-857a-f9913f743f0b",

@@ -8,7 +8,7 @@ from pathlib import Path
 import nox
 from nox_uv import session
 
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
+PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
 PYTEST_EXPLICIT_DOWNLOAD = (
     os.environ.get("NOX_PYTEST_EXPLICIT_DOWNLOAD", "n") != "n"

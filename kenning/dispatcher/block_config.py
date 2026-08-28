@@ -181,9 +181,9 @@ def yaml_or_json_to_config_dict(config: Dict) -> KenningBlockConfigDict:
     for block_type, elements in config.items():
         block_type = getattr(ConfigKey, block_type)
         blocks = []
-        # There can be multiple optimizers in a config, but all other blocks
-        # can have only 1 implementation active at a time.
-        if block_type == ConfigKey.optimizers:
+        # Some block types have only 1 block at a time, and some have multiple,
+        # so we standardize data format to a list.
+        if type(elements) is list:
             blocks = elements
         else:
             blocks = [elements]

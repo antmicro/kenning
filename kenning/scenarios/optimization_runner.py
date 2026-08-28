@@ -16,7 +16,8 @@ import argparse
 import copy
 import json
 import sys
-from itertools import chain, combinations, product
+from collections import defaultdict
+from itertools import chain, combinations, permutations, product
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional, Tuple
@@ -38,21 +39,30 @@ from kenning.core.metrics import (
     compute_detection_metrics,
     compute_performance_metrics,
 )
+from kenning.dispatcher.block_config import (
+    BLOCK_CONFIG_PARAMETERS_KEY,
+    BLOCK_CONFIGURATIONS_KEY,
+    BLOCK_DIRECT_ARGUMENTS_KEY,
+    ConfigKey,
+    KenningBlockConfigDict,
+    set_block_direct_argument,
+    yaml_or_json_to_config_dict,
+)
+from kenning.utils.class_loader import objs_from_full_dict_config
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
 
 
-def get_block_product(block: Dict[str, Any]) -> List:
+def get_block_product(parameters: Dict[str, List[Any]]) -> List:
     """
     Gets a cartesian product of the parameter values.
 
     Parameters
     ----------
-    block : Dict[str, Any]
-        Dictionary with parameters and type keys.
-        For parameters, key is the name
-        of a parameter and value defines range of values.
+    parameters: Dict[str, List[Any]]
+        Dictionary with parameters, where each parameter is a list of possible
+        options.
 
     Returns
     -------
@@ -63,54 +73,35 @@ def get_block_product(block: Dict[str, Any]) -> List:
     --------
     For argument
     ```python
-    block = {
-        'type': 'example',
-        'parameters': {
+        {
             'optimization_level' : [1, 2],
             'dtype': ['int8', 'float32']
         }
-    }
     ```
     will return
     ```python
     [
         {
-            'type': 'example',
-            'parameters': {
-                'optimization_level' : 1,
-                'dtype': 'int8'
-            }
+            'optimization_level' : 1,
+            'dtype': 'int8'
         },
         {
-            'type': 'example',
-            'parameters': {
-                'optimization_level' : 1,
-                'dtype': 'float32'
-            }
+            'optimization_level' : 1,
+            'dtype': 'float32'
         },
         {
-            'type': 'example',
-            'parameters': {
-                'optimization_level' : 2,
-                'dtype': 'int8'
-            }
+            'optimization_level' : 2,
+            'dtype': 'int8'
         },
         {
-            'type': 'example',
-            'parameters': {
-                'optimization_level' : 2,
-                'dtype': 'float32'
-            }
-        }
+            'optimization_level' : 2,
+            'dtype': 'float32'
+        },
     ]
     ```
     """
     return [
-        {
-            "type": block["type"],
-            "parameters": dict(zip(block["parameters"].keys(), p)),
-        }
-        for p in product(*block["parameters"].values())
+        dict(zip(parameters.keys(), p)) for p in product(*parameters.values())
     ]
 
 
@@ -144,45 +135,49 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     return list(chain(*res))
 
 
-def grid_search(json_cfg: Dict) -> List[Dict]:
+def grid_search(
+    config: KenningBlockConfigDict, blocks_to_optimize: List[ConfigKey]
+) -> List[KenningBlockConfigDict]:
     """
-    Creates all possible pipeline configurations based on input `json_cfg`.
-    For every type of block it creates a list of parametrized blocks
-    of this type that can be used to run a pipeline.
-    Then for all of the generated blocks cartesian product is computed.
+    Creates all possible pipeline configurations based on the passed standard
+    config dict. For every type of block it creates a list of parametrized
+    blocks of this type that can be used to run a pipeline. Then for all of the
+    generated blocks cartesian product is computed.
 
     Parameters
     ----------
-    json_cfg : Dict
+    config: KenningBlockConfigDict
         Configuration for the grid search optimization.
+    blocks_to_optimize: List[ConfigKey]
+        List of the block types that are to be optimized.
 
     Returns
     -------
-    List[Dict]
-        List of pipeline configurations.
+    List[KenningBlockConfigDict]
+        List of pipeline configurations (in the form of standard config dicts).
 
     Examples
     --------
     An example of an optimizable runtime block
     ```python
     "runtime":
-    [
-        {
-            "type": "kenning.runtimes.tvm.TVMRuntime",
+    {
+        "TVMRuntime": {
             "parameters":
             {
                 "save_model_path": ["./build/compiled_model.tar"]
-            }
+            },
+            "direct_extra_scenario_arguments": {},
         },
-        {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "TFLiteRuntime": {
             "parameters":
             {
                 "save_model_path": ["./build/compiled_model.tflite"],
                 "num_threads": [2, 4]
-            }
+            },
+            "direct_extra_scenario_arguments": {},
         }
-    ]
+    }
     ```
     will yield a list of valid runtime blocks that can be used.
     Those are valid runtime blocks and every one of them can be used
@@ -191,26 +186,32 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     "runtime":
     [
         {
-            "type": "kenning.runtimes.tvm.TVMRuntime",
-            "parameters":
-            {
-                "save_model_path": "./build/compiled_model.tar"
+            "TVMRuntime": {
+                "parameters":
+                {
+                    "save_model_path": "./build/compiled_model.tar"
+                },
+                "direct_extra_scenario_arguments": {},
+            },
+        },
+        {
+            "TFLiteRuntime": {
+                "parameters":
+                {
+                    "save_model_path": "./build/compiled_model.tflite",
+                    "num_threads": 2
+                },
+                "direct_extra_scenario_arguments": {},
             }
         },
         {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
-            "parameters":
-            {
-                "save_model_path": "./build/compiled_model.tflite",
-                "num_threads": 2
-            }
-        },
-        {
-            "type": "kenning.runtimes.tflite.TFLiteRuntime",
-            "parameters":
-            {
-                "save_model_path": "./build/compiled_model.tflite",
-                "num_threads": 4
+            "TFLiteRuntime": {
+                "parameters":
+                {
+                    "save_model_path": "./build/compiled_model.tflite",
+                    "num_threads": 4
+                },
+                "direct_extra_scenario_arguments": {},
             }
         }
     ]
@@ -219,114 +220,159 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     Then a cartesian product is computed that returns all possible
     pipeline configurations.
     """
-    optimization_parameters = json_cfg["optimization_parameters"]
-    blocks_to_optimize = set(optimization_parameters["optimizable"])
+    block_configurations = config[BLOCK_CONFIGURATIONS_KEY]
+
     all_blocks = {
-        "model_wrapper",
-        "dataset",
-        "optimizers",
-        "runtime",
-        "protocol",
+        ConfigKey.model_wrapper,
+        ConfigKey.dataset,
+        ConfigKey.optimizers,
+        ConfigKey.runtime,
+        ConfigKey.protocol,
     }
-    remaining_blocks = all_blocks & (set(json_cfg.keys()) - blocks_to_optimize)
+    remaining_blocks = all_blocks & (
+        set(block_configurations.keys()) - set(blocks_to_optimize)
+    )
 
     optimization_configuration = {}
 
-    for block in remaining_blocks:
-        optimization_configuration[block] = [json_cfg[block]]
+    for block_type in remaining_blocks:
+        optimization_configuration[block_type] = [
+            block_configurations[block_type]
+        ]
 
     # Grid search
     # Creating all possible block configuration for every block type
-    for block in blocks_to_optimize:
-        block_parameters = [get_block_product(b) for b in json_cfg[block]]
+    for block_type in blocks_to_optimize:
+        variants = []
+        for name, block_config in block_configurations[block_type].items():
+            parameter_variants = get_block_product(
+                block_config[BLOCK_CONFIG_PARAMETERS_KEY]
+            )
+            for parameter_variant in parameter_variants:
+                variants.append(
+                    {
+                        name: {
+                            BLOCK_CONFIG_PARAMETERS_KEY: parameter_variant,
+                            BLOCK_DIRECT_ARGUMENTS_KEY: block_config[
+                                BLOCK_DIRECT_ARGUMENTS_KEY
+                            ],
+                        }
+                    }
+                )
 
         # We need to treat optimizers differently, as those can be chained.
         # For other blocks we have to pick only one.
-        if block == "optimizers":
-            optimizers_blocks = [list(p) for p in product(*block_parameters)]
+        if block_type == ConfigKey.optimizers:
+            blocks = defaultdict(list)
+            for variant in variants:
+                blocks[list(variant.keys())[0]].append(variant)
 
-            # We also need to take every mask of the list of optimizers.
-            # For example if we have optimizers A and B then we could use
-            # only A, only B, both A and B or neither in the final pipeline.
-            final_parameters = []
-            for bp in optimizers_blocks:
-                final_parameters.append(ordered_powerset(bp))
-            final_parameters = list(chain(*final_parameters))
+            subsets = ordered_powerset(list(blocks.keys()))
+            chains = [
+                permutation
+                for subset in subsets
+                for permutation in permutations(subset)
+            ]
 
-            # Get rid of the duplicates
-            # For great numbers of pipelines this may be very expensive.
-            block_parameters = []
-            for p in final_parameters:
-                if p not in block_parameters:
-                    block_parameters.append(p)
-        else:
-            block_parameters = list(chain(*block_parameters))
-
-        optimization_configuration[block] = block_parameters
+            final_variants = []
+            for single_chain in chains:
+                chain_variants = []
+                for element in single_chain:
+                    if len(chain_variants) == 0:
+                        chain_variants = blocks[element]
+                        continue
+                    new_chain_variants = [
+                        copy.deepcopy(chain_variant) | block
+                        for block in blocks[element]
+                        for chain_variant in chain_variants
+                    ]
+                    chain_variants = new_chain_variants
+                final_variants.extend(chain_variants)
+            variants = final_variants
+        optimization_configuration[block_type] = variants
 
     # Create all possible pipelines from all possible blocks configurations
     # by taking a cartesian product.
     # TODO: For bigger optimizations problems consider using yield.
-    pipelines = [
-        dict(zip(optimization_configuration.keys(), pipeline))
-        for pipeline in product(*optimization_configuration.values())
-    ]
+    pipelines = []
+    for pipeline in product(*optimization_configuration.values()):
+        pipeline_config = copy.deepcopy(config)
+        pipeline_config[BLOCK_CONFIGURATIONS_KEY] = dict(
+            zip(optimization_configuration.keys(), pipeline)
+        )
+        pipelines.append(pipeline_config)
     return pipelines
 
 
-def replace_paths(pipeline: Dict, id: int) -> Dict:
+def replace_paths(
+    pipeline: KenningBlockConfigDict, pipeline_id: int
+) -> KenningBlockConfigDict:
     """
-    Copies given `pipeline` and puts `id`_ in front of `compiled_model_path`
-    parameter in every optimizer and in front of `save_model_path` parameter
-    in runtime.
+    Copies given `pipeline` and puts `pipeline_id`_ in front of
+    `compiled_model_path` parameter in every optimizer and in front of
+    `save_model_path` parameter in runtime.
 
     It is used when running pipelines so that every pipeline gets its own
     unique namespace. Thanks to that collision names are avoided.
 
     Parameters
     ----------
-    pipeline : Dict
+    pipeline : KenningBlockConfigDict
         Pipeline that gets copied and its parameters are replaced.
-    id : int
+    pipeline_id : int
         Value that is used to create a prefix for the path.
 
     Returns
     -------
-    Dict
+    KenningBlockConfigDict
         Pipeline with `compiled_model_path` and `save_model_path` parameters
         changed.
     """
     pipeline = copy.deepcopy(pipeline)
-    for optimizer in pipeline["optimizers"]:
-        path = Path(optimizer["parameters"]["compiled_model_path"])
-        new_path = path.with_stem(f"{str(id)}_{path.stem}")
-        optimizer["parameters"]["compiled_model_path"] = str(new_path)
+    block_configurations = pipeline[BLOCK_CONFIGURATIONS_KEY]
+    for optimizer in block_configurations[ConfigKey.optimizers].values():
+        path = Path(
+            optimizer[BLOCK_CONFIG_PARAMETERS_KEY]["compiled_model_path"]
+        )
+        new_path = path.with_stem(f"{str(pipeline_id)}_{path.stem}")
+        optimizer[BLOCK_CONFIG_PARAMETERS_KEY]["compiled_model_path"] = str(
+            new_path
+        )
 
-    path = Path(pipeline["runtime"]["parameters"]["save_model_path"])
-    new_path = path.with_stem(f"{str(id)}_{path.stem}")
-    pipeline["runtime"]["parameters"]["save_model_path"] = str(new_path)
+    path = Path(
+        list(block_configurations[ConfigKey.runtime].values())[0][
+            BLOCK_CONFIG_PARAMETERS_KEY
+        ]["save_model_path"]
+    )
+    new_path = path.with_stem(f"{str(pipeline_id)}_{path.stem}")
+    list(block_configurations[ConfigKey.runtime].values())[0][
+        BLOCK_CONFIG_PARAMETERS_KEY
+    ]["save_model_path"] = str(new_path)
     return pipeline
 
 
-def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
+def filter_invalid_pipelines(
+    pipelines: List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]
+) -> List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]:
     """
     Filter pipelines with incompatible blocks.
 
     Parameters
     ----------
-    pipelines : List[Dict]
-        List of pipelines configs.
+    pipelines : List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]
+        List of pipelines.
 
     Returns
     -------
-    List[Dict]
+    List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]
         Valid pipelines from provided pipelines.
     """
     filtered_pipelines = []
 
     for pipeline in pipelines:
         try:
-            PipelineRunner.from_json_cfg(pipeline, assert_integrity=True)
+            _, __, objs = pipeline
+            PipelineRunner.from_objs_dict(objs, assert_integrity=True)
             filtered_pipelines.append(pipeline)
         except ValueError:
             pass
@@ -388,46 +434,67 @@ class OptimizationRunner(CommandTemplate):
         optimization_strategy = optimization_parameters["strategy"]
         policy = optimization_parameters["policy"]
         metric = optimization_parameters["metric"]
+        blocks_to_optimize = [
+            getattr(ConfigKey, block_type)
+            for block_type in optimization_parameters["optimizable"]
+        ]
+
+        del json_cfg["optimization_parameters"]
+        config = yaml_or_json_to_config_dict(json_cfg)
+
+        config = set_block_direct_argument(
+            "from_file", True, config, ConfigKey.model_wrapper
+        )
 
         if optimization_strategy == "grid_search":
-            pipelines = grid_search(json_cfg)
+            pipeline_configs = grid_search(config, blocks_to_optimize)
         else:
             raise ValueError(
                 f"Invalid optimization strategy: {optimization_strategy}"
             )
 
+        pipelines = [
+            (
+                idx,
+                config,
+                objs_from_full_dict_config(replace_paths(config, idx)),
+            )
+            for idx, config in enumerate(pipeline_configs)
+        ]
+
+        KLogger.info(f"Constructed {len(pipelines)} pipelines.")
+
+        KLogger.info("Filtering broken pipelines...")
         pipelines = filter_invalid_pipelines(pipelines)
 
         pipelines_num = len(pipelines)
         pipelines_scores = []
+        KLogger.info(f"Testing {pipelines_num} pipelines.")
 
         if args.generate_scenarios is not None:
             Path(args.generate_scenarios).mkdir(parents=True, exist_ok=True)
 
-            for pipeline_idx, pipeline in enumerate(pipelines):
-                pipeline = replace_paths(pipeline, pipeline_idx)
+            for pipeline_idx, pipeline_config, pipeline_objs in pipelines:
                 with open(
                     args.generate_scenarios / f"scenario_{pipeline_idx}.json",
                     "w",
                 ) as f:
-                    json.dump(pipeline, f, indent=4)
+                    json.dump(pipeline_config, f, indent=4)
             return
 
         KLogger.info(f"Finding {policy} for {metric}")
-        for pipeline_idx, pipeline in enumerate(pipelines):
+        for pipeline in pipelines:
+            pipeline_idx, pipeline_config, pipeline_objs = pipeline
             module_error = None
-            pipeline = replace_paths(pipeline, pipeline_idx)
             MeasurementsCollector.clear()
             try:
-                KLogger.info(
-                    f"Running pipeline {pipeline_idx + 1} / {pipelines_num}"
-                )
-                KLogger.info(f"Configuration {pformat(pipeline)}")
+                KLogger.info(f"Running pipeline {pipeline_idx + 1}")
+                KLogger.info(f"Configuration {pformat(pipeline_config)}")
                 measurements_path = args.output.with_stem(
                     f"{args.output.stem}_{pipeline_idx}"
                 )
 
-                pipeline_runner = PipelineRunner.from_json_cfg(pipeline)
+                pipeline_runner = PipelineRunner.from_objs_dict(pipeline_objs)
                 pipeline_runner.run(
                     output=Path(measurements_path), verbosity=args.verbosity
                 )
@@ -447,7 +514,10 @@ class OptimizationRunner(CommandTemplate):
 
                 try:
                     pipelines_scores.append(
-                        {"pipeline": pipeline, "metrics": computed_metrics}
+                        {
+                            "pipeline": pipeline_config,
+                            "metrics": computed_metrics,
+                        }
                     )
                 except KeyError:
                     KLogger.error(f"{metric} not found in the metrics")

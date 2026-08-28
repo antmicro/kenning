@@ -212,7 +212,19 @@ class PipelineRunner(object):
         return cls.from_objs_dict(objs, configuration_path=cfg_path)
 
     @classmethod
-    def from_objs_dict(cls, objs: Dict[ConfigKey, Any], **kwargs):
+    def from_objs_dict(
+        cls,
+        objs: Dict[ConfigKey, Any],
+        assert_integrity: bool = True,
+        **kwargs,
+    ):
+        if assert_integrity:
+            cls.assert_io_formats(
+                objs.get(ConfigKey.model_wrapper),
+                objs.get(ConfigKey.optimizers),
+                objs.get(ConfigKey.runtime),
+            )
+
         return cls(
             **{key.name: value for key, value in objs.items()}, **kwargs
         )

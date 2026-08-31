@@ -10,8 +10,9 @@ and mapping to classes extending CommandTemplate.
 """
 
 import argparse
-from typing import Dict, Generator, List, Tuple, Type, Union
+from typing import Dict, Generator, List, Tuple, Type, TypeAlias, Union
 
+from kenning import scenarios
 from kenning.cli.command_template import (
     AUTOML,
     AVAILABLE_PLATFORMS,
@@ -146,16 +147,19 @@ SUBCOMMANDS = "Subcommands"
 # Destination of subcommands
 SUB_DEST_FORM = "__seq_{}"
 
+CommandGrammar: TypeAlias = Union[
+    str, None, List["CommandGrammar"], Tuple["CommandGrammar", ...]
+]
 
 def get_all_sequences(
-    sequence: Union[List, Tuple]
-) -> Generator[Tuple[str], None, None]:
+    sequence: CommandGrammar
+) -> Generator[Tuple[str, ...], None, None]:
     """
     Yields possible sequences of commands.
 
     Parameters
     ----------
-    sequence : Union[List, Tuple]
+    sequence : CommandGrammer
         Logical representation of sequenced commands.
         A list of lists and tuples where each leaf is a string.
         Every List is treated as an logical AND between sequences of commands.
@@ -171,7 +175,7 @@ def get_all_sequences(
 
     Yields
     ------
-    Tuple[str]
+    Tuple[str, ...]
         Possible sequence of commands
     """  # noqa: E501
     if sequence is None:
@@ -194,22 +198,22 @@ def get_all_sequences(
 
 
 def create_subcommands(
-    names: Tuple[str],
-    subcommand_parsers: Dict[Tuple[str], argparse.ArgumentParser],
-    subcommand_groups: Dict[Tuple[str], argparse._SubParsersAction],
+    names: Tuple[str, ...],
+    subcommand_parsers: Dict[Tuple[str, ...], argparse.ArgumentParser],
+    subcommand_groups: Dict[Tuple[str, ...], argparse._SubParsersAction],
     number: int = 0,
     with_arguments: bool = False,
-) -> Dict[Tuple[str], argparse.ArgumentParser]:
+) -> Dict[Tuple[str, ...], argparse.ArgumentParser]:
     """
     Creates nested subcommands from list of names.
 
     Parameters
     ----------
-    names : Tuple[str]
+    names : Tuple[str, ...]
         Sequence of subcommands
-    subcommand_parsers : Dict[Tuple[str], argparse.ArgumentParser]
+    subcommand_parsers : Dict[Tuple[str, ...], argparse.ArgumentParser]
         Parsers created so far
-    subcommand_groups : Dict[Tuple[str], argparse._SubParsersAction]
+    subcommand_groups : Dict[Tuple[str, ...], argparse._SubParsersAction]
         Maps parsers created so far to objects which can create parsers.
     number : int
         Depth of subparser
@@ -316,12 +320,12 @@ def setup_base_parser(
         )
 
     for subcommand in BASIC_COMMANDS:
+        desc = MAP_COMMAND_TO_SCENARIO[subcommand].description
+        if not isinstance(desc, str):
+            desc = desc[subcommand]
         parsers[(subcommand,)] = subparsers.add_parser(
             subcommand,
-            help=MAP_COMMAND_TO_SCENARIO[subcommand]
-            .description.split(".")[0]
-            .strip("\n")
-            .replace("\n", " "),
+            help=desc.split(".")[0].strip("\n").replace("\n", " "),
             add_help=False,
         )
         if with_arguments:

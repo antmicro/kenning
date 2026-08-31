@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 from gettext import gettext
-from typing import List, Optional
+from typing import List, Optional, Sequence, Tuple
 
 from kenning.cli.formatter import Formatter
 
@@ -132,7 +132,21 @@ class Parser(argparse.ArgumentParser):
     help message and exiting the program.
     """
 
-    def parse_args(self, args=None, namespace=None):
+    def parse_known_args(
+        self,
+        args: Optional[Sequence[str]] = None,
+        namespace: Optional[argparse.Namespace] = None,
+    ) -> Tuple[argparse.Namespace, List[str]]:
+        # new: remember the tokens handed to this parser, so error() can
+        # look for the help flag in them instead of the global sys.argv
+        self._parsed_argv = list(args) if args is not None else sys.argv[1:]
+        return super().parse_known_args(args, namespace)
+
+    def parse_args(
+        self,
+        args: Optional[Sequence[str]] = None,
+        namespace: Optional[argparse.Namespace] = None,
+    ) -> argparse.Namespace:
         args, argv = self.parse_known_args(args, namespace)
         if argv:
             msg = gettext("unrecognized arguments: {}")
@@ -150,7 +164,10 @@ class Parser(argparse.ArgumentParser):
         # when help flag is present raise exception
         if early_exit:
             self.exit(0, error)
-        if any(help in sys.argv[1:] for help in HELP_FLAGS):
+        argv = getattr(self, "_parsed_argv", None)
+        if argv is None:
+            argv = sys.argv[1:]
+        if any(help in argv for help in HELP_FLAGS):
             raise ParserHelpException(self, message)
         if print_usage:
             self.print_usage(sys.stderr)

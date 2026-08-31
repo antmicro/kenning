@@ -7,19 +7,18 @@ Module with custom autocompletion class and configuration.
 """
 
 import argparse
-from pathlib import Path
 from typing import List
 
-import yaml
 from argcomplete.finders import CompletionFinder
 
+from kenning.cli.command_template import CommandTemplate
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
-    MAP_COMMAND_TO_SCENARIO,
     setup_base_parser,
 )
 from kenning.cli.parser import USED_SUBCOMMANDS
-from kenning.utils.class_loader import load_class, load_class_by_key
+from kenning.dispatcher.block_config import BLOCK_CONFIGURATIONS_KEY, ConfigKey
+from kenning.utils.class_loader import load_class
 
 # Subcommands without help
 ALL_SUBCOMMANDS = AVAILABLE_COMMANDS[:-2]
@@ -41,7 +40,6 @@ class CustomCompletion(CompletionFinder):
     Extends default argcomplete class with:
 
     * Generating completions for dynamically specified class
-    * Mutually exclusive groups -- '--json-cfg' and '--*-cls'
     * Completing subcommands only before other flags
     * Preventing flags duplication
     """
@@ -66,36 +64,20 @@ class CustomCompletion(CompletionFinder):
 
         # Create parsers for used classes
         parsers = []
-        cfg = None
-        cfg_path = getattr(args, "json_cfg", None)
-        if cfg_path and Path(cfg_path).is_file():
-            with open(cfg_path) as f:
-                try:
-                    cfg = yaml.safe_load(f)
-                except yaml.YAMLError:
-                    pass
 
-            # Autocomplete only those that can be overridden
-            overridable_classes = []
-            for subcommand in subcommands:
-                scenario = MAP_COMMAND_TO_SCENARIO[subcommand]
-                classes = scenario.get_overridable(subcommands)
-                overridable_classes.append(set(classes))
-            overridable_classes = set.union(*overridable_classes)
-
-        if cfg:
-            # Load the config and inspect classes
-            for key in overridable_classes:
-                _class = None
+        config = CommandTemplate.parse_configuration(
+            args, [], [key for key in ConfigKey]
+        )
+        # Load the config and inspect classes
+        for block_type in config[BLOCK_CONFIGURATIONS_KEY].values():
+            for block in block_type.keys():
                 try:
-                    _class = load_class_by_key(cfg, key)
-                except Exception:
-                    pass
-                if _class:
+                    _class = load_class(block)
                     parsers.append(
                         _class.form_argparse(args, override_only=True)[0]
                     )
-
+                except Exception:
+                    pass
         if not parsers:
             for name in CLASS_FLAG_NAMES:
                 if getattr(args, name, None):
@@ -134,25 +116,6 @@ class CustomCompletion(CompletionFinder):
         completions = super()._get_completions(
             comp_words, cword_prefix, cword_prequote, last_wordbreak_pos
         )
-
-        # JSON and flag config are mutually exclusive
-        if "--json-cfg" in comp_words or "--cfg" in comp_words:
-            completions = [
-                arg
-                for arg in completions
-                if not (arg.startswith("--") and arg.endswith("-cls"))
-            ]
-            if "--json-cfg" in completions:
-                completions.remove("--json-cfg")
-            if "--cfg" in completions:
-                completions.remove("--cfg")
-        elif any(
-            arg.startswith("--") and arg.endswith("-cls") for arg in comp_words
-        ):
-            if "--json-cfg" in completions:
-                completions.remove("--json-cfg")
-            if "--cfg" in completions:
-                completions.remove("--cfg")
 
         # Do not complete subcommands after flags
         # Do not duplicate already used flags

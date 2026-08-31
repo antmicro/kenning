@@ -331,10 +331,6 @@ class CommandTemplate(ABC):
         except ParserHelpException as ex:
             ex.print(parser)
 
-    @staticmethod
-    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
-        return []
-
     @classmethod
     def parse_configuration(
         cls,

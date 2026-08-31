@@ -158,7 +158,7 @@ class OnnxConverter(ModelConverter):
         )
         model.export(str(converted_path))
         converter = tf.lite.TFLiteConverter.from_saved_model(
-            str(converted_path)
+            str(converted_path),
         )
         return converter
 

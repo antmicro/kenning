@@ -375,6 +375,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
+        import tensorflow as tf
         import tensorflow_model_optimization as tfmot
 
         if io_spec is None:
@@ -446,6 +447,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 is_model = isinstance(converter, tflite.Model.Model)
 
         if not is_model:
+            self._configure_converter(converter)
+
             if self.dataset is not None and self.target != "default":
 
                 def generator():
@@ -598,3 +601,40 @@ class TFLiteCompiler(TensorFlowOptimizer):
     @classmethod
     def get_framework_version(cls) -> str:
         return tf.__version__
+
+    def _configure_converter(
+        self, converter: "tf.lite.TFLiteConverter"
+    ) -> None:
+        """
+        Takes a tf.lite.TFLiteConverter instance and configures it using
+        currently set conversion and quantization parameters.
+
+        Parameters
+        ----------
+        converter: tf.lite.TFLiteConverter
+            The converter instance.
+        """
+        import tensorflow as tf
+
+        if self.target in ["int8", "edgetpu"]:
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]
+            if self.inferenceinputtype in [
+                "int8",
+                "uint8",
+            ] and self.inferenceinputtype in ["int8", "uint8"]:
+                converter.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS_INT8
+                ]
+        elif self.target == "float16":
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]
+            converter.target_spec.supported_types = [tf.float16]
+        else:
+            converter.target_spec.supported_ops = [
+                tf.lite.OpsSet.TFLITE_BUILTINS
+            ]
+        if self.use_tf_select_ops:
+            converter.target_spec.supported_ops.append(
+                tf.lite.OpsSet.SELECT_TF_OPS
+            )
+        converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)
+        converter.inference_output_type = tf.as_dtype(self.inferenceoutputtype)

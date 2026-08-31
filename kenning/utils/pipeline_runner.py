@@ -16,6 +16,7 @@ from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
+    ConfigurationError,
     KenningOptimizerError,
     NotSupportedError,
 )
@@ -892,15 +893,15 @@ class PipelineRunner(object):
             if not converter_registry.find_all_paths(
                 input_format, output_format
             ):
-                raise ValueError(
+                raise ConfigurationError(
                     f"No available conversion path for {input_format} "
                     f"and {output_format}."
                 )
 
-        if chain[-1] == runtime:
-            KLogger.warning(
+        if runtime and chain[-1].get_framework() not in runtime.inputtypes:
+            raise ConfigurationError(
                 f"Runtime {runtime} has no matching format with the "
-                f"previous block: {chain[-1]}\nModel may not run "
+                f"previous block: {chain[-1]}\nModel will not run "
                 "correctly"
             )
 

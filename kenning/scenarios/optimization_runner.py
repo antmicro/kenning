@@ -33,6 +33,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
     generate_command_type,
 )
+from kenning.core.exceptions import ConfigurationError
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.metrics import (
     compute_classification_metrics,
@@ -374,7 +375,7 @@ def filter_invalid_pipelines(
             _, __, objs = pipeline
             PipelineRunner.from_objs_dict(objs, assert_integrity=True)
             filtered_pipelines.append(pipeline)
-        except ValueError:
+        except ConfigurationError:
             pass
 
     return filtered_pipelines

@@ -791,7 +791,8 @@ class ResourceURI(Path):
     Handle access to resource used in Kenning.
     """
 
-    _flavour = type(Path())._flavour
+    if sys.version_info < (3, 12):
+        _flavour = type(Path())._flavour
     _uri: Optional[ParseResult]
     _origin: str
     _raw_paths: list[str]

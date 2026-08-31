@@ -9,6 +9,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
+from kenning.optimizers.model_inserter import ModelInserter
 from kenning.utils.class_loader import get_all_subclasses
 
 
@@ -21,7 +22,7 @@ def create_mocks(mocker, module_name, core_cls):
         except AttributeError:
             static_io_spec_getter = None
         framework_name = None
-        if hasattr(cls, "get_framework"):
+        if hasattr(cls, "get_framework") and cls is not ModelInserter:
             framework_name = cls.get_framework()
         mock = mocker.patch(cls_name)
         mock.__name__ = cls.__name__

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -90,15 +90,9 @@ class ModelInserter(Optimizer):
     def set_input_type(self, inputtype: str):
         self.inputtype = inputtype
 
-    @classmethod
-    def get_framework(cls) -> str:
-        return "kenning"
+    def get_framework(self) -> str:
+        return self.model_framework
 
     @classmethod
     def get_framework_version(cls) -> str:
-        import kenning
-
-        if hasattr(kenning, "__version__"):
-            return kenning.__version__
-        else:
-            return "dev"
+        return "unknown"

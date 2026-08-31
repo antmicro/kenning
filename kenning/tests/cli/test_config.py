@@ -17,6 +17,7 @@ from kenning.cli.command_template import (
     TRAIN,
 )
 from kenning.cli.config import (
+    BASIC_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
     SEQUENCED_COMMANDS,
     SUB_DEST_FORM,
@@ -25,6 +26,7 @@ from kenning.cli.config import (
     _sequence,
     create_subcommands,
     get_all_sequences,
+    setup_base_parser,
 )
 from kenning.core.exceptions import ConfigurationError
 
@@ -134,6 +136,7 @@ class TestCreateSubcommands:
 
         assert create_subcommands((), parsers, groups) == {}
         assert parsers == {}
+        assert set(groups) == {()}
 
     def test_only_new_prefixes_are_returned(self) -> None:
         _, parsers, groups = self.empty_registries()
@@ -154,3 +157,55 @@ class TestCreateSubcommands:
         parsers.update(create_subcommands((OPTIMIZE, REPORT), parsers, groups))
 
         assert groups[(OPTIMIZE,)] is created
+
+
+class TestSetupBaseParser:
+    def test_every_sequence_has_a_parser(self) -> None:
+        _, parsers = setup_base_parser()
+
+        sequences = set(get_all_sequences(SEQUENCED_COMMANDS)) - {()}
+        basic_commands = {(command,) for command in BASIC_COMMANDS}
+
+        assert set(parsers) == sequences | basic_commands
+
+    def test_basic_commands_are_added_next_to_the_grammar(self) -> None:
+        _, parsers = setup_base_parser()
+
+        for command in BASIC_COMMANDS:
+            assert (command,) in parsers
+
+    def test_unknown_arguments_are_left_over(self) -> None:
+        parser, _ = setup_base_parser()
+
+        args, rest = parser.parse_known_args([OPTIMIZE, "--not-a-flag"])
+
+        assert getattr(args, SUB_DEST_FORM.format(0)) == OPTIMIZE
+        assert "--not-a-flag" in rest
+
+    def test_arguments_are_configured_on_demand(self) -> None:
+        _, bare = setup_base_parser()
+        _, configured = setup_base_parser(with_arguments=True)
+
+        assert "--json-cfg" not in bare[(OPTIMIZE,)]._option_string_actions
+        assert "--json-cfg" in configured[(OPTIMIZE,)]._option_string_actions
+
+    def test_chained_parser_gathers_arguments_of_every_command(self) -> None:
+        parser, parsers = setup_base_parser(with_arguments=True)
+
+        assert (
+            "--compiler-cls"
+            in parsers[(OPTIMIZE, TEST)]._option_string_actions
+        )
+        assert (
+            "--evaluate-unoptimized"
+            in parsers[(OPTIMIZE, TEST)]._option_string_actions
+        )
+
+        args, rest = parser.parse_known_args(
+            [OPTIMIZE, TEST, "--evaluate-unoptimized", "--not-a-flag"]
+        )
+
+        assert getattr(args, SUB_DEST_FORM.format(0)) == OPTIMIZE
+        assert getattr(args, SUB_DEST_FORM.format(1)) == TEST
+        assert args.evaluate_unoptimized is True
+        assert rest == ["--not-a-flag"]

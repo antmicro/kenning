@@ -59,7 +59,9 @@ class LLM(ModelWrapper, ABC):
         user_prompt_config: Dict,
         default_prompt_config: Dict = {},
     ) -> str:
-        prompt_config = default_prompt_config | user_prompt_config
+        prompt_config = default_prompt_config | (
+            user_prompt_config if isinstance(user_prompt_config, dict) else {}
+        )
         return template.render(prompt_config)
 
     def message_to_instruction(
@@ -92,7 +94,7 @@ class LLM(ModelWrapper, ABC):
         else:
             template = self.user_prompt_template
         return LLM._template_to_str(
-            template=template, user_prompt_config=prompt_config
+            template=Template(template), user_prompt_config=prompt_config
         )
 
     def load_model(self, model_path: PathOrURI):
@@ -139,7 +141,7 @@ class LLM(ModelWrapper, ABC):
             Input data as byte stream.
         """
         conversations = []
-        for message in inputdata:
+        for message in inputdata[0]:
             conversations.append(f"{len(message)} {message}")
 
         data = bytes()
@@ -164,7 +166,7 @@ class LLM(ModelWrapper, ABC):
         """
         conversations = []
         for message in X[0]:
-            prompt_config = {"user_message", message}
+            prompt_config = {"user_message": message}
             if hasattr(self.dataset, "system_message"):
                 prompt_config["system_message"] = self.dataset.system_message
             message = self.message_to_instruction(prompt_config)

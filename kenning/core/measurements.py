@@ -542,7 +542,9 @@ class SystemStatsCollector(Thread):
                 break
 
         if kenning_gpu_index == -1:
-            KLogger.debug("No Kenning process in GPU")
+            if not getattr(self, "_logged_no_gpu_in_process", False):
+                KLogger.debug("No Kenning process in GPU")
+                self._logged_no_gpu_in_process = True
             return None
 
         try:

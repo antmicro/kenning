@@ -1,0 +1,27 @@
+dataset:
+  type: kenning.datasets.cnn_dailymail.CNNDailymailDataset
+  parameters:
+    dataset_root: ./output/cnn_dailymail
+    batch_size: 512
+
+model_wrapper:
+  type: kenning.modelwrappers.llm.mistral.MistralInstruct
+  parameters:
+    model_path: hf://ministral/Ministral-3b-instruct
+optimizers:
+  - type: kenning.optimizers.awq.GPTQOptimizer
+    parameters:
+      compiled_model_path: ./output/ministral-3b-gptq-4bit
+      target_precision: 4
+      batch_size: 1
+      seqlen: 16
+      calibration_samples: 8
+      symmetric: true
+      group_size: 64
+runtime:
+  type: kenning.runtimes.vllm.VLLMRuntime
+  parameters:
+    save_model_path: ./output/ministral-3b-gptq-4bit
+    max_tokens: 64
+    batch_size: 512
+    max_model_len: 64

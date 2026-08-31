@@ -240,7 +240,7 @@ llm = [
     "peft==0.10.0",
     "kenning[torch]",
     "safetensors",
-    "vllm==0.27.1",
+    "vllm==0.28.0",
     "gptqmodel>=7.3.2",
     "huggingface_hub",
 ]

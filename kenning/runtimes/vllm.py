@@ -292,7 +292,7 @@ class VLLMRuntime(Runtime):
             max_model_len=self.max_model_len,
         )
 
-    def load_input(self, input_data: List[List[List[str]]]) -> bool:
+    def load_input(self, input_data: List[List[str]]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data[0])}")
         if self.llm is None or self.sampling_params is None:
             raise KLogger.error_prepare_exception(
@@ -325,7 +325,7 @@ class VLLMRuntime(Runtime):
             prompt = prompts[0 : len(prompt_length) + 1 + int(prompt_length)]
             input_prompts.append(prompt)
             prompts = prompts[(len(prompt_length) + 1 + int(prompt_length)) :]
-        return self.load_input([[input_prompts]])
+        return self.load_input([input_prompts])
 
     def run(self):
         if self.llm is None or self.sampling_params is None:
@@ -338,9 +338,31 @@ class VLLMRuntime(Runtime):
                 "Load input data before running inference",
                 InputNotPreparedError,
             )
+
+        tokenizer = self.llm.get_tokenizer()
+        max_model_len = self.llm.llm_engine.model_config.max_model_len
+        max_tokens = self.sampling_params.max_tokens or 0
+
+        if max_tokens >= max_model_len:
+            max_tokens = max(1, max_model_len - 1)
+            self.sampling_params.max_tokens = max_tokens
+
+        max_prompt_len = max_model_len - max_tokens
+
+        truncated_prompts = []
+        for prompt in self.input_prompts:
+            tokens = tokenizer.encode(prompt)
+            if len(tokens) > max_prompt_len:
+                truncated_prompts.append(
+                    tokenizer.decode(tokens[:max_prompt_len])
+                )
+            else:
+                truncated_prompts.append(prompt)
+
         llm_outputs = self.llm.generate(
-            self.input_prompts, self.sampling_params, use_tqdm=False
+            truncated_prompts, self.sampling_params, use_tqdm=False
         )
+
         self.outputs = []
 
         for output in llm_outputs:

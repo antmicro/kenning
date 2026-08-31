@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple
+import argparse
+from typing import Dict, List, Tuple
 
 import pytest
 
@@ -18,11 +19,14 @@ from kenning.cli.command_template import (
 from kenning.cli.config import (
     MAP_COMMAND_TO_SCENARIO,
     SEQUENCED_COMMANDS,
+    SUB_DEST_FORM,
     _either,
     _optional,
     _sequence,
+    create_subcommands,
     get_all_sequences,
 )
+from kenning.core.exceptions import ConfigurationError
 
 
 class TestGetAllSequences:
@@ -106,3 +110,47 @@ class TestGetAllSequences:
             assert isinstance(sequence, tuple)
             for command in sequence:
                 assert command in MAP_COMMAND_TO_SCENARIO
+
+
+class TestCreateSubcommands:
+    @staticmethod
+    def empty_registries() -> (
+        Tuple[
+            argparse.ArgumentParser,
+            Dict[Tuple[str, ...], argparse.ArgumentParser],
+            Dict[Tuple[str, ...], argparse._SubParsersAction],
+        ]
+    ):
+        root = argparse.ArgumentParser(prog="kenning", add_help=False)
+        groups = {(): root.add_subparsers(dest=SUB_DEST_FORM.format(0))}
+        return root, {}, groups
+
+    def test_missing_root_group_raises(self) -> None:
+        with pytest.raises(ConfigurationError):
+            create_subcommands((OPTIMIZE,), {}, {})
+
+    def test_empty_sequence_creates_nothing(self) -> None:
+        _, parsers, groups = self.empty_registries()
+
+        assert create_subcommands((), parsers, groups) == {}
+        assert parsers == {}
+
+    def test_only_new_prefixes_are_returned(self) -> None:
+        _, parsers, groups = self.empty_registries()
+
+        first = create_subcommands((OPTIMIZE,), parsers, groups)
+        parsers.update(first)
+        second = create_subcommands((OPTIMIZE, TEST), parsers, groups)
+        parsers.update(second)
+
+        assert set(first) == {(OPTIMIZE,)}
+        assert set(second) == {(OPTIMIZE, TEST)}
+
+    def test_subparsers_group_is_created_once_per_prefix(self) -> None:
+        _, parsers, groups = self.empty_registries()
+
+        parsers.update(create_subcommands((OPTIMIZE, TEST), parsers, groups))
+        created = groups[(OPTIMIZE,)]
+        parsers.update(create_subcommands((OPTIMIZE, REPORT), parsers, groups))
+
+        assert groups[(OPTIMIZE,)] is created

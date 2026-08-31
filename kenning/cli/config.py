@@ -12,7 +12,6 @@ and mapping to classes extending CommandTemplate.
 import argparse
 from typing import Dict, Generator, List, Tuple, Type, TypeAlias, Union
 
-from kenning import scenarios
 from kenning.cli.command_template import (
     AUTOML,
     AVAILABLE_PLATFORMS,
@@ -151,6 +150,7 @@ CommandGrammar: TypeAlias = Union[
     str, None, List["CommandGrammar"], Tuple["CommandGrammar", ...]
 ]
 
+
 def get_all_sequences(
     sequence: CommandGrammar
 ) -> Generator[Tuple[str, ...], None, None]:
@@ -159,7 +159,7 @@ def get_all_sequences(
 
     Parameters
     ----------
-    sequence : CommandGrammer
+    sequence : CommandGrammar
         Logical representation of sequenced commands.
         A list of lists and tuples where each leaf is a string.
         Every List is treated as an logical AND between sequences of commands.
@@ -222,7 +222,7 @@ def create_subcommands(
 
     Returns
     -------
-    Dict[Tuple[str], argparse.ArgumentParser]
+    Dict[Tuple[str, ...], argparse.ArgumentParser]
         Dictionary of parsers associated with sequence of subcommands
 
     Raises
@@ -261,7 +261,9 @@ def create_subcommands(
         if with_arguments:
             for n in names[: i + 1]:
                 parser, groups = MAP_COMMAND_TO_SCENARIO[n].configure_parser(
-                    types=[n], parser=parser
+                    types=[n],
+                    parser=parser,
+                    groups=groups,
                 )
 
         parsers[tuple(names[: i + 1])] = parser

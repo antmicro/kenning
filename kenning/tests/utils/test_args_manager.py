@@ -6,17 +6,14 @@ import argparse
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 from types import NoneType
-from typing import Dict, List, Tuple, Type, Union
+from typing import Dict, List, Tuple, Union
 
 import jsonschema
 import pytest
 
 from kenning.core.exceptions import ArgsManagerConvertError
-from kenning.runners.modelruntime_runner import ModelRuntimeRunner
-from kenning.runtimes.onnx import ONNXRuntime
 from kenning.utils.args_manager import (
     ArgumentsHandler,
-    get_parsed_args_dict,
     get_parsed_json_dict,
 )
 from kenning.utils.resource_manager import ResourceURI
@@ -224,82 +221,6 @@ class TestArgsManagerWrapper:
             dataset="dataset.json",
         )
     )
-
-    @pytest.mark.fast
-    @pytest.mark.usefixtures(
-        "mock_configuration_file_contents_modelruntime_runner"
-    )
-    @pytest.mark.parametrize(
-        "class_type,args,expected_result,expectation",
-        [
-            (
-                ONNXRuntime,
-                VALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME,
-                VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME,
-                does_not_raise(),
-            ),
-            (
-                ModelRuntimeRunner,
-                VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER,
-                VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER,
-                does_not_raise(),
-            ),
-            (
-                ONNXRuntime,
-                INVALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME_UNDEFINED_ARG_NAME,
-                VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME_DEFAULT_MODELPATH,
-                does_not_raise(),
-            ),
-            (
-                ModelRuntimeRunner,
-                INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME,
-                VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER,
-                pytest.raises(AssertionError),
-            ),
-        ],
-        ids=[
-            "valid_python_types",
-            "valid_object_type",
-            "invalid_python_types_undefined_arg",
-            "invalid_object_type_missing_required_value",
-        ],
-    )
-    def test_get_parsed_args_dict_and_check_schema_validity(
-        self,
-        tmp_path,
-        class_type: Type,
-        args: argparse.Namespace,
-        expected_result,
-        expectation,
-    ):
-        """
-        Tests the get_parsed_args_dict method.
-
-        Things being tested:
-        * If the dict is validated with the schema correctly
-        * If the returned parsed dict is correct, e.g. ArgManager should add
-        missing values, convert parameters to the correct types
-
-        This test also sets paths for the ModelRuntimeRunner, since the JSON
-        configuration files should exist
-        """
-        if (
-            args
-            == TestArgsManagerWrapper.VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER  # noqa: E501
-            or args
-            == TestArgsManagerWrapper.INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME  # noqa: E501
-        ):
-            args = argparse.Namespace(
-                runtime=tmp_path / "dir/" / args.runtime,
-                model_wrapper=tmp_path / "dir/" / args.model_wrapper,
-                dataset=tmp_path / "dir/" / args.dataset,
-            )
-
-        with expectation:
-            print("test")
-
-            parsed_args_dict = get_parsed_args_dict(class_type, args)
-            assert expected_result == parsed_args_dict
 
     @pytest.mark.parametrize(
         "value,type,desired_value, expectation",

@@ -18,10 +18,18 @@ from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.dispatcher.block_config import (
+    BLOCK_CONFIG_PARAMETERS_KEY,
+    BLOCK_CONFIGURATIONS_KEY,
+    BLOCK_DIRECT_ARGUMENTS_KEY,
+    UNAFFILIATED_PARAMETERS_KEY,
+    ConfigKey,
+)
 from kenning.platforms.zephyr import ZephyrPlatform as _ZephyrPlatform
 from kenning.runtimebuilders.zephyr import (
     ZephyrRuntimeBuilder as _ZephyrRuntimeBuilder,
 )
+from kenning.utils.class_loader import objs_from_full_dict_config
 from kenning.utils.pipeline_runner import (
     PipelineRunner,
 )
@@ -115,71 +123,49 @@ def runtime_builder_mock():
     return Mock(spec=RuntimeBuilder)
 
 
-TEST_EXAMPLE_VALID_CFG = {
-    "model_wrapper": {
-        "type": "MagicWandModelWrapper",
-        "parameters": {"model_path": "magic_wand.h5"},
-    },
-    "dataset": {
-        "type": "MagicWandDataset",
-        "parameters": {
-            "dataset_root": "build/MagicWandDataset",
-            "download_dataset": False,
+TEST_EXAMPLE_VALID_CONFIG = {
+    BLOCK_CONFIGURATIONS_KEY: {
+        ConfigKey.model_wrapper: {
+            "MagicWandModelWrapper": {
+                BLOCK_CONFIG_PARAMETERS_KEY: {"model_path": "magic_wand.h5"},
+                BLOCK_DIRECT_ARGUMENTS_KEY: {
+                    "from_file": True,
+                },
+            },
+        },
+        ConfigKey.dataset: {
+            "MagicWandDataset": {
+                BLOCK_CONFIG_PARAMETERS_KEY: {
+                    "dataset_root": "build/MagicWandDataset",
+                    "download_dataset": False,
+                },
+                BLOCK_DIRECT_ARGUMENTS_KEY: {},
+            },
+        },
+        ConfigKey.optimizers: {
+            "TFLiteCompiler": {
+                BLOCK_CONFIG_PARAMETERS_KEY: {
+                    "target": "default",
+                    "compiled_model_path": "build/fp32.tflite",
+                    "inference_input_type": "float32",
+                    "inference_output_type": "float32",
+                },
+                BLOCK_DIRECT_ARGUMENTS_KEY: {},
+            },
+        },
+        ConfigKey.runtime: {
+            "TFLiteRuntime": {
+                BLOCK_CONFIG_PARAMETERS_KEY: {
+                    "save_model_path": "build/fp32.tflite"
+                },
+                BLOCK_DIRECT_ARGUMENTS_KEY: {},
+            },
         },
     },
-    "optimizers": [
-        {
-            "type": "TFLiteCompiler",
-            "parameters": {
-                "target": "default",
-                "compiled_model_path": "build/fp32.tflite",
-                "inference_input_type": "float32",
-                "inference_output_type": "float32",
-            },
-        }
-    ],
-    "runtime": {
-        "type": "TFLiteRuntime",
-        "parameters": {"save_model_path": "build/fp32.tflite"},
-    },
+    UNAFFILIATED_PARAMETERS_KEY: {},
 }
-TEST_EXAMPLE_INVALID_CFG = {
-    "model_wrapper": {
-        "type": "MagicWandModelWrapper",
-        "parameters": {"model_path": "magic_wand.h5"},
-    },
-    "dataset": {
-        "type": "MagicWandDataset",
-        "parameters": {
-            "dataset_root": "build/MagicWandDataset",
-            "download_dataset": False,
-        },
-    },
-    "optimizers": [
-        {
-            "type": "TVMCompiler",
-            "parameters": {
-                "target": "llvm -mcpu=core-avx2",
-                "opt_level": 3,
-                "conv2d_data_layout": "NCHW",
-                "compiled_model_path": "./build/int8_tvm.tar",
-            },
-        },
-        {
-            "type": "TFLiteCompiler",
-            "parameters": {
-                "target": "default",
-                "compiled_model_path": "build/fp32.tflite",
-                "inference_input_type": "float32",
-                "inference_output_type": "float32",
-            },
-        },
-    ],
-    "runtime": {
-        "type": "TFLiteRuntime",
-        "parameters": {"save_model_path": "./build/fp32.tflite"},
-    },
-}
+
+TEST_EXAMPLE_VALID_OBJS = objs_from_full_dict_config(TEST_EXAMPLE_VALID_CONFIG)
 
 
 class TestPipelineRunnerRun:
@@ -189,45 +175,31 @@ class TestPipelineRunnerRun:
 
         assert "Provide either dataconverter or model_wrapper" in str(e.value)
 
-    def test_from_json_cfg(self):
-        PipelineRunner.from_json_cfg(TEST_EXAMPLE_VALID_CFG)
-
-    def test_from_json_cfg_assert_integrity(self):
-        PipelineRunner.from_json_cfg(
-            TEST_EXAMPLE_VALID_CFG, assert_integrity=True
-        )
-
-    def test_from_json_cfg_assert_integrity_error(self):
-        with pytest.raises(ValueError):
-            PipelineRunner.from_json_cfg(
-                TEST_EXAMPLE_INVALID_CFG, assert_integrity=True
-            )
-
     def test_serialize(self):
         def check_block(expected_block, block):
-            assert block["type"].rsplit(".", 1)[-1] == expected_block["type"]
-            for param, value in expected_block["parameters"].items():
+            expected_block, expected_block_cfg = expected_block
+            assert block["type"].rsplit(".", 1)[-1] == expected_block
+            for param, value in expected_block_cfg[
+                BLOCK_CONFIG_PARAMETERS_KEY
+            ].items():
                 assert block["parameters"][param] == value
 
-        runner = PipelineRunner.from_json_cfg(TEST_EXAMPLE_VALID_CFG)
+        runner = PipelineRunner.from_objs_dict(TEST_EXAMPLE_VALID_OBJS)
 
         runner_serialized = runner.serialize()
 
         assert isinstance(runner_serialized, dict)
-        for block, block_cfg in TEST_EXAMPLE_VALID_CFG.items():
-            if isinstance(block_cfg, list):
-                for cfg, set_cfg in zip(block_cfg, runner_serialized[block]):
-                    check_block(cfg, set_cfg)
-            else:
-                check_block(block_cfg, runner_serialized[block])
+        for block, block_cfg in TEST_EXAMPLE_VALID_CONFIG[
+            BLOCK_CONFIGURATIONS_KEY
+        ].items():
+            serialized_block = runner_serialized[block.name]
+            if type(serialized_block) is not list:
+                serialized_block = [serialized_block]
+            for cfg, set_cfg in zip(block_cfg.items(), serialized_block):
+                check_block(cfg, set_cfg)
 
     def test_add_scenario_cfg_to_measurements(self):
-        def check_block(expected_block, block):
-            assert block["type"].rsplit(".", 1)[-1] == expected_block["type"]
-            for param, value in expected_block["parameters"].items():
-                assert block["parameters"][param] == value
-
-        runner = PipelineRunner.from_json_cfg(TEST_EXAMPLE_VALID_CFG)
+        runner = PipelineRunner.from_objs_dict(TEST_EXAMPLE_VALID_OBJS)
 
         runner.add_scenario_configuration_to_measurements("cmd")
 

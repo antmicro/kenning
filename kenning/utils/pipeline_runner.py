@@ -6,9 +6,8 @@
 Provides runner for optimization flows.
 """
 
-import argparse
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from kenning.cli.command_template import OPTIMIZE, TEST, CommandTemplate
 from kenning.converters import converter_registry
@@ -37,7 +36,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
 )
 from kenning.platforms.local import LocalPlatform
 from kenning.runtimes.utils import get_default_runtime
-from kenning.utils.class_loader import ConfigKey, objs_from_json
+from kenning.utils.class_loader import ConfigKey
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -176,41 +175,6 @@ class PipelineRunner(object):
                 self.inference_loop._protocol = self.protocol
             if self.dataconverter is not None:
                 self.inference_loop._dataconverter = self.dataconverter
-
-    @classmethod
-    def from_json_cfg(
-        cls,
-        json_cfg: Dict,
-        assert_integrity: bool = True,
-        skip_optimizers: bool = False,
-        skip_runtime: bool = False,
-        cfg_path: Optional[Path] = None,
-        override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
-        include_measurements: bool = False,
-    ):
-        keys = [
-            ConfigKey.dataset,
-            ConfigKey.platform,
-            ConfigKey.protocol,
-            ConfigKey.model_wrapper,
-            ConfigKey.dataconverter,
-            ConfigKey.runtime_builder,
-            ConfigKey.inference_loop,
-            *([ConfigKey.report] if include_measurements else []),
-            *([ConfigKey.runtime] if not skip_runtime else []),
-            *([ConfigKey.optimizers] if not skip_optimizers else []),
-        ]
-
-        objs = objs_from_json(json_cfg, set(keys), override)
-
-        if assert_integrity:
-            cls.assert_io_formats(
-                objs.get(ConfigKey.model_wrapper),
-                objs[ConfigKey.optimizers],
-                objs.get(ConfigKey.runtime),
-            )
-
-        return cls.from_objs_dict(objs, configuration_path=cfg_path)
 
     @classmethod
     def from_objs_dict(

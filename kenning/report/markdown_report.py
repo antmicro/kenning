@@ -527,11 +527,6 @@ class MarkdownReport(Report):
             )
 
         if "build_cfg" in self.measurementsdata[0]:
-            from kenning.utils.class_loader import (
-                ConfigKey,
-                obj_from_json,
-            )
-
             json_cfg = json.loads(
                 "\n".join(self.measurementsdata[0]["build_cfg"])
             )
@@ -543,8 +538,6 @@ class MarkdownReport(Report):
                         if v is not None
                     }
                     json_cfg["dataset"]["parameters"] = parameters
-
-                self.dataset = obj_from_json(json_cfg, ConfigKey.dataset)
             if "model_wrapper" in json_cfg:
                 if "parameters" in json_cfg["model_wrapper"]:
                     parameters = {
@@ -555,11 +548,6 @@ class MarkdownReport(Report):
                         if v is not None
                     }
                     json_cfg["model_wrapper"]["parameters"] = parameters
-
-                self.model_wrapper = obj_from_json(
-                    json_cfg, ConfigKey.model_wrapper, dataset=self.dataset
-                )
-
         self.cfg_name = None
         if "cfg_path" in self.measurementsdata[0]:
             self.cfg_name = self.measurementsdata[0]["cfg_path"].rsplit(

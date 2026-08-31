@@ -6,12 +6,11 @@
 Provides runner for AutoML flow.
 """
 
-import argparse
 import json
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 import yaml
 
@@ -22,7 +21,7 @@ except ImportError:
 
 from kenning.core.automl import AutoML
 from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import ConfigKey, objs_from_json
+from kenning.utils.class_loader import ConfigKey
 from kenning.utils.logger import KLogger
 
 
@@ -66,23 +65,6 @@ class AutoMLRunner(object):
 
         for optim in self.autoML.optimizers:
             optim.read_platform(self.autoML.platform)
-
-    @classmethod
-    def from_json_cfg(
-        cls,
-        cfg: Dict,
-        override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
-    ):
-        keys = set(
-            [
-                ConfigKey.automl,
-                ConfigKey.dataset,
-                ConfigKey.platform,
-                ConfigKey.optimizers,
-            ]
-        )
-        objs = objs_from_json(cfg, keys, override=override)
-        return cls.from_objs_dict(objs, pipeline_config=cfg)
 
     @classmethod
     def from_objs_dict(

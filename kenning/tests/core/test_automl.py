@@ -9,6 +9,7 @@ import pytest
 
 from kenning.core.automl import AutoML
 from kenning.core.exceptions import InvalidArgumentsError
+from kenning.dispatcher.block_config import yaml_or_json_to_config_dict
 from kenning.platforms.local import LocalPlatform
 from kenning.tests.core.conftest import (
     get_dataset_random_mock,
@@ -17,6 +18,7 @@ from kenning.utils.class_loader import (
     MODEL_WRAPPERS,
     get_all_subclasses,
     load_class_by_type,
+    objs_from_full_dict_config,
 )
 from kenning.utils.pipeline_runner import PipelineRunner
 
@@ -139,7 +141,11 @@ class TestAutoML:
 
         for config in automl.get_best_configs():
             try:
-                PipelineRunner.from_json_cfg(json_cfg=config)
+                PipelineRunner.from_objs_dict(
+                    objs_from_full_dict_config(
+                        yaml_or_json_to_config_dict(config)
+                    )
+                )
             except Exception:
                 pytest.fail(
                     f"Generated configuration ({config}) is not valid "

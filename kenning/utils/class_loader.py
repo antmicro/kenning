@@ -17,13 +17,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     Dict,
     Generator,
     List,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Type,
     Union,
@@ -48,7 +46,6 @@ from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.dispatcher.block_config import (
     AUTOML,
     BLOCK_CONFIGURATIONS_KEY,
-    CONFIG_KEY_TO_CLS_FLAG,
     CONVERTERS,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
@@ -65,11 +62,6 @@ from kenning.dispatcher.block_config import (
     RUNTIMES,
     ConfigKey,
     KenningBlockConfigDict,
-)
-from kenning.utils.args_manager import (
-    convert_to_jsontype,
-    from_flag_to_name,
-    get_parsed_args_dict,
 )
 from kenning.utils.logger import KLogger
 
@@ -424,239 +416,6 @@ def objs_from_full_dict_config(
     return objs
 
 
-def objs_from_json(
-    json_cfg: Dict[str, Any],
-    keys: Set[ConfigKey],
-    override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
-) -> Dict[ConfigKey, Any]:
-    """
-    Loads the objects from configuration, specified by keys.
-
-    Parameters
-    ----------
-    json_cfg : Dict[str, Any]
-        A JSON object containing entire configuration, from which the class is
-        retrieved.
-    keys : Set[ConfigKey]
-        Keys that correspond to classes of objects that should be loaded.
-    override : Optional[Tuple[argparse.Namespace, List[str]]]
-        If not none, arguments will be used to override config parameters.
-
-    Returns
-    -------
-    Dict[ConfigKey, Any]
-        Parsed parameters.
-    """
-    keys_regular = set(
-        [
-            ConfigKey.automl,
-            ConfigKey.dataset,
-            ConfigKey.model_wrapper,
-            ConfigKey.platform,
-            ConfigKey.protocol,
-            ConfigKey.report,
-            ConfigKey.runtime,
-            ConfigKey.runtime_builder,
-        ]
-    )
-
-    if override:
-        args, not_parsed = override
-        merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
-
-    keys_regular = keys_regular.intersection(keys)
-
-    if ConfigKey.automl in keys_regular:
-        keys_regular.remove(ConfigKey.automl)
-
-    objs = {key: obj_from_json(json_cfg, key) for key in keys_regular}
-
-    dataset = objs.get(ConfigKey.dataset)
-
-    if ConfigKey.model_wrapper in keys:
-        objs[ConfigKey.model_wrapper] = obj_from_json(
-            json_cfg, ConfigKey.model_wrapper, dataset=dataset
-        )
-
-    model_wrapper = objs.get(ConfigKey.model_wrapper)
-
-    if ConfigKey.dataconverter in keys:
-        objs[ConfigKey.dataconverter] = any_from_json(
-            json_cfg.get(ConfigKey.runtime.name, {}).get("data_converted", {}),
-            block_type="dataconverters",
-        )
-
-    if ConfigKey.optimizers in keys:
-        objs[ConfigKey.optimizers] = [
-            any_from_json(
-                optimizer_cfg,
-                block_type=ConfigKey.optimizers.value,
-                dataset=dataset,
-                model_wrapper=model_wrapper,
-            )
-            for optimizer_cfg in json_cfg.get(
-                ConfigKey.optimizers.name,
-                [],
-            )
-        ]
-    else:
-        objs[ConfigKey.optimizers] = []
-
-    if ConfigKey.inference_loop in keys:
-        objs[ConfigKey.inference_loop] = obj_from_json(
-            json_cfg,
-            ConfigKey.inference_loop,
-            dataset=objs.get(ConfigKey.dataset),
-            dataconverter=objs.get(ConfigKey.dataconverter),
-            model_wrapper=objs.get(ConfigKey.model_wrapper),
-            platform=objs.get(ConfigKey.platform),
-            protocol=objs.get(ConfigKey.protocol),
-            runtime=objs.get(ConfigKey.runtime),
-        )
-    if ConfigKey.automl in keys:
-        objs[ConfigKey.automl] = obj_from_json(
-            json_cfg,
-            ConfigKey.automl,
-            dataset=dataset,
-            platform=objs.get(ConfigKey.platform),
-            optimizers=objs[ConfigKey.optimizers],
-        )
-
-    return objs
-
-
-def merge_argparse_and_json(
-    keys: Set[ConfigKey],
-    json_cfg: Dict[str, Any],
-    args: argparse.Namespace,
-    not_parsed: List[str],
-):
-    """
-    Update ``json_cfg`` with overridable values from not parsed arguments.
-
-    Parameters
-    ----------
-    keys : Set[ConfigKey]
-        Keys that correspond to classes of objects that should be overridden.
-    json_cfg : Dict[str, Any]
-        A JSON object containing entire configuration, from which the class is
-        retrieved.
-    args : argparse.Namespace
-        Initial namespace.
-    not_parsed : List[str]
-        Remaining arguments.
-    """
-    keys = keys.difference([ConfigKey.dataconverter, ConfigKey.optimizers])
-
-    # When class is not specified in json_cfg, try to get type from args
-    for key in keys:
-        key = key.value
-        if key not in json_cfg.keys():
-            KLogger.debug(f"{key} not found in json config")
-            arg_name = f"{key}_cls"
-            if hasattr(args, arg_name):
-                KLogger.debug("Getting class type from args")
-                arg_cls = getattr(args, arg_name)
-                json_cfg[key] = {"type": arg_cls}
-
-    classes = {
-        key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
-    }
-    args = parse_classes(
-        list(classes.values()), args, not_parsed, override_only=True
-    )
-
-    for key, cls in classes.items():
-        if key.name in json_cfg:
-            if params := get_parsed_args_dict(cls, args, override_only=True):
-                json_cfg[key.name]["parameters"] = dict(
-                    json_cfg[key.name].get("parameters", {}),
-                    **convert_to_jsontype(params),
-                )
-
-
-def objs_from_argparse(
-    args: argparse.Namespace,
-    not_parsed: List[str],
-    keys: Set[ConfigKey],
-    required: Optional[Callable[[Dict[ConfigKey, Any]], Any]] = None,
-) -> Dict[ConfigKey, Any]:
-    """
-    Parses objects from arguments, specified by keys.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Initial namespace.
-    not_parsed : List[str]
-        Remaining arguments.
-    keys : Set[ConfigKey]
-        Keys that correspond to classes of objects that should be loaded.
-    required : Optional[Callable[[Dict[ConfigKey, Any]], Any]]
-        Callback that verifies used classes.
-
-    Returns
-    -------
-    Dict[ConfigKey, Any]
-        Parsed objects.
-    """
-    classes = {
-        key: cls
-        for key in keys
-        if (
-            class_arg := getattr(
-                args,
-                from_flag_to_name(CONFIG_KEY_TO_CLS_FLAG[key]),
-                None,
-            )
-        )
-        if (cls := load_class(class_arg))
-    }
-
-    if required:
-        required(classes)
-
-    args = parse_classes(list(classes.values()), args, not_parsed)
-
-    objs = {
-        key: cls.from_argparse(args)
-        for key, cls in classes.items()
-        if key
-        in [
-            ConfigKey.platform,
-            ConfigKey.protocol,
-            ConfigKey.dataset,
-            ConfigKey.runtime,
-            ConfigKey.report,
-        ]
-    }
-
-    dataset = objs.get(ConfigKey.dataset)
-
-    if modelwrappercls := classes.get(ConfigKey.model_wrapper):
-        objs[ConfigKey.model_wrapper] = (
-            modelwrappercls.from_argparse(dataset, args)
-            if modelwrappercls
-            else None
-        )
-
-    # TODO: This is a temporal solution, in future dataconverter
-    # should be parsed separately
-    if model := objs.get(ConfigKey.model_wrapper):
-        from kenning.dataconverters.modelwrapper_dataconverter import (
-            ModelWrapperDataConverter,
-        )
-
-        objs[ConfigKey.dataconverter] = ModelWrapperDataConverter(model)
-
-    if compilercls := classes.get(ConfigKey.optimizers):
-        objs[ConfigKey.optimizers] = [compilercls.from_argparse(dataset, args)]
-    else:
-        objs[ConfigKey.optimizers] = []
-
-    return objs
-
-
 def parse_classes(
     classes: List[Type],
     args: argparse.Namespace,
@@ -712,112 +471,6 @@ def parse_classes(
         )
 
     return args
-
-
-def obj_from_json(
-    json_cfg: Dict[str, Any], key: ConfigKey, **kwargs
-) -> Optional[Any]:
-    """
-    Loads the object from configuration, specified by key.
-
-    Parameters
-    ----------
-    json_cfg : Dict[str, Any]
-        A JSON object containing entire configuration, from which the field is
-        retrieved and converted into an object.
-    key : ConfigKey
-        Chooses the field from configuration and class type.
-    **kwargs :
-        Additional arguments
-
-    Returns
-    -------
-    Optional[Any]
-        If a class is available and contains `from_json` method, it
-        returns object of this class.
-    """
-    return any_from_json(json_cfg.get(key.name, {}), key.value, **kwargs)
-
-
-def any_from_json(
-    json_cfg: Dict[str, Any], block_type: Optional[str] = None, **kwargs
-) -> Optional[Any]:
-    """
-    Loads the object using `from_json` method, if available.
-
-    Parameters
-    ----------
-    json_cfg : Dict[str, Any]
-        A JSON object snippet with `type` parameter, specifying the
-        full name of the class, and `parameters` parameter, with list
-        of constructor arguments for the class.
-    block_type : Optional[str]
-        Type of Kenning block, i.e. "optimizers", "platforms". If specified
-        then type in config does not require to specify full class path.
-    **kwargs :
-        Additional arguments
-
-    Returns
-    -------
-    Optional[Any]
-        If a class is available and contains `from_json` method, it
-        returns object of this class.
-    """
-    if cls := load_class_from_json(json_cfg, block_type):
-        return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
-
-
-def load_class_from_json(
-    json_cfg: Dict[str, Any], block_type: Optional[str] = None
-) -> Optional[Type]:
-    """
-    Loads class from configuration if it exists `from_json` method is
-    available.
-
-    Parameters
-    ----------
-    json_cfg : Dict[str, Any]
-        A JSON object snippet with `type` parameter, specifying the
-        full name of the class, and `parameters` parameter, with list
-        of constructor arguments for the class.
-    block_type : Optional[str]
-        Type of Kenning block, i.e. "optimizers", "platforms". If specified
-        then type in config does not require to specify full class path.
-
-    Returns
-    -------
-    Optional[Type]
-        A class if it is available and contains `from_json` method.
-    """
-    if "type" not in json_cfg:
-        return None
-
-    cls = load_class_by_type(json_cfg["type"], block_type)
-    if cls is None or not hasattr(cls, "from_json"):
-        return None
-    return cls
-
-
-def load_class_by_key(
-    json_cfg: Dict[str, Any], key: ConfigKey
-) -> Optional[Type]:
-    """
-    Loads the object from configuration, specified by key.
-
-    Parameters
-    ----------
-    json_cfg : Dict[str, Any]
-        A JSON object containing entire configuration, from which the class is
-        retrieved.
-    key : ConfigKey
-        Chooses the class from configuration.
-
-    Returns
-    -------
-    Optional[Type]
-        A class if it is available and contains `from_json` method.
-    """
-    return load_class_from_json(json_cfg.get(key.name, {}), key.value)
 
 
 def load_class(module_path_or_name: str) -> Type:

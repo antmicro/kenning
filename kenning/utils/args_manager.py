@@ -8,8 +8,6 @@ Module for preparing and serializing class arguments.
 from __future__ import annotations
 
 import argparse
-import json
-import os.path
 import typing
 from abc import ABC
 from pathlib import Path
@@ -23,7 +21,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Sequence,
     Tuple,
     Union,
     get_args,
@@ -160,55 +157,6 @@ def convert_to_jsontype(v: Any) -> Any:
     if isinstance(v, np.ndarray):
         return v.tolist()
     return v
-
-
-def ensure_exclusive_cfg_or_flags(
-    args: argparse.Namespace,
-    flag_config_names: Sequence[str],
-    required: Optional[Iterable[int]] = None,
-):
-    """
-    Verifies exclusion of file-based or flag-based configuration.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Parsed arguments.
-    flag_config_names : Sequence[str]
-        Flags supported by the command.
-    required : Optional[Iterable[int]]
-        If provided, only selected flags are checked to not be missing.
-
-    Raises
-    ------
-    ArgumentError
-        Raised when verification fails.
-    """
-    flag_config_not_none = [
-        getattr(args, name, None) is not None for name in flag_config_names
-    ]
-    if args.json_cfg is None:
-        # Exclusion violated
-        if not any(flag_config_not_none):
-            raise argparse.ArgumentError(
-                None, "JSON or flag config is required."
-            )
-
-        # Missing arguments
-        missing_args = [
-            f"'{flag_config_names[i]}'"
-            for i in required or range(len(flag_config_names))
-            if not flag_config_not_none[i]
-        ]
-        if missing_args and not args.help:
-            report_missing(missing_args)
-
-    if args.json_cfg is not None and any(flag_config_not_none):
-        raise argparse.ArgumentError(
-            None,
-            "JSON and flag configurations are mutually exclusive. "
-            "Please use only one method of configuration.",
-        )
 
 
 def report_missing(names: List[str]):
@@ -400,117 +348,6 @@ def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
     }
 
     return converted_json_dict
-
-
-def get_parsed_args_dict(
-    cls: type, args: argparse.Namespace, override_only: bool = False
-) -> Dict:
-    """
-    Converts namespace provided by arguments parser into dictionary.
-
-    Parameters
-    ----------
-    cls : type
-        Class of object being parsed.
-    args : argparse.Namespace
-        Namespace provided by arguments parser.
-    override_only : bool
-        True if only parameters marked as `overridable` should be parsed.
-
-    Returns
-    -------
-    Dict
-        Dictionary with arguments.
-
-    Raises
-    ------
-    Exception:
-        Raised when default values for arguments are not specified
-    """
-    # retrieve all arguments from arguments_structure of this class and all of
-    # its parent classes
-    args_structure = {}
-    for curr_cls in traverse_parents_with_args(cls):
-        args_structure = dict(
-            args_structure,
-            **{
-                name: arg
-                for name, arg in curr_cls.arguments_structure.items()
-                if not override_only or arg.get("overridable", True)
-            },
-        )
-
-    # parse arguments
-    parsed_args = {}
-    for arg_name, arg_properties in args_structure.items():
-        if "argparse_name" in arg_properties:
-            argparse_name = from_flag_to_name(arg_properties["argparse_name"])
-        else:
-            argparse_name = arg_name
-
-        value = try_to_load_param_from_ros(argparse_name)
-
-        if value is None and hasattr(args, argparse_name):
-            value = getattr(args, argparse_name)
-
-        if value is None and not override_only:
-            if "default" in arg_properties.keys():
-                value = arg_properties["default"]
-            elif (
-                "required" in arg_properties.keys()
-                and arg_properties["required"]
-            ):
-                raise Exception(
-                    f"No default value provided for {argparse_name}"
-                )
-            else:
-                value = None
-
-        if value is None and override_only:
-            continue
-
-        # For arguments of type 'object' value is embedded in a JSON file
-        if "type" in arg_properties and arg_properties["type"] is object:
-            if value is None:
-                try:
-                    value = arg_properties["default"]
-                    parsed_args[arg_name] = value
-                    continue
-                except KeyError:
-                    raise Exception(
-                        f"No default value provided for {argparse_name}"
-                    )
-
-            if not os.path.exists(value):
-                raise Exception(
-                    f"JSON configuration file {value} doesnt exist"
-                )
-
-            with open(value, "r") as file:
-                value = json.load(file)
-                parsed_args[arg_name] = value
-                continue
-
-        # convert type
-        if (
-            "type" in arg_properties
-            and value is not None
-            and get_origin(arg_properties["type"]) not in (UnionType, Union)
-        ):
-            _type = arg_properties["type"]
-
-            origin = get_origin(_type)
-
-            if origin is not None:
-                _type = origin
-
-            KLogger.debug(f"Converting value: '{value}' with {_type}")
-
-            value = _type(value)
-
-        parsed_args[arg_name] = value
-
-    return parsed_args
 
 
 def get_type(
@@ -923,57 +760,6 @@ class ArgumentsHandler(ABC):
             )
 
         return parser, group
-
-    @classmethod
-    def from_argparse(
-        cls, args: argparse.Namespace, **kwargs: Dict[str, Any]
-    ) -> Any:
-        """
-        Constructor wrapper that takes the parameters from argparse args.
-
-        Parameters
-        ----------
-        args : argparse.Namespace
-            Arguments from ArgumentParser object.
-        **kwargs : Dict[str, Any]
-            Additional class-dependent arguments.
-
-        Returns
-        -------
-        Any
-            Instance created from provided args.
-        """
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(**kwargs, **parsed_args_dict)
-
-    @classmethod
-    def from_json(cls, json_dict: Dict, **kwargs: Dict[str, Any]) -> Any:
-        """
-        Constructor wrapper that takes the parameters from json dict.
-
-        This function checks if the given dictionary is valid according to the
-        ``arguments_structure`` defined. If it is then it invokes the
-        constructor.
-
-        Parameters
-        ----------
-        json_dict : Dict
-            Arguments for the constructor.
-        **kwargs : Dict[str, Any]
-            Additional class-dependent arguments.
-
-        Returns
-        -------
-        Any
-            Instance created from provided JSON.
-        """
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        cls_args = dict(parsed_json_dict, **kwargs)
-
-        return cls(**cls_args)
 
     @classmethod
     def cast_complex_type(

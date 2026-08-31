@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Antmicro <www.antmicro.com>
+ * Copyright (c) 2024-2026 Antmicro <www.antmicro.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -291,7 +291,7 @@ void reconstruct_compressed_gptq(const uint32_t *b_q_weight,
 torch::Tensor unquantize_weights(torch::Tensor b_q_weight,
                                 torch::Tensor b_gptq_qzeros,
                                 torch::Tensor b_gptq_scales,
-                                torch::Tensor b_g_idx, const int bit) {
+                                torch::Tensor b_g_idx, const int64_t bit) {
   const at::cuda::OptionalCUDAGuard device_guard(device_of(b_q_weight));
   auto temp_dq_options =
       torch::TensorOptions().dtype(torch::kFloat16).device(b_q_weight.device());
@@ -405,6 +405,7 @@ void reorder_metadata(torch::Tensor sparsity_metadata) {
       (void *)sparsity_metadata_ptr, (void *)tensor_e_reordered.host_data(),
       m * k * sizeof(MetadataElement), cudaMemcpyHostToDevice));
   CHECK_CUDA(cudaDeviceSynchronize());
+  free(host_sparsity_metadata_ptr);
 }
 
 /**
@@ -417,6 +418,8 @@ void reorder_metadata(torch::Tensor sparsity_metadata) {
  * @param b_g_idx Group indices
  * @param sparsity_metadata Sparsity metadata
  * @param bit Bit precision that was used for quantization
+ * @param workspace Arena-allocated space
+ * @param temp_dq Dequantized weight matrix
  *
  * @return GEMM result, that is a product of `b_q_weight` weights and `a` matrix
  */
@@ -426,7 +429,9 @@ torch::Tensor compressed_gptq_gemm(const torch::Tensor a,
                                    const torch::Tensor b_gptq_scales,
                                    const torch::Tensor b_g_idx,
                                    const torch::Tensor sparsity_metadata,
-                                   const int bit) {
+                                   const int64_t bit,
+                                   torch::Tensor workspace,
+                                   torch::Tensor temp_dq) {
   const at::cuda::OptionalCUDAGuard device_guard(device_of(a));
   auto c_options =
       torch::TensorOptions().dtype(torch::kFloat16).device(a.device());
@@ -490,11 +495,7 @@ torch::Tensor compressed_gptq_gemm(const torch::Tensor a,
   }
 
   auto temp_dq_options =
-  torch::TensorOptions().dtype(a.dtype()).device(a.device());
-
-  // Dequantized weight matrix
-  at::Tensor temp_dq = torch::empty(
-      {b_q_weight.size(0) * 32 / bit, b_q_weight.size(1)}, temp_dq_options);
+      torch::TensorOptions().dtype(a.dtype()).device(a.device());
 
 #if GPTQ_GEMM_DEBUG
   std::cout << "temp_dq matrix size: " << temp_dq.size(0) << ", "
@@ -546,14 +547,14 @@ torch::Tensor compressed_gptq_gemm(const torch::Tensor a,
                             output_matrix, output_matrix, tensor_e_reordered,
                             {alpha, beta}, split_k_slices};
 
+
   size_t workspace_size = Gemm::get_workspace_size(arguments);
-  cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
 
   Gemm gemm_op;
   CHECK_CUTLASS(gemm_op.can_implement(arguments));
 
   const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
-  CHECK_CUTLASS(gemm_op.initialize(arguments, workspace.get(), stream));
+  CHECK_CUTLASS(gemm_op.initialize(arguments, static_cast<uint8_t*>(workspace.data_ptr()), stream));
   CHECK_CUTLASS(gemm_op(stream));
 
   return c;

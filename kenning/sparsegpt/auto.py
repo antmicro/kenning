@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -132,7 +132,7 @@ class AutoSparseGPTForCausalML:
         cls,
         pretrained_model_name_or_path: str,
         optimization_config: BaseOptimizationConfig,
-        torch_dtype: torch.dtype = torch.float16,
+        dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
         development_mode: bool = False,
@@ -148,7 +148,7 @@ class AutoSparseGPTForCausalML:
             Path to the pretrained model or its name.
         optimization_config : BaseOptimizationConfig
             Optimization configuration.
-        torch_dtype : torch.dtype
+        dtype : torch.dtype
             Torch dtype of the model.
         dev : str
             Device on which the model is stored.
@@ -174,7 +174,7 @@ class AutoSparseGPTForCausalML:
         return model_class.from_pretrained(
             pretrained_model_name_or_path,
             optimization_config,
-            torch_dtype=torch_dtype,
+            dtype=dtype,
             dev=dev,
             verbosity=verbosity,
             development_mode=development_mode,

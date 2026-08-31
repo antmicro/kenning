@@ -9,7 +9,7 @@ torch::Tensor unquantize_weights(
     torch::Tensor b_gptq_qzeros,
     torch::Tensor b_gptq_scales,
     torch::Tensor b_g_idx,
-    int bit);
+    const int64_t bit);
 
 torch::Tensor compressed_gptq_gemm(
     torch::Tensor a,
@@ -18,6 +18,8 @@ torch::Tensor compressed_gptq_gemm(
     torch::Tensor b_gptq_scales,
     torch::Tensor b_g_idx,
     torch::Tensor sparsity_metadata,
-    int bit);
+    int64_t bit,
+    torch::Tensor workspace,
+    torch::Tensor temp_dq);
 
 void reorder_metadata(torch::Tensor sparsity_metadata);

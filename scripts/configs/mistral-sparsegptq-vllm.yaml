@@ -9,19 +9,17 @@ model_wrapper:
   parameters:
     model_path: hf://ministral/Ministral-3b-instruct
 optimizers:
-  - type: GPTQOptimizer
+  - type: GPTQSparseGPTOptimizer
     parameters:
-      compiled_model_path: ./output/ministral-3b-gptq-4bit
-      target_precision: 4
-      batch_size: 1
-      seqlen: 16
-      calibration_samples: 8
-      symmetric: true
+      compiled_model_path: ./output/ministral-3b-sparsegptq-4bit
       group_size: 64
+      seqlen: 512
+      calibration_samples: 8
 runtime:
   type: VLLMRuntime
   parameters:
-    save_model_path: ./output/ministral-3b-gptq-4bit
+    save_model_path: ./output/ministral-3b-sparsegptq-4bit
     max_tokens: 64
     batch_size: 512
     max_model_len: 64
+    sparse_gptq_kernel: true

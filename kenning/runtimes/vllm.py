@@ -10,7 +10,6 @@ from typing import Any, List, Optional
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
-    ModelNotLoadedError,
     ModelNotPreparedError,
 )
 from kenning.core.runtime import (
@@ -132,11 +131,13 @@ class VLLMRuntime(Runtime):
 
         if self.sparse_gptq_kernel:
             from kenning_sparsity_aware_kernel.third_party.custom_vllm.quant_compressed_vllm import (  # noqa: E501
-                GPTQLinearMethod,
+                AutoGPTQConfig,
+                AutoGPTQLinearMethod,
             )
-            from vllm.model_executor.layers.quantization import gptq
+            from vllm.model_executor.layers.quantization import auto_gptq
 
-            gptq.GPTQLinearMethod = GPTQLinearMethod
+            auto_gptq.AutoGPTQLinearMethod = AutoGPTQLinearMethod
+            auto_gptq.AutoGPTQConfig = AutoGPTQConfig
 
         super().__init__(
             model_path=model_path,
@@ -166,11 +167,6 @@ class VLLMRuntime(Runtime):
         If none of the files are present in the model directory, it is
         assumed that the model is not quantized.
 
-        Raises
-        ------
-        ModelNotLoadedError
-            If the config files are missing.
-
         Returns
         -------
         Optional[str]
@@ -183,32 +179,25 @@ class VLLMRuntime(Runtime):
             and "quantization_algorithm" in self.misc_io_metadata
         ):
             quantization = self.misc_io_metadata["quantization_algorithm"]
-
-        if quantization is not None:
-            return quantization
-
-        if (self.model_path / "quantize_config.json").is_file():
-            return "GPTQ"
-
-        if (self.model_path / "quant_config.json").is_file():
-            return "AWQ"
-        try:
+        elif (self.model_path / "quantize_config.json").is_file():
+            quantization = "gptq"
+        elif (self.model_path / "quant_config.json").is_file():
+            quantization = "awq"
+        else:
             with open(self.model_path / "config.json", "r") as config_file:
                 import json
 
                 config = json.load(config_file)
                 if "quantization_config" in config:
-                    return "AWQ"
-        except FileNotFoundError:
-            raise KLogger.error_prepare_exception(
-                "Could not find config.json file in the model directory. "
-                + "Make sure the model is not corrupted",
-                ModelNotLoadedError,
-            )
+                    quantization = config["quantization_config"].get(
+                        "quant_method", "awq"
+                    )
+
         if quantization is not None:
+            quantization = quantization.lower()
             KLogger.info(
-                "Detected quantization technique for vLLM runtime: "
-                + {quantization}
+                "Detected quantization technique for"
+                f"vLLM runtime: {quantization}"
             )
         return quantization
 

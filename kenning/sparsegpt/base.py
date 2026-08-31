@@ -225,7 +225,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         cls,
         pretrained_model_name_or_path: str,
         config: BaseOptimizationConfig,
-        torch_dtype: torch.dtype = torch.float16,
+        dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
         development_mode: bool = False,
@@ -240,7 +240,7 @@ class BaseSparseGPTForCausalML(nn.Module):
             Name or path of the pretrained model
         config : BaseOptimizationConfig
             Optimization config
-        torch_dtype : torch.dtype
+        dtype : torch.dtype
             Type of the torch tensors.
         dev : str
             Device to run the optimization on. Can be either 'cpu'
@@ -262,7 +262,7 @@ class BaseSparseGPTForCausalML(nn.Module):
             Optimizer initialized from the pretrained model
         """
         # Setting model init arguments
-        model_init_kwargs["torch_dtype"] = torch_dtype
+        model_init_kwargs["dtype"] = dtype
         model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path, **model_init_kwargs
         )

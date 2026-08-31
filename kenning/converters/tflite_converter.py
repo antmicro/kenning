@@ -9,6 +9,7 @@ Enables loading TFLite models and conversion to other formats.
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
+from kenning.core.exceptions import ConversionError
 from kenning.utils.logger import KLogger
 
 if TYPE_CHECKING:
@@ -145,7 +146,8 @@ class TFLiteConverter(ModelConverter):
         """
         import tf2onnx
 
-        from kenning.core.exceptions import ConversionError
+        # Register custom op handlers
+        import kenning.utils.tf2onnx  # noqa: F401
 
         if model is not None:
             KLogger.warning(

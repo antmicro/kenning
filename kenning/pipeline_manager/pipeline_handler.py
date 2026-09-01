@@ -21,6 +21,7 @@ from kenning.core.helpers.utils import is_list_of_dicts
 from kenning.core.inferenceloop import InferenceLoop
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.dispatcher.block_config import yaml_or_json_to_config_dict
 from kenning.pipeline_manager.core import (
     SPECIFICATION_VERSION,
     BaseDataflowHandler,
@@ -31,6 +32,7 @@ from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
+    objs_from_full_dict_config,
 )
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceManager
@@ -65,7 +67,10 @@ class PipelineHandler(BaseDataflowHandler):
         return assets_dir
 
     def parse_json(self, json_cfg) -> PipelineRunner:
-        return PipelineRunner.from_json_cfg(json_cfg)
+        return PipelineRunner.from_objs_dict(
+            objs_from_full_dict_config(yaml_or_json_to_config_dict(json_cfg)),
+            assert_integrity=False,
+        )
 
     def run_dataflow(
         self, pipeline_runner: PipelineRunner, output_file: Path

@@ -13,6 +13,7 @@ This module consists of benchmarking tools and scenarios for checking:
 """
 
 import contextlib
+import importlib.util
 import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
@@ -53,20 +54,10 @@ except PackageNotFoundError:
 with contextlib.suppress(ImportError):
     import triton  # noqa: F401
 
-with contextlib.suppress(ImportError):
-    import onnx2tf.utils.common_functions as cf
-
-    from kenning.temporary_fixes.onnx2tf import (
-        download_test_image_data as new_download_func,
-    )
-
-    old_download_func = cf.download_test_image_data
-    cf.download_test_image_data = new_download_func
-
-    for module in list(sys.modules.values()):
-        if (
-            getattr(module, "__name__", "").startswith("onnx2tf")
-            and getattr(module, "download_test_image_data", None)
-            is old_download_func
-        ):
-            setattr(module, "download_test_image_data", new_download_func)
+# Importing onnx2tf sets TF_USE_LEGACY_KERAS, which makes `tf.keras` resolve
+# to tf_keras (Keras 2). The variable has to be set before TensorFlow
+# is first imported. onnx2tf is imported lazily, so set
+# it here rather than relying on that import's side effect.
+if importlib.util.find_spec("onnx2tf") is not None:
+    # If kenning[onnx2tf] is installed
+    os.environ.setdefault("TF_USE_LEGACY_KERAS", "1")

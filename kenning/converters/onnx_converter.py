@@ -116,6 +116,10 @@ class OnnxConverter(ModelConverter):
         import onnx2tf
         import tensorflow as tf
 
+        from kenning.temporary_fixes.onnx2tf import apply_patches
+
+        apply_patches()
+
         if model:
             model_path = tempfile.NamedTemporaryFile(suffix=".onnx").name
             onnx.save(model, model_path)

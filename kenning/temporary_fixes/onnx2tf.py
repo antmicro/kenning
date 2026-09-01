@@ -34,3 +34,25 @@ def download_test_image_data() -> np.ndarray:
     with io.BytesIO(test_sample_images_npy) as f:
         test_image_data: np.ndarray = np.load(f)
     return test_image_data
+
+
+def apply_patches():
+    """
+    Points onnx2tf at the local `download_test_image_data`.
+    """
+    import sys
+
+    import onnx2tf.utils.common_functions as cf
+
+    new_download_func = download_test_image_data
+
+    old_download_func = cf.download_test_image_data
+    cf.download_test_image_data = new_download_func
+
+    for module in list(sys.modules.values()):
+        if (
+            getattr(module, "__name__", "").startswith("onnx2tf")
+            and getattr(module, "download_test_image_data", None)
+            is old_download_func
+        ):
+            module.download_test_image_data = new_download_func

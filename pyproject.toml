@@ -100,6 +100,8 @@ pose_estimation = [
 speech_to_text = [
     "librosa",
     "pydub",
+    # audioop was removed in Python 3.13
+    "audioop-lts ; python_version >= '3.13'",
     "numba>=0.65.0"
 ]
 anomaly_detection = [

@@ -7,7 +7,6 @@ Provides a base class for Kenning Flow elements.
 """
 
 from abc import ABC, abstractmethod
-from argparse import Namespace
 from typing import Any, Dict, List, Tuple
 
 from kenning.interfaces.io_interface import (
@@ -70,6 +69,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
                         )
                         found_global_mapping = True
                         break
+
         if (
             not found_global_mapping
             and runner_io_spec["input"]
@@ -111,81 +111,6 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             True if there was some exit indication.
         """
         return False
-
-    @classmethod
-    def from_argparse(
-        cls,
-        args: Namespace,
-        inputs_sources: Dict[str, Tuple[int, str]],
-        inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str],
-    ) -> "Runner":
-        """
-        Constructor wrapper that takes the parameters from argparse args.
-
-        This method takes the arguments created in form_argparse and uses them
-        to create the object.
-
-        Parameters
-        ----------
-        args : Namespace
-            Arguments from ArgumentParser object.
-        inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved.
-        inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs.
-        outputs : Dict[str, str]
-            Outputs of this Runner.
-
-        Returns
-        -------
-        Runner
-            Object of class Runner.
-        """
-        return super().from_argparse(
-            args,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs,
-        )
-
-    @classmethod
-    def from_json(
-        cls,
-        json_dict: Dict,
-        inputs_sources: Dict[str, Tuple[int, str]],
-        inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str],
-    ) -> "Runner":
-        """
-        Constructor wrapper that takes the parameters from json dict.
-
-        This function checks if the given dictionary is valid according
-        to the json schema defined.
-        If it is then it invokes the constructor.
-
-        Parameters
-        ----------
-        json_dict : Dict
-            Arguments for the constructor.
-        inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved.
-        inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs.
-        outputs : Dict[str, str]
-            Outputs of this Runner.
-
-        Returns
-        -------
-        Runner
-            Object of class Runner.
-        """
-        return super().from_json(
-            json_dict,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs,
-        )
 
     def _run(self, flow_state: List[Dict[str, Any]]):
         """

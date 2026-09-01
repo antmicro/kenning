@@ -6,20 +6,21 @@
 Provides a runner that performs inference.
 """
 
-from argparse import Namespace
 from copy import deepcopy
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from kenning.core.dataset import Dataset
 from kenning.core.exceptions import KenningError
 from kenning.core.model import ModelWrapper
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
+from kenning.dispatcher.block_config import (
+    ConfigKey,
+    yaml_or_json_to_config_dict,
+)
 from kenning.utils.args_manager import (
-    get_parsed_args_dict,
     get_parsed_json_dict,
 )
-from kenning.utils.class_loader import any_from_json, load_class
+from kenning.utils.class_loader import load_class, objs_from_full_dict_config
 
 
 class ModelRuntimeRunner(Runner):
@@ -30,30 +31,32 @@ class ModelRuntimeRunner(Runner):
     arguments_structure = {
         "model_wrapper": {
             "argparse_name": "--model-wrapper",
-            "description": "Path to JSON describing the ModelWrapper object, "
+            "description": "JSON describing the ModelWrapper object, "
+            "following its argument structure",
+            "type": object,
+            "required": True,
+        },
+        "runtime": {
+            "argparse_name": "--runtime",
+            "description": "JSON describing the Runtime object, "
             "following its argument structure",
             "type": object,
             "required": True,
         },
         "dataset": {
             "argparse_name": "--dataset",
-            "description": "Path to JSON describing the Dataset object, "
+            "description": "JSON describing the Dataset object, "
             "following its argument structure",
             "type": object,
-        },
-        "runtime": {
-            "argparse_name": "--runtime",
-            "description": "Path to JSON describing the Runtime object, "
-            "following its argument structure",
-            "type": object,
-            "required": True,
+            "default": None,
         },
     }
 
     def __init__(
         self,
-        model: ModelWrapper,
-        runtime: Runtime,
+        model_wrapper: Dict[str, Any],
+        runtime: Dict[str, Any],
+        dataset: Optional[Dict[str, Any]],
         inputs_sources: Dict[str, Tuple[int, str]] = {},
         inputs_specs: Dict[str, Dict] = {},
         outputs: Dict[str, str] = {},
@@ -63,10 +66,15 @@ class ModelRuntimeRunner(Runner):
 
         Parameters
         ----------
-        model : ModelWrapper
-            Selected model.
-        runtime : Runtime
-            Runtime used to run selected model.
+        model_wrapper : Dict[str, Any]
+            JSON describing the ModelWrapper object, following its argument
+            structure
+        runtime : Dict[str, Any]
+            JSON describing the Runtime object, following its argument
+            structure.
+        dataset: Optional[Dict[str, Any]]
+            JSON describing the Dataset object, following its argument
+            structure.
         inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
@@ -74,161 +82,19 @@ class ModelRuntimeRunner(Runner):
         outputs : Dict[str, str]
             Outputs of this Runner.
         """
-        self.model = model
-        self.runtime = runtime
-
+        (
+            self.model,
+            self.runtime,
+        ) = ModelRuntimeRunner._create_model_and_runtime(
+            model_wrapper, runtime, dataset
+        )
         self.runtime.inference_session_start()
         self.runtime.prepare_local()
-
         super().__init__(
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
             outputs=outputs,
         )
-
-    def cleanup(self):
-        self.runtime.inference_session_end()
-
-    @classmethod
-    def from_argparse(
-        cls,
-        args: Namespace,
-        inputs_sources: Dict[str, Tuple[int, str]],
-        inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str],
-    ) -> "ModelRuntimeRunner":
-        parsed_json_dict = get_parsed_args_dict(cls, args)
-
-        return cls._from_parsed_json_dict(
-            parsed_json_dict=parsed_json_dict,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs,
-        )
-
-    @classmethod
-    def from_json(
-        cls,
-        json_dict: Dict,
-        inputs_sources: Dict[str, Tuple[int, str]],
-        inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str],
-    ) -> "ModelRuntimeRunner":
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls._from_parsed_json_dict(
-            parsed_json_dict=parsed_json_dict,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs,
-        )
-
-    @classmethod
-    def _from_parsed_json_dict(
-        cls,
-        parsed_json_dict: Dict[str, Any],
-        inputs_sources: Dict[str, Tuple[int, str]],
-        inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str],
-    ) -> "ModelRuntimeRunner":
-        if parsed_json_dict.get("dataset", None):
-            dataset = cls._create_dataset(parsed_json_dict["dataset"])
-        else:
-            dataset = None
-
-        model = cls._create_model(dataset, parsed_json_dict["model_wrapper"])
-        model.prepare_model()
-
-        runtime = cls._create_runtime(parsed_json_dict["runtime"])
-
-        return cls(
-            model,
-            runtime,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs,
-        )
-
-    @staticmethod
-    def _create_dataset(json_dict: Dict) -> Dataset:
-        """
-        Method used to create dataset based on json dict.
-
-        Parameters
-        ----------
-        json_dict : Dict
-            Arguments for the constructor.
-
-        Returns
-        -------
-        Dataset
-            Created dataset.
-        """
-        return any_from_json(json_dict)
-
-    @staticmethod
-    def _create_model(dataset: Dataset, json_dict: Dict) -> ModelWrapper:
-        """
-        Method used to create model based on json dict.
-
-        Parameters
-        ----------
-        dataset : Dataset
-            Dataset used to initialize model parameters (class names etc.).
-        json_dict : Dict
-            Arguments for the constructor.
-
-        Returns
-        -------
-        ModelWrapper
-            Created model.
-        """
-        return any_from_json(json_dict, dataset=dataset)
-
-    @staticmethod
-    def _create_runtime(json_dict: Dict) -> Runtime:
-        """
-        Method used to create runtime based on json dict.
-
-        Parameters
-        ----------
-        json_dict : Dict
-            Arguments for the constructor.
-
-        Returns
-        -------
-        Runtime
-            Created runtime.
-        """
-        return any_from_json(json_dict)
-
-    @classmethod
-    def _get_io_specification(
-        cls, model_io_spec: Dict[str, List[Dict]]
-    ) -> Dict[str, List[Dict]]:
-        """
-        Creates runner IO specification from chosen parameters.
-
-        Parameters
-        ----------
-        model_io_spec : Dict[str, List[Dict]]
-            Model IO specification.
-
-        Returns
-        -------
-        Dict[str, List[Dict]]
-            Dictionary that conveys input and output layers specification.
-        """
-        for io in ("input", "output"):
-            if f"processed_{io}" not in model_io_spec.keys():
-                model_io_spec[f"processed_{io}"] = []
-                for spec in model_io_spec[io]:
-                    spec = deepcopy(spec)
-                    spec["name"] = "processed_" + spec["name"]
-                    model_io_spec[f"processed_{io}"].append(spec)
-
-        return model_io_spec
 
     @classmethod
     def parse_io_specification_from_json(cls, json_dict):
@@ -276,3 +142,70 @@ class ModelRuntimeRunner(Runner):
             result[out_spec["name"]] = out_value
 
         return result
+
+    @staticmethod
+    def _create_model_and_runtime(
+        model_wrapper_parameters: Dict[str, Any],
+        runtime_parameters: Dict[str, Any],
+        dataset_parameters: Optional[Dict[str, Any]],
+    ) -> Tuple[ModelWrapper, Runtime]:
+        """
+        Creates a ModelWrapper instance and a Runtime instance, optionally with
+        a Dataset instance injected.
+
+        Parameters
+        ----------
+        model_wrapper_parameters : Dict[str, Any]
+            JSON describing the ModelWrapper object, following its argument
+            structure
+        runtime_parameters : Dict[str, Any]
+            JSON describing the Runtime object, following its argument
+            structure.
+        dataset_parameters: Optional[Dict[str, Any]]
+            JSON describing the Dataset object, following its argument
+            structure.
+
+        Returns
+        -------
+        Tuple[ModelWrapper, Runtime]
+            The ModelWrapper object and the Runtime object, respectively.
+        """
+        config = {
+            "model_wrapper": model_wrapper_parameters,
+            "runtime": runtime_parameters,
+        }
+        if dataset_parameters:
+            config["dataset"] = dataset_parameters
+        config = yaml_or_json_to_config_dict(config)
+        objs = objs_from_full_dict_config(config)
+        return objs[ConfigKey.model_wrapper], objs[ConfigKey.runtime]
+
+    def cleanup(self):
+        self.runtime.inference_session_end()
+
+    @classmethod
+    def _get_io_specification(
+        cls, model_io_spec: Dict[str, List[Dict]]
+    ) -> Dict[str, List[Dict]]:
+        """
+        Creates runner IO specification from chosen parameters.
+
+        Parameters
+        ----------
+        model_io_spec : Dict[str, List[Dict]]
+            Model IO specification.
+
+        Returns
+        -------
+        Dict[str, List[Dict]]
+            Dictionary that conveys input and output layers specification.
+        """
+        for io in ("input", "output"):
+            if f"processed_{io}" not in model_io_spec.keys():
+                model_io_spec[f"processed_{io}"] = []
+                for spec in model_io_spec[io]:
+                    spec = deepcopy(spec)
+                    spec["name"] = "processed_" + spec["name"]
+                    model_io_spec[f"processed_{io}"].append(spec)
+
+        return model_io_spec

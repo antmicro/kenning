@@ -5,6 +5,10 @@
 import pytest
 
 from kenning.core.exceptions import VisualEditorGraphParserError
+from kenning.dispatcher.block_config import (
+    ConfigKey,
+    yaml_or_json_to_config_dict,
+)
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.tests.pipeline_manager.handler_tests import (
@@ -12,7 +16,7 @@ from kenning.tests.pipeline_manager.handler_tests import (
     factory_test_create_dataflow,
     factory_test_equivalence,
 )
-from kenning.utils.class_loader import load_class
+from kenning.utils.class_loader import objs_from_full_dict_config
 
 CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
     "name": "CameraDataProvider",
@@ -164,20 +168,28 @@ def use_static_io_spec_parser():
     runtime's static IO spec parser.
     """
 
-    def _create_model(dataset, json_dict):
-        cls = load_class(json_dict["type"])
-        model = cls.from_json(
-            dataset=dataset, json_dict=json_dict["parameters"]
-        )
-        model._json_dict = json_dict["parameters"]
-        return model
+    def _create_model_and_runtime(
+        model_wrapper_parameters, runtime_parameters, dataset_parameters
+    ):
+        config = {
+            "model_wrapper": model_wrapper_parameters,
+            "runtime": runtime_parameters,
+        }
+        if dataset_parameters:
+            config["dataset"] = dataset_parameters
+        config = yaml_or_json_to_config_dict(config)
+        objs = objs_from_full_dict_config(config)
+        objs[ConfigKey.model_wrapper]._json_dict = model_wrapper_parameters[
+            "parameters"
+        ]
+        return objs[ConfigKey.model_wrapper], objs[ConfigKey.runtime]
 
     def get_io_specification(self):
         return self._get_io_specification(
             self.model.parse_io_specification_from_json(self.model._json_dict)
         )
 
-    ModelRuntimeRunner._create_model = _create_model
+    ModelRuntimeRunner._create_model_and_runtime = _create_model_and_runtime
     ModelRuntimeRunner.get_io_specification = get_io_specification
 
 

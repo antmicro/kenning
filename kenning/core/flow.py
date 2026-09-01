@@ -11,6 +11,9 @@ from typing import Any, Dict, List
 import jsonschema
 
 from kenning.core.runner import Runner
+from kenning.dispatcher.block_config import (
+    yaml_or_json_to_config_dict,
+)
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
@@ -207,9 +210,19 @@ class KenningFlow:
                 for local_name, (_, global_name) in inputs_sources.items():
                     inputs_specs[local_name] = output_specs[global_name]
 
+                config = yaml_or_json_to_config_dict(
+                    {
+                        # Block type doesn't matter here
+                        "runtime": {
+                            "type": runner_cls.__name__,
+                            "parameters": cfg,
+                        },
+                    }
+                )
+
                 # instantiate runner
-                runner = runner_cls.from_json(
-                    cfg,
+                runner = runner_cls.build_from_config(
+                    config,
                     inputs_sources=inputs_sources,
                     inputs_specs=inputs_specs,
                     outputs=outputs,

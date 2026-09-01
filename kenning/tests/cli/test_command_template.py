@@ -95,3 +95,58 @@ class TestConfigureParser:
         assert next_groups is groups
         assert next_groups[DEFAULT_GROUP] is groups[DEFAULT_GROUP]
         assert group_titles(parser).count(DEFAULT_GROUP) == 1
+
+
+class TestAddGroups:
+    def test_a_list_creates_a_group_per_title(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+
+        groups = CommandTemplate.add_groups(parser, None, ["first", "second"])
+
+        assert set(groups) == {"first", "second"}
+        assert "first" in group_titles(parser)
+        assert "second" in group_titles(parser)
+
+    def test_a_dict_also_sets_the_descriptions(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+
+        groups = CommandTemplate.add_groups(
+            parser, None, {"first": "some description"}
+        )
+
+        assert groups["first"].description == "some description"
+
+    def test_a_missing_registry_starts_an_empty_one(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+
+        groups = CommandTemplate.add_groups(parser, None, [])
+
+        assert groups == {}
+
+    def test_new_titles_extend_an_existing_registry(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+        groups = CommandTemplate.add_groups(parser, None, ["first"])
+
+        groups = CommandTemplate.add_groups(parser, groups, ["second"])
+
+        assert set(groups) == {"first", "second"}
+
+    def test_a_known_title_is_not_created_twice(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+        groups = CommandTemplate.add_groups(parser, None, ["first"])
+        created = groups["first"]
+
+        groups = CommandTemplate.add_groups(parser, groups, ["first"])
+
+        assert groups["first"] is created
+        assert group_titles(parser).count("first") == 1
+
+    def test_arguments_stay_in_the_group_they_were_added_to(self) -> None:
+        parser = argparse.ArgumentParser(add_help=False)
+        groups = CommandTemplate.add_groups(parser, None, ["first", "second"])
+
+        groups["first"].add_argument("--in-first")
+        groups["second"].add_argument("--in-second")
+
+        assert flags_of(groups["first"]) == ["--in-first"]
+        assert flags_of(groups["second"]) == ["--in-second"]

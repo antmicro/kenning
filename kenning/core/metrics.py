@@ -15,7 +15,6 @@ from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import numpy as np
-from sklearn.metrics import f1_score, roc_auc_score
 
 from kenning.utils.logger import KLogger
 
@@ -985,6 +984,8 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
                     "ROC AUC and F1 score will not be calculated"
                 )
             else:
+                from sklearn.metrics import f1_score, roc_auc_score
+
                 class_num = len(set(targets))
                 if class_num == 2:
                     metrics[Metric.ROC_AUC] = roc_auc_score(targets, preds)

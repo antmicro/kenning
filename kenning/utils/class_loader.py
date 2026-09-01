@@ -299,14 +299,18 @@ def classes_from_full_dict_config(
                 ].keys()
             ):
                 if optimizer:
-                    optimizer_classes.append(load_class(optimizer))
+                    optimizer_classes.append(
+                        load_class_by_type(
+                            optimizer, ConfigKey.optimizers.value
+                        )
+                    )
             classes[ConfigKey.optimizers] = optimizer_classes
         else:
             class_name = list(
                 full_dict_config[BLOCK_CONFIGURATIONS_KEY][key].keys()
             )[0]
             if class_name:
-                classes[key] = load_class(class_name)
+                classes[key] = load_class_by_type(class_name, key.value)
     return classes
 
 

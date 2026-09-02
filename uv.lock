@@ -2348,8 +2348,6 @@ all = [
     { name = "renode-run" },
     { name = "rosbags" },
     { name = "rtmlib" },
-    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "servis", extra = ["bokeh", "matplotlib"] },
     { name = "simple-onnx-processing-tools" },
     { name = "skl2onnx" },
@@ -2417,8 +2415,6 @@ emlearn = [
     { name = "emlearn" },
     { name = "jinja2" },
     { name = "joblib" },
-    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "skl2onnx" },
 ]
 executorch = [
@@ -2433,7 +2429,6 @@ iree = [
     { name = "iree-base-runtime" },
     { name = "iree-tools-tf" },
     { name = "iree-tools-tflite" },
-    { name = "tf2onnx" },
 ]
 nni = [
     { name = "dill" },
@@ -2509,8 +2504,6 @@ ros2 = [
 ]
 sklearn = [
     { name = "joblib" },
-    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "skl2onnx" },
 ]
 speech-to-text = [
@@ -2685,7 +2678,6 @@ requires-dist = [
     { name = "rosbags", marker = "extra == 'ros2'" },
     { name = "rtmlib", marker = "extra == 'pose-estimation'", specifier = "==0.0.13" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
-    { name = "scikit-learn", marker = "extra == 'sklearn'", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">1.12.0" },
     { name = "servis", extras = ["bokeh", "matplotlib"], marker = "extra == 'reports'", git = "https://github.com/antmicro/servis.git" },
     { name = "simple-onnx-processing-tools", marker = "extra == 'onnx2tf'" },
@@ -2703,7 +2695,6 @@ requires-dist = [
     { name = "tensorstore", marker = "extra == 'coralnpu'" },
     { name = "tf-keras", marker = "extra == 'onnx2tf'", specifier = ">=2.21.0" },
     { name = "tf-keras", marker = "extra == 'tensorflow'", specifier = ">=2.21.0" },
-    { name = "tf2onnx", marker = "extra == 'iree'" },
     { name = "tf2onnx", marker = "extra == 'tensorflow'" },
     { name = "tflite", marker = "extra == 'tflite'" },
     { name = "tinygrad", marker = "python_full_version >= '3.11' and extra == 'tinygrad'", specifier = "==0.12.0" },
@@ -7056,7 +7047,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3aa82ffbce36ae8663d82220f66766b596224fda8b71f792a4e64fc94f6398e5" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3cb53147e72d39f3e8ac9e612fd8516b5a1cf41771c5425a2029528914133197" },
 ]
 
 [package.metadata]
@@ -7185,7 +7176,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:332d024cddaf92ef36eff25e3aff5c12cd2140d317a191b589fd40edb315d318" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ec7428f61a322a0bfec7e08566b1e372b8eead64c6ec8e5fdb6307d8a807cb29" },
 ]
 
 [package.metadata]
@@ -7314,7 +7305,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:64689da4289896994ecfa853a7fe925f1b64498047970decec47c85eb57fc4b9" },
+    { url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:74ce7beb19671f8f13fc645eddb3154c9076f6e791c98c90feb128b092025c11" },
 ]
 
 [package.metadata]

@@ -115,6 +115,27 @@ class OptimizerMock(Optimizer):
     inputtypes = ["keras"]
     outputtypes = ["keras"]
 
+    mock_counter = 0
+
+    @classmethod
+    def get_new_mock(cls, *args, **kwargs):
+        # Problem: When trying to use multiple optimizers at once, with the
+        # same class name, the class_loader goes crazy. Therefore we create a
+        # new class for every instance, adding a number to the name.
+        name = f"{cls.__name__}_{str(cls.mock_counter)}"
+        cls.mock_counter += 1
+        mock_optimizer_class = type(name, (cls,), {})
+        # For this to actually work, we need to add the class to the module,
+        # otherwise class_loader won't find it.
+        import kenning.tests.optimizers.test_target_side_optimization
+
+        setattr(
+            kenning.tests.optimizers.test_target_side_optimization,
+            name,
+            mock_optimizer_class,
+        )
+        return mock_optimizer_class(*args, **kwargs)
+
     def compile(
         self,
         input_model_path: PathOrURI,
@@ -160,7 +181,7 @@ class TestServerSideOptimization:
         Test local compilation.
         """
         optimizers = [
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
             )
@@ -218,14 +239,13 @@ class TestServerSideOptimization:
         Test various target-side compilation scenarios.
         """
         optimizers = [
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
             )
             for i, location in enumerate(optimizers_locations)
         ]
-
         runtime_target = TFLiteRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
@@ -271,12 +291,12 @@ class TestServerSideOptimization:
         Test various target-side compilation scenarios.
         """
         optimizers = [
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path("./build/compiled_model_0.h5"),
                 location="host",
             ),
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path("./build/compiled_model_1.h5"),
                 location="target",
@@ -327,7 +347,7 @@ class TestServerSideOptimization:
         Test target side optimizations handling when protocol is not specified.
         """
         optimizers = [
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
@@ -365,7 +385,7 @@ class TestServerSideOptimization:
         Test various target-side compilation scenarios.
         """
         optimizers = [
-            OptimizerMock(
+            OptimizerMock.get_new_mock(
                 dataset=None,
                 compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,

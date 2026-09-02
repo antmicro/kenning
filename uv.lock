@@ -304,13 +304,23 @@ sdist = { url = "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d
 [[package]]
 name = "antmicro-sphinx-utils"
 version = "0.0.0"
-source = { git = "https://github.com/antmicro/antmicro-sphinx-utils.git#094a9c2d53daf072d17d2aab48d925f4573c1a04" }
+source = { url = "https://github.com/antmicro/antmicro-sphinx-utils/archive/094a9c2d53daf072d17d2aab48d925f4573c1a04.zip" }
 dependencies = [
     { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "myst-parser", version = "5.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sphinx-immaterial" },
+    { name = "sphinx-tabs" },
+    { name = "sphinxcontrib-mermaid" },
+]
+sdist = { hash = "sha256:aff42783ca681b738ba724aa35cf42b7fb863799b041ff9f5d9904f131da8136" }
+
+[package.metadata]
+requires-dist = [
+    { name = "myst-parser" },
+    { name = "sphinx", specifier = "<9.0.0" },
+    { name = "sphinx-immaterial", url = "https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1-py3-none-any.whl" },
     { name = "sphinx-tabs" },
     { name = "sphinxcontrib-mermaid" },
 ]
@@ -3938,7 +3948,7 @@ tvm-cuda = [
 requires-dist = [
     { name = "ai-edge-litert", marker = "extra == 'onnx2tf'", specifier = ">=2.1.6" },
     { name = "albumentations", marker = "extra == 'albumentations'" },
-    { name = "antmicro-sphinx-utils", marker = "extra == 'docs'", git = "https://github.com/antmicro/antmicro-sphinx-utils.git" },
+    { name = "antmicro-sphinx-utils", marker = "extra == 'docs'", url = "https://github.com/antmicro/antmicro-sphinx-utils/archive/094a9c2d53daf072d17d2aab48d925f4573c1a04.zip" },
     { name = "anytree", marker = "extra == 'zephyr'" },
     { name = "argcomplete", specifier = ">=3.0" },
     { name = "astunparse", specifier = ">=1.6.3" },
@@ -4059,7 +4069,7 @@ requires-dist = [
     { name = "safetensors", marker = "extra == 'llm'" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">1.12.0" },
-    { name = "servis", extras = ["bokeh", "matplotlib"], marker = "extra == 'reports'", git = "https://github.com/antmicro/servis.git" },
+    { name = "servis", extras = ["bokeh", "matplotlib"], marker = "extra == 'reports'", url = "https://github.com/antmicro/servis/archive/e774d246b791b8223bd0bef45305a0e092b42b09.zip" },
     { name = "simple-onnx-processing-tools", marker = "extra == 'onnx2tf'" },
     { name = "skl2onnx", marker = "extra == 'sklearn'" },
     { name = "smac", marker = "extra == 'auto-pytorch'", git = "https://github.com/antmicro/smac3.git?rev=1.4.0-numpy-2" },
@@ -9134,10 +9144,11 @@ wheels = [
 [[package]]
 name = "servis"
 version = "0.0.1"
-source = { git = "https://github.com/antmicro/servis.git#e774d246b791b8223bd0bef45305a0e092b42b09" }
+source = { url = "https://github.com/antmicro/servis/archive/e774d246b791b8223bd0bef45305a0e092b42b09.zip" }
 dependencies = [
     { name = "plotext" },
 ]
+sdist = { hash = "sha256:b130ec650053feff0b98db8994511107a0dade0f9e764d375e8a03a13f295730" }
 
 [package.optional-dependencies]
 bokeh = [
@@ -9146,6 +9157,14 @@ bokeh = [
 matplotlib = [
     { name = "matplotlib" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "bokeh", marker = "extra == 'bokeh'", specifier = "==3.7.2" },
+    { name = "matplotlib", marker = "extra == 'matplotlib'", specifier = "==3.10.1" },
+    { name = "plotext", specifier = "==5.0.2" },
+]
+provides-extras = ["bokeh", "matplotlib"]
 
 [[package]]
 name = "setproctitle"

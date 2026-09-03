@@ -34,7 +34,7 @@ def create_mocks(mocker, module_name, core_cls):
             framework_name = cls.get_framework()
         mock = mocker.patch(cls_name)
         mock.__name__ = cls.__name__
-        mocker.patch(f"{cls_name}.from_json", return_value=mock)
+        mocker.patch(f"{cls_name}.build_from_config", return_value=mock)
         if static_io_spec_getter is not None:
             mock.parse_io_specification_from_json = static_io_spec_getter
         if framework_name is not None:

@@ -459,6 +459,7 @@ class MarkdownReport(Report):
                         cfg=self.cfg_name,
                         model_wrapper=self.model_wrapper,
                         remove_layer_prefix=self.remove_layer_prefix,
+                        report_path=self.report_path,
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():

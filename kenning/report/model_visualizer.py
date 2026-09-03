@@ -20,12 +20,12 @@ from pipeline_manager.dataflow_builder.data_structures import (
 from pipeline_manager.dataflow_builder.dataflow_builder import (
     GraphBuilder,
 )
-
-# from pipeline_manager.dataflow_builder.entities import Interface
 from pipeline_manager.specification_builder import SpecificationBuilder
 
 
-def _get_layer_information_from_onnx(model: onnx.ModelProto) -> (list, int, list):
+def _get_layer_information_from_onnx(
+    model: onnx.ModelProto
+) -> (list, int, list):
     """
     Extracts model information from onnx file.
 
@@ -152,10 +152,9 @@ def create_visualization_from_onnx(
     layers, max_connections, inputs_shape = _get_layer_information_from_onnx(
         model
     )
-
+    savedir.mkdir(exist_ok=True, parents=True)
     SPECIFICATION_VERSION = "20260623.14"
-    ASSETS_DIRECTORY = Path("./assets")
-    WORKSPACE_DIRECTORY = Path("pm-workspace")
+    WORKSPACE_DIRECTORY = savedir / Path("pm-workspace")
 
     frontend_changed = True
     if WORKSPACE_DIRECTORY.exists():
@@ -172,7 +171,6 @@ def create_visualization_from_onnx(
 
     specification_builder = SpecificationBuilder(
         spec_version=SPECIFICATION_VERSION,
-        assets_dir=ASSETS_DIRECTORY,
         check_urls=True,
     )
 
@@ -188,7 +186,7 @@ def create_visualization_from_onnx(
     specification_builder.add_node_type_interface(
         name="input",
         interfacename="output",
-        side="right",
+        side="left",
         direction="output",
         maxcount=MAX_CONNECTION_COUNT,
     )
@@ -212,14 +210,14 @@ def create_visualization_from_onnx(
             interfacename=str("input"),
             maxcount=MAX_CONNECTION_COUNT,
             direction="input",
-            side="right",
+            side="left",
         )
         specification_builder.add_node_type_interface(
             name=type,
             interfacename=str("output"),
             maxcount=MAX_CONNECTION_COUNT,
             direction="output",
-            side="right",
+            side="left",
         )
 
         specification_builder.add_node_type_category(
@@ -290,7 +288,7 @@ def create_visualization_from_onnx(
             if property.name == name:
                 return property
 
-    for i, layer in enumerate(layers):
+    for layer in layers:
         node = graph.create_node(layer["op_type"])
         node.instance_name = layer["name"].removeprefix(remove_layer_prefix)
 

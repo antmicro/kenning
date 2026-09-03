@@ -36,6 +36,7 @@ def model_report(
     color_offset: int = 0,
     model_wrapper: Optional[ModelWrapper] = None,
     remove_layer_prefix: Optional[str] = "",
+    report_path: Optional[Path] = Path("."),
     **kwargs: Any,
 ) -> Tuple[str, Dict]:
     """
@@ -64,6 +65,8 @@ def model_report(
         ModelWrapper of the reported model
     remove_layer_prefix: Optional[str]
         Prefix that should be removed from layer names in model visualization
+    report_path: Optional[Path]
+        Path to the report file used to save KPM graph and specification
     **kwargs : Any
         Additional keyword arguments.
 
@@ -128,11 +131,11 @@ def model_report(
         return "", {}
 
     spec, graph = model_visualizer.create_visualization_from_onnx(
-        onnx_model, Path("./build/"), remove_layer_prefix=remove_layer_prefix
+        onnx_model, report_path.parent, remove_layer_prefix=remove_layer_prefix
     )
 
-    measurementsdata["spec"] = spec
-    measurementsdata["graph"] = graph
+    measurementsdata["spec"] = spec.name
+    measurementsdata["graph"] = graph.name
 
     initializer_map = {
         init.name: init for init in onnx_model.graph.initializer

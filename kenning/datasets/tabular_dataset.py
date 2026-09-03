@@ -14,6 +14,7 @@ from sklearn import metrics
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
+from kenning.utils.resource_manager import ResourceManager
 
 DATA_TYPE = "float64"
 
@@ -112,9 +113,7 @@ class TabularDataset(Dataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(exist_ok=True, parents=True)
-        csv_path = self._get_csv_path()
-        df = pl.read_csv(self.dataset_path)
-        df.write_csv(csv_path, include_header=True)
+        ResourceManager().get_resource(self.dataset_path, self._get_csv_path())
 
     def prepare(self):
         csv_path = self._get_csv_path()

@@ -198,7 +198,7 @@ class MarkdownReport(Report):
             "names in model visualization",
             "type": str,
             "nullable": True,
-            "default": "",
+            "default": None,
         },
     }
 

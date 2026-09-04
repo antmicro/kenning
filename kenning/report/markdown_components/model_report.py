@@ -35,8 +35,8 @@ def model_report(
     colors: Optional[List] = None,
     color_offset: int = 0,
     model_wrapper: Optional[ModelWrapper] = None,
-    remove_layer_prefix: Optional[str] = "",
-    report_path: Optional[Path] = Path("."),
+    remove_layer_prefix: Optional[str] = None,
+    report_path: Optional[Path] = None,
     **kwargs: Any,
 ) -> Tuple[str, Dict]:
     """

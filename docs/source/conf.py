@@ -20,6 +20,7 @@
 Configuration for Kenning Sphinx-based documentation.
 """
 
+import importlib.util
 import os
 import sys
 
@@ -37,9 +38,7 @@ from antmicro_sphinx_utils.defaults import (
     numfig_format as default_numfig_format,
 )
 
-try:
-    import kenning  # ruff:ignore[unused-import]
-except ImportError:
+if importlib.util.find_spec("kenning") is None:
     sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------

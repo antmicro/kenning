@@ -119,6 +119,7 @@ tvm = [
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
+    "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
 ]
 tinygrad = [
     "tinygrad==0.12.0 ; python_version>='3.11'", # Fixing version, because of a bug in 0.13.0.
@@ -192,7 +193,6 @@ ros2 = [
 albumentations = [
     "albumentations",
 ]
-
 onnx2tf = [
     "onnx2tf>=1.28.8",
     "onnxruntime==1.23.2",
@@ -207,24 +207,20 @@ onnx2tf = [
     "ml_dtypes>=0.5.4,<1.0.0",
     "flatbuffers>=23.1.21",
 ]
-
 executorch = [
     "kenning[torch]",
     "executorch>=0.6.0",
     "torchao",
 ]
-
 sklearn = [
     "joblib",
     "skl2onnx",
 ]
-
 emlearn = [
     "emlearn",
     "kenning[sklearn]",
     "jinja2",
 ]
-
 llm = [
     "transformers>=5.0.0",
     "rouge-score",
@@ -234,14 +230,20 @@ llm = [
     "vllm==0.27.1",
     "gptqmodel>=7.3.2",
 ]
-
 sparsity_aware_kernel = [
     "kenning[llm]",
     "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
 ]
-
 all = [
     "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
+]
+
+[dependency-groups]
+tvm-cuda = [
+    "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
+    "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
+    "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
+    "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

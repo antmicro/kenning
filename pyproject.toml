@@ -135,10 +135,12 @@ iree = [
     "iree-tools-tflite==20250718.1326",
 ]
 onnxruntime = [
-    "onnxruntime==1.23.2",
+    "onnxruntime==1.23.2; python_version < '3.11'",
+    "onnxruntime>=1.29.0; python_version >= '3.11'",
 ]
 onnxruntime_gpu = [
-    "onnxruntime-gpu==1.23.2",
+    "onnxruntime-gpu==1.23.2; python_version < '3.11'",
+    "onnxruntime-gpu>=1.29.0; python_version >= '3.11'",
 ]
 test = [
     "filelock",
@@ -199,7 +201,8 @@ albumentations = [
 ]
 onnx2tf = [
     "onnx2tf>=1.28.8",
-    "onnxruntime==1.23.2",
+    "onnxruntime==1.23.2; python_version < '3.11'",
+    "onnxruntime>=1.29.0; python_version >= '3.11'",
     "onnxsim==0.4.33; python_version < '3.12'",
     "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",

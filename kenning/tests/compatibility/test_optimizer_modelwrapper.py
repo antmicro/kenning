@@ -147,10 +147,6 @@ EXPECTED_FAIL = [
     ("PyTorchPetDatasetMobileNetV2", "Ai8xCompiler"),
     ("PyTorchPetDatasetMobileNetV2", "TensorFlowClusteringOptimizer"),
     ("PyTorchPetDatasetMobileNetV2", "TensorFlowPruningOptimizer"),
-    # TODO: This test currently fails because of adaptive_avg_pool2d
-    # in the forward layer of MobileNetV2. TVM is failing to compile
-    # this since upgrading to torch==2.13
-    ("PyTorchPetDatasetMobileNetV2", "TVMCompiler"),
     ("PyTorchAnomalyDetectionANN", "Ai8xCompiler"),
     ("PyTorchAnomalyDetectionANN", "NNIPruningOptimizer"),
     ("PyTorchAnomalyDetectionANN", "TensorFlowClusteringOptimizer"),

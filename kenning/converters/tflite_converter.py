@@ -94,10 +94,14 @@ class TFLiteConverter(ModelConverter):
         IOSpecificationNotFoundError
             Raised if input specification is not provided.
         """
+        import tflite
         import tvm.relay as relay
 
-        if model is None:
-            model = self.to_tflite(**kwargs)
+        model = self.to_tflite(model=model, **kwargs)
+
+        if not isinstance(model, tflite.Model):
+            model_data = model.convert()
+            model = tflite.Model.GetRootAsModel(model_data, 0)
 
         input_shapes = {
             spec["name"]: spec["shape"] for spec in io_spec["processed_input"]

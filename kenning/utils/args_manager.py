@@ -791,6 +791,8 @@ class ArgumentsHandler(ABC):
         ValueError
             Casting is not possible.
         """
+        if target_type is object:
+            return value
         if isinstance(value, (list, List, Tuple, tuple)):
             if not hasattr(target_type, "__args__"):
                 raise ValueError(

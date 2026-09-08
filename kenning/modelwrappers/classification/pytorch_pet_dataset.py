@@ -186,6 +186,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.model.classifier.apply(weights_init)
             self.model_prepared = True
             self.save_model(self.model_path)
+
+        # Disable the Dynamo ONNX exporter for MobileNetV2: its exported
+        # Reshape is incompatible with TVM
+        self.model.kenning_use_dynamo = False
         self.model.to(self.device)
 
     def train_model(self):

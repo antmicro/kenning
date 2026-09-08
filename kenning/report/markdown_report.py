@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-A package that provides markdown and HTML report generator
+A package that provides Markdown and HTML report generator
 implementation of core report class.
 """
 
@@ -73,8 +73,10 @@ from kenning.core.report import Report, ReportTypes
 
 class MarkdownReport(Report):
     """
-    Class responsible for markdown report generation.
+    Class responsible for Markdown report generation.
     """
+
+    report_path: Path
 
     arguments_structure = {
         "to_html": {
@@ -207,14 +209,14 @@ class MarkdownReport(Report):
 
     def __init__(
         self,
-        measurements: List[Path] | Path = [None],
+        measurements: List[Path] | Path | None = None,
         report_name: Optional[str] = None,
-        report_path: Path = None,
+        report_path: Optional[Path] = None,
         to_html: bool | Path = False,
         root_dir: Optional[Path] = None,
-        report_types: List[str] = None,
+        report_types: Optional[List[str]] = None,
         img_dir: Optional[Path] = None,
-        model_names: Optional[str] = None,
+        model_names: Optional[List[str]] = None,
         only_png_images: bool = False,
         comparison_only: bool = False,
         skip_unoptimized_model: bool = False,
@@ -232,6 +234,14 @@ class MarkdownReport(Report):
         dataset: Optional[Dataset] = None,
         remove_layer_prefix: Optional[str] = "",
     ):
+        if report_path is None:
+            raise argparse.ArgumentError(
+                None,
+                "'--report-path' has to be defined - it is the path the "
+                "report is written to, and the source the HTML report "
+                "requested by '--to-html' is rendered from.",
+            )
+
         super().__init__(
             measurements,
             report_name,
@@ -263,7 +273,7 @@ class MarkdownReport(Report):
 
         KLogger.debug(f"Report measurements: {self.measurements}")
 
-        self.measurementsdata = {}
+        self.measurementsdata = []
 
         if main_quality_metric:
             self.main_quality_metric = Metric[main_quality_metric.upper()]
@@ -278,7 +288,7 @@ class MarkdownReport(Report):
 
         if (
             self.to_html
-            and not report_path.exists()
+            and not self.report_path.exists()
             and not self.measurements[0]
         ):
             raise argparse.ArgumentError(
@@ -298,7 +308,7 @@ class MarkdownReport(Report):
             )
 
         if self.comparison_only and len(self.measurements) <= 1:
-            KLogger.warn(
+            KLogger.warning(
                 "'--comparison-only' used, but only one measurements file"
                 " provided - creating standard report"
             )
@@ -333,7 +343,7 @@ class MarkdownReport(Report):
         """
         Generates an MyST report based on Measurements data.
 
-        The report is saved to the file in ``outputpath``.
+        The report is saved to the file in ``report_path``.
 
         Parameters
         ----------
@@ -408,7 +418,7 @@ class MarkdownReport(Report):
                     reporttemplate, header_data
                 )
 
-        if self.automl_stats:
+        if self.automl_stats and self.img_dir and self.root_dir:
             content += automl_report(
                 self.automl_stats,
                 self.img_dir,
@@ -456,7 +466,7 @@ class MarkdownReport(Report):
                         cmap=self.cmap,
                         colors=self.colors,
                         draw_titles=draw_titles,
-                        measurements_path=Path(self.measurements[i]),
+                        measurements_path=model_data["measurements_path"],
                         compiled_model_path=self.compiled_model_path,
                         zephyr_trace_file_ctf=self.zephyr_trace_file_ctf,
                         zephyr_trace_file_tef=self.zephyr_trace_file_tef,
@@ -499,6 +509,7 @@ class MarkdownReport(Report):
         self,
         subcommands: Optional[List[str]] = None,
         command: Optional[List[str]] = None,
+        automl_stats: Optional[Path] = None,
     ):
         """
         Generate report.
@@ -509,6 +520,9 @@ class MarkdownReport(Report):
             Used subcommands from parsed arguments.
         command : Optional[List[str]]
             A list of arguments from command line.
+        automl_stats : Optional[Path]
+            Path to the JSON file with statistics during the AutoML run,
+            overriding the one given to the constructor.
 
         Raises
         ------
@@ -516,6 +530,9 @@ class MarkdownReport(Report):
             if there is missing or wrong arguments
         """
         KLogger.debug(f"Measurements {self.measurements}")
+
+        if automl_stats is not None:
+            self.automl_stats = automl_stats
 
         if self.measurements[0]:
             (
@@ -530,7 +547,7 @@ class MarkdownReport(Report):
                 automl_stats_file=self.automl_stats,
             )
 
-        if "build_cfg" in self.measurementsdata[0]:
+        if self.measurementsdata and "build_cfg" in self.measurementsdata[0]:
             json_cfg = json.loads(
                 "\n".join(self.measurementsdata[0]["build_cfg"])
             )
@@ -553,7 +570,7 @@ class MarkdownReport(Report):
                     }
                     json_cfg["model_wrapper"]["parameters"] = parameters
         self.cfg_name = None
-        if "cfg_path" in self.measurementsdata[0]:
+        if self.measurementsdata and "cfg_path" in self.measurementsdata[0]:
             self.cfg_name = self.measurementsdata[0]["cfg_path"].rsplit(
                 "/", 1
             )[-1]
@@ -566,7 +583,7 @@ class MarkdownReport(Report):
             )
 
         # Fill missing colors with ones generated from nipy_spectral
-        self.colors = KENNING_COLORS
+        self.colors = list(KENNING_COLORS)
 
         if len(self.measurementsdata) > len(self.colors):
             self.colors += [
@@ -583,7 +600,7 @@ class MarkdownReport(Report):
             not self.to_html
             and self.comparison_only
             and len(self.measurements) <= 1
-            and AUTOML not in subcommands
+            and AUTOML not in (subcommands or [])
         ):
             raise argparse.ArgumentError(
                 None,

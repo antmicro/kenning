@@ -659,7 +659,23 @@ class BytesBasedProtocol(Protocol, ABC):
                 message_type in self.server_download_callbacks
                 and self.server_download_callbacks[message_type] is not None
             ):
-                status, data = self.server_download_callbacks[message_type]()
+                try:
+                    status, data = self.server_download_callbacks[
+                        message_type
+                    ]()
+                except Exception as e:
+                    KLogger.error(
+                        "Download callback " f"raised an exception: {e}"
+                    )
+                    KLogger.debug(e, exc_info=e, stack_info=True)
+                    self.transmit(
+                        message_type,
+                        b"",
+                        [
+                            TransmissionFlag.IS_KENNING,
+                            TransmissionFlag.FAIL,
+                        ],
+                    )
                 if status.success:
                     self.transmit(
                         message_type,
@@ -679,7 +695,21 @@ class BytesBasedProtocol(Protocol, ABC):
                 message_type in self.server_upload_callbacks
                 and self.server_upload_callbacks[message_type] is not None
             ):
-                status = self.server_upload_callbacks[message_type](payload)
+                try:
+                    status = self.server_upload_callbacks[message_type](
+                        payload
+                    )
+                except Exception as e:
+                    KLogger.error(f"Upload callback raised an exception: {e}")
+                    KLogger.debug(e, exc_info=e, stack_info=True)
+                    self.transmit(
+                        message_type,
+                        b"",
+                        [
+                            TransmissionFlag.IS_KENNING,
+                            TransmissionFlag.FAIL,
+                        ],
+                    )
                 self.transmit(
                     message_type,
                     status.last_action.to_bytes(),

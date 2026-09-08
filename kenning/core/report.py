@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Functions to generate Markdown reports from templates and Measurements objects.
+Functions to generate reports from templates and Measurements objects.
 """
 
 import json
@@ -79,7 +79,7 @@ class Report(ArgumentsHandler, ABC):
 
     def __init__(
         self,
-        measurements: Path | List[Path] = [None],
+        measurements: Path | List[Path] | None = None,
         report_name: Optional[str] = None,
         report_types: Optional[List[str]] = None,
         automl_stats: Optional[Path] = None,
@@ -90,7 +90,7 @@ class Report(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        measurements : Path | List[Path]
+        measurements : Path | List[Path] | None
             Path to the JSON files with measurements.
         report_name : Optional[str]
             Name of the report.
@@ -157,7 +157,8 @@ class Report(ArgumentsHandler, ABC):
 
     @staticmethod
     def deduce_report_types(
-        measurements_data: List[Dict], measurementspath: Path
+        measurements_data: List[Dict],
+        measurements_paths: Path | List[Path] | None = None,
     ) -> List[str]:
         """
         Deduces what type of report should be generated
@@ -171,19 +172,30 @@ class Report(ArgumentsHandler, ABC):
         measurements_data : List[Dict]
             List with measurements data from which the
             report will be generated.
-        measurementspath: Path
-            Path to the measurements data file.
+        measurements_paths: Path | List[Path] | None
+            Paths to the measurements data files.
 
         Returns
         -------
         List[str]
             List with types of report
         """
+        if not measurements_data:
+            KLogger.error(
+                "There is no measurements data to deduce report types from"
+            )
+            return []
+
+        if measurements_paths is None:
+            measurements_paths = []
+        elif not isinstance(measurements_paths, list):
+            measurements_paths = [measurements_paths]
+
         report_types = []
 
-        def _append_type_if(_type: str, func: Callable):
+        def _append_type_if(_type: ReportTypes, func: Callable):
             if all(map(func, measurements_data)):
-                report_types.append(_type)
+                report_types.append(_type.value)
 
         _append_type_if(
             ReportTypes.COMPILATION,
@@ -233,18 +245,20 @@ class Report(ArgumentsHandler, ABC):
         )
         from kenning.utils.zpl_suffix import ZplSuffix
 
-        _append_type_if(
-            ReportTypes.ZEPHYR_TRACES,
-            lambda data: measurementspath is not None
-            and (
+        def _has_traces(measurements_path: Path) -> bool:
+            return (
                 ZplSuffix.TRACE_JSON._get_path_with_suffix(
-                    Path(measurementspath)
+                    Path(measurements_path)
                 ).is_file()
                 or ZplSuffix.CTF._get_path_with_suffix(
-                    Path(measurementspath)
+                    Path(measurements_path)
                 ).is_file()
-            ),
+            )
+
+        has_traces = len(measurements_paths) == len(measurements_data) and all(
+            map(_has_traces, measurements_paths)
         )
+        _append_type_if(ReportTypes.ZEPHYR_TRACES, lambda data: has_traces)
 
         if len(report_types) == 0:
             KLogger.error(
@@ -316,9 +330,9 @@ class Report(ArgumentsHandler, ABC):
         model_names: Optional[List[str]] = None,
         report_types: Optional[List[str]] = None,
         automl_stats_file: Optional[Path] = None,
-    ) -> Tuple[Dict, List[str], Optional[Dict]]:
+    ) -> Tuple[List[Dict], List[str], Optional[Dict]]:
         """
-        Loads all files with measurements and prepares list of report types.
+        Loads all files with measurements and prepares a list of report types.
 
         Parameters
         ----------
@@ -337,7 +351,7 @@ class Report(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dict
+        List[Dict]
             Measurements data to use for report
         List[str]
             List of report types, either passed from arguments or derived
@@ -350,18 +364,19 @@ class Report(ArgumentsHandler, ABC):
         argparse.ArgumentError :
             Raised when report types cannot be deduced from measurements data
         """
-        measurementsdata = []
-        for i, measurementspath in enumerate(measurements_files):
-            if not os.path.exists(measurementspath):
+        measurements_data = []
+        loaded_paths = []
+        for i, measurements_path in enumerate(measurements_files):
+            if not measurements_path or not os.path.exists(measurements_path):
                 continue
 
-            with open(measurementspath, "r") as measurementsfile:
-                measurements = json.load(measurementsfile)
+            with open(measurements_path, "r") as measurements_file:
+                measurements = json.load(measurements_file)
             if model_names is not None:
                 measurements["model_name"] = model_names[i]
             elif "model_name" not in measurements:
                 measurements["model_name"] = cls.get_model_name(
-                    measurementspath
+                    Path(measurements_path)
                 )
             measurements["model_name"] = measurements["model_name"].replace(
                 " ", "_"
@@ -377,14 +392,17 @@ class Report(ArgumentsHandler, ABC):
                         "model_name"
                     ] = f"unoptimized {measurements['model_name']}"
                 unoptimized[Measurements.UNOPTIMIZED] = True
-                measurementsdata.append(unoptimized)
-            measurementsdata.append(measurements)
+                unoptimized["measurements_path"] = Path(measurements_path)
+                measurements_data.append(unoptimized)
+            measurements["measurements_path"] = Path(measurements_path)
+            measurements_data.append(measurements)
+            loaded_paths.append(Path(measurements_path))
 
         if not report_types:
             report_types = cls.deduce_report_types(
-                measurementsdata, measurementspath
+                measurements_data, loaded_paths
             )
-        if report_types is None:
+        if not report_types:
             raise ArgumentError(
                 None,
                 "Report types cannot be deduced. Please specify "
@@ -392,7 +410,7 @@ class Report(ArgumentsHandler, ABC):
                 "measurements were chosen.",
             )
 
-        for measurements in measurementsdata:
+        for measurements in measurements_data:
             if "build_cfg" in measurements:
                 measurements["build_cfg"] = json.dumps(
                     measurements["build_cfg"], indent=4
@@ -414,7 +432,7 @@ class Report(ArgumentsHandler, ABC):
             with automl_stats_file.open("r") as fd:
                 automl_stats = json.load(fd)
 
-        return measurementsdata, report_types, automl_stats
+        return measurements_data, report_types, automl_stats
 
     @classmethod
     def from_argparse(cls, args: Namespace, **kwargs) -> "Report":

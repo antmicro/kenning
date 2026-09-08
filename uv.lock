@@ -3948,7 +3948,7 @@ requires-dist = [
     { name = "tf-keras", marker = "extra == 'onnx2tf'", specifier = ">=2.21.0" },
     { name = "tf-keras", marker = "extra == 'tensorflow'", specifier = ">=2.21.0" },
     { name = "tf2onnx", marker = "extra == 'tensorflow'" },
-    { name = "tflite", marker = "extra == 'tflite'" },
+    { name = "tflite", marker = "extra == 'tflite'", specifier = ">=2.1" },
     { name = "tinygrad", marker = "python_full_version >= '3.11' and extra == 'tinygrad'", specifier = "==0.12.0" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "torch", marker = "extra == 'torch'", specifier = "==2.13.0" },

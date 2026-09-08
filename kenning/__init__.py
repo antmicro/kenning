@@ -12,12 +12,12 @@ This module consists of benchmarking tools and scenarios for checking:
 * Deep Learning models' compilers.
 """
 
-import contextlib
 import importlib.util
 import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
+from kenning.temporary_fixes.triton import install_triton_preloader
 from kenning.utils.excepthook import kenning_missing_import_excepthook
 from kenning.utils.logger import KLogger
 
@@ -50,9 +50,7 @@ except PackageNotFoundError:
 # TODO: pinned version of triton is compiled
 # against LLVM 23 while tensorflow is compiled against
 # LLVM 18, which causes symbol collision errors.
-# We import triton first to load the newer LLVM symbols.
-with contextlib.suppress(ImportError):
-    import triton  # noqa: F401
+install_triton_preloader()
 
 # Importing onnx2tf sets TF_USE_LEGACY_KERAS, which makes `tf.keras` resolve
 # to tf_keras (Keras 2). The variable has to be set before TensorFlow

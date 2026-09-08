@@ -31,6 +31,7 @@ IGNORED_MODULES = {
     "ai8x",
     # nvidia-ml-py, library for Nvidia GPU statisctics
     "pynvml",
+    "triton",
     # Python.NET modules
     "System",
     # TODO: LLM quantization modules. Will be replaced

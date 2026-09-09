@@ -63,8 +63,8 @@ def _prepare_traces(
     prepare_cmd.extend(
         [
             "-o",
-            prepare_output_path,
-            prepare_input_path,
+            str(prepare_output_path),
+            str(prepare_input_path),
         ]
     )
 
@@ -380,7 +380,8 @@ class ZephyrPlatform(BareMetalPlatform):
         KLogger.info("Traces capture completed.")
 
         if self.tracing_subprocess.returncode != 0:
-            msg = f"West command: '{' '.join(self.cmd)}' failed"
+            cmd_str = " ".join(map(str, self.cmd))
+            msg = f"West command: '{cmd_str}' failed"
             if stderr is not None:
                 msg += f" with a message:\n\n{stderr.decode()}"
             KLogger.error(msg)

@@ -3842,7 +3842,7 @@ requires-dist = [
     { name = "docutils", marker = "extra == 'docs'" },
     { name = "dts2repl", marker = "extra == 'zephyr'", git = "https://github.com/antmicro/dts2repl?rev=main" },
     { name = "emlearn", marker = "extra == 'emlearn'" },
-    { name = "executorch", marker = "extra == 'executorch'", specifier = ">=0.6.0" },
+    { name = "executorch", marker = "extra == 'executorch'", specifier = ">=1.1.0" },
     { name = "filelock", marker = "extra == 'test'" },
     { name = "flatbuffers", marker = "extra == 'onnx2tf'", specifier = ">=23.1.21" },
     { name = "flax", marker = "extra == 'coralnpu'" },

@@ -216,7 +216,7 @@ onnx2tf = [
 ]
 executorch = [
     "kenning[torch]",
-    "executorch>=0.6.0",
+    "executorch>=1.1.0",
     "torchao",
 ]
 sklearn = [

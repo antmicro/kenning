@@ -20,6 +20,7 @@ from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     CompilationError,
+    ConversionError,
     DynamicIOSpecError,
 )
 from kenning.core.measurements import MeasurementsCollector
@@ -82,6 +83,7 @@ class IREECompiler(Optimizer):
         "flax",
         "keras",
         "tflite",
+        "gemma",
         "any",
     ]
 
@@ -242,23 +244,29 @@ class IREECompiler(Optimizer):
         intermediate_mlir_path = self.compiled_model_path.with_suffix(
             ".tmp.mlir"
         )
+        intermediate_mlir_path.parent.mkdir(exist_ok=True)
 
-        if input_type == "flax":
+        converted_to_mlir = True
+        conversion_kwargs = {
+            "io_spec": io_spec,
+            "model_cls": model_cls,
+            "model_wrapper": self.model_wrapper,
+        }
+        try:
             conversion_input = self.model_wrapper or input_model_path
             mlir_model = converter_registry.convert(
                 conversion_input,
-                "flax",
+                input_type,
                 "mlir",
+                **conversion_kwargs,
+                **kwargs,
             )
 
             intermediate_mlir_path.write_text(mlir_model)
+        except ConversionError:
+            converted_to_mlir = False
 
-        else:
-            conversion_kwargs = {
-                "io_spec": io_spec,
-                "model_cls": model_cls,
-            }
-
+        if not converted_to_mlir:
             # To compile a model with IREE compiler, we first convert it to
             # ONNX, as direct TensorFlow import is unstable
             onnx_model = converter_registry.convert(

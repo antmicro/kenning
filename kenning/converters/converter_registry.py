@@ -192,6 +192,22 @@ class ConverterRegistry(metaclass=Singleton):
         ConversionError
             If no conversion path exists or all paths fail.
         """
+        # If model wrapper has a custom logic for a given conversion,
+        # use it as the first option
+        model_wrapper = kwargs.get("model_wrapper", None)
+        if model_wrapper and (
+            model_wrapper_converter := getattr(
+                model_wrapper, f"to_{dst_format}", None
+            )
+        ):
+            try:
+                KLogger.debug(f"Converting with: {model_wrapper_converter}")
+                return model_wrapper_converter(model, **kwargs)
+            except Exception as e:
+                KLogger.warning(
+                    f"Custom converted to {dst_format} failed; reason: {e}"
+                )
+
         real_src = self._resolve_format(src_format)
         real_dst = self._resolve_format(dst_format)
 

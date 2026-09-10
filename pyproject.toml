@@ -225,6 +225,15 @@ emlearn = [
     "jinja2",
 ]
 
+gemma = [
+    "transformers>=5.0.0",
+    "rouge-score",
+    "jax",
+    "jaxlib",
+    "gemma==4.0.1; python_version>='3.12'",
+    "etils @ https://github.com/google/etils/archive/8c9456731e27bc0616138651c9efb8092ab74b61.tar.gz ; python_version>='3.11'"
+]
+
 all = [
     "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
 ]

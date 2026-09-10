@@ -324,7 +324,7 @@ class PipelineRunner(object):
                 model_size *= 1024  # Convert to bytes
             except OptimizedModelSizeError as e:
                 KLogger.warning(f"Cannot retrieve optimized model size: {e}")
-        if not model_size and model_path:
+        if not model_size and model_path and Path(model_path).exists():
             model_size = Path(model_path).stat().st_size
 
         if model_size:

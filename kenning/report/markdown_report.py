@@ -57,6 +57,7 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 
+from kenning.core.dataset import Dataset
 from kenning.core.drawing import (
     KENNING_COLORS,
     RED_GREEN_CMAP,
@@ -226,6 +227,7 @@ class MarkdownReport(Report):
         zephyr_build_path: Optional[Path] = None,
         zephyr_base: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        dataset: Optional[Dataset] = None,
         remove_layer_prefix: Optional[str] = "",
     ):
         super().__init__(
@@ -252,6 +254,7 @@ class MarkdownReport(Report):
         self.zephyr_trace_file_tef = zephyr_trace_file_tef
         self.zephyr_base = zephyr_base
         self.zephyr_build_path = zephyr_build_path
+        self.dataset = dataset
         # This is set directly by the PipelineRunner
         self.last_optimizer = None
         self.remove_layer_prefix = remove_layer_prefix
@@ -532,6 +535,16 @@ class MarkdownReport(Report):
             json_cfg = json.loads(
                 "\n".join(self.measurementsdata[0]["build_cfg"])
             )
+            if "dataset" in json_cfg:
+                if "parameters" in json_cfg["dataset"]:
+                    parameters = {
+                        k: v
+                        for k, v in json_cfg["dataset"]["parameters"].items()
+                        if v is not None
+                    }
+                    json_cfg["dataset"]["parameters"] = parameters
+
+                self.dataset = obj_from_json(json_cfg, ConfigKey.dataset)
             if "model_wrapper" in json_cfg:
                 if "parameters" in json_cfg["model_wrapper"]:
                     parameters = {
@@ -544,7 +557,7 @@ class MarkdownReport(Report):
                     json_cfg["model_wrapper"]["parameters"] = parameters
 
                 self.model_wrapper = obj_from_json(
-                    json_cfg, ConfigKey.model_wrapper
+                    json_cfg, ConfigKey.model_wrapper, dataset=self.dataset
                 )
 
         self.cfg_name = None

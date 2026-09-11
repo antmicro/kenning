@@ -12,7 +12,7 @@ OUTPUT_DIR_VAL=${OUTPUT_DIR:-./docs}
 
 pushd $ZEPHYR_WORKSPACE/kenning-zephyr-runtime
 mkdir -p build/
-python -m kenning report \
+python -m kenning optimize test report \
     --cfg $SCENARIO_PATH_VAL \
     --measurements ./results.json \
     --report-path $OUTPUT_DIR_VAL/source/generated/$REPORT_NAME_VAL \

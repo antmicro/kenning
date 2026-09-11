@@ -363,6 +363,7 @@ class ZephyrPlatform(BareMetalPlatform):
             *(["--no-debug-server"] if self.no_dbg_server else []),
             f"--gdb={self.gdb_binary_name}",
             f"--gdb-port={self.gdb_port}",
+            "--no-expect-start-tag",
             "--capture-once",
             "--elf-path="
             f"{str(self.zephyr_build_path / 'zephyr' / 'zephyr.elf')}",

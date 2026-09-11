@@ -162,9 +162,9 @@ class PyTorchRuntime(Runtime):
 
     def run(self):
         if self.model is None:
-            raise ModelNotPreparedError
+            raise ModelNotPreparedError()
         if self.input is None:
-            raise InputNotPreparedError
+            raise InputNotPreparedError()
         import torch
 
         with torch.no_grad():
@@ -174,6 +174,8 @@ class PyTorchRuntime(Runtime):
     def extract_output(self) -> List[np.ndarray]:
         import torch
 
+        if self.model is None:
+            raise ModelNotPreparedError()
         results = []
         for id, output in enumerate(self.output):
             if isinstance(output, torch.Tensor):

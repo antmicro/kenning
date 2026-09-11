@@ -39,13 +39,13 @@ from kenning.scenarios.manage_cache import format_size
 from kenning.utils.logger import KLogger
 
 if sys.version_info.minor < 9:
-    from importlib_resources import path
+    from importlib_resources import as_file, files
 else:
-    from importlib.resources import path
+    from importlib.resources import as_file, files
 
-BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
+BOKEH_THEME_FILE = files(reports) / "bokeh_theme.yml"
 BOKEH_PLOT_WIDTH = 90  # in viewport width (vw)
-MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
+MATPLOTLIB_THEME_FILE = files(reports) / "matplotlib_theme_rc"
 MATPLOTLIB_DPI = 120
 DEFAULT_PLOT_SIZE = 1000
 MATPLOTLIB_FONT_SIZE = 12
@@ -3483,11 +3483,10 @@ def choose_theme(
         _copy_bokeh_theme = curdoc().theme
         # Set theme for bokeh
         if isinstance(custom_bokeh_theme, bool):
-            with BOKEH_THEME_FILE as bokeh_theme_file:
-                filename = bokeh_theme_file
+            with as_file(BOKEH_THEME_FILE) as bokeh_theme_file:
+                theme = Theme(filename=bokeh_theme_file)
         else:
-            filename = custom_bokeh_theme
-        theme = Theme(filename=filename)
+            theme = Theme(filename=custom_bokeh_theme)
         curdoc().theme = theme
 
     # Create temporary context for matplotlib
@@ -3496,11 +3495,10 @@ def choose_theme(
         # Set matplotlib theme
         if custom_matplotlib_theme:
             if isinstance(custom_matplotlib_theme, bool):
-                with MATPLOTLIB_THEME_FILE as matplotlib_theme_file:
-                    filename = matplotlib_theme_file
+                with as_file(MATPLOTLIB_THEME_FILE) as matplotlib_theme_file:
+                    plt.style.use(matplotlib_theme_file)
             else:
-                filename = custom_matplotlib_theme
-            plt.style.use(filename)
+                plt.style.use(custom_matplotlib_theme)
         yield
     # Cleanup
     if custom_bokeh_theme:

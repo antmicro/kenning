@@ -12,12 +12,14 @@ import numpy as np
 
 from kenning.core.exceptions import (
     InputNotPreparedError,
+    ModelNotLoadedError,
     ModelNotPreparedError,
 )
 from kenning.core.platform import Platform
 from kenning.core.runtime import (
     Runtime,
 )
+from kenning.platforms.coral_npu import CoralNPUPlatform
 from kenning.platforms.cuda import CUDAPlatform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -148,6 +150,8 @@ class IREERuntime(Runtime):
         super().read_platform(platform)
         if isinstance(platform, CUDAPlatform):
             self.driver = "cuda"
+        elif isinstance(platform, CoralNPUPlatform):
+            self.driver = "coralnpu"
 
     def _prepare_model_coralnpu(self, input_data: Optional[bytes]):
         from iree import runtime as ireert
@@ -195,7 +199,15 @@ class IREERuntime(Runtime):
 
         ctx = ireert.SystemContext(config=config)
         ctx.add_vm_module(vm_module)
-        self.entry_func = ctx.modules.jit__lambda.main
+        function_name = (
+            getattr(self, "entry_function_name", None) or "jit__lambda"
+        )
+        entry_func = getattr(ctx.modules, function_name, None)
+        if entry_func is None:
+            raise ModelNotLoadedError(
+                f"Cannot find entry function (`{entry_func}`) in loaded module"
+            )
+        self.entry_func = entry_func.main
 
     def _prepare_model(self, input_data: Optional[bytes]):
         from iree import runtime as ireert

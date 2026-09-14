@@ -56,11 +56,13 @@ class ProbeServer(object):
     host.
     """
 
-    def __init__(self, protocol: Protocol, prefix: str, step: float = 0.1):
+    def __init__(
+        self, protocol: Protocol, prefix: str, pid: int, step: float = 0.1
+    ):
         self.protocol = protocol
         self.close_server_event = Event()
         self.status = ServerStatus(ServerAction.IDLE)
-        self.collector_args = {"prefix": prefix, "step": step}
+        self.collector_args = {"prefix": prefix, "step": step, "pid": pid}
         self.collector = SystemStatsCollector(**self.collector_args)
         self.num_clients = 0
 
@@ -167,6 +169,12 @@ class ProbeServerRunner(CommandTemplate):
             ),
         ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         groups[FLAG_CONFIG].add_argument(
+            "--pid",
+            required=True,
+            type=int,
+            help=("* PID of the monitored process"),
+        )
+        groups[FLAG_CONFIG].add_argument(
             "--prefix",
             type=str,
             default="session_utilization",
@@ -184,17 +192,21 @@ class ProbeServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        keys = {ConfigKey.protocol}
-        objs = objs_from_argparse(
-            args,
-            not_parsed,
-            keys,
+        keys = [ConfigKey.protocol]
+
+        args.json_cfg = None
+        objs = ProbeServerRunner.initialize_blocks(args, not_parsed, keys)
+        config = ProbeServerRunner.parse_configuration(args, not_parsed, keys)
+        return ProbeServerRunner._run_server(
+            objs,
+            config.get("prefix"),
+            config.get("pid"),
+            config.get("step"),
         )
-        return ProbeServerRunner._run_server(objs, args.prefix, args.step)
 
     @staticmethod
     def _run_server(
-        objs: Dict[ConfigKey, Any], prefix: str, step: float = 0.1
+        objs: Dict[ConfigKey, Any], prefix: str, pid: int, step: float = 0.1
     ):
         protocol = objs.get(ConfigKey.protocol)
 
@@ -203,7 +215,7 @@ class ProbeServerRunner(CommandTemplate):
 
         formersighandler = signal.getsignal(signal.SIGINT)
 
-        server = ProbeServer(protocol, prefix, step)
+        server = ProbeServer(protocol, prefix, pid, step)
 
         def sigint_handler(sig, frame):
             server.close()

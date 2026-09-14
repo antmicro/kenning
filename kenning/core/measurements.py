@@ -387,7 +387,7 @@ class SystemStatsCollector(Thread):
         kenning_process: Any
         process_newest_usage: Any
 
-    def __init__(self, prefix: str, step: float = 0.1):
+    def __init__(self, prefix: str, step: float = 0.1, pid: int = os.getpid()):
         """
         Prepares thread for execution.
 
@@ -397,8 +397,10 @@ class SystemStatsCollector(Thread):
             The prefix used in measurements.
         step : float
             The step for the measurements, in seconds.
+        pid : int
+            Optional pid of the process that should be monitored.
         """
-        kenning_pid = os.getpid()
+        kenning_pid = pid
         Thread.__init__(self)
         self.measurements = Measurements()
         self.running = True

@@ -47,6 +47,7 @@ dependencies = [
     "tqdm>=4.60.0",
     "polars",
     "typeguard",
+    "typing_extensions"
 ]
 
 [project.optional-dependencies]

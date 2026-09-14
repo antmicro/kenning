@@ -4413,6 +4413,7 @@ dependencies = [
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "tqdm" },
     { name = "typeguard" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -4972,6 +4973,7 @@ requires-dist = [
     { name = "tvm", marker = "python_full_version == '3.12.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "tvm", marker = "python_full_version == '3.13.*' and extra == 'tvm'", url = "https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "typeguard" },
+    { name = "typing-extensions" },
     { name = "vllm", marker = "extra == 'llm'", specifier = "==0.28.0" },
     { name = "west", marker = "extra == 'zephyr'" },
 ]

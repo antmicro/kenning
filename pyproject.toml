@@ -241,6 +241,9 @@ sparsity_aware_kernel = [
     "kenning[llm]",
     "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
 ]
+mypy = [
+    "mypy[reports]"
+]
 all = [
     "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
 ]
@@ -371,3 +374,11 @@ override-dependencies = [
     "protobuf>=7.34.0",
     "click>=8.1.7",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["kenning"]
+exclude = "(^|/)third_party(/|$)"
+strict = true
+html_report = "docs/source/generated/type-check"
+pretty = true

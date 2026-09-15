@@ -582,6 +582,18 @@ class YOLOV4TL(ONNXYOLOV4):
                     "dtype": "float32",
                 }
             ],
+            "processed_input": [
+                {
+                    "name": "input",
+                    "shape": (
+                        batch_size,
+                        3,
+                        keyparams["width"],
+                        keyparams["height"],
+                    ),
+                    "dtype": "float32",
+                }
+            ],
             "output": [
                 {
                     "name": "output",

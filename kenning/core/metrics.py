@@ -512,7 +512,7 @@ def nab_metric(
 
     # avoid division by zero
     if score_null_detector == score_perfect_detector:
-        score_null_detector += 10e-36
+        score_null_detector += 10e-6
 
     output = 100.0 * (
         (score - score_null_detector)
@@ -568,6 +568,11 @@ def prob_auc_metric(
 
     true_positives_count = true_positives[0].shape[0]
     false_positives_count = false_positives[0].shape[0]
+
+    if true_positives_count == 0:
+        true_positives_count += 10e-6
+    if false_positives_count == 0:
+        false_positives_count += 10e-6
 
     return (
         float(

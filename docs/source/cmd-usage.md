@@ -446,6 +446,65 @@ python3 -m kenning.scenarios.inference_runner \
     --video-file-path /dev/video0
 ```
 
+## Probing
+
+`kenning.scenarios.probe` runs a probe server that monitors machine resources (CPU, memory, GPU, etc.) for a specific process and sends the statistics to requesting clients.
+One of such clients is `RemoteModelWrapper`, defining a model that runs on a remote server.
+
+The `probe` server requires:
+
+* a [](protocol-api)-based class that implements the communication protocol between the probe server and clients,
+* the PID of the process to monitor.
+
+Optionally, it allows configuring the prefix added to measurements and the sampling interval.
+
+To print the list of required arguments, run:
+
+```bash
+kenning probe \
+    --protocol-cls NetworkProtocol \
+    --pid 1234 \
+    -h
+```
+
+With the above class, the help can look as follows:
+
+```bash test-skip
+common arguments:
+  -h, --help            show this help message and exit
+  --verbosity {NOTSET,DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Verbosity level
+
+Probe configuration with JSON/YAML file:
+  Configuration with data defined in JSON/YAML file. This section is not compatible with 'Probe configuration with flags'. Arguments with '*' are required
+
+Probe configuration with flags:
+  Configuration with flags. This section is not compatible with 'Probe configuration with JSON/YAML file'. Arguments with '*' are required.
+
+  --protocol-cls PROTOCOL_CLS
+                        * Protocol-based class with the implementation of communication between server and host
+  --pid PID             * PID of the monitored process
+  --prefix PREFIX       * Prefix added to measurements
+  --step STEP           * Interval of sampling measurements
+```
+
+Also `multi-client` flag can be passed to enable multiple clients to connect to the same probe reporting resource usage metrics.
+An example script for `probe`:
+
+```bash test-skip
+kenning probe \
+    --protocol-cls NetworkProtocol \
+    --pid 1234 \
+    --prefix session_utilization \
+    --step 0.1 \
+    --host 0.0.0.0 \
+    --multi-client \
+    --port 12345 \
+    --verbosity INFO
+```
+
+The above starts a probe server that monitors the process with PID `1234`, sampling resource usage every 0.1 seconds. The collected statistics are sent to clients connecting via the network protocol.
+
 (report-generation)=
 
 ## Generating performance reports

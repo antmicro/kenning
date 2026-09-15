@@ -238,6 +238,7 @@ type_to_jsontype = {
     int: "integer",
     bool: "boolean",
     object: "object",
+    dict: "object",
     list: "array",
 }
 

@@ -77,7 +77,7 @@ EXPECTED_FAIL = [
     ("Dinov2ONNX", "ExecuTorchOptimizer"),
     ("Dinov2ONNX", "NNIPruningOptimizer"),
     ("Dinov2ONNX", "LiteRTCompiler"),
-    ("Dinov2ONNX", "TVMCompiler"),
+    ("Dinov2ONNX", "TFLiteCompiler"),
     ("Dinov2ONNX", "TensorFlowClusteringOptimizer"),
     ("Dinov2ONNX", "TensorFlowPruningOptimizer"),
     ("MMPoseDetectionInput", "Ai8xCompiler"),
@@ -85,6 +85,7 @@ EXPECTED_FAIL = [
     ("MMPoseDetectionInput", "IREECompiler"),
     ("MMPoseDetectionInput", "NNIPruningOptimizer"),
     ("MMPoseDetectionInput", "LiteRTCompiler"),
+    ("MMPoseDetectionInput", "TFLiteCompiler"),
     ("MMPoseDetectionInput", "TVMCompiler"),
     ("MMPoseDetectionInput", "TensorFlowClusteringOptimizer"),
     ("MMPoseDetectionInput", "TensorFlowPruningOptimizer"),
@@ -93,6 +94,7 @@ EXPECTED_FAIL = [
     ("MMPoseONNX", "IREECompiler"),
     ("MMPoseONNX", "NNIPruningOptimizer"),
     ("MMPoseONNX", "LiteRTCompiler"),
+    ("MMPoseONNX", "TFLiteCompiler"),
     ("MMPoseONNX", "TVMCompiler"),
     ("MMPoseONNX", "TensorFlowClusteringOptimizer"),
     ("MMPoseONNX", "TensorFlowPruningOptimizer"),
@@ -101,6 +103,7 @@ EXPECTED_FAIL = [
     ("MMPoseModelWrapper", "IREECompiler"),
     ("MMPoseModelWrapper", "NNIPruningOptimizer"),
     ("MMPoseModelWrapper", "LiteRTCompiler"),
+    ("MMPoseModelWrapper", "TFLiteCompiler"),
     ("MMPoseModelWrapper", "TVMCompiler"),
     ("MMPoseModelWrapper", "TensorFlowClusteringOptimizer"),
     ("MMPoseModelWrapper", "TensorFlowPruningOptimizer"),
@@ -109,12 +112,11 @@ EXPECTED_FAIL = [
     ("MMPoseRTMOONNX", "IREECompiler"),
     ("MMPoseRTMOONNX", "NNIPruningOptimizer"),
     ("MMPoseRTMOONNX", "LiteRTCompiler"),
+    ("MMPoseRTMOONNX", "TFLiteCompiler"),
     ("MMPoseRTMOONNX", "TVMCompiler"),
     ("MMPoseRTMOONNX", "TensorFlowClusteringOptimizer"),
     ("MMPoseRTMOONNX", "TensorFlowPruningOptimizer"),
     ("MagicWandModelWrapper", "NNIPruningOptimizer"),
-    ("MagicWandModelWrapper", "LiteRTCompiler"),
-    ("MagicWandModelWrapper", "TVMCompiler"),
     ("MagicWandModelWrapper", "Ai8xCompiler"),
     ("ONNXYOLOV4", "Ai8xCompiler"),
     ("ONNXYOLOV4", "ExecuTorchOptimizer"),
@@ -127,6 +129,7 @@ EXPECTED_FAIL = [
     ("PersonDetectionModelWrapper", "Ai8xCompiler"),
     ("PersonDetectionModelWrapper", "ExecuTorchOptimizer"),
     ("PersonDetectionModelWrapper", "LiteRTCompiler"),
+    ("PersonDetectionModelWrapper", "TFLiteCompiler"),
     ("PersonDetectionModelWrapper", "NNIPruningOptimizer"),
     ("PersonDetectionModelWrapper", "TensorFlowClusteringOptimizer"),
     ("PersonDetectionModelWrapper", "TensorFlowPruningOptimizer"),
@@ -139,6 +142,7 @@ EXPECTED_FAIL = [
     ("PyTorchCOCOMaskRCNN", "ExecuTorchOptimizer"),
     ("PyTorchCOCOMaskRCNN", "NNIPruningOptimizer"),
     ("PyTorchCOCOMaskRCNN", "LiteRTCompiler"),
+    ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
     ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
     ("PyTorchCOCOMaskRCNN", "IREECompiler"),
     ("PyTorchCOCOMaskRCNN", "TensorFlowClusteringOptimizer"),
@@ -166,6 +170,7 @@ EXPECTED_FAIL = [
     ("PyTorchAnomalyDetectionGRU", "TensorFlowClusteringOptimizer"),
     ("PyTorchAnomalyDetectionGRU", "TensorFlowPruningOptimizer"),
     ("PyTorchAnomalyDetectionGRU", "IREECompiler"),
+    ("PyTorchAnomalyDetectionGRU", "LiteRTCompiler"),
     ("TensorFlowImageNet", "Ai8xCompiler"),
     ("TensorFlowImageNet", "ExecuTorchOptimizer"),
     ("TensorFlowImageNet", "NNIPruningOptimizer"),
@@ -182,6 +187,7 @@ EXPECTED_FAIL = [
     ("TinygradImageNet", "NNIPruningOptimizer"),
     ("TinygradImageNet", "ONNXCompiler"),
     ("TinygradImageNet", "LiteRTCompiler"),
+    ("TinygradImageNet", "TFLiteCompiler"),
     ("TinygradImageNet", "TVMCompiler"),
     ("TinygradImageNet", "TensorFlowClusteringOptimizer"),
     ("TinygradImageNet", "TensorFlowPruningOptimizer"),
@@ -197,7 +203,6 @@ EXPECTED_FAIL = [
     ("YOLACTWithPostprocessing", "ExecuTorchOptimizer"),
     ("YOLACTWithPostprocessing", "IREECompiler"),
     ("YOLACTWithPostprocessing", "NNIPruningOptimizer"),
-    ("YOLACTWithPostprocessing", "LiteRTCompiler"),
     ("YOLACTWithPostprocessing", "TVMCompiler"),
     ("YOLACTWithPostprocessing", "TensorFlowClusteringOptimizer"),
     ("YOLACTWithPostprocessing", "TensorFlowPruningOptimizer"),
@@ -211,6 +216,7 @@ EXPECTED_FAIL = [
     ("SKLearnGenericDecisionTreeClassifier", "IREECompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "NNIPruningOptimizer"),
     ("SKLearnGenericDecisionTreeClassifier", "LiteRTCompiler"),
+    ("SKLearnGenericDecisionTreeClassifier", "TFLiteCompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "TVMCompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "TensorFlowClusteringOptimizer"),
     ("SKLearnGenericDecisionTreeClassifier", "TensorFlowPruningOptimizer"),
@@ -225,6 +231,7 @@ SKIP = (
         ("StubEmlearnModel", "NNIPruningOptimizer"),
         ("StubEmlearnModel", "ONNXCompiler"),
         ("StubEmlearnModel", "LiteRTCompiler"),
+        ("StubEmlearnModel", "TFLiteCompiler"),
         ("StubEmlearnModel", "TVMCompiler"),
         ("StubEmlearnModel", "TinygradOptimizer"),
         ("StubEmlearnModel", "TensorFlowClusteringOptimizer"),
@@ -245,6 +252,9 @@ SKIP = (
         (model.__name__, optimizer.__name__)
         for model, optimizer in product(LLM_MODELWRAPPERS, LLM_OPTIMIZERS)
     ]
+    # Skip TFLiteCompiler tests
+    # because TFLiteCompiler is an alias for LiteRTCompiler
+    + [(model.__name__, "TFLiteCompiler") for model in MODELWRAPPER_SUBCLASSES]
 )
 
 EXPECTED_FAIL += [

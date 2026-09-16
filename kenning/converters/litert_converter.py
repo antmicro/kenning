@@ -126,14 +126,12 @@ class LiteRTConverter(ModelConverter):
         if model is None or not isinstance(model, tf.lite.TFLiteConverter):
             with open(self.source_model_path, "rb") as f:
                 tflite_model_buf = f.read()
-            try:
-                import tflite
+            import tflite
 
-                model = tflite.Model.GetRootAs(tflite_model_buf)
-            except TypeError:
-                import tflite.Model
-
-                model = tflite.Model.Model.GetRootAs(tflite_model_buf)
+            model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
+        if isinstance(model, tf.lite.TFLiteConverter):
+            model_data = model.convert()
+            model = tflite.Model.GetRootAsModel(model_data, 0)
 
         if isinstance(model, tf.lite.TFLiteConverter):
             import tflite

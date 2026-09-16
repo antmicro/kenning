@@ -130,6 +130,7 @@ tvm = [
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
+    "tflite>=2.1",
 ]
 tinygrad = [
     "tinygrad==0.12.0", # Fixing version, because of a bug in 0.13.0.

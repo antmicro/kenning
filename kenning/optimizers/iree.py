@@ -278,12 +278,13 @@ class IREECompiler(Optimizer):
 
         # Compiled IREE models have an entry function, that has to be called to
         # start inference.
-        if not self.mlir_entry_func:
-            # If one is not specified we find all functions and choose the
+        if not self.mlir_entry_func and "entry_func" not in io_spec:
+            # If it is not specified we find all functions and choose the
             # first one.
             functions = re.findall(r"func\.func @([^(]+)", mlir_model)
-            self.mlir_entry_func = "module." + functions[0]
-        io_spec["entry_func"] = self.mlir_entry_func
+            io_spec["entry_func"] = "module." + functions[0]
+        else:
+            io_spec["entry_func"] = self.mlir_entry_func
         KLogger.debug(f"Function used for MLIR start: {self.mlir_entry_func}")
 
         start_time, end_time = None, None

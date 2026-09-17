@@ -22,6 +22,7 @@ from typing import (
     Generator,
     List,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -108,6 +109,7 @@ def get_all_subclasses(
     raise_exception: bool = False,
     import_classes: bool = True,
     show_warnings: bool = True,
+    blacklist: Sequence[str] = (),
 ) -> Union[List[Type], List[Tuple[str, str]]]:
     """
     Retrieves all subclasses of given class. Filters classes that are not
@@ -127,6 +129,8 @@ def get_all_subclasses(
     show_warnings : bool
         Tells whether method should print warnings if modules could not be
         imported.
+    blacklist : Sequence[str]
+        Prevent specified class name to be present in subclasses.
 
     Returns
     -------
@@ -228,6 +232,9 @@ def get_all_subclasses(
     # try importing subclasses
     result = []
     for subclass_name in subclasses:
+        if subclass_name in blacklist:
+            continue
+
         subclass_module = classes_modules[subclass_name]
         try:
             if not import_classes:

@@ -143,8 +143,12 @@ def report_to_entry(
 
     # Create empty dataframe if it doesn't exist
     if (base1, base2) not in dataframes:
-        subclasses1 = get_all_subclasses(path1, base1)
-        subclasses2 = get_all_subclasses(path2, base2)
+        subclasses1 = get_all_subclasses(
+            path1, base1, blacklist=["ModelInserter"]
+        )
+        subclasses2 = get_all_subclasses(
+            path2, base2, blacklist=["ModelInserter"]
+        )
         data = {cls.__name__: [None] * len(subclasses1) for cls in subclasses2}
         dataframes[(base1, base2)] = pd.DataFrame(
             data=data, index=[cls.__name__ for cls in subclasses1]

@@ -20,7 +20,10 @@ from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.pipeline_runner import PipelineRunner
 
 OPTIMIZER_SUBCLASSES = get_all_subclasses(
-    "kenning.optimizers", Optimizer, raise_exception=True
+    "kenning.optimizers",
+    Optimizer,
+    raise_exception=True,
+    blacklist=["ModelInserter"],
 )
 
 

@@ -45,7 +45,10 @@ MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True
 )
 OPTIMIZER_SUBCLASSES = get_all_subclasses(
-    "kenning.optimizers", Optimizer, raise_exception=True
+    "kenning.optimizers",
+    Optimizer,
+    raise_exception=True,
+    blacklist=["ModelInserter"],
 )
 
 LLM_OPTIMIZERS = [

@@ -1,6 +1,8 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+
+from pathlib import Path
 
 import pytest
 from pytest_mock import MockerFixture
@@ -9,7 +11,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
-from kenning.optimizers.model_inserter import ModelInserter
 from kenning.utils.class_loader import get_all_subclasses
 
 
@@ -22,7 +23,14 @@ def create_mocks(mocker, module_name, core_cls):
         except AttributeError:
             static_io_spec_getter = None
         framework_name = None
-        if hasattr(cls, "get_framework") and cls is not ModelInserter:
+        if core_cls.__name__ == "Optimizer":
+            if cls.__name__ != "ModelInserter":
+                optimizer = cls(
+                    dataset=None,
+                    compiled_model_path=Path(),
+                )
+                framework_name = optimizer.get_framework()
+        elif hasattr(cls, "get_framework"):
             framework_name = cls.get_framework()
         mock = mocker.patch(cls_name)
         mock.__name__ = cls.__name__

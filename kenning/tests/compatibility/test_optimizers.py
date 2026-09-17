@@ -1,3 +1,7 @@
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import sys
 from pathlib import Path
 from typing import Tuple, Type
@@ -25,7 +29,6 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
     raise_exception=True,
     blacklist=["ModelInserter"],
 )
-
 
 EXPECTED_FAIL = [
     ("ONNXCompiler", "Ai8xCompiler"),
@@ -76,25 +79,30 @@ def prepare_objects(
     if ModelInserter in (optimizer_cls1, optimizer_cls2):
         pytest.skip("ModelInserter is not supported")
 
-    optimizer_type1 = optimizer_cls1.get_framework()
-    optimizer_type2 = optimizer_cls2.get_framework()
-    if not converter_registry.find_all_paths(optimizer_type1, optimizer_type2):
+    optimizers = []
+    optimizer_types = []
+
+    for opt_cls in (optimizer_cls1, optimizer_cls2):
+        optimizer = opt_cls(
+            dataset=None,
+            compiled_model_path=compiled_model_path,
+        )
+
+        optimizers.append(optimizer)
+        optimizer_types.append(optimizer.get_framework())
+
+    if not converter_registry.find_all_paths(
+        optimizer_types[0], optimizer_types[1]
+    ):
         pytest.skip("No available conversion path")
 
-    dataset, model, _ = DatasetModelRegistry.get(optimizer_type1)
+    dataset, model, _ = DatasetModelRegistry.get(optimizer_types[0])
 
-    optimizers = []
-    for cls, model_type in [
-        (optimizer_cls1, optimizer_type1),
-        (optimizer_cls2, optimizer_type2),
-    ]:
-        optimizer = cls(
-            model.dataset,
-            compiled_model_path,
-            model_framework=model_type,
-        )
+    for optimizer, model_type in zip(optimizers, optimizer_types):
+        optimizer.dataset = model.dataset
+        optimizer.model_framework = model_type
+        optimizer.set_input_type(model_type)
         optimizer.init()
-        optimizers.append(optimizer)
 
     optimizer1, optimizer2 = optimizers
     return dataset, model, optimizer1, optimizer2

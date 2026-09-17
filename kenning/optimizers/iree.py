@@ -320,8 +320,7 @@ class IREECompiler(Optimizer):
 
         self.save_io_specification(self.compiled_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls):
+    def get_framework(self):
         return "iree"
 
     @classmethod

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -214,8 +214,7 @@ class TinygradOptimizer(Optimizer):
             create_tar(self.model_path, tmpdirname)
         self.save_io_specification(input_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "tinygrad"
 
     @classmethod

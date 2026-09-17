@@ -52,7 +52,10 @@ class EmlearnCompiler(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_wrapper: Optional[ModelWrapper] = None,
+        model_framework: str = "any",
     ):
+        self.set_input_type(model_framework)
+
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
@@ -100,12 +103,9 @@ class EmlearnCompiler(Optimizer):
 
         self.save_io_specification(self.compiled_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "emlearn"
 
     @classmethod
     def get_framework_version(cls) -> str:
-        import emlearn
-
-        return emlearn.__version__
+        pass

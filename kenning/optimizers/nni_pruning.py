@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -359,8 +359,6 @@ class NNIPruningOptimizer(Optimizer):
         self.config_list = config_list
         self.set_pruner_mode(mode)
 
-        self.prepare_dataloader_train_valid()
-
         self.pruning_on_cuda = pruning_on_cuda
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
@@ -381,6 +379,9 @@ class NNIPruningOptimizer(Optimizer):
                 "Mish": no_replace,
             }
         )
+
+    def init(self):
+        self.prepare_dataloader_train_valid()
 
     def compile(
         self,
@@ -851,8 +852,7 @@ class NNIPruningOptimizer(Optimizer):
         )
         self.mode = mode
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "torch"
 
     @classmethod

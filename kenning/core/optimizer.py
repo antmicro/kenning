@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -221,9 +221,8 @@ class Optimizer(ArgumentsHandler, ABC):
         """
         ...
 
-    @classmethod
     @abstractmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         """
         Returns name of the framework.
 

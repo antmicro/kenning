@@ -307,8 +307,7 @@ class ExecuTorchOptimizer(Optimizer):
 
         self.save_io_specification(self.compiled_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "executorch"
 
     @classmethod

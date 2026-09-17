@@ -594,8 +594,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         return flags
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "tflite"
 
     @classmethod

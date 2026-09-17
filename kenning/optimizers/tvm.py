@@ -656,8 +656,7 @@ class TVMCompiler(Optimizer):
 
         return flags
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "tvm"
 
     @classmethod

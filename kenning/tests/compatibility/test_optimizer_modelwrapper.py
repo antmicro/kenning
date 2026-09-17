@@ -255,9 +255,6 @@ def prepare_objects(
         pytest.skip("ModelInserter is not supported")
 
     model_type = model_cls.get_framework()
-    optimizer_type = optimizer_cls.get_framework()
-    if not converter_registry.find_all_paths(model_type, optimizer_type):
-        pytest.xfail("No available conversion path")
 
     # by default, do not enforce platforms
     platform = None
@@ -311,6 +308,11 @@ def prepare_objects(
         model_wrapper=model,
         **kwargs,
     )
+
+    optimizer_type = optimizer.get_framework()
+    if not converter_registry.find_all_paths(model_type, optimizer_type):
+        pytest.xfail("No available conversion path")
+
     return model, optimizer, platform
 
 

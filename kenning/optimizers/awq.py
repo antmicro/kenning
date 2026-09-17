@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2023-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -154,8 +154,7 @@ class AWQOptimizer(Optimizer):
         io_spec["quantization_config"] = model.quant_config.to_dict()
         self.save_io_specification(input_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "safetensors"
 
     @classmethod

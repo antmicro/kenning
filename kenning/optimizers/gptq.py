@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2024-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -111,8 +111,7 @@ class GPTQOptimizer(Optimizer):
 
         self.save_io_specification(input_model_path)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "safetensors"
 
     @classmethod

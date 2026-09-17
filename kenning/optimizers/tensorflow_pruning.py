@@ -199,8 +199,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
 
         self.save_io_specification(input_model_path, io_spec)
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "keras"
 
     @classmethod

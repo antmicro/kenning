@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -222,8 +222,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             return zip_model_path.stat().st_size / 1024
         return super().get_optimized_model_size()
 
-    @classmethod
-    def get_framework(cls) -> str:
+    def get_framework(self) -> str:
         return "keras"
 
     @classmethod

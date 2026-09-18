@@ -10,6 +10,7 @@ during inference execution.
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.utils.args_manager import ArgumentsHandler
 
 
@@ -27,6 +28,7 @@ class DataConverter(ArgumentsHandler, ABC):
     """
 
     arguments_structure: Dict[str, str] = {}
+    block_type = ConfigKey.dataconverter
 
     def __init__(self):
         """

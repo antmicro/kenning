@@ -26,6 +26,7 @@ from kenning.core.measurements import (
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.interfaces.io_interface import ModuleIOSpecificationFormatError
 from kenning.runtimes.utils import zero_pad_batch
 from kenning.utils.args_manager import ArgumentsHandler
@@ -65,6 +66,8 @@ class Runtime(ArgumentsHandler, ABC):
             "default": 1,
         },
     }
+
+    block_type = ConfigKey.runtime
 
     def __init__(
         self,

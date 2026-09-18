@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 from kenning.core.dataconverter import DataConverter
 from kenning.core.exceptions import RequestFailure
 from kenning.core.measurements import Measurements
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 
@@ -156,6 +157,8 @@ class Protocol(ArgumentsHandler, ABC):
             "default": -1,
         }
     }
+
+    block_type = ConfigKey.protocol
 
     def __init__(self, timeout: int = -1):
         """

@@ -17,6 +17,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from kenning.core.measurements import Measurements
 from kenning.core.model import ModelWrapper
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 
@@ -86,6 +87,8 @@ class Report(ArgumentsHandler, ABC):
             "overridable": True,
         },
     }
+
+    block_type = ConfigKey.report
 
     def __init__(
         self,

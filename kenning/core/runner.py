@@ -9,6 +9,7 @@ Provides a base class for Kenning Flow elements.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
 
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.interfaces.io_interface import (
     IOInterface,
     ModulesIncompatibleError,
@@ -20,6 +21,8 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
     """
     Represents an operation block in Kenning Flow.
     """
+
+    block_type = ConfigKey.runner
 
     def __init__(
         self,

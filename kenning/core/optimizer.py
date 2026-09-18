@@ -20,6 +20,7 @@ from kenning.core.helpers.utils import _get_model_size
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
 from kenning.core.runtime import Runtime
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -59,6 +60,8 @@ class Optimizer(ArgumentsHandler, ABC):
             "enum": locations,
         },
     }
+
+    block_type = ConfigKey.optimizers
 
     def __init__(
         self,

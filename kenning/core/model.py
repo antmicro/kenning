@@ -24,6 +24,7 @@ from kenning.core.measurements import (
     timemeasurements,
 )
 from kenning.core.platform import Platform
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.logger import LoggerProgressBar, TqdmCallback
@@ -51,6 +52,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             "type": str,
         },
     }
+    block_type = ConfigKey.model_wrapper
 
     def __init__(
         self,

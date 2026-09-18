@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from kenning.core.platform import Platform
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.utils.args_manager import ArgumentsHandler
 
 
@@ -40,6 +41,8 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
     }
 
     allowed_frameworks = []
+
+    block_type = ConfigKey.runtime_builder
 
     def __init__(
         self,

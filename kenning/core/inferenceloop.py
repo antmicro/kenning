@@ -21,6 +21,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol
 from kenning.core.runtime import Runtime
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.protocols.message import MessageType
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger, LoggerProgressBar
@@ -43,6 +44,8 @@ class InferenceLoop(ArgumentsHandler, ABC):
             "nullable": True,
         },
     }
+
+    block_type = ConfigKey.inference_loop
 
     def __init__(
         self,

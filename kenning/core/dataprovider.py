@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
 from kenning.core.runner import Runner
+from kenning.dispatcher.block_config import ConfigKey
 
 
 class DataProvider(Runner, ABC):
@@ -18,6 +19,7 @@ class DataProvider(Runner, ABC):
     """
 
     arguments_structure = {}
+    block_type = ConfigKey.dataprovider
 
     def __init__(
         self,

@@ -34,6 +34,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
 from kenning.core.runtime import CompatibilityStatus, Runtime
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.args_manager import (
     ArgumentsHandler,
@@ -300,6 +301,8 @@ class AutoML(ArgumentsHandler, ABC):
             "default": 1234,
         },
     }
+
+    block_type = ConfigKey.automl
 
     # File name for the JSON with AutoML statistics
     STATS_FILE_NAME = "automl_statistics.json"

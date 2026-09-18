@@ -21,6 +21,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
+from kenning.dispatcher.block_config import ConfigKey
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger, LoggerProgressBar
@@ -205,6 +206,8 @@ class Dataset(ArgumentsHandler, ABC):
             "description": "Prepare the dataset after it has been downloaded.",
         },
     }
+
+    block_type = ConfigKey.dataset
 
     def __init__(
         self,

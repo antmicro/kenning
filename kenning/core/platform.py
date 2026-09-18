@@ -24,6 +24,7 @@ if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
+from kenning.dispatcher.block_config import ConfigKey
 
 
 class Platform(ArgumentsHandler, ABC):
@@ -54,6 +55,8 @@ class Platform(ArgumentsHandler, ABC):
 
     # default values for data that is read from platforms.yml
     platform_defaults = {}
+
+    block_type = ConfigKey.platform
 
     def __init__(
         self,

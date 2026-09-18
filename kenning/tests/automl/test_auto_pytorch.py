@@ -30,11 +30,13 @@ def model():
     )
 
 
+@pytest.mark.xdist_group(name="automl")
 def test_search_no_prepare(model: AutoPyTorchML):
     with pytest.raises(AssertionError):
         model.search()
 
 
+@pytest.mark.xdist_group(name="automl")
 def test_autopytorch(
     model: AutoPyTorchML,
 ):

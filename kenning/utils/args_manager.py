@@ -38,12 +38,11 @@ from kenning.core.exceptions import (
     InvalidArgumentsError,
 )
 from kenning.dispatcher.block_config import (
-    BLOCK_CONFIG_PARAMETERS_KEY,
-    BLOCK_CONFIGURATIONS_KEY,
-    BLOCK_DIRECT_ARGUMENTS_KEY,
-    UNAFFILIATED_PARAMETERS_KEY,
     KenningBlockConfigDict,
     from_flag_to_name,
+    get_block_direct_arguments_from_config_dict,
+    get_block_parameters_from_config_dict,
+    get_unaffiliated_parameter_from_config_dict,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
@@ -407,134 +406,6 @@ def traverse_parents_with_args(cls: type) -> Generator[type, None, None]:
         yield curr_cls
 
 
-def add_argparse_argument(
-    group: argparse._ArgumentGroup,
-    struct: Dict[str, Dict],
-    args: argparse.Namespace,
-    *names: str,
-    override_only: bool = False,
-):
-    """
-    Adds arguments to the argparse group based on the given
-    struct and names. If no names are given it uses all
-    properties of the struct.
-
-    Note that the function modifies the given group.
-
-    If argument with name 'argparse_name' already exists in the
-    group the existing argument is overridden with the new one.
-
-    Parameters
-    ----------
-    group : argparse._ArgumentGroup
-        Argparse group that is filled with new properties.
-    struct : Dict[str, Dict]
-        Struct with properties described.
-    args : argparse.Namespace
-        Arguments from ArgumentParser object.
-    *names : str
-        Names of the properties that are to be added to the group.
-        If empty every property in struct is used.
-    override_only : bool
-        True if parameter set in file configuration can be overridden from
-        `argparse`.
-
-    Raises
-    ------
-    KeyError :
-        Raised if there is a keyword that is not recognized.
-    """
-    from kenning.cli.config import AVAILABLE_COMMANDS
-
-    if not names:
-        names = struct.keys()
-
-    for name in names:
-        prop = struct[name]
-
-        for p in prop:
-            if p not in supported_keywords:
-                raise KeyError(f"{p} is not a supported keyword")
-
-        if "subcommands" in prop:
-            required_subcommands = prop["subcommands"] or AVAILABLE_COMMANDS
-            used_subcommands = get_used_subcommands(args)
-            if not set(used_subcommands).intersection(required_subcommands):
-                continue
-
-        if "argparse_name" in prop:
-            argparse_name = prop["argparse_name"]
-        else:
-            argparse_name = from_name_to_flag(name)
-
-        keywords = {}
-        if "type" in prop:
-            prop_type, prop_sub_types = get_type(prop["type"])
-
-            if prop_type in {UnionType, Union}:
-                union_types = set(prop_sub_types)
-
-                con_types = set([])
-
-                for sub_type in union_types:
-                    if get_origin(sub_type) in {list, tuple}:
-                        type_args = get_args(sub_type)
-
-                        con_types.update(type_args)
-                    else:
-                        con_types.add(sub_type)
-
-                keywords["type"] = lambda v: convert(v=v, converters=con_types)
-
-                if bool in union_types:
-                    if not override_only:
-                        keywords["default"] = False
-                    keywords["const"] = True
-                    keywords["nargs"] = "?"
-
-                if any([get_type(x)[0] is list for x in union_types]):
-                    keywords["nargs"] = "*"
-
-            elif prop_type is bool:
-                if not (
-                    "default" in prop and prop["default"] in [True, False]
-                ):
-                    raise InvalidArgumentsError(
-                        f"Default value should be defined for prop \
-                            {name} and has value True or False."
-                    )
-
-                if override_only:
-                    keywords["action"] = argparse.BooleanOptionalAction
-                elif prop["default"]:
-                    keywords["action"] = "store_false"
-                else:
-                    keywords["action"] = "store_true"
-            elif prop_type is list:
-                keywords["nargs"] = "+"
-                converters = set()
-                for sub_type in prop_sub_types:
-                    if isinstance(sub_type, (list, tuple)):
-                        converters.update(sub_type)
-                    else:
-                        converters.add(sub_type)
-
-                def conversion(x, conv_list=converters):
-                    return convert(v=x, converters=conv_list)
-
-                keywords["type"] = conversion
-            else:
-                keywords["type"] = prop_type
-        if "description" in prop:
-            keywords["help"] = prop["description"]
-        keywords["default"] = argparse.SUPPRESS
-        keywords["required"] = False
-        if "enum" in prop:
-            keywords["choices"] = prop["enum"]
-
-        group.add_argument(argparse_name, **keywords)
-
-
 def add_parameterschema_argument(
     schema: Dict, struct: Dict[str, Dict], *names: str
 ):
@@ -677,6 +548,170 @@ class ArgumentsHandler(ABC):
     """
 
     arguments_structure = {}
+    block_type = None
+
+    @classmethod
+    def get_argparse_flag_from_argument_structure(
+        cls, argument_name: str, argument_spec: Dict[str, Any]
+    ) -> str:
+        """
+        Retrieves the given parameter's flag (argparse) name, from its spec
+        dict - or creates it based on the parameter's name, if it's not
+        available.
+
+        Parameters
+        ----------
+        argument_name: str
+            Name of the argument.
+        argument_spec: Dict[str, Any]
+            Argument's dictionary from arguments_structure.
+
+        Returns
+        -------
+        str
+            Proper argparse flag name for the given parameter.
+        """
+        if "argparse_name" in argument_spec:
+            return argument_spec["argparse_name"]
+        return from_name_to_flag(argument_name)
+
+    @classmethod
+    def add_argparse_argument(
+        cls,
+        group: argparse._ArgumentGroup,
+        struct: Dict[str, Dict],
+        args: argparse.Namespace,
+        *names: str,
+        override_only: bool = False,
+    ):
+        """
+        Adds arguments to the argparse group based on the given
+        struct and names. If no names are given it uses all
+        properties of the struct.
+
+        Note that the function modifies the given group.
+
+        If argument with name 'argparse_name' already exists in the
+        group the existing argument is overridden with the new one.
+
+        Parameters
+        ----------
+        group : argparse._ArgumentGroup
+            Argparse group that is filled with new properties.
+        struct : Dict[str, Dict]
+            Struct with properties described.
+        args : argparse.Namespace
+            Arguments from ArgumentParser object.
+        *names : str
+            Names of the properties that are to be added to the group.
+            If empty every property in struct is used.
+        override_only : bool
+            True if parameter set in file configuration can be overridden from
+            `argparse`.
+
+        Raises
+        ------
+        KeyError :
+            Raised if there is a keyword that is not recognized.
+        """
+        from kenning.cli.config import AVAILABLE_COMMANDS
+
+        if not names:
+            names = struct.keys()
+
+        for name in names:
+            prop = struct[name]
+
+            for p in prop:
+                if p not in supported_keywords:
+                    raise KeyError(f"{p} is not a supported keyword")
+
+            if "subcommands" in prop:
+                required_subcommands = (
+                    prop["subcommands"] or AVAILABLE_COMMANDS
+                )
+                used_subcommands = get_used_subcommands(args)
+                if not set(used_subcommands).intersection(
+                    required_subcommands
+                ):
+                    continue
+
+            argparse_name = cls.get_argparse_flag_from_argument_structure(
+                name, prop
+            )
+
+            keywords = {}
+            if "type" in prop:
+                prop_type, prop_sub_types = get_type(prop["type"])
+
+                if prop_type in {UnionType, Union}:
+                    union_types = set(prop_sub_types)
+
+                    con_types = set([])
+
+                    for sub_type in union_types:
+                        if get_origin(sub_type) in {list, tuple}:
+                            type_args = get_args(sub_type)
+
+                            con_types.update(type_args)
+                        else:
+                            con_types.add(sub_type)
+
+                    keywords["type"] = lambda v: convert(
+                        v=v, converters=con_types
+                    )
+
+                    if bool in union_types:
+                        if not override_only:
+                            keywords["default"] = False
+                        keywords["const"] = True
+                        keywords["nargs"] = "?"
+
+                    if any([get_type(x)[0] is list for x in union_types]):
+                        keywords["nargs"] = "*"
+
+                elif prop_type is bool:
+                    if not (
+                        "default" in prop and prop["default"] in [True, False]
+                    ):
+                        raise InvalidArgumentsError(
+                            f"Default value should be defined for prop \
+                                {name} and has value True or False."
+                        )
+
+                    if override_only:
+                        keywords["action"] = argparse.BooleanOptionalAction
+                    elif prop["default"]:
+                        keywords["action"] = "store_false"
+                    else:
+                        keywords["action"] = "store_true"
+                elif prop_type is list:
+                    keywords["nargs"] = "+"
+                    converters = set()
+                    for sub_type in prop_sub_types:
+                        if isinstance(sub_type, (list, tuple)):
+                            converters.update(sub_type)
+                        else:
+                            converters.add(sub_type)
+
+                    def conversion(x, conv_list=converters):
+                        return convert(v=x, converters=conv_list)
+
+                    keywords["type"] = conversion
+                else:
+                    keywords["type"] = prop_type
+            if "description" in prop:
+                keywords["help"] = prop["description"]
+            keywords["default"] = argparse.SUPPRESS
+            keywords["required"] = False
+            if "enum" in prop:
+                keywords["choices"] = prop["enum"]
+            group.add_argument(argparse_name, **keywords)
+            prefixed_name_versions = cls.get_prefixed_parameter_variants(
+                argparse_name, True
+            )
+            for variant in prefixed_name_versions:
+                group.add_argument(variant, **keywords)
 
     @classmethod
     def form_parameterschema(cls) -> Dict:
@@ -746,7 +781,7 @@ class ArgumentsHandler(ABC):
         group = None
 
         for curr_cls in traverse_parents_with_args(cls):
-            add_argparse_argument(
+            cls.add_argparse_argument(
                 group=parser.add_argument_group(
                     title=f"{curr_cls.__name__} arguments"
                 ),
@@ -1014,27 +1049,77 @@ class ArgumentsHandler(ABC):
         return spec
 
     @classmethod
-    def build_from_config(
-        cls, config: KenningBlockConfigDict, **kwargs: Dict[str, Any]
-    ) -> Any:
+    def get_prefixed_parameter_variants(
+        cls, parameter: str, flag: bool = False
+    ) -> Tuple[str]:
         """
-        Constructor wrapper that takes the parameters from config dict.
+        Appends block-specific an block-type-specific prefixes to the given
+        parameter name.
 
-        This function matches parameters from the config, by name and type, to
-        'arguments_structure' and then calls the constructor with all
-        parameters that match (after necessary type conversions).
+        Can be done either for a parameter in flag name format (--example-param
+        to --nice-prefix:--example-param) or for a one in the normal parameter
+        name format (example_param to nice_prefix:__example_param - the double
+        underscore is added, so that it matches the way argparse changes it).
+
+        Parameters
+        ----------
+        parameter: str
+            Parameter name to extend.
+        flag: bool
+            True, if you need a flag name to add to a new argparse parser.
+            False, if you need an argument name to retrieve a value from
+            argparse.Namespace.
+
+        Returns
+        -------
+        Tuple[str]
+            Parameter name with a block name prefix, and parameter name with a
+            block type prefix - respectively.
+        """
+        mock_parameter_lowered_double_dash = "" if flag else "__"
+        return (
+            (from_name_to_flag(cls.__name__) if flag else cls.__name__)
+            + ":"
+            + mock_parameter_lowered_double_dash
+            + parameter,
+            (
+                from_name_to_flag(cls.block_type.value)
+                if flag
+                else cls.block_type.value
+            )
+            + ":"
+            + mock_parameter_lowered_double_dash
+            + parameter,
+        )
+
+    @classmethod
+    def match_parameters(
+        cls, config: KenningBlockConfigDict, suppress_errors: bool = True
+    ) -> Tuple[Dict[str, Any], List[str]]:
+        """
+        Retrieves and matches arguments_structure parameters from the block
+        configuration and from the unaffiliated flags section in
+        KenningBlockConfigDict. Sets defaults for the missing ones, where
+        appropriate.
 
         Parameters
         ----------
         config: KenningBlockConfigDict
             Configuration dictionary.
-        **kwargs : Dict[str, Any]
-            Additional class-dependent arguments.
+        suppress_errors: bool
+            If true, no errors will be logged in this function (useful for
+            preliminary matching/probing).
 
         Returns
         -------
-        Any
-            Instance created from provided config.
+        Tuple[Dict[str, Any], List[str]]
+            Dictionary of resolved parameters, and a list of names of all
+            parameters matched from the config (excluding the ones for which
+            defaults were used), for deconfliction purposes.
+            A prefix in the format 'block_config:<block type>:<block>:<name>'
+            is added in the deconfliction list for all parameters that have
+            been found in the block-specific configuration (instead of
+            unmatched flags) to differentiate them.
 
         Raises
         ------
@@ -1042,94 +1127,111 @@ class ArgumentsHandler(ABC):
             Thrown, when there's a missing required parameter.
         """
         KLogger.debug(
-            f"Building block class {cls.__name__} from standard Kenning block"
-            " configuration dictionary..."
+            f"Matching arguments_structure for block {cls.__name__}."
         )
         arguments_structure = cls.get_full_arguments_structure()
-        final_args = {}
-        class_specific_config = None
-        direct_arguments = {}
-        for block_type in config[BLOCK_CONFIGURATIONS_KEY].values():
-            if cls.__name__ in block_type:
-                class_specific_config = block_type[cls.__name__][
-                    BLOCK_CONFIG_PARAMETERS_KEY
-                ]
-                direct_arguments = block_type[cls.__name__][
-                    BLOCK_DIRECT_ARGUMENTS_KEY
-                ]
-                KLogger.debug(
-                    f"Found block-specific config for {cls.__name__}"
-                )
-                break
-        shared_config = config[UNAFFILIATED_PARAMETERS_KEY]
+        matched_parameters = {}
+        matched_parameter_identifiers = []
         missing_args = []
         for argument_name, spec in arguments_structure.items():
             spec = cls.process_argument_spec(argument_name, spec)
             alternative_argument_name = from_flag_to_name(
-                spec["argparse_name"]
+                cls.get_argparse_flag_from_argument_structure(
+                    argument_name, spec
+                )
             )
             KLogger.debug(f"Matching argument {argument_name}: {spec}...")
-            found = False
             value = None
-            # 'shared_config' contains unmatched flags from argparse, while
-            # 'class_specific_config' are flags, for that we already know which
-            # block they belong to (and those in practice come from yaml/json
-            # configs). Class arguments in Kenning have different names in
-            # argparse and in yaml/json. Argparse names are stored under
-            # 'argparse_name' key in arguments_structure in the form
-            # '--arg-name', but after actually parsing the flags, they show up
-            # in argparse.Namespace in the form 'arg_name'. Therefore we use
-            # 'from_flag_to_name' above to convert and match
+            # We cannot check whether 'value' is None to determine if the
+            # parameter had been found, since None is a valid parameter value.
+            # We use the variable 'final_matched_name' both for that, and for
+            # determining what was the actual name under which the parameter
+            # was eventually found.
+            final_matched_name = None
+            # 'get_unaffiliated_parameter_from_config_dict' contains unmatched
+            # flags from argparse, while 'parameters' contains flags, for that
+            # we already know which block they belong to (and those in practice
+            # come from yaml/json file configs). Class arguments in Kenning
+            # have different names in argparse and in yaml/json. Argparse
+            # names are stored under 'argparse_name' key in arguments_structure
+            # in the form '--arg-name', but after actually parsing the flags,
+            # they show up in argparse.Namespace in the form 'arg_name'.
+            # Therefore we use 'from_flag_to_name' above to convert and match
             # those properly.
-            # In the code below, we first match from `class_specific_config`
-            # and there we give matching priority to the regular argument name
-            # (the one used in yaml/json - 'argument_name').
-            # But then we match from `shared_config`, and there we match first
-            # by the converted argparse name ('alternative_argument_name'),
-            # because shared config flags typically come from argparse.
+            # In the code below, we first match from `parameters` and there we
+            # give matching priority to the regular argument name (the one used
+            # in yaml/json - 'argument_name'). But then we match from
+            # `get_unaffiliated_parameter_from_config_dict`, and there we match
+            # first by the converted argparse name
+            # ('alternative_argument_name'), because shared config flags
+            # typically come from argparse. There we also take into account
+            # CLI flag parameters.
             # Matching priority is important, and changing it will break stuff,
             # since some arguments have argparse names that are the same as
             # other arguments' normal names.
+            parameters = get_block_parameters_from_config_dict(
+                cls.__name__, config, cls.block_type
+            )
             KLogger.debug("Matching by name...")
-            if class_specific_config:
-                if argument_name in class_specific_config.keys():
-                    value = class_specific_config[argument_name]
-                    found = True
-                    KLogger.debug(f"Found {argument_name} in block config.")
-                elif alternative_argument_name in class_specific_config.keys():
-                    value = class_specific_config[alternative_argument_name]
-                    found = True
-                    KLogger.debug(
-                        f"Found {alternative_argument_name} in block config."
+
+            def block_config_prefix(name):
+                return (
+                    "block_config:"
+                    + cls.block_type
+                    + ":"
+                    + cls.__name__
+                    + ":"
+                    + name
+                )
+
+            if argument_name in parameters:
+                value = parameters[argument_name]
+                final_matched_name = block_config_prefix(argument_name)
+                KLogger.debug(f"Found {argument_name} in block config.")
+            elif alternative_argument_name in parameters:
+                value = parameters[alternative_argument_name]
+                final_matched_name = block_config_prefix(
+                    alternative_argument_name
+                )
+                KLogger.debug(
+                    f"Found {alternative_argument_name} in block config."
+                )
+            if final_matched_name is None or spec["override"]:
+                try:
+                    name, value = get_unaffiliated_parameter_from_config_dict(
+                        config,
+                        *cls.get_prefixed_parameter_variants(
+                            alternative_argument_name
+                        ),
+                        alternative_argument_name,
                     )
-            if not found or spec["override"]:
-                if alternative_argument_name in shared_config.keys():
-                    value = shared_config[alternative_argument_name]
-                    found = True
+                    final_matched_name = name
                     KLogger.debug(
                         f"Found {alternative_argument_name} in unaffiliated"
                         " flags."
                     )
-                elif argument_name in shared_config.keys():
-                    value = shared_config[argument_name]
-                    found = True
+                except ConfigurationError:
                     KLogger.debug(
-                        f"Found {argument_name} in unaffiliated flags."
+                        f"{argument_name} not in unaffiliated flags."
                     )
-            if found:
+            if final_matched_name is not None:
                 KLogger.debug(
                     f"Value for {argument_name} matched by name: {value}."
                 )
                 KLogger.debug("Matching by data type....")
-            if found and cls.verify_type(value, spec):
-                final_args[argument_name] = cls.convert_value(value, spec)
-                KLogger.debug(
-                    f"Type verified, {argument_name} value set: {value}"
-                    f" ({final_args[argument_name]} after type conversion)."
-                )
-                continue
+                if cls.verify_type(value, spec):
+                    matched_parameters[argument_name] = cls.convert_value(
+                        value, spec
+                    )
+                    matched_parameter_identifiers.append(final_matched_name)
+                    KLogger.debug(
+                        f"Type verified, {argument_name} value set: {value}"
+                        f" ({matched_parameters[argument_name]} after type"
+                        " conversion)."
+                    )
+                    continue
             elif not spec["required"]:
-                final_args[argument_name] = cls.convert_value(
+                matched_parameters[argument_name] = cls.convert_value(
                     spec["default"], spec
                 )
                 KLogger.debug(
@@ -1137,16 +1239,56 @@ class ArgumentsHandler(ABC):
                     f" applying default value: {spec['default']}."
                 )
                 continue
-            KLogger.error(
-                f"Required {cls.__name__} parameter {argument_name} missing."
-            )
+            if not suppress_errors:
+                KLogger.error(
+                    f"Required {cls.__name__} parameter {argument_name}"
+                    " missing."
+                )
             missing_args.append(argument_name)
         if len(missing_args) > 0:
             raise ConfigurationError(
                 f"Block {cls.__name__} could not be constructed, due to"
                 f" missing required parameters: {missing_args}."
             )
-        cls_args = dict(final_args, **kwargs, **direct_arguments)
+        return (matched_parameters, matched_parameter_identifiers)
+
+    @classmethod
+    def build_from_config(
+        cls, config: KenningBlockConfigDict, **kwargs: Any
+    ) -> Any:
+        """
+        Constructor wrapper that takes the parameters from config dict.
+
+        This function matches parameters from the config, by name and type, to
+        'arguments_structure' and then calls the constructor with all
+        parameters that match (after necessary type conversions), as well as
+        additional direct arguments specified in the config.
+
+        Parameters
+        ----------
+        config: KenningBlockConfigDict
+            Configuration dictionary.
+        **kwargs : Any
+            Additional class-dependent arguments.
+
+        Returns
+        -------
+        Any
+            Instance created from provided config.
+        """
+        KLogger.debug(
+            f"Building block class {cls.__name__} from standard Kenning block"
+            " configuration dictionary..."
+        )
+        matched_parameters, _ = cls.match_parameters(config)
+        direct_arguments = get_block_direct_arguments_from_config_dict(
+            cls.__name__, config, cls.block_type
+        )
+        cls_args = dict(
+            matched_parameters,
+            **kwargs,
+            **direct_arguments,
+        )
         KLogger.debug("Argument matching finished, building the block...")
         KLogger.debug(f"Direct arguments applied: {direct_arguments}")
         return cls(**cls_args)

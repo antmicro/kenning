@@ -17,7 +17,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
+
+from kenning.core.exceptions import ConfigurationError
 
 KenningBlockConfigDict = Dict[str, Dict[str, Any]]
 
@@ -62,6 +65,8 @@ class ConfigKey(str, Enum):
     automl = AUTOML
     report = REPORT
     sensor = SENSORS
+    dataprovider = DATA_PROVIDERS
+    runner = RUNNERS
 
 
 # Keys used in the config dict (see this file's docstring for dict structure).
@@ -122,6 +127,152 @@ def module_path_to_class_name(path: Optional[str]) -> Optional[str]:
         Returns None for None, and a class name otherwise.
     """
     return path.rsplit(".", 1)[-1] if path else None
+
+
+def get_block_configuration_from_config_dict(
+    block: str,
+    config_dict: KenningBlockConfigDict,
+    block_type: Optional[ConfigKey] = None,
+) -> Optional[Dict[str, Dict[str, Any]]]:
+    """
+    Retrieves the entire block-specific configuration (user-defined parameters
+    and direct arguments) from a config dict.
+
+    Parameters
+    ----------
+    block: str
+        Name of the block.
+    config_dict: KenningBlockConfigDict
+        The dict to retrieve the information from.
+    block_type: Optional[ConfigKey]
+        Block type of the given block. If None, all block types will be
+        searched.
+
+    Returns
+    -------
+    Optional[Dict[str, Dict[str, Any]]]
+        Dictionary of format:
+        {
+            BLOCK_CONFIG_PARAMETERS_KEY: {...},
+            BLOCK_DIRECT_ARGUMENTS_KEY: {...},
+        }
+        Or None, if the block does not exist.
+    """
+    block_configurations = config_dict[BLOCK_CONFIGURATIONS_KEY]
+    if block_type is not None:
+        if block in block_configurations.get(block_type, []):
+            return block_configurations[block_type][block]
+        return None
+    for block_type in config_dict[BLOCK_CONFIGURATIONS_KEY].values():
+        if block in block_type:
+            return block_type[block]
+    return None
+
+
+def get_block_direct_arguments_from_config_dict(
+    block: str,
+    config_dict: KenningBlockConfigDict,
+    block_type: Optional[ConfigKey] = None,
+) -> Dict[str, Any]:
+    """
+    Retrieves the given block's direct arguments from a config dict.
+
+    Parameters
+    ----------
+    block: str
+        Name of the block.
+    config_dict: KenningBlockConfigDict
+        The dict to retrieve the information from.
+    block_type: Optional[ConfigKey]
+        Block type of the given block. If None, all block types will be
+        searched.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary of direct arguments assigned to the block.
+
+    Raises
+    ------
+    ConfigurationError
+        No such block.
+    """
+    block_configuration = get_block_configuration_from_config_dict(
+        block, config_dict, block_type
+    )
+    if block_configuration:
+        return block_configuration[BLOCK_DIRECT_ARGUMENTS_KEY]
+    raise ConfigurationError(f"No such block: {block}.")
+
+
+def get_block_parameters_from_config_dict(
+    block: str,
+    config_dict: KenningBlockConfigDict,
+    block_type: Optional[ConfigKey] = None,
+) -> Dict[str, Any]:
+    """
+    Retrieves a dictionary of all parameters for the given block.
+
+    Parameters
+    ----------
+    block: str
+        Name of the block.
+    config_dict: KenningBlockConfigDict
+        The dict to retrieve the information from.
+    block_type: Optional[ConfigKey]
+        Block type of the given block. If None, all block types will be
+        searched.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary of parameters assigned to the block.
+
+    Raises
+    ------
+    ConfigurationError
+        No such block, or no such parameter in the block.
+    """
+    block_configuration = get_block_configuration_from_config_dict(
+        block, config_dict, block_type
+    )
+    if block_configuration is None:
+        raise ConfigurationError(f"No such block: {block}.")
+    return block_configuration[BLOCK_CONFIG_PARAMETERS_KEY]
+
+
+def get_unaffiliated_parameter_from_config_dict(
+    config_dict: KenningBlockConfigDict, *parameters: str
+) -> Tuple[str, Any]:
+    """
+    Retrieves the value of a given unaffiliated parameter (i.e. parameter under
+    the UNAFFILIATED_PARAMETERS_KEY) from the config dict.
+
+    Parameters
+    ----------
+    config_dict: KenningBlockConfigDict
+        The dict to retrieve the information from.
+    *parameters: str
+        Priority list of the potential parameter names.
+
+    Returns
+    -------
+    Tuple[str, Any]
+        Name from the priority list under which the parameter was found, and
+        the value of that parameter.
+
+    Raises
+    ------
+    ConfigurationError
+        None of the parameters on the list exist.
+    """
+    unaffiliated_parameters = config_dict[UNAFFILIATED_PARAMETERS_KEY]
+    for parameter in parameters:
+        if parameter in unaffiliated_parameters:
+            return parameter, unaffiliated_parameters[parameter]
+    raise ConfigurationError(
+        f"None of {parameters} in unaffiliated parameters."
+    )
 
 
 def argparse_to_config_dict(
@@ -207,6 +358,59 @@ def yaml_or_json_to_config_dict(config: Dict) -> KenningBlockConfigDict:
                 block_type.value
             ] = final_block_configs
     return result
+
+
+def block_parameters_to_config_dict(
+    block: Any,
+    parameters: Dict[str, Any] = {},
+    direct_arguments: Dict[str, Any] = {},
+) -> KenningBlockConfigDict:
+    """
+    Creates a config dict with a single block's configuration.
+
+    Parameters
+    ----------
+    block: Any
+        Class for the block. Needs to have an arguments_structure and
+        block_type class fields.
+    parameters: Dict[str, Any]
+        Dictionary with values of the user-specified parameters of the block
+        (must match the block's arguments_structure).
+    direct_arguments: Dict[str, Any]
+        Dictionary with values of the direct extra arguments for the block.
+
+    Returns
+    -------
+    KenningBlockConfigDict
+        Kenning config dict, containing thr given configuration for the given
+        block.
+    """
+    return {
+        BLOCK_CONFIGURATIONS_KEY: {
+            block.block_type: {
+                block.__name__: {
+                    BLOCK_CONFIG_PARAMETERS_KEY: parameters,
+                    BLOCK_DIRECT_ARGUMENTS_KEY: direct_arguments,
+                }
+            }
+        },
+        UNAFFILIATED_PARAMETERS_KEY: {},
+    }
+
+
+def get_empty_config_dict() -> KenningBlockConfigDict:
+    """
+    Creates a config dict that has no configuration (is empty).
+
+    Returns
+    -------
+    KenningBlockConfigDict
+        Empty config dict.
+    """
+    return {
+        BLOCK_CONFIGURATIONS_KEY: {},
+        UNAFFILIATED_PARAMETERS_KEY: {},
+    }
 
 
 def merge_config_dicts(

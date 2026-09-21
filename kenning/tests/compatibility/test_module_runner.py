@@ -64,12 +64,6 @@ xfails = [
     "NNIPruningOptimizer",
     # RuntimeBuilder
     "ZephyrRuntimeBuilder",
-    # InferenceLoop
-    # there may be an error in the implementation
-    # with referencing a `None` attribute
-    # in `self._platform.sensors_frequency`
-    "AnomalyDetectionInferenceLoop",
-    "SensorRealtimeInferenceLoop",
     # Protocols
     "ROS2Protocol",
 ]
@@ -164,6 +158,7 @@ class TestModuleRunnerCompatibility:
             if issubclass(module_cls, superclass):
                 config_dict["free_flags"].update(exts)
 
-        argv.extend(["--config", json.dumps(config_dict)])
+        print(f"CONFIG_DICT = {config_dict}")
+        argv.extend(["--cfg", json.dumps(config_dict)])
 
         ModuleRunner.scenario_run(argv)

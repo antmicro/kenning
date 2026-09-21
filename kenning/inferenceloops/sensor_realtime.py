@@ -50,7 +50,12 @@ class SensorRealtimeInferenceLoop(RealtimeInferenceLoop):
             inference_limit,
         )
         self._sensors: list[Sensor] = []
-        self._frequency = self._platform.sensors_frequency
+
+        if hasattr(self, "_platform") and self._platform:
+            self._frequency = self._platform.sensors_frequency
+        else:
+            self._frequency = 0
+
         self._measurements = None
         self.samples_fed = 0
 

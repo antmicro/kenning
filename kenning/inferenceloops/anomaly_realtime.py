@@ -12,6 +12,8 @@ import numpy as np
 import sklearn
 import sklearn.metrics
 
+from kenning.core.dataconverter import DataConverter
+from kenning.core.dataset import Dataset
 from kenning.core.exceptions import ConfigurationError
 from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
@@ -22,6 +24,10 @@ from kenning.core.metrics import (
     nab_metric,
     prob_auc_metric,
 )
+from kenning.core.model import ModelWrapper
+from kenning.core.platform import Platform
+from kenning.core.protocol import Protocol
+from kenning.core.runtime import Runtime
 from kenning.inferenceloops.sensor_realtime import SensorRealtimeInferenceLoop
 
 DEFAULT_METRICS = [
@@ -87,13 +93,13 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
 
     def __init__(
         self,
-        dataset,
-        dataconverter,
-        model_wrapper,
-        platform=None,
-        protocol=None,
-        runtime=None,
-        smoothing_window_size=10,
+        dataset: Dataset,
+        dataconverter: DataConverter,
+        model_wrapper: ModelWrapper,
+        platform: Optional[Platform] = None,
+        protocol: Optional[Protocol] = None,
+        runtime: Optional[Runtime] = None,
+        smoothing_window_size: int = 10,
         inference_limit: Optional[int] = None,
         use_metrics: list[str] = [
             metric.name.lower() for metric in DEFAULT_METRICS

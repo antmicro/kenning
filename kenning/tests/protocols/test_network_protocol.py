@@ -359,6 +359,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             message_type,
         )
 
+    @pytest.mark.xdist_group(name="use_socket")
     def test_upload_runtime(self, tmpfolder: Path, random_byte_data: bytes):
         path = tmpfolder / uuid.uuid4().hex
         with open(path, "wb") as file:
@@ -374,6 +375,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             MessageType.RUNTIME,
         )
 
+    @pytest.mark.xdist_group(name="use_socket")
     def test_request_processing(self):
         assert (b"", True) == self._receive_request(
             ServerAction.PROCESSING_INPUT.to_bytes(),

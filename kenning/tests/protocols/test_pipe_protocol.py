@@ -7,6 +7,7 @@ import multiprocessing
 import struct
 import uuid
 from pathlib import Path
+from queue import Empty
 from random import choices, randint
 from string import ascii_lowercase
 from typing import Any, Dict, Literal, Tuple
@@ -41,6 +42,8 @@ MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
     and modelwrapper_cls.pretrained_model_uri is not None
     and not modelwrapper_cls.pretrained_model_uri.startswith("hf://")
 ]
+
+EVENT_TIMEOUT = 30
 
 
 @pytest.fixture
@@ -185,7 +188,7 @@ class TestPipeProtocol(TestCoreProtocol):
         server.stop()
         server.disconnect()
         with pytest.raises(ProtocolNotStartedError):
-            server.receive_data(None)
+            server.receive_data(EVENT_TIMEOUT)
 
     def test_receive_data_data_sent(
         self,
@@ -201,7 +204,8 @@ class TestPipeProtocol(TestCoreProtocol):
         received_data = bytearray()
 
         for _ in random_byte_data:
-            received_data += server.receive_data(None)
+            if (data := server.receive_data(EVENT_TIMEOUT)) is not None:
+                received_data += data
         assert random_byte_data == received_data
 
     def test_receive_client_disconnect(
@@ -221,7 +225,7 @@ class TestPipeProtocol(TestCoreProtocol):
 
         server.client_disconnected_callback = mock_client_disconnected_callback
         client.disconnect()
-        received_data = server.receive_data(None)
+        received_data = server.receive_data(EVENT_TIMEOUT)
         assert received_data is None
         assert 1 == mock_client_disconnected_callback_call_count
 
@@ -284,17 +288,38 @@ class TestPipeProtocol(TestCoreProtocol):
             ),
         )
         thread.start()
-        server_started_event.wait()
-        client = PipeProtocol(self.pipe_path)
-        assert client.initialize_client()
-        KLogger.debug("Client started for receive event.")
-        if argument is not None:
-            return_value = getattr(client, method)(argument)
-        else:
-            return_value = getattr(client, method)()
-        client.disconnect()
-        thread.join()
-        return queue.get(), return_value
+        response = b""
+        return_value = False
+        try:
+            if not server_started_event.wait(EVENT_TIMEOUT):
+                pytest.fail(
+                    f"Server initialization has exceeded {EVENT_TIMEOUT}"
+                    " seconds."
+                )
+
+            client = PipeProtocol(self.pipe_path)
+            assert client.initialize_client()
+            KLogger.debug("Client started for receive event.")
+            if argument is not None:
+                return_value = getattr(client, method)(argument)
+            else:
+                return_value = getattr(client, method)()
+
+            try:
+                response = queue.get(timeout=EVENT_TIMEOUT)
+            except Empty:
+                pytest.fail("Server failed to send data before timeout.")
+
+            client.disconnect()
+            thread.join(EVENT_TIMEOUT)
+            if thread.is_alive():
+                pytest.fail("Server transmission did not finish.")
+        finally:
+            if thread.is_alive():
+                thread.terminate()
+                thread.join(EVENT_TIMEOUT)
+
+        return response, return_value
 
     def test_upload_input(self, random_byte_data: bytes):
         """

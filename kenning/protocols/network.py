@@ -114,6 +114,7 @@ class NetworkProtocol(KenningProtocol):
             sock.close()
             return False
         self.socket = sock
+        self.socket.settimeout(timeout)
         KLogger.info(f"Connected client {addr}")
         self.socket.send(b"\x00")
         if self.client_connected_callback is not None:
@@ -128,6 +129,9 @@ class NetworkProtocol(KenningProtocol):
         KLogger.debug(f"Initializing server at {self.host}:{self.port}")
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.serversocket.settimeout(
+            self.timeout if self.timeout > 0 else None
+        )
         try:
             self.serversocket.bind((self.host, self.port))
             self.serversocket.listen(1)
@@ -145,6 +149,7 @@ class NetworkProtocol(KenningProtocol):
     def initialize_client(self) -> bool:
         KLogger.debug(f"Initializing client at {self.host}:{self.port}")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(self.timeout if self.timeout > 0 else None)
         self.socket.connect((self.host, self.port))
 
         try:

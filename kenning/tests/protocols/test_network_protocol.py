@@ -7,7 +7,9 @@ import multiprocessing
 import socket
 import time
 import uuid
+from multiprocessing.synchronize import Event as SyncEvent
 from pathlib import Path
+from queue import Empty
 from typing import Any, Literal, Tuple
 
 import pytest
@@ -44,6 +46,9 @@ def valid_status_message(action: ServerAction):
             }
         ),
     )
+
+
+EVENT_TIMEOUT = 30
 
 
 class TestNetworkProtocol(TestCoreProtocol):
@@ -91,12 +96,12 @@ class TestNetworkProtocol(TestCoreProtocol):
         """
         server, client = server_and_client
         server.stop()
-        message = server.receive_message(timeout=1)
+        message = server.receive_message(EVENT_TIMEOUT)
         assert message is None
 
         # Send data
         client.send_message(Message(MessageType.OUTPUT, random_byte_data))
-        message = server.receive_message(timeout=1)
+        message = server.receive_message(EVENT_TIMEOUT)
         assert (
             message
             and message.payload == random_byte_data
@@ -126,7 +131,7 @@ class TestNetworkProtocol(TestCoreProtocol):
                 return b""
 
         client.send_message(EmptyMessage())
-        message = server.receive_message(timeout=1)
+        message = server.receive_message(EVENT_TIMEOUT)
         assert message is None
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -153,7 +158,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         server.stop()
         server.disconnect()
         with pytest.raises(ProtocolNotStartedError):
-            server.receive_data(None)
+            server.receive_data(EVENT_TIMEOUT)
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_receive_data_data_sent(
@@ -167,7 +172,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         server, client = server_and_client
         server.stop()
         assert client.send_data(random_byte_data)
-        received_data = server.receive_data(None)
+        received_data = server.receive_data(EVENT_TIMEOUT)
         assert random_byte_data == received_data
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -188,7 +193,7 @@ class TestNetworkProtocol(TestCoreProtocol):
 
         server.client_disconnected_callback = mock_client_disconnected_callback
         client.disconnect()
-        received_data = server.receive_data(None)
+        received_data = server.receive_data(EVENT_TIMEOUT)
         assert received_data is None
         assert 1 == mock_client_disconnected_callback_call_count
 
@@ -208,7 +213,7 @@ class TestNetworkProtocol(TestCoreProtocol):
 
         def run_test(protocol: NetworkProtocol):
             """
-            Initializes socket and connects to it.
+            Initializes server's socket and connects to it.
 
             Parameters
             ----------
@@ -223,23 +228,38 @@ class TestNetworkProtocol(TestCoreProtocol):
             output = False
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind((self.host, self.port))
+                s.bind((self.host, protocol.port))
+                s.settimeout(EVENT_TIMEOUT)
                 protocol.serversocket = s
-                multiprocessing.Process(target=connect, args=(s,)).start()
-                output = protocol.accept_client(None)
+                s.listen(1)
+
+                client_process = multiprocessing.Process(
+                    target=connect, args=(s, protocol.port)
+                )
+                client_process.start()
+
+                try:
+                    output = protocol.accept_client(EVENT_TIMEOUT)
+                finally:
+                    client_process.join(EVENT_TIMEOUT)
+                    if client_process.is_alive():
+                        client_process.terminate()
+                        client_process.join()
+
+                assert (
+                    client_process.exitcode == 0
+                ), f"Client process failed with code {client_process.exitcode}"
                 s.shutdown(socket.SHUT_RDWR)
             return output
 
         # There's already established connection
         protocol = self.init_protocol()
-        protocol.socket = True
-        run_test(protocol)
-        assert socket
+        protocol.socket = socket.socket()
+        assert not run_test(protocol)
 
         # There was no connection yet
         protocol = self.init_protocol()
-        run_test(protocol)
-        assert socket is not None
+        assert run_test(protocol)
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_send_message(
@@ -271,46 +291,70 @@ class TestNetworkProtocol(TestCoreProtocol):
             host: str,
             port: int,
             response_payload: bytes,
-            server_started_event: multiprocessing.Event,
+            timeout: int,
+            server_started_event: SyncEvent,
             queue: multiprocessing.Queue,
         ):
-            server = NetworkProtocol(host, port)
-            server.initialize_server()
+            server = NetworkProtocol(host, port, timeout=timeout)
+            assert server.initialize_server()
             server_started_event.set()
             type, message_type, data, flags = server.listen_blocking(
-                None, None, None, 1
+                None, None, None, timeout
             )
+            assert message_type is not None
             queue.put(data)
             server.transmit_blocking(
                 message_type,
                 response_payload,
                 [TransmissionFlag.SUCCESS, TransmissionFlag.IS_KENNING],
+                timeout,
             )
             server.disconnect()
 
         queue = multiprocessing.Queue()
         server_started_event = multiprocessing.Event()
-        thread = multiprocessing.Process(
+        process = multiprocessing.Process(
             target=receive,
             args=(
                 self.host,
                 self.port,
                 response_payload,
+                EVENT_TIMEOUT,
                 server_started_event,
                 queue,
             ),
         )
-        thread.start()
-        server_started_event.wait()
-        client = NetworkProtocol(self.host, self.port)
-        assert client.initialize_client()
-        if argument is not None:
-            return_value = getattr(client, method)(argument)
-        else:
-            return_value = getattr(client, method)()
-        client.disconnect()
-        thread.join()
-        return queue.get(), return_value
+        process.start()
+        response = b""
+        return_value = False
+        try:
+            if not server_started_event.wait(EVENT_TIMEOUT):
+                pytest.fail(
+                    f"Server initialization has exceeded {EVENT_TIMEOUT}"
+                    " seconds."
+                )
+            client = NetworkProtocol(self.host, self.port)
+            assert client.initialize_client()
+            if argument is not None:
+                return_value = getattr(client, method)(argument)
+            else:
+                return_value = getattr(client, method)()
+            client.disconnect()
+
+            try:
+                response = queue.get(timeout=EVENT_TIMEOUT)
+            except Empty:
+                pytest.fail("Server failed to send data before timeout.")
+
+            process.join(EVENT_TIMEOUT)
+            if process.is_alive():
+                pytest.fail("Server transmission did not finish.")
+        finally:
+            if process.is_alive():
+                process.terminate()
+                process.join(EVENT_TIMEOUT)
+
+        return response, return_value
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_upload_input(self, random_byte_data: bytes):

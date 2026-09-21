@@ -4,6 +4,7 @@
 
 import copy
 import multiprocessing
+import time
 from math import ceil
 from threading import Event, Lock, Thread
 from typing import Callable, List, Optional, Tuple
@@ -31,6 +32,44 @@ from kenning.utils.event_with_args import EventWithArgs
 
 DEFAULT_MESSAGE_TYPE = MessageType.DATA
 
+DEFAULT_EVENT_TIMEOUT = 30
+
+
+def terminate_process(process: multiprocessing.Process):
+    process.terminate()
+    process.join(DEFAULT_EVENT_TIMEOUT)
+    if process.is_alive():
+        process.kill()
+        process.join(DEFAULT_EVENT_TIMEOUT)
+        pytest.fail("Process was not terminated gracefully.")
+
+
+def wait_for(
+    function: Callable[[], bool], timeout: int = DEFAULT_EVENT_TIMEOUT
+) -> bool:
+    """
+    Waits until `function` returns `True` within given `timeout`.
+
+    Parameters
+    ----------
+    function: Callable[[], bool]
+        Function to monitor.
+    timeout: int
+        Timeout for function monitoring.
+
+    Returns
+    -------
+    bool
+        True if `function` returns `True` before timeout, False otherwise.
+    """
+    deadline = time.time() + timeout
+
+    while not function():
+        if time.time() > deadline:
+            return False
+        time.sleep(0.01)
+    return True
+
 
 @pytest.fixture
 def message_type() -> MessageType:
@@ -40,7 +79,7 @@ def message_type() -> MessageType:
 @pytest.fixture
 @patch.multiple(KenningProtocol, __abstractmethods__=set())
 def protocol() -> KenningProtocol:
-    protocol = KenningProtocol()
+    protocol = KenningProtocol(timeout=DEFAULT_EVENT_TIMEOUT)
     return protocol
 
 
@@ -345,10 +384,13 @@ class TestProtocolEvent:
 
         thread = Thread(target=test_thread)
         thread.start()
-        is_successful, returned_object = protocol_event.wait(120)
+        is_successful, returned_object = protocol_event.wait(
+            4 * DEFAULT_EVENT_TIMEOUT
+        )
         assert event_success == is_successful
         assert example_object == returned_object
-        thread.join()
+        thread.join(DEFAULT_EVENT_TIMEOUT)
+        assert not thread.is_alive()
 
     @pytest.mark.parametrize(
         "event_success",
@@ -381,7 +423,9 @@ class TestProtocolEvent:
 
         protocol_event.start(test_success_callback, test_deny_callback)
         protocol_event.signal_callback(event_success, example_object)
-        callback_finished_event.wait()
+        assert callback_finished_event.wait(
+            DEFAULT_EVENT_TIMEOUT
+        ), "Finish callback was not invoked"
         protocol.stop()
 
 
@@ -1462,8 +1506,9 @@ class TestKenningProtocol:
             MessageType.IO_SPEC: event_mock_3,
         }
         protocol.send_messages(None, messages)
-        while len(message_dump_buffer) != len(messages):
-            pass
+        assert wait_for(
+            lambda: len(message_dump_buffer) == len(messages)
+        ), "Not all messages were sent until timeout"
         protocol.stop()
 
         assert 0 == event_mock_2.messages_sent_count
@@ -1667,7 +1712,7 @@ class TestKenningProtocol:
         REQUEST_MESSAGES = multiprocessing.Queue()
 
         def kenning_protocol_receive_message_mock(
-            timeout: Optional[float] = None
+            timeout: Optional[float] = DEFAULT_EVENT_TIMEOUT
         ) -> Optional[Message]:
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
@@ -1718,28 +1763,27 @@ class TestKenningProtocol:
             request_messages,
         ):
             for _ in range(1 if accepted else retry + 1):
-                while not connection.poll():
-                    pass
-                request_message = connection.recv()
-                request_messages.put(request_message)
-                if accepted:
-                    for message in messages:
-                        connection.send(message)
-                else:
-                    connection.send(
-                        Message(
-                            message_type,
-                            None,
-                            FlowControlFlags.ACKNOWLEDGE,
-                            Flags(
-                                {
-                                    FlagName.FIRST: True,
-                                    FlagName.LAST: True,
-                                    FlagName.FAIL: True,
-                                }
-                            ),
+                if connection.poll(DEFAULT_EVENT_TIMEOUT):
+                    request_message = connection.recv()
+                    request_messages.put(request_message)
+                    if accepted:
+                        for message in messages:
+                            connection.send(message)
+                    else:
+                        connection.send(
+                            Message(
+                                message_type,
+                                None,
+                                FlowControlFlags.ACKNOWLEDGE,
+                                Flags(
+                                    {
+                                        FlagName.FIRST: True,
+                                        FlagName.LAST: True,
+                                        FlagName.FAIL: True,
+                                    }
+                                ),
+                            )
                         )
-                    )
 
         other_device = multiprocessing.Process(
             target=other_device_mock,
@@ -1759,10 +1803,11 @@ class TestKenningProtocol:
             success_callback,
             random_byte_data,
             [TransmissionFlag.IS_KENNING],
-            1,
+            DEFAULT_EVENT_TIMEOUT,
             retry,
             deny_callback,
         )
+        terminate_process(other_device)
         protocol.stop()
         other_device.terminate()
 
@@ -1809,8 +1854,9 @@ class TestKenningProtocol:
             deny_callback,
         )
 
-        while len(protocol.current_protocol_events) != 0:
-            pass
+        assert wait_for(
+            lambda: len(protocol.current_protocol_events) == 0,
+        ), "All protocol events were not processed until timeout."
 
         protocol.stop()
         other_device.terminate()
@@ -1877,8 +1923,9 @@ class TestKenningProtocol:
 
         def other_device_wait():
             nonlocal protocol
-            while message_type not in protocol.current_protocol_events.keys():
-                pass
+            assert wait_for(
+                lambda: message_type in protocol.current_protocol_events.keys()
+            ), "Message was not received by other device before timeout."
 
         def other_device_send_transmission(messages, connection):
             other_device_wait()
@@ -1916,9 +1963,10 @@ class TestKenningProtocol:
         )
         other_device.start()
         type, _message_type, _payload, _flags = protocol.listen_blocking(
-            message_type, None, None, 1
+            message_type, None, None, DEFAULT_EVENT_TIMEOUT
         )
-        other_device.join()
+        other_device.join(DEFAULT_EVENT_TIMEOUT)
+        assert not other_device.is_alive()
         assert IncomingEventType.REQUEST == type
         assert message_type == _message_type
         assert payload == _payload
@@ -1930,9 +1978,10 @@ class TestKenningProtocol:
         )
         other_device.start()
         type, _message_type, _payload, _flags = protocol.listen_blocking(
-            message_type, None, None, 1
+            message_type, None, None, DEFAULT_EVENT_TIMEOUT
         )
-        other_device.join()
+        other_device.join(DEFAULT_EVENT_TIMEOUT)
+        assert not other_device.is_alive()
         assert payload == _payload
         assert flags == _flags
         assert message_type == _message_type
@@ -1989,10 +2038,12 @@ class TestKenningProtocol:
         )
         other_device.start()
 
-        while len(protocol.current_protocol_events) != 0:
-            pass
+        assert wait_for(
+            lambda: len(protocol.current_protocol_events) == 0
+        ), "Protocol did not receive all events within timeout."
 
-        other_device.join()
+        other_device.join(DEFAULT_EVENT_TIMEOUT)
+        assert not other_device.is_alive()
         protocol.stop()
 
         assert limit == transmission_callback_called + request_callback_called

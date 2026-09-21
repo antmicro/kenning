@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -51,6 +51,8 @@ MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
     and modelwrapper_cls.pretrained_model_uri is not None
     and not modelwrapper_cls.pretrained_model_uri.startswith("hf://")
 ]
+
+EVENT_TIMEOUT = 30
 
 
 @pytest.fixture
@@ -349,7 +351,9 @@ class TestUARTProtocol(TestCoreProtocol):
         )
         thread_recv.start()
         ret = client.initialize_client()
-        thread_recv.join()
+        thread_recv.join(EVENT_TIMEOUT)
+
+        assert not thread_recv.is_alive()
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -365,7 +369,9 @@ class TestUARTProtocol(TestCoreProtocol):
 
         client.disconnect()
 
-        thread_recv.join()
+        thread_recv.join(EVENT_TIMEOUT)
+
+        assert not thread_recv.is_alive()
         assert queue.qsize() == 1
         message = queue.get()
         assert isinstance(message, Message)
@@ -488,7 +494,8 @@ class TestUARTProtocol(TestCoreProtocol):
             serial_f.write(random_byte_data)
         received_data = b""
         for _ in range(len(random_byte_data)):
-            received_data += client.receive_data(1)
+            if (data := client.receive_data(EVENT_TIMEOUT)) is not None:
+                received_data += data
 
         assert random_byte_data == received_data
 
@@ -502,10 +509,10 @@ class TestUARTProtocol(TestCoreProtocol):
             args=(queue,),
         )
         thread_recv.start()
-
         ret = client.upload_input(random_byte_data)
+        thread_recv.join(EVENT_TIMEOUT)
 
-        thread_recv.join()
+        assert not thread_recv.is_alive()
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -527,8 +534,9 @@ class TestUARTProtocol(TestCoreProtocol):
         model_path = get_tmp_path()
         model_path.write_bytes(random_byte_data)
         ret = client.upload_model(model_path)
+        thread_recv.join(EVENT_TIMEOUT)
 
-        thread_recv.join()
+        assert not thread_recv.is_alive()
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -563,7 +571,9 @@ class TestUARTProtocol(TestCoreProtocol):
 
         ret = client.upload_io_specification(io_spec_path)
 
-        thread_recv.join()
+        thread_recv.join(EVENT_TIMEOUT)
+
+        assert not thread_recv.is_alive()
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -583,7 +593,9 @@ class TestUARTProtocol(TestCoreProtocol):
         thread_recv.start()
         ret = client.request_processing()
 
-        thread_recv.join()
+        thread_recv.join(EVENT_TIMEOUT)
+
+        assert not thread_recv.is_alive()
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -606,5 +618,7 @@ class TestUARTProtocol(TestCoreProtocol):
         thread_send.start()
         statistics = client.download_statistics(final=True)
 
-        thread_send.join()
+        thread_send.join(EVENT_TIMEOUT)
+
+        assert not thread_send.is_alive()
         assert _parse_stats(valid_iree_stats) == statistics.data

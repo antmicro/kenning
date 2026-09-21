@@ -117,8 +117,8 @@ class ProtocolEvent(ABC):
 
     def start(
         self,
-        success_callback: Callable["ProtocolEvent", None],
-        deny_callback: Callable["ProtocolEvent", None],
+        success_callback: Callable[["ProtocolEvent"], None],
+        deny_callback: Callable[["ProtocolEvent"], None],
     ):
         """
         Activates the ProtocolEvent in non-blocking mode, which means that if
@@ -134,9 +134,9 @@ class ProtocolEvent(ABC):
 
         Parameters
         ----------
-        success_callback: Callable[ProtocolEvent, None]
+        success_callback: Callable[[ProtocolEvent], None]
             Callback to be invoked, if the event finishes successfully,
-        deny_callback: Callable[ProtocolEvent, None]
+        deny_callback: Callable[[ProtocolEvent], None]
             Callback to be invoked, if the event fails.
         """
         self.success_callback = success_callback
@@ -1575,8 +1575,8 @@ class KenningProtocol(BytesBasedProtocol, ABC):
     def run_event(
         self,
         event: ProtocolEvent,
-        success_callback: Callable[ProtocolEvent, None],
-        deny_callback: Callable[ProtocolEvent, None],
+        success_callback: Callable[[ProtocolEvent | IncomingEvent], None],
+        deny_callback: Callable[[ProtocolEvent], None],
     ):
         """
         Adds a protocol event to the 'current_protocol_events' dict, so that
@@ -1587,9 +1587,9 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         ----------
         event: ProtocolEvent
             Event to start.
-        success_callback: Callable[ProtocolEvent, None]
+        success_callback: Callable[[ProtocolEvent | IncomingEvent], None]
             Function, that will be called if the event succeeds.
-        deny_callback: Callable[ProtocolEvent, None]
+        deny_callback: Callable[[ProtocolEvent], None]
             Function, that will be called if the event fails.
 
         Raises

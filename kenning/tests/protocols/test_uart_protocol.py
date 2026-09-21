@@ -399,7 +399,8 @@ class TestUARTProtocol(TestCoreProtocol):
         )
         message = client.receive_message(timeout=1)
         assert (
-            message.payload == random_byte_data
+            message
+            and message.payload == random_byte_data
             and message.message_type == message_type
         )
 
@@ -444,8 +445,15 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client send_message method.
         """
 
-        class EmptyMessage:
-            def to_bytes(self, verify_checksum: bool):
+        class EmptyMessage(Message):
+            def __init__(self):
+                super().__init__(message_type=MessageType.PING)
+
+            def to_bytes(
+                self,
+                set_checksum_to_zero: bool = False,
+                endianness: Literal["little", "big"] = "little",
+            ):
                 return b""
 
         # send data
@@ -537,7 +545,6 @@ class TestUARTProtocol(TestCoreProtocol):
 
         def io_spec_to_struct_mock(
             io_spec: Dict[str, Any],
-            entry_func: str = "module.main",
             model_name: str = "module",
             byteorder: Literal["little", "big"] = "little",
         ) -> bytes:

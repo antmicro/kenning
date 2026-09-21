@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,7 @@ TCP-based inference communication protocol.
 """
 
 import socket
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from kenning.protocols.kenning_protocol import (
     KenningProtocol,
@@ -110,14 +110,14 @@ class NetworkProtocol(KenningProtocol):
         KLogger.info(f"Connected client {addr}")
         self.socket.send(b"\x00")
         if self.client_connected_callback is not None:
-            self.client_connected_callback(addr)
+            self.client_connected_callback()
         return True
 
     def initialize_server(
         self,
         # IP address will be passed to the 'client_connected_callback'
-        client_connected_callback: Optional[Callable[Any, None]] = None,
-        client_disconnected_callback: Optional[Callable[None, None]] = None,
+        client_connected_callback: Optional[Callable[[], None]] = None,
+        client_disconnected_callback: Optional[Callable[[], None]] = None,
     ) -> bool:
         KLogger.debug(f"Initializing server at {self.host}:{self.port}")
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

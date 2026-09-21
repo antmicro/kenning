@@ -6,7 +6,7 @@ import copy
 import multiprocessing
 from math import ceil
 from threading import Event, Lock, Thread
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
@@ -33,13 +33,13 @@ DEFAULT_MESSAGE_TYPE = MessageType.DATA
 
 
 @pytest.fixture
-def message_type():
+def message_type() -> MessageType:
     return DEFAULT_MESSAGE_TYPE
 
 
 @pytest.fixture
 @patch.multiple(KenningProtocol, __abstractmethods__=set())
-def protocol():
+def protocol() -> KenningProtocol:
     protocol = KenningProtocol()
     return protocol
 
@@ -51,7 +51,9 @@ protocol3 = protocol
 
 @pytest.fixture
 @patch.multiple(ProtocolEvent, __abstractmethods__=set())
-def protocol_event(message_type: MessageType, protocol: KenningProtocol):
+def protocol_event(
+    message_type: MessageType, protocol: KenningProtocol
+) -> ProtocolEvent:
     protocol_event = ProtocolEvent(message_type, protocol)
     protocol_event.INITIAL_ACTIVE_STATE = ProtocolEvent.State.NEW
     return protocol_event
@@ -193,7 +195,7 @@ def signal_callback_method_path(tested_class: str) -> str:
 
 
 def assert_signal_callback_mock_incoming_transmission_success(
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None],
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None],
     desired_call_count: int,
     valid_message_type: MessageType,
     valid_payload: bytes,
@@ -205,7 +207,7 @@ def assert_signal_callback_mock_incoming_transmission_success(
 
     Parameters
     ----------
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None]
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None]
         The mock to assert.
     desired_call_count: int
         Integer informing how many times the mocked method was expected to be
@@ -235,7 +237,7 @@ def assert_signal_callback_mock_incoming_transmission_success(
 
 
 def assert_signal_callback_mock_incoming_transmission_failure(
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None],
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None],
     desired_call_count: int,
 ):
     """
@@ -244,7 +246,7 @@ def assert_signal_callback_mock_incoming_transmission_failure(
 
     Parameters
     ----------
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None]
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None]
         The mock to assert.
     desired_call_count: int
         Integer informing how many times the mocked method was expected to be
@@ -260,7 +262,7 @@ def assert_signal_callback_mock_incoming_transmission_failure(
 
 
 def assert_signal_callback_mock_incoming_request_success(
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None],
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None],
     desired_call_count: int,
     valid_message_type: MessageType,
     valid_payload: bytes,
@@ -272,7 +274,7 @@ def assert_signal_callback_mock_incoming_request_success(
 
     Parameters
     ----------
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None]
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None]
         The mock to assert.
     desired_call_count: int
         Integer informing how many times the mocked method was expected to be
@@ -296,7 +298,7 @@ def assert_signal_callback_mock_incoming_request_success(
 
 
 def assert_signal_callback_mock_request_failure(
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None],
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None],
     desired_call_count: int,
 ):
     """
@@ -305,7 +307,7 @@ def assert_signal_callback_mock_request_failure(
 
     Parameters
     ----------
-    test_mock: Callable[Tuple[bool, ProtocolEvent], None]
+    test_mock: Callable[[Tuple[bool, ProtocolEvent]], None]
         The mock to assert.
     desired_call_count: int
         Integer informing how many times the mocked method was expected to be
@@ -318,42 +320,6 @@ def assert_signal_callback_mock_request_failure(
         assert type(event) is OutgoingRequest
         assert event.is_completed()
         assert not event.has_succeeded()
-
-
-class MockKenningProtocol(KenningProtocol):
-    """
-    Fake KenningProtocol class, that can be passed to ProtocolEvent
-    object. It overrides send_messages method, that is called by
-    some ProtocolEvent objects, so that it doesn't raise an exception
-    trying to actually send messages.
-    """
-
-    def __init__(self):
-        self.receiver_thread = None
-        self.transmitter = None
-        self.receiver_running = False
-
-    def send_messages(self, message_type: MessageType, messages):
-        pass
-
-    def disconnect(self):
-        pass
-
-    def initialize_server(
-        self,
-        client_connected_callback: Optional[Callable[Any, None]] = None,
-        client_disconnected_callback: Optional[Callable[None, None]] = None,
-    ):
-        pass
-
-    def initialize_client(self):
-        pass
-
-    def receive_data(self, timeout: float):
-        pass
-
-    def send_data(self, data: bytes):
-        pass
 
 
 class TestProtocolEvent:
@@ -614,7 +580,7 @@ class TestIncomingTransmission:
         message_type: MessageType,
         first_flag_set: bool,
         last_flag_set: bool,
-        state_checker: Callable[ProtocolEvent, None],
+        state_checker: Callable[[ProtocolEvent], None],
     ):
         transmission = self._get_receiving_object(message_type)
         payload = b"\x0B\xDC\x2E"
@@ -726,7 +692,7 @@ class TestOutgoingRequest:
 
     def _check_request_messages_from_mock(
         self,
-        mock: Callable[Tuple[MessageType, List[Message]], None],
+        mock: Callable[[Tuple[MessageType, List[Message]]], None],
         message_type: MessageType,
         payload: bytes = b"",
         flags: List[TransmissionFlag] = [],
@@ -900,7 +866,7 @@ class TestOutgoingRequest:
         message_type: MessageType,
         fail_flag_set: bool,
         retries: int,
-        state_checker: Callable[ProtocolEvent, None],
+        state_checker: Callable[[ProtocolEvent], None],
         request_sent_again: bool,
     ):
         request = self._get_sent_object(message_type, retries)
@@ -955,7 +921,7 @@ class TestOutgoingRequest:
         message_type: MessageType,
         outgoing_request: OutgoingRequest,
         last_flag_set: bool,
-        state_checker: Callable[ProtocolEvent, None],
+        state_checker: Callable[[ProtocolEvent], None],
     ):
         with patch(
             signal_callback_method_path("OutgoingRequest")
@@ -986,7 +952,7 @@ class TestOutgoingRequest:
         request = self._get_new_object(message_type)
         request.state = OutgoingRequest.State.PENDING
         request.messages_sent(1)
-        request.state == OutgoingRequest.State.SENT
+        assert request.state == OutgoingRequest.State.SENT
 
     def test_init(self, message_type: MessageType, random_byte_data: bytes):
         mock = Mock()
@@ -1037,7 +1003,7 @@ class TestListen:
     def _get_receiving_object(
         message_type: MessageType,
         event_type,
-        limit: Optional[int] = 1,
+        limit: int = 1,
     ) -> Listen:
         listen = Listen(message_type, Mock())
         listen.state = listen.State.RECEIVING
@@ -1050,7 +1016,7 @@ class TestListen:
 
     @staticmethod
     def _get_listening_object(
-        message_type: MessageType, limit: Optional[int] = 1
+        message_type: MessageType, limit: int = 1
     ) -> Listen:
         listen = Listen(message_type, Mock())
         listen.state = listen.State.LISTENING
@@ -1106,8 +1072,8 @@ class TestListen:
         limit: int,
         event: FlowControlFlags,
         mock_asserter: Callable[
-            Tuple[
-                Callable[Tuple[bool, ProtocolEvent], None],
+            [
+                Callable[[Tuple[bool, ProtocolEvent]], None],
                 int,
                 MessageType,
                 bytes,
@@ -1150,11 +1116,9 @@ class TestListen:
             None,
         ],
     )
-    def test_start_blocking(
-        self, message_type: MessageType, limit: Optional[int]
-    ):
+    def test_start_blocking(self, message_type: MessageType, limit: int):
         # In blocking mode limit other than one is not supported
-        listen = Listen(message_type, limit)
+        listen = Listen(message_type, Mock(), limit)
         listen.start_blocking()
         assert 1 == listen.limit
         assert listen.State.LISTENING == listen.state
@@ -1256,14 +1220,14 @@ class TestListen:
         self,
         message_type: MessageType,
         listen: Listen,
-        state_checker: Callable[ProtocolEvent, None],
+        state_checker: Callable[[ProtocolEvent], None],
         first_flag_set: bool,
         last_flag_set: bool,
         expected_limit: int,
         flow_control_flags: FlowControlFlags,
         mock_asserter: Callable[
-            Tuple[
-                Callable[Tuple[bool, ProtocolEvent], None],
+            [
+                Callable[[bool, ProtocolEvent], None],
                 int,
                 MessageType,
                 bytes,
@@ -1407,7 +1371,9 @@ class TestKenningProtocol:
         ) = multiprocessing.Pipe(duplex=True)
         event_mock = MockEvent(DEFAULT_MESSAGE_TYPE, len(expected_dump_buffer))
 
-        def kenning_protocol_receive_message_mock(timeout: float):
+        def kenning_protocol_receive_message_mock(
+            timeout: Optional[float] = None
+        ) -> Optional[Message]:
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
             else:
@@ -1477,8 +1443,9 @@ class TestKenningProtocol:
             Message(MessageType.MODEL, None),
         ]
 
-        def kenning_protocol_send_message_mock(message: Message):
+        def kenning_protocol_send_message_mock(message: Message) -> bool:
             message_dump_buffer.append(message)
+            return True
 
         protocol.send_message = kenning_protocol_send_message_mock
 
@@ -1611,8 +1578,9 @@ class TestKenningProtocol:
             else:
                 return None
 
-        def kenning_protocol_send_message_mock(message: Message):
+        def kenning_protocol_send_message_mock(message: Message) -> bool:
             CONNECTION_PROTOCOL_SIDE.send(message)
+            return True
 
         def other_device_mock(connection, sent_messages):
             while True:
@@ -1700,14 +1668,15 @@ class TestKenningProtocol:
 
         def kenning_protocol_receive_message_mock(
             timeout: Optional[float] = None
-        ):
+        ) -> Optional[Message]:
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
             else:
                 return None
 
-        def kenning_protocol_send_message_mock(message: Message):
+        def kenning_protocol_send_message_mock(message: Message) -> bool:
             CONNECTION_PROTOCOL_SIDE.send(message)
+            return True
 
         protocol.send_message = kenning_protocol_send_message_mock
         protocol.receive_message = kenning_protocol_receive_message_mock
@@ -1718,7 +1687,11 @@ class TestKenningProtocol:
         success_callback_payload = None
         success_callback_flags = None
 
-        def success_callback(message_type, payload, flags):
+        def success_callback(
+            message_type: MessageType,
+            payload: bytes,
+            flags: List[TransmissionFlag],
+        ) -> None:
             nonlocal success_callback_called
             nonlocal success_callback_message_type
             nonlocal success_callback_payload
@@ -1895,8 +1868,9 @@ class TestKenningProtocol:
             else:
                 return None
 
-        def kenning_protocol_send_message_mock(message: Message):
+        def kenning_protocol_send_message_mock(message: Message) -> bool:
             CONNECTION_PROTOCOL_SIDE.send(message)
+            return True
 
         protocol.send_message = kenning_protocol_send_message_mock
         protocol.receive_message = kenning_protocol_receive_message_mock
@@ -1973,7 +1947,11 @@ class TestKenningProtocol:
         transmission_callback_payload = []
         transmission_callback_flags = []
 
-        def transmission_callback(message_type, payload, flags):
+        def transmission_callback(
+            message_type: MessageType,
+            payload: bytes,
+            flags: List[TransmissionFlag],
+        ) -> None:
             nonlocal transmission_callback_called
             nonlocal transmission_callback_message_type
             nonlocal transmission_callback_payload
@@ -1987,7 +1965,11 @@ class TestKenningProtocol:
         request_callback_payload = []
         request_callback_flags = []
 
-        def request_callback(message_type, payload, flags):
+        def request_callback(
+            message_type: MessageType,
+            payload: bytes,
+            flags: List[TransmissionFlag],
+        ) -> None:
             nonlocal request_callback_called
             nonlocal request_callback_message_type
             request_callback_called += 1

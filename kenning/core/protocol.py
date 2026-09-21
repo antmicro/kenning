@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -551,14 +551,16 @@ class Protocol(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
-    def listen_to_trace_data(self, tracedump_callback: Callable[bytes, None]):
+    def listen_to_trace_data(
+        self, tracedump_callback: Callable[[bytes], None]
+    ):
         """
         Starts continuously receiving batches of trace data from server. Calls
         a callback function with each received batch.
 
         Parameters
         ----------
-        tracedump_callback: Callable[bytes, None]
+        tracedump_callback: Callable[[bytes], None]
             Function, that will be called for each received batch of data.
         """
         ...

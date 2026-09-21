@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -123,7 +123,7 @@ class TestServerSideOptimization:
 
             model_path = pipeline_runner._handle_optimizations()
 
-            assert model_path.exists()
+            assert model_path and model_path.exists()
 
     @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
@@ -199,7 +199,7 @@ class TestServerSideOptimization:
                 protocol_host.initialize_client()
 
                 model_path = pipeline_runner._handle_optimizations()
-                assert model_path.exists()
+                assert model_path and model_path.exists()
                 assert (
                     model_path.read_bytes()
                     == model_wrapper.model_path.read_bytes()

@@ -110,7 +110,7 @@ class InferenceServer(object):
                     " does not support sending logs in the first place."
                 )
 
-        def client_connected_callback(addr):
+        def client_connected_callback():
             self.status = ServerStatus(ServerAction.CLIENT_CONNECTED)
             try:
                 self.protocol.start_sending_logs()

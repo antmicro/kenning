@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -110,9 +110,9 @@ class TransmissionFlag(Enum):
 
 # Type definitions for callbacks, that are passed to lower-level methods of the
 # protocol (such as request, listen, transmit).
-ProtocolFailureCallback = Callable[MessageType, None]
+ProtocolFailureCallback = Callable[[MessageType], None]
 ProtocolSuccessCallback = Callable[
-    Tuple[MessageType, bytes, List[TransmissionFlag]], None
+    [MessageType, bytes, List[TransmissionFlag]], None
 ]
 
 

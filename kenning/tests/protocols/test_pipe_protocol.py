@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from random import choices, randint
 from string import ascii_lowercase
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Literal, Tuple
 
 import numpy as np
 import pytest
@@ -133,7 +133,8 @@ class TestPipeProtocol(TestCoreProtocol):
         client.send_message(Message(MessageType.OUTPUT, random_byte_data))
         message = server.receive_message(timeout=1)
         assert (
-            message.payload == random_byte_data
+            message
+            and message.payload == random_byte_data
             and message.message_type == MessageType.OUTPUT
         ), "Received message is incorrect."
 
@@ -147,8 +148,15 @@ class TestPipeProtocol(TestCoreProtocol):
         server.stop()
 
         # Send empty message
-        class EmptyMessage(object):
-            def to_bytes(self, verify_checksum: bool):
+        class EmptyMessage(Message):
+            def __init__(self):
+                super().__init__(message_type=MessageType.PING)
+
+            def to_bytes(
+                self,
+                set_checksum_to_zero: bool = False,
+                endianness: Literal["little", "big"] = "little",
+            ):
                 return b""
 
         client.send_message(EmptyMessage())
@@ -241,7 +249,7 @@ class TestPipeProtocol(TestCoreProtocol):
         method: str,
         argument: Any,
         message_type: MessageType,
-    ) -> bytes:
+    ) -> Tuple[bytes, bool]:
         def receive(
             pipe_path: str,
             response_payload: bytes,
@@ -254,6 +262,8 @@ class TestPipeProtocol(TestCoreProtocol):
             type, message_type, data, flags = server.listen_blocking(
                 None, None, None, None
             )
+
+            assert message_type is not None
             queue.put(data)
             server.transmit_blocking(
                 message_type,

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,12 +8,12 @@ import socket
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Literal, Tuple
 
 import pytest
 
 from kenning.core.measurements import Measurements
-from kenning.core.protocol import Protocol, ServerAction
+from kenning.core.protocol import ServerAction
 from kenning.protocols.bytes_based_protocol import TransmissionFlag
 from kenning.protocols.kenning_protocol import ProtocolNotStartedError
 from kenning.protocols.message import (
@@ -99,7 +99,8 @@ class TestNetworkProtocol(TestCoreProtocol):
         client.send_message(Message(MessageType.OUTPUT, random_byte_data))
         message = server.receive_message(timeout=1)
         assert (
-            message.payload == random_byte_data
+            message
+            and message.payload == random_byte_data
             and message.message_type == MessageType.OUTPUT
         )
 
@@ -114,8 +115,15 @@ class TestNetworkProtocol(TestCoreProtocol):
         server.stop()
 
         # Send empty message
-        class EmptyMessage(object):
-            def to_bytes(self, verify_checksum: bool):
+        class EmptyMessage(Message):
+            def __init__(self):
+                super().__init__(message_type=MessageType.PING)
+
+            def to_bytes(
+                self,
+                set_checksum_to_zero: bool = False,
+                endianness: Literal["little", "big"] = "little",
+            ):
                 return b""
 
         client.send_message(EmptyMessage())
@@ -199,19 +207,19 @@ class TestNetworkProtocol(TestCoreProtocol):
             s.connect((self.host, self.port))
             s.close()
 
-        def run_test(protocol: Protocol):
+        def run_test(protocol: NetworkProtocol):
             """
-            Initializes socket and conncets to it.
+            Initializes socket and connects to it.
 
             Parameters
             ----------
-            protocol : Protocol
-                Initialized Protocol object
+            protocol : NetworkProtocol
+                Initialized Protocol object.
 
             Returns
             -------
-            Tuple['ServerStatus', bytes]
-                Client addition status
+            bool
+                True if client connected successfully, False otherwise.
             """
             output = False
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -259,7 +267,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         method: str,
         argument: Any,
         message_type: MessageType,
-    ) -> bytes:
+    ) -> Tuple[bytes, bool]:
         def receive(
             host: str,
             port: int,

@@ -95,7 +95,14 @@ class NetworkProtocol(KenningProtocol):
         -------
         bool
             True if client connected successfully, False otherwise.
+
+        Raises
+        ------
+        ProtocolNotStartedError
+            Server socket was not initialized.
         """
+        if self.serversocket is None:
+            raise ProtocolNotStartedError("Protocol not initialized.")
         self.serversocket.settimeout(timeout)
         try:
             self.serversocket.listen(1)
@@ -115,7 +122,6 @@ class NetworkProtocol(KenningProtocol):
 
     def initialize_server(
         self,
-        # IP address will be passed to the 'client_connected_callback'
         client_connected_callback: Optional[Callable[[], None]] = None,
         client_disconnected_callback: Optional[Callable[[], None]] = None,
     ) -> bool:
@@ -124,8 +130,10 @@ class NetworkProtocol(KenningProtocol):
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             self.serversocket.bind((self.host, self.port))
+            self.serversocket.listen(1)
         except OSError as execinfo:
             KLogger.error(f"{execinfo}", stack_info=True)
+            self.serversocket.close()
             self.serversocket = None
             return False
 
@@ -138,7 +146,20 @@ class NetworkProtocol(KenningProtocol):
         KLogger.debug(f"Initializing client at {self.host}:{self.port}")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        if not self.socket.recv(1):
+
+        try:
+            data = self.socket.recv(1)
+        except TimeoutError:
+            KLogger.error("Server handshake waiting timeout.")
+            data = b""
+        except Exception as ex:
+            data = b""
+            KLogger.error(
+                f"Unexpected exception during server handshake: {ex}"
+            )
+
+        if not data:
+            self.socket.close()
             self.socket = None
             return False
         self.start()
@@ -150,6 +171,13 @@ class NetworkProtocol(KenningProtocol):
                 raise ProtocolNotStartedError("Protocol not initialized.")
             if not self.accept_client(timeout):
                 return None
+
+        if self.socket is None:
+            KLogger.error(
+                "Unable to receive data, connection socket is not available."
+            )
+            return None
+
         self.socket.settimeout(timeout)
         data = None
         try:

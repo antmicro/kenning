@@ -51,8 +51,7 @@ class TestNetworkProtocol(TestCoreProtocol):
     port = random_network_port()
 
     def init_protocol(self):
-        if self.port is None:
-            pytest.fail("Cannot find free port")
+        assert self.port is not None, "Cannot find free port"
         return NetworkProtocol(self.host, self.port)
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -150,7 +149,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         """
         Tests the `receive_data()` method with not initialized server.
         """
-        server, client = server_and_client
+        server, _ = server_and_client
         server.stop()
         server.disconnect()
         with pytest.raises(ProtocolNotStartedError):
@@ -199,12 +198,12 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `accept_client()` method.
         """
 
-        def connect(s):
+        def connect(s, port: int):
             """
             Connects to server-socket.
             """
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.host, self.port))
+            s.connect((self.host, port))
             s.close()
 
         def run_test(protocol: NetworkProtocol):

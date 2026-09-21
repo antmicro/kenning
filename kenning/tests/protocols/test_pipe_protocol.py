@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import struct
 import uuid
+from multiprocessing.synchronize import Event as SyncEvent
 from pathlib import Path
 from queue import Empty
 from random import choices, randint
@@ -257,11 +258,12 @@ class TestPipeProtocol(TestCoreProtocol):
         def receive(
             pipe_path: str,
             response_payload: bytes,
-            server_started_event: multiprocessing.Event,
+            server_started_event: SyncEvent,
             queue: multiprocessing.Queue,
+            server_disconnect_event: SyncEvent,
         ):
             server = PipeProtocol(pipe_path)
-            server.initialize_server()
+            assert server.initialize_server()
             server_started_event.set()
             type, message_type, data, flags = server.listen_blocking(
                 None, None, None, None
@@ -274,10 +276,13 @@ class TestPipeProtocol(TestCoreProtocol):
                 response_payload,
                 [TransmissionFlag.SUCCESS, TransmissionFlag.IS_KENNING],
             )
+            server_disconnect_event.wait(EVENT_TIMEOUT)
             server.disconnect()
 
         queue = multiprocessing.Queue()
         server_started_event = multiprocessing.Event()
+        server_disconnect_event = multiprocessing.Event()
+
         thread = multiprocessing.Process(
             target=receive,
             args=(
@@ -285,6 +290,7 @@ class TestPipeProtocol(TestCoreProtocol):
                 response_payload,
                 server_started_event,
                 queue,
+                server_disconnect_event,
             ),
         )
         thread.start()
@@ -311,6 +317,7 @@ class TestPipeProtocol(TestCoreProtocol):
                 pytest.fail("Server failed to send data before timeout.")
 
             client.disconnect()
+            server_disconnect_event.set()
             thread.join(EVENT_TIMEOUT)
             if thread.is_alive():
                 pytest.fail("Server transmission did not finish.")

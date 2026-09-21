@@ -294,6 +294,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             timeout: int,
             server_started_event: SyncEvent,
             queue: multiprocessing.Queue,
+            server_disconnect_event: SyncEvent,
         ):
             server = NetworkProtocol(host, port, timeout=timeout)
             assert server.initialize_server()
@@ -309,10 +310,13 @@ class TestNetworkProtocol(TestCoreProtocol):
                 [TransmissionFlag.SUCCESS, TransmissionFlag.IS_KENNING],
                 timeout,
             )
+            server_disconnect_event.wait(EVENT_TIMEOUT)
             server.disconnect()
 
         queue = multiprocessing.Queue()
         server_started_event = multiprocessing.Event()
+        server_disconnect_event = multiprocessing.Event()
+
         process = multiprocessing.Process(
             target=receive,
             args=(
@@ -322,6 +326,7 @@ class TestNetworkProtocol(TestCoreProtocol):
                 EVENT_TIMEOUT,
                 server_started_event,
                 queue,
+                server_disconnect_event,
             ),
         )
         process.start()
@@ -346,6 +351,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             except Empty:
                 pytest.fail("Server failed to send data before timeout.")
 
+            server_disconnect_event.set()
             process.join(EVENT_TIMEOUT)
             if process.is_alive():
                 pytest.fail("Server transmission did not finish.")

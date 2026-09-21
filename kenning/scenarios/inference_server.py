@@ -82,6 +82,7 @@ class InferenceServer(object):
         self.runtime = runtime
         self.protocol = protocol
         self.close_server_event = Event()
+        self.serving_event = Event()
         self.status = ServerStatus(ServerAction.IDLE)
 
     def close(self):
@@ -143,7 +144,9 @@ class InferenceServer(object):
             self._unoptimized_model_callback,
             self._optimize_model_callback,
         )
+        self.serving_event.set()
         self.close_server_event.wait()
+        self.serving_event.clear()
         try:
             self.protocol.stop_sending_logs()
         except NotSupportedError:

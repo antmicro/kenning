@@ -4,10 +4,18 @@
 
 import shutil
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
-from time import sleep
-from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+)
 
 import pytest
 
@@ -27,7 +35,9 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 @contextmanager
-def prepare_objects(framework: str) -> Iterator[Tuple[Dataset, ModelWrapper]]:
+def prepare_objects(
+    framework: str
+) -> Generator[Tuple[Dataset, ModelWrapper], None, None]:
     """
     Context manager to prepare mock dataset and model wrapper for tests.
 
@@ -38,7 +48,7 @@ def prepare_objects(framework: str) -> Iterator[Tuple[Dataset, ModelWrapper]]:
 
     Yields
     ------
-    Iterator[Tuple[Dataset, ModelWrapper]]
+    Generator[Tuple[Dataset, ModelWrapper], None, None]
         Tuple with dataset mock and model wrapper in a temporary location.
     """
     dataset, model_wrapper, assets_id = DatasetModelRegistry.get(framework)
@@ -46,6 +56,55 @@ def prepare_objects(framework: str) -> Iterator[Tuple[Dataset, ModelWrapper]]:
         yield dataset, model_wrapper
     finally:
         DatasetModelRegistry.remove(assets_id)
+
+
+TIMEOUT: int = 30
+
+
+@contextmanager
+def running_inference_server(
+    inference_server: InferenceServer,
+    protocol_client: NetworkProtocol,
+) -> Generator[None, None, None]:
+    """
+
+    Parameters
+    ----------
+        inference_server: InferenceServer
+            Inference server to run.
+
+        protocol_client: NetworkProtocol
+            Client side connection, which should be initialized after server
+            start.
+
+    Yields
+    ------
+    Generator[None, None, None]
+        Successful connection readiness sign.
+    """
+    server_thread = threading.Thread(
+        target=inference_server.run,
+        args=(),
+    )
+    server_thread.start()
+    deadline: float = time.time() + TIMEOUT
+
+    try:
+        while not inference_server.serving_event.wait(0.1):
+            assert (
+                server_thread.is_alive()
+            ), "Inference server stopped before serving start."
+            assert (
+                time.time() < deadline
+            ), f"Server failed to initialize in {TIMEOUT} seconds."
+
+        assert protocol_client.initialize_client(), "Client failed to connect"
+        yield
+    finally:
+        protocol_client.disconnect()
+        inference_server.close()
+        server_thread.join(TIMEOUT)
+        assert not server_thread.is_alive(), "Server thread did not finish."
 
 
 class OptimizerMock(Optimizer):
@@ -60,6 +119,7 @@ class OptimizerMock(Optimizer):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         shutil.copy(input_model_path, self.compiled_model_path)
 
@@ -89,6 +149,7 @@ class OptimizerFailMock(OptimizerMock):
         self,
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
         raise ImportError
 
@@ -168,7 +229,9 @@ class TestServerSideOptimization:
         runtime_target = TFLiteRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol("localhost", 12345, 32768)
+        protocol_target = NetworkProtocol(
+            "localhost", port=12345, timeout=int(TIMEOUT), packet_size=32768
+        )
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
@@ -178,7 +241,12 @@ class TestServerSideOptimization:
             runtime_host = TFLiteRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
-            protocol_host = NetworkProtocol("localhost", 12345, 32768)
+            protocol_host = NetworkProtocol(
+                "localhost",
+                port=12345,
+                timeout=int(TIMEOUT),
+                packet_size=32768,
+            )
 
             pipeline_runner = PipelineRunner(
                 dataset=dataset,
@@ -189,26 +257,13 @@ class TestServerSideOptimization:
                 protocol=protocol_host,
             )
 
-            server_thread = threading.Thread(target=inference_server.run)
-            try:
-                server_thread.start()
-                sleep(0.1)
-
-                assert server_thread.is_alive()
-
-                protocol_host.initialize_client()
-
+            with running_inference_server(inference_server, protocol_host):
                 model_path = pipeline_runner._handle_optimizations()
                 assert model_path and model_path.exists()
                 assert (
                     model_path.read_bytes()
                     == model_wrapper.model_path.read_bytes()
                 )
-
-            finally:
-                inference_server.close()
-                server_thread.join()
-                assert not server_thread.is_alive()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_target_side_optimization_compile_fail(self):
@@ -236,7 +291,9 @@ class TestServerSideOptimization:
         runtime_target = TFLiteRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol("localhost", 12345, 32768)
+        protocol_target = NetworkProtocol(
+            "localhost", 12345, timeout=TIMEOUT, packet_size=32768
+        )
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
@@ -246,7 +303,9 @@ class TestServerSideOptimization:
             runtime_host = TFLiteRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
-            protocol_host = NetworkProtocol("localhost", 12345, 32768)
+            protocol_host = NetworkProtocol(
+                "localhost", 12345, timeout=TIMEOUT, packet_size=32768
+            )
 
             pipeline_runner = PipelineRunner(
                 dataset=dataset,
@@ -257,22 +316,10 @@ class TestServerSideOptimization:
                 protocol=protocol_host,
             )
 
-            server_thread = threading.Thread(target=inference_server.run)
-            try:
-                server_thread.start()
-                sleep(0.1)
-
-                assert server_thread.is_alive()
-
-                protocol_host.initialize_client()
-
-                with pytest.raises(RequestFailure):
-                    pipeline_runner._handle_optimizations()
-
-            finally:
-                inference_server.close()
-                server_thread.join()
-                assert not server_thread.is_alive()
+            with running_inference_server(
+                inference_server, protocol_host
+            ), pytest.raises(RequestFailure):
+                pipeline_runner._handle_optimizations()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_optimization_when_protocol_is_not_specified(self):
@@ -305,7 +352,7 @@ class TestServerSideOptimization:
 
             model_path = pipeline_runner._handle_optimizations()
 
-            assert model_path.exists()
+            assert model_path and model_path.exists()
             assert (
                 model_path.read_bytes()
                 == model_wrapper.model_path.read_bytes()
@@ -343,7 +390,9 @@ class TestServerSideOptimization:
         runtime_target = TFLiteRuntime(
             model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol("localhost", 12345, 32768)
+        protocol_target = NetworkProtocol(
+            "localhost", 12345, timeout=TIMEOUT, packet_size=32768
+        )
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
@@ -353,7 +402,9 @@ class TestServerSideOptimization:
             runtime_host = TFLiteRuntime(
                 model_path=Path("./build/compiled_model.tflite"),
             )
-            protocol_host = NetworkProtocol("localhost", 12345, 32768)
+            protocol_host = NetworkProtocol(
+                "localhost", 12345, timeout=TIMEOUT, packet_size=32768
+            )
 
             pipeline_runner = PipelineRunner(
                 dataset=dataset,
@@ -364,21 +415,8 @@ class TestServerSideOptimization:
                 protocol=protocol_host,
             )
 
-            server_thread = threading.Thread(target=inference_server.run)
-            try:
-                server_thread.start()
-                sleep(0.1)
-
-                assert server_thread.is_alive()
-
-                protocol_host.initialize_client()
-
+            with running_inference_server(inference_server, protocol_host):
                 pipeline_runner._handle_optimizations(
                     max_target_side_optimizers=max_optimizers
                 )
                 assert max_loaded_optimizers <= max_optimizers
-
-            finally:
-                inference_server.close()
-                server_thread.join()
-                assert not server_thread.is_alive()

@@ -76,8 +76,11 @@ torch = [
     "torchvision>=0.15.0",
 ]
 coralnpu = [
-    "flax",
-    "jax",
+    # Fix newest flax/jax releases being out of sync
+    "flax==0.12.9 ; python_version >= '3.12'",
+    "jax==0.11.1 ; python_version >= '3.12'",
+    "flax ; python_version < '3.12'",
+    "jax ; python_version < '3.12'",
     "optax",
     "orbax",
     "tensorstore"

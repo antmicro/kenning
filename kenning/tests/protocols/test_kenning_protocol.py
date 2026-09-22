@@ -1613,8 +1613,6 @@ class TestKenningProtocol:
             CONNECTION_OTHER_DEVICE_SIDE,
         ) = multiprocessing.Pipe(duplex=True)
 
-        SENT_MESSAGES = multiprocessing.Queue()
-
         def kenning_protocol_receive_message_mock(
             timeout: Optional[float] = None
         ):
@@ -1636,48 +1634,40 @@ class TestKenningProtocol:
 
         protocol.send_message = kenning_protocol_send_message_mock
         protocol.receive_message = kenning_protocol_receive_message_mock
-        other_device = multiprocessing.Process(
-            target=other_device_mock,
-            args=(CONNECTION_OTHER_DEVICE_SIDE, SENT_MESSAGES),
+
+        def transmit_to_other_device(transmit: Callable[[], None]):
+            sent_messages = multiprocessing.Queue()
+            other_device = multiprocessing.Process(
+                target=other_device_mock,
+                args=(CONNECTION_OTHER_DEVICE_SIDE, sent_messages),
+            )
+            other_device.start()
+            try:
+                protocol.start()
+                transmit()
+                protocol.stop()
+                self._assert_ougoing_transmission_success(
+                    message_type,
+                    message_number,
+                    payload,
+                    flags,
+                    sent_messages,
+                    max_message_payload_size,
+                )
+            finally:
+                terminate_process(other_device)
+
+        transmit_to_other_device(
+            lambda: protocol.transmit_blocking(message_type, payload, flags)
         )
-        other_device.start()
-        protocol.start()
 
-        protocol.transmit_blocking(message_type, payload, flags)
-        protocol.stop()
-        other_device.terminate()
-        self._assert_ougoing_transmission_success(
-            message_type,
-            message_number,
-            payload,
-            flags,
-            SENT_MESSAGES,
-            max_message_payload_size,
-        )
+        def transmit_non_blocking():
+            protocol.transmit(message_type, payload, flags)
+            assert wait_for(
+                lambda: len(protocol.current_protocol_events) == 0,
+            ), "All protocol events were not processed until timeout."
 
-        SENT_MESSAGES = multiprocessing.Queue()
-        other_device = multiprocessing.Process(
-            target=other_device_mock,
-            args=(CONNECTION_OTHER_DEVICE_SIDE, SENT_MESSAGES),
-        )
-        other_device.start()
-        protocol.start()
-
-        protocol.transmit(message_type, payload, flags)
-        while len(protocol.current_protocol_events) != 0:
-            pass
-
-        protocol.stop()
-        other_device.terminate()
-
-        self._assert_ougoing_transmission_success(
-            message_type,
-            message_number,
-            payload,
-            flags,
-            SENT_MESSAGES,
-            max_message_payload_size,
-        )
+        transmit_to_other_device(transmit_non_blocking)
 
     @pytest.mark.parametrize(
         "transmission, accepted, retry",
@@ -1796,8 +1786,8 @@ class TestKenningProtocol:
                 REQUEST_MESSAGES,
             ),
         )
-        other_device.start()
         protocol.start()
+        other_device.start()
         response = protocol.request_blocking(
             message_type,
             success_callback,
@@ -1809,7 +1799,6 @@ class TestKenningProtocol:
         )
         terminate_process(other_device)
         protocol.stop()
-        other_device.terminate()
 
         if accepted:
             assert 1 == success_callback_called
@@ -1842,8 +1831,8 @@ class TestKenningProtocol:
                 REQUEST_MESSAGES,
             ),
         )
-        other_device.start()
         protocol.start()
+        other_device.start()
 
         protocol.request(
             message_type,
@@ -1858,8 +1847,9 @@ class TestKenningProtocol:
             lambda: len(protocol.current_protocol_events) == 0,
         ), "All protocol events were not processed until timeout."
 
+        terminate_process(other_device)
         protocol.stop()
-        other_device.terminate()
+
         if accepted:
             assert 1 == success_callback_called
             assert not failure_callback_called

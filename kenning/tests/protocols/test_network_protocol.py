@@ -344,13 +344,13 @@ class TestNetworkProtocol(TestCoreProtocol):
                 return_value = getattr(client, method)(argument)
             else:
                 return_value = getattr(client, method)()
-            client.disconnect()
 
             try:
                 response = queue.get(timeout=EVENT_TIMEOUT)
             except Empty:
                 pytest.fail("Server failed to send data before timeout.")
 
+            client.disconnect()
             server_disconnect_event.set()
             process.join(EVENT_TIMEOUT)
             if process.is_alive():

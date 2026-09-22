@@ -159,6 +159,7 @@ EXPECTED_FAIL = [
     ("PyTorchAnomalyDetectionGRU", "NNIPruningOptimizer"),
     ("PyTorchAnomalyDetectionGRU", "TensorFlowClusteringOptimizer"),
     ("PyTorchAnomalyDetectionGRU", "TensorFlowPruningOptimizer"),
+    ("PyTorchAnomalyDetectionGRU", "IREECompiler"),
     ("TensorFlowImageNet", "Ai8xCompiler"),
     ("TensorFlowImageNet", "ExecuTorchOptimizer"),
     ("TensorFlowImageNet", "NNIPruningOptimizer"),

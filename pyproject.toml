@@ -85,7 +85,8 @@ coralnpu = [
     "jax ; python_version < '3.12'",
     "optax",
     "orbax",
-    "tensorstore"
+    "tensorstore",
+    "kenning-coralnpu-trace-parser",
 ]
 nvidia_perf = [
     "nvidia-ml-py>=13.610.43",

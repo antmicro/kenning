@@ -1,0 +1,28 @@
+# Copyright (c) 2026 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = [
+    "Cython",
+    "numpy",
+    "setuptools>=83",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kenning-coralnpu-trace-parser"
+version = "0.0.1"
+description = "CoralNPU trace parser for Kenning"
+authors = [
+    {name = "Antmicro Ltd.", email = "contact@antmicro.com"},
+]
+dependencies = [
+    "protobuf",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]

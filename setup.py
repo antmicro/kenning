@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,8 +11,12 @@ from Cython.Build import cythonize
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-project_path = (
+sparsity_aware_kernel_path = (
     Path(__file__).parent / "kenning/sparsity_aware_kernel"
+).absolute()
+
+coralnpu_parser_path = (
+    Path(__file__).parent / "kenning/utils/coralnpu_trace_parser"
 ).absolute()
 
 setuptools.setup(
@@ -21,8 +25,11 @@ setuptools.setup(
     include_package_data=True,
     extras_require={
         "sparsity-aware-kernel": [
-            f"kenning-sparsity-aware-kernel @ file://{project_path}"
-        ]
+            f"kenning-sparsity-aware-kernel @ file://{sparsity_aware_kernel_path}"
+        ],
+        "coralnpu": [
+            f"kenning-coralnpu-trace-parser @ file://{coralnpu_parser_path}"
+        ],
     },
     ext_modules=cythonize(
         [
@@ -40,7 +47,7 @@ setuptools.setup(
                     "kenning/utils/renode_profiler_parser/parser.cpp",
                 ],
                 language="c++",
-                extra_compile_flags=["-O3", "-Os"],
+                extra_compile_args=["-O3", "-Os"],
             ),
         ],
     ),

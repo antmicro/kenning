@@ -103,6 +103,11 @@ def run_pytest(session: nox.Session, device):
     # Build cython extensions in-place
     session.run("python", "setup.py", "build_ext", "--inplace")
 
+    # Build CoralNPU trace parser in-place
+    with session.chdir("kenning/utils/coralnpu_trace_parser"):
+        session.run("python", "setup.py", "build_py")
+        session.run("python", "setup.py", "build_ext", "--inplace")
+
     name = _fix_name(session.name)
 
     requirements_path = Path("requirements") / f"{name}.txt"

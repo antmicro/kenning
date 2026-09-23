@@ -15,5 +15,6 @@ include kenning/resources/templates/*
 include kenning/resources/visual_editor_resources/*
 include kenning/resources/platforms/platforms.yml
 include kenning/resources/zephyr_dts/CMakeLists.txt
+include kenning/utils/coralnpu_trace_parser/coralnpu_trace.proto
 
 include LICENSE

@@ -88,14 +88,14 @@ dev = "https://github.com/antmicro/kenning"
 
 gpu_info_admonition = """
 :::{info}
-This example requires a CUDA-enabled GPU for proper execution, along with following dependencies:
+This example requires a CUDA-enabled GPU.
 
-* CUDA (11.8 is recommended version)
-* CUDNN (8 is recommended version)
-* NVCC
-* NVRTC
-* CUDA Toolkit
-* NVML (for report generation)
+Depending on the example, you may also need:
+* [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (13.0 recommended), including NVCC and NVRTC, to compile CUDA code.
+* [cuDNN](https://developer.nvidia.com/cudnn) (9 recommended) for operations that use cuDNN.
+* [NVML](https://developer.nvidia.com/management-library-nvml) to generate GPU reports.
+
+Check the example to see which of these components are needed.
 :::
 """  # noqa: E501
 

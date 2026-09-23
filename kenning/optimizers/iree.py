@@ -110,14 +110,21 @@ class IREECompiler(Optimizer):
         "compiler_path": {
             "argparse_name": "--compiler-path",
             "description": "Path to the compiler executable",
-            "type": list[Path],
+            "type": Path,
             "default": None,
             "nullable": True,
         },
         "linker_path": {
             "argparse_name": "--linker-path",
             "description": "Path to the linker executable",
-            "type": list[Path],
+            "type": Path,
+            "default": None,
+            "nullable": True,
+        },
+        "linker_script_path": {
+            "argparse_name": "--linker-script-path",
+            "description": "Path to the linker script",
+            "type": Path,
             "default": None,
             "nullable": True,
         },
@@ -134,6 +141,7 @@ class IREECompiler(Optimizer):
         compiler_args: Optional[List[str]] = None,
         compiler_path: Optional[Path] = None,
         linker_path: Optional[Path] = None,
+        linker_script_path: Optional[Path] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -168,6 +176,8 @@ class IREECompiler(Optimizer):
             Path to the compiler executable.
         linker_path : Optional[Path]
             Path to the linker executable.
+        linker_script_path : Optional[Path]
+            Path to the linker script.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
@@ -178,6 +188,7 @@ class IREECompiler(Optimizer):
         self.compiler_args = compiler_args
         self.compiler_path = compiler_path
         self.linker_path = linker_path
+        self.linker_script_path = linker_script_path
 
         if compiler_args is not None:
             self.parsed_compiler_args = [
@@ -191,6 +202,9 @@ class IREECompiler(Optimizer):
 
         if self.linker_path is None:
             self.linker_path = os.environ.get("IREE_LINKER_PATH")
+
+        if self.linker_script_path is None:
+            self.linker_script_path = os.environ.get("IREE_LINKER_SCRIPT_PATH")
 
         self._tmp_dir = None
         self._tmp_alloc_report = None
@@ -417,6 +431,13 @@ class IREECompiler(Optimizer):
                 if self.linker_path:
                     linker_flag = (
                         f"--coralnpu-embedded-linker-path={self.linker_path}"
+                    )
+                    self.parsed_compiler_args.append(linker_flag)
+                    KLogger.debug(f"Added compilation flag {linker_flag}")
+                if self.linker_script_path:
+                    linker_flag = (
+                        "--coralnpu-linker-script-path="
+                        + f"{self.linker_script_path}"
                     )
                     self.parsed_compiler_args.append(linker_flag)
                     KLogger.debug(f"Added compilation flag {linker_flag}")

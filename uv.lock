@@ -19,6 +19,10 @@ resolution-markers = [
 ]
 
 [manifest]
+members = [
+    "kenning",
+    "kenning-coralnpu-trace-parser",
+]
 overrides = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "jinja2", specifier = ">=3.1.5" },
@@ -3595,6 +3599,7 @@ all = [
     { name = "joblib" },
     { name = "json-rpc" },
     { name = "junitparser" },
+    { name = "kenning-coralnpu-trace-parser" },
     { name = "librosa", version = "0.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "librosa", version = "1.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "ml-dtypes" },
@@ -3696,6 +3701,7 @@ coralnpu = [
     { name = "jax", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "jax", version = "0.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "kenning-coralnpu-trace-parser" },
     { name = "optax" },
     { name = "orbax" },
     { name = "tensorstore", version = "0.1.78", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -3985,6 +3991,7 @@ requires-dist = [
     { name = "kenning", extras = ["torch"], marker = "extra == 'executorch'" },
     { name = "kenning", extras = ["torch"], marker = "extra == 'llm'" },
     { name = "kenning", extras = ["torch"], marker = "extra == 'nni'" },
+    { name = "kenning-coralnpu-trace-parser", marker = "extra == 'coralnpu'", editable = "kenning/utils/coralnpu_trace_parser" },
     { name = "kenning-sparsity-aware-kernel", marker = "extra == 'sparsity-aware-kernel'", directory = "kenning/sparsity_aware_kernel" },
     { name = "librosa", marker = "extra == 'speech-to-text'" },
     { name = "matplotlib", specifier = ">=3.3.4" },
@@ -4097,6 +4104,17 @@ tvm-cuda = [
     { name = "tvm-cuda", marker = "python_full_version == '3.12.*'", url = "https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "tvm-cuda", marker = "python_full_version == '3.13.*'", url = "https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
 ]
+
+[[package]]
+name = "kenning-coralnpu-trace-parser"
+version = "0.0.1"
+source = { editable = "kenning/utils/coralnpu_trace_parser" }
+dependencies = [
+    { name = "protobuf" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "protobuf" }]
 
 [[package]]
 name = "kenning-sparsity-aware-kernel"

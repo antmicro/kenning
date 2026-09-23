@@ -383,6 +383,15 @@ override-dependencies = [
     "click>=8.1.7",
 ]
 
+[tool.uv.workspace]
+members = [
+    "kenning/utils/coralnpu_trace_parser",
+]
+
+
+[tool.uv.sources]
+kenning-coralnpu-trace-parser = { workspace = true }
+
 [tool.mypy]
 python_version = "3.12"
 files = ["kenning"]

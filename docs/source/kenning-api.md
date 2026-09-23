@@ -6,6 +6,7 @@
 ```{pipeline_manager}
 :spec: pipeline_manager_graphs/class-graph-specification.json
 :graph: pipeline_manager_graphs/class-graph-dataflow.json
+:preview:
 ```
 
 {{projecturl}} provides:

@@ -19,7 +19,12 @@ from kenning.core.model import ModelWrapper
 from kenning.datasets.helpers.detection_and_segmentation import (
     SegmObject,
 )
-from kenning.datasets.helpers.pose_estimation import Keypoint2D, Pose
+from kenning.datasets.helpers.pose_estimation import (
+    POSE_CLASS_NAMES,
+    POSE_KEYPOINT_COUNTS,
+    Keypoint2D,
+    Pose,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -47,6 +52,12 @@ class MMPoseRTMOONNX(ModelWrapper):
             "type": List[int],
             "default": [640, 640],
         },
+        "pose_type": {
+            "description": "Type of pose to estimate.",
+            "type": str,
+            "default": "body",
+            "enum": ["body", "hand"],
+        },
     }
 
     def __init__(
@@ -58,6 +69,7 @@ class MMPoseRTMOONNX(ModelWrapper):
         keypoint_threshold: float = 0.7,
         box_threshold: float = 0.45,
         input_size: List[int] = [640, 640],
+        pose_type: str = "body",
     ):
         """
         Creates model wrapper for MMPose
@@ -81,6 +93,9 @@ class MMPoseRTMOONNX(ModelWrapper):
             box to pass.
         input_size : List[int]
             Model input size.
+        pose_type : str
+            Type of pose to estimate,
+            one of "body" or "hand".
         """
         super().__init__(
             model_path=model_path,
@@ -98,6 +113,8 @@ class MMPoseRTMOONNX(ModelWrapper):
         self.box_threshold = box_threshold
 
         self.input_size = input_size
+
+        self.pose_type = pose_type
 
     def prepare_model(self):
         if self.model_prepared:
@@ -136,7 +153,10 @@ class MMPoseRTMOONNX(ModelWrapper):
     def get_output_formats(cls) -> List[str]:
         return ["onnx"]
 
-    def _get_io_specification(cls, input_size: List[int]):
+    def _get_io_specification(
+        cls, input_size: List[int], pose_type: str = "body"
+    ):
+        num_keypoints = POSE_KEYPOINT_COUNTS[pose_type]
         return {
             "input": [
                 {
@@ -160,7 +180,7 @@ class MMPoseRTMOONNX(ModelWrapper):
                 },
                 {
                     "name": "pose_outputs",
-                    "shape": [1, -1, 17, 3],
+                    "shape": [1, -1, num_keypoints, 3],
                     "dtype": "float32",
                 },
             ],
@@ -225,6 +245,8 @@ class MMPoseRTMOONNX(ModelWrapper):
     def postprocess_outputs(
         self, y: List[np.ndarray]
     ) -> List[List[List[Pose]]]:
+        num_keypoints = POSE_KEYPOINT_COUNTS[self.pose_type]
+
         poses = []
 
         from rtmlib.tools.object_detection.post_processings import (
@@ -265,7 +287,9 @@ class MMPoseRTMOONNX(ModelWrapper):
             if class_id != 0:
                 continue
 
-            keypoints_id = np.arange(start=0, stop=17, step=1, dtype=np.uint32)
+            keypoints_id = np.arange(
+                start=0, stop=num_keypoints, step=1, dtype=np.uint32
+            )
 
             box = det[0:4]
 
@@ -297,7 +321,7 @@ class MMPoseRTMOONNX(ModelWrapper):
                 keypoints.append(Keypoint2D(x=_x, y=_y, id=int(id)))
 
             segm = SegmObject(
-                clsname="person",
+                clsname=POSE_CLASS_NAMES[self.pose_type],
                 maskpath=None,
                 xmin=xmin,
                 ymin=ymin,
@@ -315,7 +339,7 @@ class MMPoseRTMOONNX(ModelWrapper):
         return [[poses]]
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
-        return self._get_io_specification(self.input_size)
+        return self._get_io_specification(self.input_size, self.pose_type)
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):

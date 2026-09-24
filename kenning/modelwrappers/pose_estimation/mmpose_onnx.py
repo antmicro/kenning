@@ -20,7 +20,11 @@ from kenning.datasets.helpers.detection_and_segmentation import (
     FrameSegmObject,
     SegmObject,
 )
-from kenning.datasets.helpers.pose_estimation import Keypoint2D, Pose
+from kenning.datasets.helpers.pose_estimation import (
+    POSE_KEYPOINT_COUNTS,
+    Keypoint2D,
+    Pose,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -45,6 +49,12 @@ class MMPoseONNX(ModelWrapper):
             "type": List[int],
             "default": [192, 256],
         },
+        "pose_type": {
+            "description": "Type of pose to estimate.",
+            "type": str,
+            "default": "body",
+            "enum": ["body", "hand"],
+        },
     }
 
     def __init__(
@@ -55,6 +65,7 @@ class MMPoseONNX(ModelWrapper):
         model_name: Optional[str] = None,
         keypoint_threshold: float = 0.3,
         input_size: List[int] = [192, 256],
+        pose_type: str = "body",
     ):
         """
         Creates model wrapper for MMPose
@@ -75,6 +86,9 @@ class MMPoseONNX(ModelWrapper):
             pass.
         input_size : List[int]
             Model input size.
+        pose_type : str
+            Type of pose to estimate,
+            one of "body" or "hand".
         """
         super().__init__(
             model_path=model_path,
@@ -90,6 +104,8 @@ class MMPoseONNX(ModelWrapper):
         self.keypoint_threshold = keypoint_threshold
 
         self.input_size = input_size
+
+        self.pose_type = pose_type
 
         self.model = None
 
@@ -131,7 +147,10 @@ class MMPoseONNX(ModelWrapper):
     def get_output_formats(cls) -> List[str]:
         return ["onnx"]
 
-    def _get_io_specification(cls, input_size: List[int]):
+    def _get_io_specification(
+        cls, input_size: List[int], pose_type: str = "body"
+    ):
+        num_keypoints = POSE_KEYPOINT_COUNTS[pose_type]
         return {
             "input": [
                 {
@@ -150,12 +169,12 @@ class MMPoseONNX(ModelWrapper):
             "output": [
                 {
                     "name": "simcc_x",
-                    "shape": [1, 17, 384],
+                    "shape": [1, num_keypoints, 384],
                     "dtype": "float32",
                 },
                 {
                     "name": "simcc_y",
-                    "shape": [1, 17, 512],
+                    "shape": [1, num_keypoints, 512],
                     "dtype": "float32",
                 },
             ],
@@ -212,6 +231,8 @@ class MMPoseONNX(ModelWrapper):
             get_simcc_maximum,
         )
 
+        num_keypoints = POSE_KEYPOINT_COUNTS[self.pose_type]
+
         poses = []
 
         from kenning.utils.logger import KLogger
@@ -223,7 +244,9 @@ class MMPoseONNX(ModelWrapper):
 
             raw_keypoints = raw_keypoints / self.input_size
 
-            keypoints_id = np.arange(start=0, stop=17, step=1, dtype=np.uint32)
+            keypoints_id = np.arange(
+                start=0, stop=num_keypoints, step=1, dtype=np.uint32
+            )
 
             score_mask = _scores >= self.keypoint_threshold
 
@@ -250,7 +273,7 @@ class MMPoseONNX(ModelWrapper):
         return [[poses]]
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
-        return self._get_io_specification(self.input_size)
+        return self._get_io_specification(self.input_size, self.pose_type)
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
@@ -262,11 +285,15 @@ class MMPoseONNX(ModelWrapper):
     def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
         data = np.frombuffer(outputdata, dtype=np.float32)
 
-        simcc_x = data[: 1 * 17 * 384].reshape(1, 17, 384)
+        num_keypoints = POSE_KEYPOINT_COUNTS[self.pose_type]
 
-        data = data[1 * 17 * 384 :]
+        simcc_x = data[: 1 * num_keypoints * 384].reshape(
+            1, num_keypoints, 384
+        )
 
-        simcc_y = data.reshape(1 * 17 * 512)
+        data = data[1 * num_keypoints * 384 :]
+
+        simcc_y = data.reshape(1 * num_keypoints * 512)
 
         return [simcc_x, simcc_y]
 
@@ -289,6 +316,12 @@ class MMPoseDetectionInput(MMPoseONNX):
             "type": str,
             "default": "person",
         },
+        "pose_type": {
+            "description": "Type of pose to estimate.",
+            "type": str,
+            "default": "body",
+            "enum": ["body", "hand"],
+        },
     }
 
     def __init__(
@@ -300,6 +333,7 @@ class MMPoseDetectionInput(MMPoseONNX):
         model_name: Optional[str] = None,
         keypoint_threshold: float = 0.3,
         input_size: List[int] = [192, 256],
+        pose_type: str = "body",
     ):
         """
         Creates model wrapper for MMPose
@@ -323,6 +357,9 @@ class MMPoseDetectionInput(MMPoseONNX):
             pass.
         input_size : List[int]
             Model input size.
+        pose_type : str
+            Type of pose to estimate,
+            one of "body" or "hand".
         """
         super().__init__(
             model_path=model_path,
@@ -331,11 +368,15 @@ class MMPoseDetectionInput(MMPoseONNX):
             model_name=model_name,
             keypoint_threshold=keypoint_threshold,
             input_size=input_size,
+            pose_type=pose_type,
         )
 
         self._class_name = class_name
 
-    def _get_io_specification(cls, input_size: List[int]):
+    def _get_io_specification(
+        cls, input_size: List[int], pose_type: str = "body"
+    ):
+        num_keypoints = POSE_KEYPOINT_COUNTS[pose_type]
         return {
             "input": [
                 {
@@ -355,12 +396,12 @@ class MMPoseDetectionInput(MMPoseONNX):
             "output": [
                 {
                     "name": "simcc_x",
-                    "shape": [-1, 17, 384],
+                    "shape": [-1, num_keypoints, 384],
                     "dtype": "float32",
                 },
                 {
                     "name": "simcc_y",
-                    "shape": [-1, 17, 512],
+                    "shape": [-1, num_keypoints, 512],
                     "dtype": "float32",
                 },
             ],

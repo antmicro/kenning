@@ -17,7 +17,12 @@ from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
-from kenning.datasets.helpers.pose_estimation import Keypoint2D, Pose
+from kenning.datasets.helpers.pose_estimation import (
+    POSE_CLASS_NAMES,
+    POSE_KEYPOINT_COUNTS,
+    Keypoint2D,
+    Pose,
+)
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -50,6 +55,12 @@ class MMPoseModelWrapper(ModelWrapper):
             "default": "rtmo",
             "enum": ["rtmo", "rtmpose"],
         },
+        "pose_type": {
+            "description": "Type of pose to estimate.",
+            "type": str,
+            "default": "body",
+            "enum": ["body", "hand"],
+        },
     }
 
     def __init__(
@@ -62,6 +73,7 @@ class MMPoseModelWrapper(ModelWrapper):
         model_name: Optional[str] = None,
         device: Optional[str] = None,
         keypoint_threshold: float = 0.3,
+        pose_type: str = "body",
     ):
         """
         Creates model wrapper for MMPose
@@ -88,6 +100,9 @@ class MMPoseModelWrapper(ModelWrapper):
         keypoint_threshold : float
             Minimal score for keypoints to
             pass.
+        pose_type : str
+            Type of pose to estimate,
+            one of "body" or "hand".
         """
         super().__init__(
             model_path=model_path,
@@ -100,6 +115,8 @@ class MMPoseModelWrapper(ModelWrapper):
 
         self.model_prepared = False
         self.device = device
+
+        self.pose_type = pose_type
 
         self.pose_input_size = pose_input_size
         self.model_type = model_type
@@ -176,7 +193,10 @@ class MMPoseModelWrapper(ModelWrapper):
         return ["onnx"]
 
     @classmethod
-    def _get_io_specification(cls, input_size: Tuple[int, int]):
+    def _get_io_specification(
+        cls, input_size: Tuple[int, int], pose_type: str = "body"
+    ):
+        num_keypoints = POSE_KEYPOINT_COUNTS[pose_type]
         return {
             "input": [
                 {
@@ -197,12 +217,12 @@ class MMPoseModelWrapper(ModelWrapper):
             "output": [
                 {
                     "name": "keypoints",
-                    "shape": [-1, 17, 2],
+                    "shape": [-1, num_keypoints, 2],
                     "dtype": "float32",
                 },
                 {
                     "name": "scores",
-                    "shape": [-1, 17],
+                    "shape": [-1, num_keypoints],
                     "dtype": "float32",
                 },
             ],
@@ -238,6 +258,8 @@ class MMPoseModelWrapper(ModelWrapper):
         obj_keypoints = y[0]
         obj_scores = y[1]
 
+        num_keypoints = POSE_KEYPOINT_COUNTS[self.pose_type]
+
         poses = []
 
         output_img = self._last_image
@@ -250,7 +272,7 @@ class MMPoseModelWrapper(ModelWrapper):
             if len(filtered_keypoints) == 0:
                 return [output_img, []]
 
-            keypoints_id = np.arange(start=0, stop=17, step=1)
+            keypoints_id = np.arange(start=0, stop=num_keypoints, step=1)
 
             keypoints_id = keypoints_id[score_mask]
 
@@ -287,19 +309,21 @@ class MMPoseModelWrapper(ModelWrapper):
                         ymax=ymax,
                         iscrowd=False,
                         maskpath=None,
-                        clsname="person",
+                        clsname=POSE_CLASS_NAMES[self.pose_type],
                         mask=None,
                     ),
                 )
 
-                output_img = draw_pose(output_img, pose)
+                output_img = draw_pose(
+                    output_img, pose, pose_type=self.pose_type
+                )
 
                 poses.append(pose)
 
         return [output_img, [poses]]
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
-        return self._get_io_specification(self.pose_input_size)
+        return self._get_io_specification(self.pose_input_size, self.pose_type)
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
@@ -313,15 +337,17 @@ class MMPoseModelWrapper(ModelWrapper):
 
         number_of_samples = data[0]
 
+        num_keypoints = POSE_KEYPOINT_COUNTS[self.pose_type]
+
         data = data[1:]
 
-        keypoints = data[: number_of_samples * 17 * 2].reshape(
-            (number_of_samples, 17, 2)
+        keypoints = data[: number_of_samples * num_keypoints * 2].reshape(
+            (number_of_samples, num_keypoints, 2)
         )
 
-        data = data[number_of_samples * 17 * 2 :]
+        data = data[number_of_samples * num_keypoints * 2 :]
 
-        scores = data.reshape((number_of_samples, 17))
+        scores = data.reshape((number_of_samples, num_keypoints))
 
         return [keypoints, scores]
 

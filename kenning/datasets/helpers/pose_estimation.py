@@ -11,6 +11,16 @@ from typing import List, NamedTuple
 
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 
+POSE_KEYPOINT_COUNTS = {
+    "body": 17,
+    "hand": 21,
+}
+
+POSE_CLASS_NAMES = {
+    "body": "person",
+    "hand": "hand",
+}
+
 
 class Keypoint2D(NamedTuple):
     """

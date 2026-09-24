@@ -120,6 +120,7 @@ class NYUDepthDatasetV2(Dataset):
         report_save_n_worst: int = 3,
         report_score_metric: str = "mae",
         save_samples_path: str = "./reports/img",
+        **kwargs: Any,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         assert report_save_n_best >= 0
@@ -157,6 +158,7 @@ class NYUDepthDatasetV2(Dataset):
             split_seed=split_seed,
             dataset_percentage=dataset_percentage,
             shuffle_data=shuffle_data,
+            **kwargs,
         )
 
     def prepare_input_samples(self, samples: List) -> List:

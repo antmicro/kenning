@@ -82,6 +82,7 @@ class PetDataset(Dataset):
         classify_by: str = "breeds",
         image_memory_layout: str = "NHWC",
         standardize: bool = True,
+        **kwargs: Any,
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -121,6 +122,8 @@ class PetDataset(Dataset):
         standardize : bool
             Standardize the given input samples.
             Should be set to False when using `compute_input_mean_std`.
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         assert (
             classify_by in self.classification_types
@@ -146,6 +149,7 @@ class PetDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

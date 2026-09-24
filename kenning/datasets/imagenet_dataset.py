@@ -70,6 +70,7 @@ class ImageNetDataset(Dataset):
         dataset_percentage: float = 1,
         image_memory_layout: str = "NHWC",
         preprocess_type: str = "caffe",
+        **kwargs: Any,
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -111,6 +112,8 @@ class ImageNetDataset(Dataset):
                 * torch - will apply torch standardization
                 * caffe - will convert RGB to BGR and apply standardization
                 * none - data is passed as is from file, without conversions
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         assert image_memory_layout in ["NHWC", "NCHW"]
         assert preprocess_type in ["caffe", "torch", "tf", "none"]
@@ -128,6 +131,7 @@ class ImageNetDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

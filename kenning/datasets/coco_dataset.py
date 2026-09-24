@@ -88,6 +88,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         image_height: int = 416,
         min_iou: float = 0.5,
         max_preds: int = 100,
+        **kwargs: Any,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.numclasses = 80
@@ -110,6 +111,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             image_height,
             min_iou,
             max_preds,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

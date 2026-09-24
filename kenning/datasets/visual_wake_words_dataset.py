@@ -108,6 +108,7 @@ class VisualWakeWordsDataset(Dataset):
         image_memory_layout: str = "NHWC",
         image_width: int = 416,
         image_height: int = 416,
+        **kwargs: Any,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.dataset_type = dataset_type
@@ -128,6 +129,7 @@ class VisualWakeWordsDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def get_class_names(self):

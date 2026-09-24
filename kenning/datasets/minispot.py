@@ -7,7 +7,7 @@ Dataset wrapper for the minispot dataset.
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.utils.resource_manager import ResourceURI
@@ -23,21 +23,10 @@ class MinispotDataset(AnomalyDetectionDataset):
     The Minispot Dataset.
     """
 
-    arguments_structure = {
-        "minispot_csv": {
-            "argparse_name": "--minispot-csv",
-            "description": "Location of the minispot CSV file",
-            "type": ResourceURI,
-            "required": False,
-        },
-        # Turn off
-        "csv_file": {"required": False},
-    }
-
     def __init__(
         self,
         root: Path,
-        minispot_csv: Union[str, ResourceURI] = MINISPOT_DEFAULT_URI,
+        csv_file: Union[str, ResourceURI] = MINISPOT_DEFAULT_URI,
         batch_size: int = 1,
         download_dataset: bool = True,
         force_download_dataset: bool = False,
@@ -50,10 +39,11 @@ class MinispotDataset(AnomalyDetectionDataset):
         gather_predictions: bool = True,
         label_type: str = "last_timestep",
         timestamp_column=None,
+        **kwargs: Any,
     ):
         super().__init__(
             root,
-            minispot_csv,
+            csv_file,
             batch_size=batch_size,
             download_dataset=download_dataset,
             force_download_dataset=force_download_dataset,
@@ -66,4 +56,5 @@ class MinispotDataset(AnomalyDetectionDataset):
             gather_predictions=gather_predictions,
             label_type=label_type,
             timestamp_column=timestamp_column,
+            **kwargs,
         )

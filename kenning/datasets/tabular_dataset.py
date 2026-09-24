@@ -7,6 +7,7 @@ Module with generic datasets generated from CSV files.
 """
 
 import hashlib
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -85,6 +86,7 @@ class TabularDataset(Dataset):
         dataset_percentage=1,
         shuffle_data=True,
         expand_classes=True,
+        **kwargs: Any,
     ):
         self.colsX = colsX
         self.colY = colY
@@ -103,6 +105,7 @@ class TabularDataset(Dataset):
             split_seed,
             dataset_percentage,
             shuffle_data,
+            **kwargs,
         )
 
     def _get_csv_path(self):

@@ -107,6 +107,7 @@ class AnomalyDetectionDataset(Dataset):
         gather_predictions: bool = True,
         label_type: str = "last_timestep",
         timestamp_column: Optional[str] = "timestamp",
+        **kwargs: Any,
     ):
         """
         Representation of dataset for anomaly detection.
@@ -149,10 +150,10 @@ class AnomalyDetectionDataset(Dataset):
               if any timestep in the window is anomalous.
             * ``per_timestep``: The window is labeled without any
               preprocessing. Each timestep has its own label.
-
-
         timestamp_column: Optional[str]
             The name of the timestamp column. None if it is not present.
+        **kwargs: Any
+            Extra args passed into the `Dataset` superclass.
         """
         assert (
             label_type in ["last_timestep", "any_timestep", "per_timestep"]
@@ -178,6 +179,7 @@ class AnomalyDetectionDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage=dataset_percentage,
+            **kwargs,
         )
         self.gather_predictions = gather_predictions
         self.classnames = self.get_class_names()

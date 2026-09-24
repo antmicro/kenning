@@ -121,6 +121,7 @@ class RandomizedImageClassificationDataset(Dataset):
         self.seed = seed
         self.image_memory_layout = image_memory_layout
 
+        kwargs.pop("dataset_percentage", None)
         super().__init__(
             root,
             batch_size,
@@ -128,6 +129,7 @@ class RandomizedImageClassificationDataset(Dataset):
             download_dataset,
             dataset_percentage=1,
             shuffle_data=shuffle_data,
+            **kwargs,
         )
 
     def get_class_names(self):
@@ -486,6 +488,7 @@ class RandomizedTextDataset(Dataset):
         split_seed: int = 1234,
         samplescount: int = 32,
         text_length: int = 32,
+        **kwargs: Any,
     ):
         """
         Creates randomized dataset.
@@ -515,6 +518,8 @@ class RandomizedTextDataset(Dataset):
             The number of samples in the dataset.
         text_length : int
             Length of sample sentences
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         self.samplescount = samplescount
         self.text_length = text_length
@@ -528,6 +533,7 @@ class RandomizedTextDataset(Dataset):
             split_fraction_test,
             split_fraction_val,
             split_seed,
+            **kwargs,
         )
 
     def get_class_names(self) -> List[str]:
@@ -675,6 +681,10 @@ class RandomizedAnomalyDetectionDataset(RandomizedImageClassificationDataset):
         self.num_features = num_features
         self.window_size = window_size
         self.label_type = "last_timestep"
+
+        # Remove from kwargs to prevent multiple values in keyword arguments
+        kwargs.pop("inputdims", None)
+
         super().__init__(
             root=root,
             batch_size=batch_size,

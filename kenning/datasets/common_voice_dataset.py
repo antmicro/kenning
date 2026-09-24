@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -197,8 +197,8 @@ class CommonVoiceDataset(Dataset):
             "default": "en",
             "enum": list(set(key[1] for key in resources.keys())),
         },
-        "annotation_type": {
-            "argparse_name": "--annotation-type",
+        "annotations_type": {
+            "argparse_name": "--annotations-type",
             "description": "Type of annotations to load",
             "default": "test",
             "enum": annotations_types,
@@ -246,6 +246,7 @@ class CommonVoiceDataset(Dataset):
         sample_rate: int = 16000,
         selection_method: str = "accent",
         dataset_version: str = "12.0",
+        **kwargs: Any,
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -285,6 +286,8 @@ class CommonVoiceDataset(Dataset):
             Method to group the data.
         dataset_version : str
             Version of the dataset.
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         assert language in set(key[1] for key in self.resources.keys()), (
             f"Unsupported language {language}, should be one"
@@ -314,6 +317,7 @@ class CommonVoiceDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

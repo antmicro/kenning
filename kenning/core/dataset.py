@@ -198,6 +198,12 @@ class Dataset(ArgumentsHandler, ABC):
             "type": float,
             "default": 1,
         },
+        "prepare_dataset": {
+            "argparse_name": "--prepare-dataset",
+            "type": bool,
+            "default": True,
+            "description": "Prepare the dataset after it has been downloaded.",
+        },
     }
 
     def __init__(
@@ -212,6 +218,7 @@ class Dataset(ArgumentsHandler, ABC):
         split_seed: int = 1234,
         dataset_percentage: float = 1,
         shuffle_data: bool = True,
+        prepare_dataset: bool = True,
     ):
         """
         Initializes dataset object.
@@ -246,6 +253,10 @@ class Dataset(ArgumentsHandler, ABC):
             Use given percentage of the dataset.
         shuffle_data : bool
             Shuffle dataset data when loading.
+        prepare_dataset : bool
+            Prepare the dataset after it has been downloaded. If
+            `prepare_dataset` is set to `False`, call `dataset.prepare()`
+            manually after initializing the dataset.
         """
         assert batch_size > 0
         assert (
@@ -275,6 +286,7 @@ class Dataset(ArgumentsHandler, ABC):
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
         self.dataset_percentage = dataset_percentage
+
         if force_download_dataset or (
             download_dataset and not self.verify_dataset_checksum()
         ):
@@ -282,9 +294,10 @@ class Dataset(ArgumentsHandler, ABC):
             self.download_dataset_fun()
             self.save_dataset_checksum()
 
-        self.prepare()
-        if self.dataset_percentage < 1:
-            self._reduce_dataset()
+        if prepare_dataset:
+            self.prepare()
+            if self.dataset_percentage < 1:
+                self._reduce_dataset()
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> "Dataset":

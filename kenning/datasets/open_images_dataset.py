@@ -296,6 +296,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         image_height: int = 416,
         min_iou: float = 0.5,
         max_preds: int = 100,
+        **kwargs: Any,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.classes = classes
@@ -331,6 +332,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             image_height=image_height,
             min_iou=min_iou,
             max_preds=max_preds,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

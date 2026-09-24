@@ -74,6 +74,7 @@ class CNNDailymailDataset(Dataset):
         dataset_percentage: float = 1,
         gather_predictions: bool = False,
         metrics: List[str] = ["rouge1", "rouge2", "rouge3", "rougeL"],
+        **kwargs: Any,
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -106,6 +107,8 @@ class CNNDailymailDataset(Dataset):
             include target and predicted sentences
         metrics : List[str]
             Types of rouge metrics gathered during evaluation
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         self.gather_predictions = gather_predictions
         self.metrics = metrics
@@ -122,6 +125,7 @@ class CNNDailymailDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def prepare_input_samples(self, samples: List[int]) -> List[List[str]]:

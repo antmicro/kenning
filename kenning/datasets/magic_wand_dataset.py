@@ -66,6 +66,7 @@ class MagicWandDataset(Dataset):
         window_size: int = 128,
         window_shift: int = 128,
         noise_level: int = 20,
+        **kwargs: Any,
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -99,6 +100,8 @@ class MagicWandDataset(Dataset):
             Shift of single sample window.
         noise_level : int
             Noise level of padding added to sample.
+        **kwargs : Any
+            Extra args passed into the `Dataset` superclass.
         """
         self.window_size = window_size
         self.window_shift = window_shift
@@ -113,6 +116,7 @@ class MagicWandDataset(Dataset):
             split_fraction_val,
             split_seed,
             dataset_percentage,
+            **kwargs,
         )
 
     def rev_class_id(self, classname: str) -> int:

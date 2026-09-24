@@ -110,6 +110,7 @@ class VideoDataset(Dataset):
         split_fraction_val: float = None,
         split_seed: int = 42,
         dataset_percentage: float = 1,
+        **kwargs,
     ):
         assert input_memory_layout in ["NHWC", "NCHW"]
         assert preprocess_type in ["caffe", "torch", "tf", "none"]
@@ -142,6 +143,7 @@ class VideoDataset(Dataset):
             split_seed=split_seed,
             dataset_percentage=1,
             shuffle_data=False,
+            **kwargs,
         )
 
     def download_dataset_fun(self):

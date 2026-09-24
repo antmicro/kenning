@@ -360,6 +360,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         image_height: Optional[int] = 416,
         min_iou: float = 0.5,
         max_preds: int = 100,
+        **kwargs,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.task = task
@@ -382,6 +383,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             split_seed,
             dataset_percentage,
             shuffle_data=shuffle_data,
+            **kwargs,
         )
 
     def train_test_split_representations(

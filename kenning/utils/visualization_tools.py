@@ -93,6 +93,108 @@ POSE_LIMBS = {
 }
 
 
+class HandJoints(IntEnum):
+    """
+    Enum with hand (21-keypoint) joints names
+    used in pose visualization.
+    """
+
+    Wrist = 0
+    Thumb1 = 1
+    Thumb2 = 2
+    Thumb3 = 3
+    Thumb4 = 4
+    Index1 = 5
+    Index2 = 6
+    Index3 = 7
+    Index4 = 8
+    Middle1 = 9
+    Middle2 = 10
+    Middle3 = 11
+    Middle4 = 12
+    Ring1 = 13
+    Ring2 = 14
+    Ring3 = 15
+    Ring4 = 16
+    Pinky1 = 17
+    Pinky2 = 18
+    Pinky3 = 19
+    Pinky4 = 20
+
+
+HAND_COLOR = (0.1, 0.9, 0.9)
+THUMB_COLOR = (1.0, 0.6, 0.0)
+INDEX_COLOR = (0.2, 0.8, 0.3)
+MIDDLE_COLOR = (0.3, 0.4, 0.9)
+RING_COLOR = (0.9, 0.3, 0.7)
+PINKY_COLOR = (0.95, 0.95, 0.2)
+
+
+HAND_KEYPOINT_COLORS = {
+    HandJoints.Wrist: HAND_COLOR,
+    HandJoints.Thumb1: THUMB_COLOR,
+    HandJoints.Thumb2: THUMB_COLOR,
+    HandJoints.Thumb3: THUMB_COLOR,
+    HandJoints.Thumb4: THUMB_COLOR,
+    HandJoints.Index1: INDEX_COLOR,
+    HandJoints.Index2: INDEX_COLOR,
+    HandJoints.Index3: INDEX_COLOR,
+    HandJoints.Index4: INDEX_COLOR,
+    HandJoints.Middle1: MIDDLE_COLOR,
+    HandJoints.Middle2: MIDDLE_COLOR,
+    HandJoints.Middle3: MIDDLE_COLOR,
+    HandJoints.Middle4: MIDDLE_COLOR,
+    HandJoints.Ring1: RING_COLOR,
+    HandJoints.Ring2: RING_COLOR,
+    HandJoints.Ring3: RING_COLOR,
+    HandJoints.Ring4: RING_COLOR,
+    HandJoints.Pinky1: PINKY_COLOR,
+    HandJoints.Pinky2: PINKY_COLOR,
+    HandJoints.Pinky3: PINKY_COLOR,
+    HandJoints.Pinky4: PINKY_COLOR,
+}
+
+
+HAND_POSE_LIMBS = {
+    HandJoints.Wrist: [
+        HandJoints.Thumb1,
+        HandJoints.Index1,
+        HandJoints.Middle1,
+        HandJoints.Ring1,
+        HandJoints.Pinky1,
+    ],
+    HandJoints.Thumb1: [HandJoints.Thumb2],
+    HandJoints.Thumb2: [HandJoints.Thumb3],
+    HandJoints.Thumb3: [HandJoints.Thumb4],
+    HandJoints.Index1: [HandJoints.Index2],
+    HandJoints.Index2: [HandJoints.Index3],
+    HandJoints.Index3: [HandJoints.Index4],
+    HandJoints.Middle1: [HandJoints.Middle2],
+    HandJoints.Middle2: [HandJoints.Middle3],
+    HandJoints.Middle3: [HandJoints.Middle4],
+    HandJoints.Ring1: [HandJoints.Ring2],
+    HandJoints.Ring2: [HandJoints.Ring3],
+    HandJoints.Ring3: [HandJoints.Ring4],
+    HandJoints.Pinky1: [HandJoints.Pinky2],
+    HandJoints.Pinky2: [HandJoints.Pinky3],
+    HandJoints.Pinky3: [HandJoints.Pinky4],
+}
+
+
+POSE_SKELETONS = {
+    "body": {
+        "limbs": Limbs,
+        "colors": KEYPOINT_COLORS,
+        "limbs_map": POSE_LIMBS,
+    },
+    "hand": {
+        "limbs": HandJoints,
+        "colors": HAND_KEYPOINT_COLORS,
+        "limbs_map": HAND_POSE_LIMBS,
+    },
+}
+
+
 def generate_color() -> Tuple[float, float, float]:
     """
     Generates a random RGB color.
@@ -113,6 +215,7 @@ def draw_pose(
     line_thickness: int = 2,
     keypoint_color: Tuple[float, float, float] = generate_color(),
     bbox_color: Tuple[float, float, float] = generate_color(),
+    pose_type: str = "body",
 ) -> np.ndarray:
     """
     Method used to draw pose onto input image.
@@ -133,12 +236,20 @@ def draw_pose(
         Color of the key points.
     bbox_color : Tuple[float,float,float]
         Color of the bounding boxes.
+    pose_type : str
+        Type of the pose skeleton to draw,
+        one of "body" or "hand".
 
     Returns
     -------
     np.ndarray
         The modified image with poses drawn.
     """
+    skeleton = POSE_SKELETONS[pose_type]
+    limbs_enum = skeleton["limbs"]
+    keypoint_colors = skeleton["colors"]
+    pose_limbs = skeleton["limbs_map"]
+
     w, h, _ = input_img.shape
 
     out_img = input_img
@@ -165,24 +276,24 @@ def draw_pose(
     points_mapped = {}
 
     for point in points:
-        points_mapped[Limbs(point.id)] = (
+        points_mapped[limbs_enum(point.id)] = (
             int(point.x * w) + pt1[0],
             int(point.y * h) + pt1[1],
         )
 
-    for limb1 in POSE_LIMBS.keys():
+    for limb1 in pose_limbs.keys():
         if limb1 not in points_mapped.keys():
             continue
 
-        limbs = POSE_LIMBS[limb1]
+        limbs = pose_limbs[limb1]
 
         for limb2 in limbs:
             if limb2 in points_mapped.keys():
                 p1 = np.array(points_mapped[limb1]).astype(np.float32)
                 p2 = np.array(points_mapped[limb2]).astype(np.float32)
 
-                color1 = np.array(KEYPOINT_COLORS[limb1]).astype(np.float32)
-                color2 = np.array(KEYPOINT_COLORS[limb2]).astype(np.float32)
+                color1 = np.array(keypoint_colors[limb1]).astype(np.float32)
+                color2 = np.array(keypoint_colors[limb2]).astype(np.float32)
 
                 dp = (p2 - p1) / GRADIENT_STEPS
                 dcolor = (color2 - color1) / GRADIENT_STEPS
@@ -212,7 +323,7 @@ def draw_pose(
             center=(int(point.x * w) + pt1[0], int(point.y * h) + pt1[1]),
             radius=keypoint_size,
             thickness=-1,
-            color=KEYPOINT_COLORS[point.id],
+            color=keypoint_colors[point.id],
         )
 
     return out_img

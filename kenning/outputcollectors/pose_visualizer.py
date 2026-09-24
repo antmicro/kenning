@@ -52,6 +52,12 @@ class PoseVisualizer(OutputCollector):
             "type": int,
             "default": 2,
         },
+        "pose_type": {
+            "description": "Type of pose skeleton to draw.",
+            "type": str,
+            "default": "body",
+            "enum": ["body", "hand"],
+        },
         "save_to_file": {
             "argparse_name": "--save-to-file",
             "description": "If output should be saved to file",
@@ -75,6 +81,7 @@ class PoseVisualizer(OutputCollector):
         point_radius: int = 3,
         bbox_thickness: int = 2,
         line_thickness: int = 2,
+        pose_type: str = "body",
         save_to_file: bool = False,
         save_path: Path = "./",
         save_fps: int = 25,
@@ -98,6 +105,8 @@ class PoseVisualizer(OutputCollector):
             A thickness of bounding box walls.
         line_thickness : int
             A thickness of line in pose.
+        pose_type : str
+            Type of pose: "body" or "hand".
         save_to_file : bool
             True if frames should be saved to file. In other case
             they are presented using opencv.
@@ -120,6 +129,7 @@ class PoseVisualizer(OutputCollector):
         self.point_radius = point_radius
         self.bbox_thickness = bbox_thickness
         self.line_thickness = line_thickness
+        self.pose_type = pose_type
         self.save_to_file = save_to_file
         self.save_fps = save_fps
         self.out = None
@@ -180,6 +190,7 @@ class PoseVisualizer(OutputCollector):
                 self.line_thickness,
                 points_color,
                 bbox_color,
+                self.pose_type,
             )
 
         return out_img

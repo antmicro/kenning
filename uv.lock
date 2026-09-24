@@ -2681,6 +2681,19 @@ wheels = [
 ]
 
 [[package]]
+name = "html2image"
+version = "2.0.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "websocket-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/3a/74472f59c11d0667add3cbd8abea101e9756f6ffec3dce27a8eb62415f8b/html2image-2.0.7.tar.gz", hash = "sha256:8644fd424cff2805977f4583f965b0235733f9eb08569e4c02f6befe6e7fafcc", size = 719888, upload-time = "2025-05-16T20:18:54.088Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/ee/967dd1f3ee63c56288ddcb6ceccecf0ce7e0a2fb0fb519c4e4013d7333e5/html2image-2.0.7-py3-none-any.whl", hash = "sha256:1806df797e8320ba3246f45149e7034314911be6a285787cbff3edf5bbe9de40", size = 31948, upload-time = "2025-05-16T20:18:52.432Z" },
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -3604,7 +3617,7 @@ all = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pexpect" },
-    { name = "pipeline-manager" },
+    { name = "pipeline-manager", extra = ["to-image"] },
     { name = "pipeline-manager-backend-communication" },
     { name = "ply" },
     { name = "psutil" },
@@ -3691,6 +3704,9 @@ coralnpu = [
 docs = [
     { name = "antmicro-sphinx-utils" },
     { name = "docutils" },
+    { name = "json-rpc" },
+    { name = "pipeline-manager", extra = ["to-image"] },
+    { name = "pipeline-manager-backend-communication" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sphinx-tabs" },
@@ -3799,7 +3815,7 @@ reports = [
     { name = "docutils" },
     { name = "jinja2" },
     { name = "json-rpc" },
-    { name = "pipeline-manager" },
+    { name = "pipeline-manager", extra = ["to-image"] },
     { name = "pipeline-manager-backend-communication" },
     { name = "servis", extra = ["bokeh", "matplotlib"] },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -3958,6 +3974,7 @@ requires-dist = [
     { name = "kenning", extras = ["llm"], marker = "extra == 'sparsity-aware-kernel'" },
     { name = "kenning", extras = ["nvidia-perf", "docs", "tensorflow", "torch", "object-detection", "pose-estimation", "speech-to-text", "anomaly-detection", "auto-pytorch", "tflite", "tvm", "tinygrad", "iree", "onnxruntime", "test", "real-time-visualization", "pipeline-manager", "reports", "uart", "renode", "zephyr", "nni", "ros2", "albumentations", "onnx2tf", "executorch", "sklearn", "emlearn", "coralnpu"], marker = "extra == 'all'" },
     { name = "kenning", extras = ["onnx2tf"], marker = "extra == 'tensorflow'" },
+    { name = "kenning", extras = ["pipeline-manager"], marker = "extra == 'docs'" },
     { name = "kenning", extras = ["pipeline-manager"], marker = "extra == 'reports'" },
     { name = "kenning", extras = ["sklearn"], marker = "extra == 'emlearn'" },
     { name = "kenning", extras = ["torch"], marker = "extra == 'anomaly-detection'" },
@@ -4000,6 +4017,7 @@ requires-dist = [
     { name = "pexpect", marker = "extra == 'test'" },
     { name = "pillow", specifier = ">=8.1.0" },
     { name = "pipeline-manager", marker = "extra == 'pipeline-manager'", git = "https://github.com/antmicro/kenning-pipeline-manager.git" },
+    { name = "pipeline-manager", extras = ["to-image"], marker = "extra == 'docs'", git = "https://github.com/antmicro/kenning-pipeline-manager.git" },
     { name = "pipeline-manager-backend-communication", marker = "extra == 'pipeline-manager'", git = "https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git" },
     { name = "ply", marker = "extra == 'zephyr'" },
     { name = "polars" },
@@ -6982,6 +7000,11 @@ dependencies = [
     { name = "requests" },
     { name = "six" },
     { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+to-image = [
+    { name = "html2image" },
 ]
 
 [[package]]
@@ -11859,6 +11882,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3d/7a/f98d4ada7c499565ab0c0fcef28a4e54fafa72b8228a6309803c80493c92/wcwidth-0.8.4.tar.gz", hash = "sha256:2dae09efa25253ae2874188e86d6861af3b1652aef4118cdf3f0bda288a957fb", size = 414609, upload-time = "2026-09-17T23:31:45.287Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/39/cc/9c0adc5861020de426ec71716b6c1bef8d90694b7d6d0a16202cdb1647f5/wcwidth-0.8.4-py3-none-any.whl", hash = "sha256:2097bb1d28a0ba8fe177c2eb607317f9b1627b03f33ebebfd3da670b337a65ba", size = 299474, upload-time = "2026-09-17T23:31:43.816Z" },
+]
+
+[[package]]
+name = "websocket-client"
+version = "1.9.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/cb/a5abcc2891249f393827c650c6296660ce40374ac22d99ab9aea41f9d2a2/websocket_client-1.9.2.tar.gz", hash = "sha256:0fcb57545848be86992e128218fd96dd87a6769ffdb1a968dff79632b85604d0", size = 84110, upload-time = "2026-08-31T14:08:40.964Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/d2/cc4dc1271e464942db7ee278baae2daa99ee77cb2af744025c04da585a3e/websocket_client-1.9.2-py3-none-any.whl", hash = "sha256:e1a673830a9c7bfa47b1cd3d5e4178f4c9651d80a4eab02c9c23a1c3ec6250ce", size = 95786, upload-time = "2026-08-31T14:08:39.899Z" },
 ]
 
 [[package]]

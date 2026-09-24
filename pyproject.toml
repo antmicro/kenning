@@ -58,7 +58,7 @@ docs = [
     "sphinx>=8.2.3; python_version>'3.11'",
     "sphinx-tabs",
     "kenning[pipeline_manager]",
-    "pipeline_manager[to-image] @ git+https://github.com/antmicro/kenning-pipeline-manager.git",
+    "pipeline_manager[to-image] @ https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl",
 ]
 tensorflow = [
     "kenning[onnx2tf]",
@@ -166,7 +166,7 @@ real_time_visualization = [
 ]
 pipeline_manager = [
     "json-rpc==1.15.0",
-    "pipeline_manager @ git+https://github.com/antmicro/kenning-pipeline-manager.git",
+    "pipeline_manager @ https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl",
     "pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git",
 ]
 reports = [

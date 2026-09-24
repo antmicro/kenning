@@ -85,14 +85,14 @@ def text_summarization_report(
     if "predictions" in measurementsdata:
         from random import sample
 
-        NUM_OF_EXAMPLES = 10
+        num_of_examples = min(10, len(measurementsdata["predictions"]))
 
         KLogger.info(
-            f"Including {NUM_OF_EXAMPLES} example predictions to "
+            f"Including {num_of_examples} example predictions to "
             "the text summarization report"
         )
         report_variables["example_predictions"] = sample(
-            measurementsdata["predictions"], NUM_OF_EXAMPLES
+            measurementsdata["predictions"], num_of_examples
         )
 
     rouge_path = imgdir / f"{imgprefix}rouge"

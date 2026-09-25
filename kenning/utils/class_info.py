@@ -272,6 +272,46 @@ def parse_io_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     return resulting_output
 
 
+def resolve_returned_dict(
+    function_node: ast.FunctionDef, returned: Optional[ast.expr]
+) -> Optional[ast.Dict]:
+    """
+    Returns the dict returned by the function. When the function returns
+    a variable it is followed to its assignment in
+    the function body.
+
+    Parameters
+    ----------
+    function_node: ast.FunctionDef
+        AST function node to search for the assignment in
+    returned: Optional[ast.expr]
+        Value of the return statement of the function
+
+    Returns
+    -------
+    Optional[ast.Dict]
+        AST dict node, or None if the returned value is not a dict or
+        a variable with a dict assigned to it in the function
+    """
+    if isinstance(returned, ast.Dict):
+        return returned
+
+    if not isinstance(returned, ast.Name):
+        return None
+
+    assigned_dict = None
+    for node in ast.walk(function_node):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == returned.id
+            and isinstance(node.value, ast.Dict)
+        ):
+            assigned_dict = node.value
+
+    return assigned_dict
+
+
 def get_io_specification(class_node: ast.ClassDef) -> List[str]:
     """
     Extracts io_specification when classes specify io this way.
@@ -310,6 +350,9 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
 
         io_spec_dict_node = node.value
 
+    io_spec_dict_node = resolve_returned_dict(
+        io_spec_function_node, io_spec_dict_node
+    )
     if io_spec_dict_node is None:
         return []
 

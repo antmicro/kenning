@@ -16,8 +16,44 @@ from kenning.utils.class_info import (
     get_class_module_name,
     get_dependency,
     get_input_specification,
+    get_io_specification,
     get_output_specification,
+    parse_io_dict_node_to_string,
 )
+
+IO_SPECIFICATION_CLASS = """
+class SampleModelWrapper:
+    @classmethod
+    def _get_io_specification(cls, num_classes, batch_size=1):
+        return {
+            "input": [
+                {
+                    "name": "input_1",
+                    "shape": (batch_size, 3, 224, 224),
+                    "dtype": "float32",
+                }
+            ],
+            "output": [
+                {
+                    "name": OUTPUT_NAME,
+                    "shape": (batch_size, num_classes),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_output": [],
+        }
+"""
+
+IO_SPECIFICATION_LINES = [
+    "### input\n\n",
+    "* `input_1`\n",
+    "    * `shape`: `(batch_size, 3, 224, 224)`\n",
+    "    * `dtype`: `float32`\n",
+    "### output\n\n",
+    "* `OUTPUT_NAME`\n",
+    "    * `shape`: `(batch_size, num_classes)`\n",
+    "    * `dtype`: `float32`\n",
+]
 
 
 @pytest.fixture
@@ -196,3 +232,91 @@ class TestGetOutputSpecification:
         node = parse_node('outputtypes = ["tflite"]')
 
         assert get_output_specification(node) == "* `tflite`\n"
+
+
+class TestParseIODictNodeToString:
+    def test_not_a_dict(self):
+        node = parse_node('["input", "output"]').value
+
+        assert parse_io_dict_node_to_string(node) == [""]
+
+    def test_io_dict(self):
+        class_node = parse_node(IO_SPECIFICATION_CLASS)
+        dict_node = class_node.body[0].body[0].value
+
+        assert (
+            parse_io_dict_node_to_string(dict_node) == IO_SPECIFICATION_LINES
+        )
+
+
+class TestGetIOSpecification:
+    def test_io_specification(self):
+        class_node = parse_node(IO_SPECIFICATION_CLASS)
+
+        assert get_io_specification(class_node) == IO_SPECIFICATION_LINES
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            """
+            class SampleBlock:
+                inputtypes = ["onnx"]
+            """,
+            """
+            class SampleBlock:
+                def get_io_specification(self):
+                    return {"input": []}
+            """,
+            """
+            class SampleBlock:
+                def _get_io_specification(self):
+                    raise NotImplementedError
+            """,
+        ],
+        ids=["no-methods", "other-method", "no-return"],
+    )
+    def test_no_io_specification(self, source: str):
+        assert get_io_specification(parse_node(source)) == []
+
+    def test_returned_variable(self):
+        class_node = parse_node(
+            """
+            class SampleModelWrapper:
+                @classmethod
+                def _get_io_specification(cls, num_classes, batch_size=1):
+                    io_spec = {
+                        "input": [
+                            {
+                                "name": "input_1",
+                                "shape": (batch_size, 3, 224, 224),
+                                "dtype": "float32",
+                            }
+                        ],
+                        "output": [
+                            {
+                                "name": OUTPUT_NAME,
+                                "shape": (batch_size, num_classes),
+                                "dtype": "float32",
+                            }
+                        ],
+                        "processed_output": [],
+                    }
+                    if num_classes > 1:
+                        io_spec["output"][0]["class_names"] = ["a", "b"]
+                    return io_spec
+            """
+        )
+
+        assert get_io_specification(class_node) == IO_SPECIFICATION_LINES
+
+    def test_returned_parameter(self):
+        class_node = parse_node(
+            """
+            class SampleRunner:
+                @classmethod
+                def _get_io_specification(cls, model_io_spec):
+                    return model_io_spec
+            """
+        )
+
+        assert get_io_specification(class_node) == []

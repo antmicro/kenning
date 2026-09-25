@@ -16,6 +16,7 @@ from kenning.utils.class_info import (
     get_class_module_name,
     get_dependency,
     get_input_specification,
+    get_output_specification,
 )
 
 
@@ -185,3 +186,13 @@ class TestGetInputSpecification:
         )
 
         assert get_input_specification(node) == "* `keras`\n* `onnx`\n"
+
+
+class TestGetOutputSpecification:
+    def test_empty_list(self):
+        assert get_output_specification(parse_node("outputtypes = []")) is None
+
+    def test_list(self):
+        node = parse_node('outputtypes = ["tflite"]')
+
+        assert get_output_specification(node) == "* `tflite`\n"

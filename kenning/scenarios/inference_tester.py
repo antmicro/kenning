@@ -198,7 +198,7 @@ class InferenceTester(CommandTemplate):
 
         config = InferenceTester.parse_configuration(args, not_parsed, keys)
 
-        config = set_block_direct_argument(
+        set_block_direct_argument(
             "from_file", True, config, ConfigKey.model_wrapper
         )
 

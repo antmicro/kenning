@@ -443,7 +443,7 @@ class OptimizationRunner(CommandTemplate):
         del json_cfg["optimization_parameters"]
         config = yaml_or_json_to_config_dict(json_cfg)
 
-        config = set_block_direct_argument(
+        set_block_direct_argument(
             "from_file", True, config, ConfigKey.model_wrapper
         )
 

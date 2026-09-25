@@ -395,10 +395,11 @@ class TestBlockConfig:
                 "param3": "lorem",
             },
         }
-        assert expected_dict == filter_block_types_from_config_dict(
+        filter_block_types_from_config_dict(
             [ConfigKey.optimizers, ConfigKey.report, ConfigKey.automl],
             test_dict,
         )
+        assert expected_dict == test_dict
 
     def test_apply_default_blocks_by_block_type(self):
         test_dict = {
@@ -519,9 +520,8 @@ class TestBlockConfig:
                 "param3": "lorem",
             },
         }
-        assert expected_dict == apply_default_blocks_by_block_type(
-            test_defaults, test_dict
-        )
+        apply_default_blocks_by_block_type(test_defaults, test_dict)
+        assert expected_dict == test_dict
 
     def test_set_block_direct_argument(self):
         test_dict = {

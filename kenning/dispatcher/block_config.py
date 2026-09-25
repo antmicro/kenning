@@ -264,7 +264,7 @@ def merge_config_dicts(
 
 def filter_block_types_from_config_dict(
     block_types: List[ConfigKey], config_dict: KenningBlockConfigDict
-) -> KenningBlockConfigDict:
+):
     """
     Removes from a config dict all block types that are not in the provided
     list.
@@ -276,12 +276,6 @@ def filter_block_types_from_config_dict(
     config_dict: KenningBlockConfigDict
         Dictionary to change (NOTE: function operates directly on the dict,
         without making a copy).
-
-    Returns
-    -------
-    KenningBlockConfigDict
-        Changed dictionary, with all block types that are not in block_types
-        removed.
     """
     block_types_to_delete = []
     for block_type in config_dict[BLOCK_CONFIGURATIONS_KEY]:
@@ -291,12 +285,11 @@ def filter_block_types_from_config_dict(
     for block_type in block_types_to_delete:
         del block_configurations[block_type]
     config_dict[BLOCK_CONFIGURATIONS_KEY] = block_configurations
-    return config_dict
 
 
 def apply_default_blocks_by_block_type(
     defaults: Dict[ConfigKey, str], config_dict: KenningBlockConfigDict
-) -> KenningBlockConfigDict:
+):
     """
     In select block types that are either not in the config dict, or contain
     no blocks, or contain a None block, this function will set the provided
@@ -309,11 +302,6 @@ def apply_default_blocks_by_block_type(
     config_dict: KenningBlockConfigDict
         Dictionary to change (NOTE: function operates directly on the dict,
         without making a copy).
-
-    Returns
-    -------
-    KenningBlockConfigDict
-        Changed dictionary, with the defaults applied where needed.
     """
     block_configurations = config_dict[BLOCK_CONFIGURATIONS_KEY]
     for block_type in defaults:
@@ -339,7 +327,6 @@ def apply_default_blocks_by_block_type(
                 default_block
             ] = block_configurations[block_type][None]
             del block_configurations[block_type][None]
-    return config_dict
 
 
 def set_block_direct_argument(
@@ -348,7 +335,7 @@ def set_block_direct_argument(
     config: KenningBlockConfigDict,
     block_type: ConfigKey,
     block: Optional[str] = None,
-) -> KenningBlockConfigDict:
+) -> None:
     """
     Places the given argument in the given block's configuration, under the
     BLOCK_DIRECT_ARGUMENTS_KEY. If an argument with the same name already
@@ -375,22 +362,20 @@ def set_block_direct_argument(
 
     Returns
     -------
-    KenningBlockConfigDict
-        Changed config dict.
+    None
     """
     if block_type not in config[BLOCK_CONFIGURATIONS_KEY]:
-        return config
+        return
     if block:
         if block not in config[BLOCK_CONFIGURATIONS_KEY][block_type]:
-            return config
+            return
         config[BLOCK_CONFIGURATIONS_KEY][block_type][block][
             BLOCK_DIRECT_ARGUMENTS_KEY
         ][argument_name] = argument_value
-        return config
+        return
     for block_parameters in config[BLOCK_CONFIGURATIONS_KEY][
         block_type
     ].values():
         block_parameters[BLOCK_DIRECT_ARGUMENTS_KEY][
             argument_name
         ] = argument_value
-    return config

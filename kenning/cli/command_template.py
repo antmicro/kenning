@@ -370,9 +370,7 @@ class CommandTemplate(ABC):
                 config = merge_config_dicts(
                     yaml_or_json_to_config_dict(cfg), config
                 )
-        config = apply_default_blocks_by_block_type(
-            cls.default_block_classes, config
-        )
+        apply_default_blocks_by_block_type(cls.default_block_classes, config)
 
         def flatten_list(irregular_list):
             return (
@@ -394,7 +392,7 @@ class CommandTemplate(ABC):
             not_parsed,
         )
         config = merge_config_dicts(config, argparse_to_config_dict(args))
-        config = filter_block_types_from_config_dict(keys, config)
+        filter_block_types_from_config_dict(keys, config)
         KLogger.info(
             f"Collected blocks: {[block.__name__ for block in classes]}"
         )

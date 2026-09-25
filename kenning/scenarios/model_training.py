@@ -88,7 +88,7 @@ class TrainModel(CommandTemplate):
             not_parsed,
             [ConfigKey.model_wrapper, ConfigKey.platform, ConfigKey.dataset],
         )
-        config = set_block_direct_argument(
+        set_block_direct_argument(
             "from_file", False, config, ConfigKey.model_wrapper
         )
         objs = objs_from_full_dict_config(config)

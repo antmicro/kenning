@@ -299,7 +299,7 @@ class AutoMLCommand(InferenceTester):
                 # standard config.
                 conf = yaml_or_json_to_config_dict(conf)
                 conf = merge_config_dicts(initial_config, conf)
-                conf = filter_block_types_from_config_dict(
+                filter_block_types_from_config_dict(
                     [
                         ConfigKey.model_wrapper,
                         ConfigKey.dataset,

@@ -24,7 +24,6 @@ from kenning.core.exceptions import ClassInfoInvalidArgumentError
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
-from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.dispatcher.block_config import from_flag_to_name
@@ -746,9 +745,7 @@ def instantiate_object_based_on_base_class(
     try:
         # create an object based on its base class
         if issubclass(imported_class, Runtime):
-            return imported_class.from_json(
-                json_dict=parsed_args, protocol=Protocol()
-            )
+            return imported_class.from_json(parsed_args)
 
         if issubclass(imported_class, ModelWrapper):
             return imported_class.from_json(

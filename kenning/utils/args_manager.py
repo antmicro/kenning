@@ -791,6 +791,17 @@ class ArgumentsHandler(ABC):
         ValueError
             Casting is not possible.
         """
+        if typing.get_origin(target_type) in [Union, UnionType]:
+            subtypes = list(target_type.__args__)
+            for subtype in subtypes:
+                try:
+                    return cls.cast_complex_type(value, subtype)
+                except ValueError:
+                    ...
+            raise ArgsManagerConvertError(
+                f"Value {value} does not match any of the types in the Union:"
+                f" {target_type}."
+            )
         if target_type is object:
             return value
         if isinstance(value, (list, List, Tuple, tuple)):
@@ -893,17 +904,6 @@ class ArgumentsHandler(ABC):
                 ...
             raise ArgsManagerConvertError(
                 f"Enum value {value} does not match {spec['type']}."
-            )
-        if typing.get_origin(spec["type"]) in [Union, UnionType]:
-            subtypes = list(spec["type"].__args__)
-            for subtype in subtypes:
-                try:
-                    return cls.cast_complex_type(value, subtype)
-                except ValueError:
-                    ...
-            raise ArgsManagerConvertError(
-                f"Value {value} does not any of the types in the Union:"
-                f" {spec['type']}."
             )
         try:
             return cls.cast_complex_type(value, spec["type"])

@@ -14,6 +14,7 @@ from kenning.utils.class_info import (
     Argument,
     get_class_module_docstrings,
     get_class_module_name,
+    get_dependency,
 )
 
 
@@ -127,3 +128,37 @@ class TestGetClassModuleDocstrings:
             == "# Module description\nSample module docstring.\n"
         )
         assert fake_pandoc == [("read", "rst"), ("write", "gfm")]
+
+
+class TestGetDependency:
+    @pytest.mark.parametrize(
+        "source",
+        [
+            "import os",
+            "from pathlib import Path",
+            "import kenning",
+            "from kenning.core.dataset import Dataset",
+        ],
+    )
+    def test_skipped(self, source: str):
+        assert get_dependency(parse_node(source)) == ""
+
+    @pytest.mark.parametrize(
+        "source,expected",
+        [
+            ("import numpy", "* `numpy`\n"),
+            ("from numpy import array", "* `numpy.array`\n"),
+        ],
+    )
+    def test_available(self, source: str, expected: str):
+        assert get_dependency(parse_node(source)) == expected
+
+    def test_missing(self):
+        result = get_dependency(
+            parse_node("import class_info_missing_dependency")
+        )
+
+        assert result == (
+            "* `class_info_missing_dependency` - Not available (Reason: "
+            "No module named 'class_info_missing_dependency')\n"
+        )

@@ -2,7 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.utils.class_info import Argument
+import ast
+import textwrap
+from typing import Any
+
+from kenning.utils.class_info import Argument, get_class_module_name
+
+
+def parse_node(source: str) -> Any:
+    """
+    Parses the source and returns its first top-level statement.
+    """
+    return ast.parse(textwrap.dedent(source)).body[0]
 
 
 class TestArgument:
@@ -37,3 +48,15 @@ class TestArgument:
             "    * `int8`",
             "    * `float32`",
         ]
+
+
+class TestGetClassModuleName:
+    def test_class(self):
+        node = parse_node(
+            """
+            class SampleBlock:
+                \"\"\"Docstring is not included.\"\"\"
+            """
+        )
+
+        assert get_class_module_name(node) == "# SampleBlock\n\n"

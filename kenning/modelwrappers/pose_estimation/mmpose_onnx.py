@@ -462,12 +462,6 @@ class MMPoseDetectionInput(MMPoseONNX):
 
             X = cv2.resize(X, self.input_size)
 
-            # try to apply mask
-
-            mask_obj = segment.mask.astype(np.uint8)
-
-            mask_obj = cv2.resize(mask_obj, self.input_size)
-
             # transpose from (c,w,h) to (w,h,c)
             mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
             std = np.array([0.229, 0.224, 0.225], dtype=np.float32)

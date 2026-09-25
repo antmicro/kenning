@@ -15,6 +15,7 @@ from kenning.utils.class_info import (
     get_class_module_docstrings,
     get_class_module_name,
     get_dependency,
+    get_input_specification,
 )
 
 
@@ -162,3 +163,25 @@ class TestGetDependency:
             "* `class_info_missing_dependency` - Not available (Reason: "
             "No module named 'class_info_missing_dependency')\n"
         )
+
+
+class TestGetInputSpecification:
+    def test_empty_list(self):
+        assert get_input_specification(parse_node("inputtypes = []")) == ""
+
+    def test_list(self):
+        node = parse_node('inputtypes = ["keras", "onnx"]')
+
+        assert get_input_specification(node) == "* `keras`\n* `onnx`\n"
+
+    def test_dict(self):
+        node = parse_node(
+            """
+            inputtypes = {
+                "keras": load_keras_model,
+                "onnx": load_onnx_model,
+            }
+            """
+        )
+
+        assert get_input_specification(node) == "* `keras`\n* `onnx`\n"

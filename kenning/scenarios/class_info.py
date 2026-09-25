@@ -128,7 +128,7 @@ class ClassInfoRunner(CommandTemplate):
         # Handle a class name without a module path.
         target = args_dict["target"]
         if is_class_name(target):
-            args_dict["target"] = get_module_path(target)
+            args_dict["target"] = f"{get_module_path(target)}.{target}"
 
         resulting_output = generate_class_info(**args_dict)
 

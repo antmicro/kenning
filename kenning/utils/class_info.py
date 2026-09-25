@@ -944,9 +944,25 @@ def generate_class_info(
         except ClassInfoInvalidArgumentError as e:
             return [str(e)]
 
+    target_class_node = None
+    if class_name:
+        target_class_node = next(
+            (
+                node
+                for node in syntax_nodes
+                if isinstance(node, ast.ClassDef) and node.name == class_name
+            ),
+            None,
+        )
+        if target_class_node is None:
+            return [f"Class {class_name} has not been found\n"]
+        syntax_nodes = ast.walk(parsed_file)
+
     # perform static code analysis
     for node in syntax_nodes:
-        if isinstance(node, ast.ClassDef):
+        if isinstance(node, ast.ClassDef) and (
+            target_class_node is None or node is target_class_node
+        ):
             class_nodes.append(node)
 
             io_specification = get_io_specification(node)
@@ -960,6 +976,12 @@ def generate_class_info(
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             dependency_nodes.append(node)
 
+    if target_class_node is not None:
+        specification_nodes = target_class_node.body
+    else:
+        specification_nodes = ast.walk(parsed_file)
+
+    for node in specification_nodes:
         if isinstance(node, ast.Assign) and isinstance(
             node.targets[0], ast.Name
         ):
@@ -977,11 +999,6 @@ def generate_class_info(
     # prepare output
     for node in class_nodes:
         if docstrings:
-            if len(class_nodes) == 0:
-                resulting_lines.append(
-                    f"Class {class_name} has not been found"
-                )
-                return resulting_lines
             resulting_lines.append(get_class_module_docstrings(node))
         else:
             resulting_lines.append(get_class_module_name(node))

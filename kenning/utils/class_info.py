@@ -60,7 +60,7 @@ class Argument:
         if self.description:
             lines.append(f"* description: {self.description}")
         if self.argparse_name:
-            lines.append(f"* argparse flag: `{self.argparse_name}``")
+            lines.append(f"* argparse flag: `{self.argparse_name}`")
         if self.type:
             lines.append(f"* type: `{self.type}`")
         if self.required:
@@ -78,7 +78,9 @@ class Argument:
         return "\n".join(lines)
 
 
-def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
+def get_class_module_name(
+    syntax_node: Union[ast.ClassDef, ast.Module]
+) -> Optional[str]:
     """
     Displays class name from syntax node.
 
@@ -89,7 +91,7 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
 
     Returns
     -------
-    str
+    Optional[str]
         Formatted Markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
@@ -127,7 +129,9 @@ def get_class_module_docstrings(
         return f"# Module description\n{docstring}\n"
 
 
-def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
+def get_dependency(
+    syntax_node: Union[ast.Import, ast.ImportFrom]
+) -> Optional[str]:
     """
     Extracts a dependency from an import syntax node and checks whether the
     dependency is satisfied. It also skips internal kenning modules.
@@ -139,7 +143,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
     Returns
     -------
-    str
+    Optional[str]
         Formatted Markdown-like string to be printed later. Empty strings
         represent dependencies that were skipped - either they belong to
         Kenning or are provided by the default python distribution
@@ -312,7 +316,7 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
     return parse_io_dict_node_to_string(io_spec_dict_node)
 
 
-def get_output_specification(syntax_node: ast.Assign) -> str:
+def get_output_specification(syntax_node: ast.Assign) -> Optional[str]:
     """
     Displays information about the output specification as bullet points.
 
@@ -323,7 +327,7 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
 
     Returns
     -------
-    str
+    Optional[str]
         Formatted Markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
@@ -642,6 +646,7 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
         resulting_output.append(f"### {key}\n\n")
         if not isinstance(value, list):
             resulting_output.append(f"* `{key}`: `{value}`\n")
+            continue
 
         [dict_elements.append(elt) for elt in value]
 

@@ -57,6 +57,7 @@ docs = [
     "sphinx>=8.1.3; python_version<='3.11'",
     "sphinx>=8.2.3; python_version>'3.11'",
     "sphinx-tabs",
+    "sphinx-design",
     "kenning[pipeline_manager]",
     "pipeline_manager[to-image] @ https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.2/pipeline_manager-0.5.2-py3-none-any.whl",
 ]

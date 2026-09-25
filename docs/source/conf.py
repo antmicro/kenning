@@ -77,6 +77,7 @@ extensions = list(
             "sphinx_tabs.tabs",
             # Extensions enabling pipeline manager graphs
             "pipeline_manager.sphinxext.draw_graph",
+            "sphinx_design",
         ]
     )
 )
@@ -191,6 +192,7 @@ html_static_path = ["_static"]
 html_css_files = [
     "css/bokeh.css",
     "css/compatibility.css",
+    "css/report.css",
 ]
 
 # -- Options for HTMLHelp output ---------------------------------------------

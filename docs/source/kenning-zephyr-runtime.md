@@ -109,7 +109,7 @@ You can also install Kenning manually, for a different selection of additional d
 For example:
 
 ```bash
-uv pip install "kenning[tvm,tensorflow,reports,renode,uart,tflite,torch,zephyr] @ git+https://github.com/antmicro/kenning.git"
+uv pip install "kenning[iree,tvm,tensorflow,reports,renode,uart,tflite,torch,zephyr] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 Eventually, run:

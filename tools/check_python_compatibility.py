@@ -24,6 +24,10 @@ from pyproject_requirements import Pyproject
 
 PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
 
+OK = "✓"
+FAILED = "✗"
+UNTESTED = "?"
+
 
 def uv_resolve(
     requirements: List[str], version: str, root: Path
@@ -96,6 +100,7 @@ def render(
     version: str,
     errors: Dict[str, Optional[str]],
     untested: Set[str],
+    show_errors: bool = False,
 ) -> str:
     """
     Renders results as Markdown.
@@ -109,31 +114,44 @@ def render(
     untested : Set[str]
         Extras whose own packages were all dropped, so only the base
         requirements were resolved
+    show_errors : bool
+        Whether to append uv's error output of failed extras
 
     Returns
     -------
     str
         Markdown report
     """
+    statuses = {}
+    for extra, error in errors.items():
+        if error is not None:
+            statuses[extra] = FAILED
+        elif extra in untested:
+            statuses[extra] = UNTESTED
+        else:
+            statuses[extra] = OK
+
+    width = max(len("extra"), *map(len, statuses))
     lines = [
         f"# Kenning extras on Python {version} "
         f"({platform.system()} {platform.machine()})",
         "",
-        "| extra | status |",
-        "|---|---|",
+        f"| {'extra':<{width}} | status |",
+        f"|{'-' * (width + 2)}|--------|",
     ]
-    for extra, error in errors.items():
-        if error is not None:
-            status = "failed"
-        elif extra in untested:
-            status = "?"
-        else:
-            status = "ok"
-        lines.append(f"| {extra} | {status} |")
+    for extra, status in statuses.items():
+        lines.append(f"| {extra:<{width}} | {status:^6} |")
 
-    for extra, error in errors.items():
-        if error is not None:
-            lines += ["", f"## {extra}", "", "```", error, "```"]
+    counts = [
+        f"{list(statuses.values()).count(status)} {status}"
+        for status in (OK, FAILED, UNTESTED)
+    ]
+    lines += ["", ", ".join(counts)]
+
+    failed = [extra for extra, error in errors.items() if error is not None]
+    if show_errors:
+        for extra in failed:
+            lines += ["", f"## {extra}", "", "```", errors[extra], "```"]
     return "\n".join(lines) + "\n"
 
 
@@ -158,6 +176,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument("python", help="Python version, e.g. 3.14")
     parser.add_argument("--pyproject", type=Path, default=PYPROJECT)
+    parser.add_argument(
+        "--errors",
+        action="store_true",
+        help="Print uv's error output for failed extras",
+    )
     args = parser.parse_args(argv)
 
     pyproject = Pyproject.load(args.pyproject)
@@ -181,7 +204,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if own and own <= set(unsupported(requirements, args.python)):
             untested.add(extra)
 
-    print(render(args.python, errors, untested))
+    print(render(args.python, errors, untested, args.errors))
     failed = any(error is not None for error in errors.values())
     return 1 if failed or untested else 0
 

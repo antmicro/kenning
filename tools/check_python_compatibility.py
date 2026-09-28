@@ -12,12 +12,14 @@ Usage:
 """
 
 import argparse
+import platform
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
+from packaging.requirements import Requirement
 from pyproject_requirements import Pyproject
 
 PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
@@ -60,7 +62,41 @@ def uv_resolve(
     return process.stderr.strip()
 
 
-def render(version: str, errors: Dict[str, Optional[str]]) -> str:
+def unsupported(requirements: List[str], version: str) -> List[str]:
+    """
+    Lists packages without a requirement line for a Python version.
+
+    Parameters
+    ----------
+    requirements : List[str]
+        Requirements
+    version : str
+        Python version, e.g. 3.14
+
+    Returns
+    -------
+    List[str]
+        Names of packages none of whose lines apply to the version
+    """
+    environment = {
+        "python_version": version,
+        "python_full_version": f"{version}.0",
+    }
+    applies: Dict[str, bool] = {}
+    for line in requirements:
+        requirement = Requirement(line)
+        applies[requirement.name] = applies.get(requirement.name, False) or (
+            requirement.marker is None
+            or requirement.marker.evaluate(environment)
+        )
+    return sorted(name for name, ok in applies.items() if not ok)
+
+
+def render(
+    version: str,
+    errors: Dict[str, Optional[str]],
+    untested: Set[str],
+) -> str:
     """
     Renders results as Markdown.
 
@@ -70,6 +106,9 @@ def render(version: str, errors: Dict[str, Optional[str]]) -> str:
         Checked Python version
     errors : Dict[str, Optional[str]]
         uv's error for each extra, None if the extra resolves
+    untested : Set[str]
+        Extras whose own packages were all dropped, so only the base
+        requirements were resolved
 
     Returns
     -------
@@ -77,13 +116,20 @@ def render(version: str, errors: Dict[str, Optional[str]]) -> str:
         Markdown report
     """
     lines = [
-        f"# Kenning extras on Python {version} ({PLATFORM})",
+        f"# Kenning extras on Python {version} "
+        f"({platform.system()} {platform.machine()})",
         "",
         "| extra | status |",
         "|---|---|",
     ]
     for extra, error in errors.items():
-        lines.append(f"| {extra} | {'ok' if error is None else 'failed'} |")
+        if error is not None:
+            status = "failed"
+        elif extra in untested:
+            status = "?"
+        else:
+            status = "ok"
+        lines.append(f"| {extra} | {status} |")
 
     for extra, error in errors.items():
         if error is not None:
@@ -103,7 +149,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     Returns
     -------
     int
-        1 if any extra cannot be installed, 0 otherwise
+        1 if any extra cannot be installed or was not tested,
+        0 otherwise
     """
     parser = argparse.ArgumentParser(
         description="Checks whether Kenning's extras can be installed on a "
@@ -123,8 +170,20 @@ def main(argv: Optional[List[str]] = None) -> int:
     with ThreadPoolExecutor() as pool:
         errors = dict(zip(extras, pool.map(resolve, extras.values())))
 
-    print(render(args.python, errors))
-    return 1 if any(error is not None for error in errors.values()) else 0
+    base = extras[pyproject.name]
+    untested = set()
+    for extra, requirements in extras.items():
+        own = {
+            Requirement(line).name
+            for line in requirements
+            if line not in base
+        }
+        if own and own <= set(unsupported(requirements, args.python)):
+            untested.add(extra)
+
+    print(render(args.python, errors, untested))
+    failed = any(error is not None for error in errors.values())
+    return 1 if failed or untested else 0
 
 
 if __name__ == "__main__":

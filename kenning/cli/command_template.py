@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import yaml
 
 from kenning.cli.parser import HELP_FLAGS, Parser, ParserHelpException
+from kenning.core.exceptions import ConfigurationError
 from kenning.dispatcher.block_config import (
     BLOCK_CONFIGURATIONS_KEY,
     CONFIG_KEY_TO_CLS_FLAG,
@@ -199,6 +200,58 @@ class CommandTemplate(ABC):
             raise TypeError(f"Invalid type of new_groups: {type(new_groups)}")
 
         return groups
+
+    @staticmethod
+    def ensure_unambiguous_cli_flags(
+        classes: List[Any], config: KenningBlockConfigDict
+    ):
+        """
+        Ensures, that there is no parameter in the config, that could be
+        matched to more than one block.
+
+        Parameters
+        ----------
+        classes: List[Any]
+            A list of all block classes.
+        config: KenningBlockConfigDict
+            The configuration dictionary to check.
+
+        Raises
+        ------
+        ConfigurationError
+            There is a parameter in the configuration, that matches more than
+            one block.
+        """
+        all_matched_parameters = set()
+        for block_class in classes:
+            try:
+                _, matched_parameter_names = block_class.match_parameters(
+                    config, suppress_errors=True
+                )
+            except ConfigurationError as e:
+                KLogger.warning(
+                    "Failure during preliminary parameter matching of"
+                    f" {block_class}: {str(e)}. Skipping flag name"
+                    " deconfliction stage for that block."
+                )
+                continue
+            matched_parameter_names = set(matched_parameter_names)
+            common_subset = all_matched_parameters & matched_parameter_names
+            if not common_subset:
+                all_matched_parameters = (
+                    all_matched_parameters | matched_parameter_names
+                )
+                continue
+            KLogger.error(
+                f"Ambiguous parameter(s): {common_subset}, shared between"
+                f" block {block_class} and at least one other block. When"
+                " setting block parameters in the CLI use the format"
+                " --block-name:--parameter-name to differentiate between"
+                " blocks with conflicting parameter names."
+            )
+            raise ConfigurationError(
+                f"Ambiguous parameter(s): {common_subset}."
+            )
 
     @staticmethod
     def add_block_flags_to_argparse(
@@ -399,6 +452,7 @@ class CommandTemplate(ABC):
             not_parsed,
         )
         config = merge_config_dicts(config, argparse_to_config_dict(args))
+        CommandTemplate.ensure_unambiguous_cli_flags(classes, config)
         filter_block_types_from_config_dict(keys, config)
         KLogger.info(
             f"Collected blocks: {[block.__name__ for block in classes]}"

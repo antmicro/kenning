@@ -88,7 +88,7 @@ The [yolact-onnx-gpu-detection.yml](https://github.com/antmicro/kenning/blob/mai
 ```{literalinclude} ../scripts/configs/yolact-onnx-gpu-detection.yml save-as=yolact-onnx-gpu-detection.yml
 :language: yaml
 :lineno-start: 1
-:emphasize-lines: 38
+:emphasize-lines: 17-27
 ```
 
 `execution_providers` in `ONNXRuntime` holds a list of possible layer executors, starting from the most preferred one.

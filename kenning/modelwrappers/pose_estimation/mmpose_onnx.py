@@ -322,6 +322,12 @@ class MMPoseDetectionInput(MMPoseONNX):
             "default": "body",
             "enum": ["body", "hand"],
         },
+        "box_padding": {
+            "description": "Fraction of the box size added as margin on each "
+            "side when cropping the detection for pose inference.",
+            "type": float,
+            "default": 0,
+        },
     }
 
     def __init__(
@@ -334,6 +340,7 @@ class MMPoseDetectionInput(MMPoseONNX):
         keypoint_threshold: float = 0.3,
         input_size: List[int] = [192, 256],
         pose_type: str = "body",
+        box_padding: float = 0,
     ):
         """
         Creates model wrapper for MMPose
@@ -360,6 +367,9 @@ class MMPoseDetectionInput(MMPoseONNX):
         pose_type : str
             Type of pose to estimate,
             one of "body" or "hand".
+        box_padding : float
+            Fraction of the box size added as margin on each side when
+            cropping the detection for pose inference.
         """
         super().__init__(
             model_path=model_path,
@@ -372,6 +382,7 @@ class MMPoseDetectionInput(MMPoseONNX):
         )
 
         self._class_name = class_name
+        self._box_padding = box_padding
 
     def _get_io_specification(
         cls, input_size: List[int], pose_type: str = "body"
@@ -444,13 +455,35 @@ class MMPoseDetectionInput(MMPoseONNX):
             cw = int((segment.xmax) * w)
             ch = int((segment.ymax) * h)
 
+            pad_x = int((cw - x) * self._box_padding)
+            pad_y = int((ch - y) * self._box_padding)
+
+            x -= pad_x
+            y -= pad_y
+            cw += pad_x
+            ch += pad_y
+
+            # Clip detection to frame bounds
+            x = max(0, min(x, w))
+            y = max(0, min(y, h))
+            cw = max(0, min(cw, w))
+            ch = max(0, min(ch, h))
+
+            if cw - x < 2 or ch - y < 2:
+                KLogger.debug(
+                    f"Dropping degenerate box: "
+                    f"({segment.xmin}, {segment.ymin}, "
+                    f"{segment.xmax}, {segment.ymax})"
+                )
+                continue
+
             self._segm.append(
                 SegmObject(
                     score=segment.score,
-                    xmin=segment.xmin,
-                    ymin=segment.ymin,
-                    xmax=segment.xmax,
-                    ymax=segment.ymax,
+                    xmin=x / w,
+                    ymin=y / h,
+                    xmax=cw / w,
+                    ymax=ch / h,
                     clsname=self._class_name,
                     iscrowd=False,
                     maskpath=None,

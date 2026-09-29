@@ -114,18 +114,23 @@ class ROS2CameraNodeDataProvider(ROS2DataProvider):
 
         img_orig = img_orig.reshape(data.height, data.width, -1)
 
-        if self._color_format in self._supported_color_formats:
-            image_format = self._detect_image_format(data.encoding)
-            if image_format != self._color_format:
-                img_orig = self._convert_image_format(
-                    img_orig, image_format, self._color_format
-                )
+        image_format = self._detect_image_format(data.encoding)
+
+        if self._color_format in self._supported_color_formats and (
+            image_format != self._color_format
+        ):
+            img = self._convert_image_format(
+                img_orig, image_format, self._color_format
+            )
+        else:
+            img = img_orig
+
         img_size = (data.width, data.height)
         if self._output_width is not None:
             img_size = (img_size[0], self._output_width)
         if self._output_height is not None:
             img_size = (self._output_height, img_size[1])
-        img = cv2.resize(img_orig, img_size)
+        img = cv2.resize(img, img_size)
         img = img.astype(np.float32) / 255.0
 
         if self._output_memory_layout == "NCHW":

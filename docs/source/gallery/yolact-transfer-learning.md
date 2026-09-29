@@ -80,7 +80,7 @@ The next step is reducing the learning rate to avoid damaging the previously lea
 
 ### Selecting Classes for Recognition
 
-The YOLACT model was originally trained on the [COCO](https://cocodataset.org/#home) dataset (part of the architecture, namely `ResNet-50`, was previously trained on [ImageNet](https://www.image-net.org/7)).
+The YOLACT model was originally trained on the [COCO](https://cocodataset.org/#home) dataset (part of the architecture, namely `ResNet-50`, was previously trained on [ImageNet](https://image-net.org/about.php)).
 It is therefore natural that we want to select objects (and a dataset) that roughly resemble those from the original training - general real-world objects, rather than, for example, computer games.
 
 For this purpose, we will use the [OpenImages](https://storage.googleapis.com/openimages/web/index.html) dataset implemented in Kenning and select a subset of classes from it - objects that can be found in an office.

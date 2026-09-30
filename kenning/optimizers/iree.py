@@ -29,6 +29,7 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.core.platform import Platform
+from kenning.utils.iree import parse_args
 from kenning.utils.logger import KLogger
 from kenning.utils.onnx import apply_io_spec_to_model
 from kenning.utils.resource_manager import PathOrURI
@@ -176,8 +177,11 @@ class IREECompiler(Optimizer):
             Additional arguments for the compiler. Every options should be in a
             separate string, which should be formatted like this:
             <option>=<value>, or <option> for flags (example:
-            'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
-            listed by running 'iree-compile -h'.
+            'iree-cuda-llvm-target-arch=sm_60'), optionally prefixed by `--`.
+            Full list of options can be listed by running 'iree-compile -h'.
+
+            Warning: do not set --iree-hal-local-target-device-backends here,
+            as it is set directly by Kenning through the Python API.
         compiler_path : Optional[Path]
             Path to the compiler executable.
         linker_path : Optional[Path]
@@ -200,12 +204,7 @@ class IREECompiler(Optimizer):
         self.linker_script_path = linker_script_path
         self.compiler_reports_path = compiler_reports_path
 
-        if compiler_args is not None:
-            self.parsed_compiler_args = [
-                f"--{option}" for option in compiler_args
-            ]
-        else:
-            self.parsed_compiler_args = []
+        self.parsed_compiler_args = parse_args(self.compiler_args)
 
         if self.compiler_path is None:
             self.compiler_path = os.environ.get("IREE_COMPILER_PATH")

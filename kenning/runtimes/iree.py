@@ -21,6 +21,7 @@ from kenning.core.runtime import (
 )
 from kenning.platforms.coral_npu import CoralNPUPlatform
 from kenning.platforms.cuda import CUDAPlatform
+from kenning.utils.iree import parse_args
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -61,6 +62,13 @@ class IREERuntime(Runtime):
             "type": int,
             "default": 1,
         },
+        "runtime_args": {
+            "argparse_name": "--runtime-args",
+            "description": "Additional options that are passed to runtime",
+            "type": list[str],
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -70,6 +78,7 @@ class IREERuntime(Runtime):
         disable_performance_measurements: bool = False,
         llext_binary_path: Optional[PathOrURI] = None,
         batch_size: int = 1,
+        runtime_args: Optional[List[str]] = None,
     ):
         """
         Constructs IREE runtime.
@@ -87,6 +96,16 @@ class IREERuntime(Runtime):
         batch_size : int
             Batch size for inference, which is a number of sample
             in a single batch.
+        runtime_args : Optional[List[str]]
+            Additional arguments for the runtime. Every options should be in a
+            separate string, which should be formatted like this:
+            <option>=<value>, or <option> for flags (example:
+            'task_topology_group_count=8'), optionally prefixed by '--'.  Full
+            list of options can be listed by running 'iree-run-module --help'.
+
+            Warning: do not set flags such as --module, --device, --function
+            and --input here, as they are set directly by Kenning through the
+            Python API.
         """
         from iree import runtime as ireert
 
@@ -101,6 +120,8 @@ class IREERuntime(Runtime):
         self.input = None
         self.driver = driver
         self.llext_binary_path = llext_binary_path
+        self.parsed_runtime_args = parse_args(runtime_args)
+
         super().__init__(
             model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
@@ -119,7 +140,11 @@ class IREERuntime(Runtime):
         return True
 
     def prepare_model(self, input_data: Optional[bytes]):
+        from iree import runtime as ireert
+
         KLogger.info(f"Loading model, driver: {self.driver}")
+
+        ireert.flags.parse_flags(*self.parsed_runtime_args)
 
         if self.driver == "coralnpu":
             self._prepare_model_coralnpu(input_data)

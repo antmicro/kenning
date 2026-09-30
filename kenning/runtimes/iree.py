@@ -6,6 +6,8 @@
 Runtime implementation for IREE models.
 """
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 import numpy as np
@@ -15,6 +17,7 @@ from kenning.core.exceptions import (
     ModelNotLoadedError,
     ModelNotPreparedError,
 )
+from kenning.core.measurements import MeasurementsCollector
 from kenning.core.platform import Platform
 from kenning.core.runtime import (
     Runtime,
@@ -59,6 +62,13 @@ class IREERuntime(Runtime):
             "type": int,
             "default": 1,
         },
+        "reports_path": {
+            "argparse_name": "--reports-path",
+            "description": "Path to directory where reports produced by IREE runtime will be dumped. If None, temp directory will be used",  # noqa: E501
+            "type": Path,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -68,6 +78,7 @@ class IREERuntime(Runtime):
         disable_performance_measurements: bool = False,
         llext_binary_path: Optional[PathOrURI] = None,
         batch_size: int = 1,
+        reports_path: Optional[Path] = None,
     ):
         """
         Constructs IREE runtime.
@@ -85,6 +96,9 @@ class IREERuntime(Runtime):
         batch_size : int
             Batch size for inference, which is a number of sample
             in a single batch.
+        reports_path : Optional[Path]
+            Path to directory where reports produced by IREE runtime
+            will be dumped. If None, temp directory will be used.
         """
         from iree import runtime as ireert
 
@@ -99,6 +113,11 @@ class IREERuntime(Runtime):
         self.input = None
         self.driver = driver
         self.llext_binary_path = llext_binary_path
+        self.reports_path = reports_path
+
+        self._reports_dir = None
+        self._cycle_counts_path = None
+
         super().__init__(
             model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
@@ -151,7 +170,33 @@ class IREERuntime(Runtime):
         if isinstance(platform, CUDAPlatform):
             self.driver = "cuda"
         elif isinstance(platform, CoralNPUPlatform):
+            from iree import runtime as ireert
+
+            try:
+                ireert.flags.parse_flags(f"--simulator={platform.simulator}")
+            except ValueError:
+                KLogger.warn(
+                    f"Failed to select {platform.simulator}"
+                    " simulator for CoralNPU"
+                )
+
             self.driver = "coralnpu"
+            if self.reports_path:
+                self._reports_dir = self.reports_path.resolve()
+            else:
+                self._reports_dir = Path(TemporaryDirectory(delete=False).name)
+            self._cycle_counts_path = self._reports_dir / "cycles.csv"
+            if self._cycle_counts_path.exists():
+                self._cycle_counts_path.unlink()
+            try:
+                ireert.flags.parse_flags(
+                    f"--coralnpu_dump_cycles_path={self._cycle_counts_path}",
+                )
+            except ValueError:
+                KLogger.warn(
+                    "Cannot enable gathering number of cycles "
+                    "in IREE run module"
+                )
 
     def _prepare_model_coralnpu(self, input_data: Optional[bytes]):
         from iree import runtime as ireert
@@ -238,3 +283,18 @@ class IREERuntime(Runtime):
                 f" function name: {entry_func_name}"
             )
         self.entry_func = getattr(self.model, entry_func_name)
+
+    def inference_session_end(self):
+        super().inference_session_end()
+
+        if not (self._cycle_counts_path and self._cycle_counts_path.exists()):
+            return
+        with self._cycle_counts_path.open("r") as fd:
+            cycles = fd.read()
+        cycles = cycles.splitlines()
+        try:
+            MeasurementsCollector.measurements += {
+                "cycles": [int(c) for c in cycles]
+            }
+        except ValueError:
+            KLogger.warn("Cannot parse cycles")

@@ -163,6 +163,5 @@ coralnpu:
     - "--iree-hal-local-target-device-backends=llvm-cpu"
     - "--iree-llvmcpu-target-cpu=host"
     - "--iree-hal-target-device=coralnpu"
-    - "--iree-global-opt-experimental-disable-conv-generalization"
   default_optimizer:
     - IREECompiler

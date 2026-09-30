@@ -35,8 +35,10 @@ def _gather_spills_reloads(
         total_spills += dispatch["vec_spills"]
         total_reloads += dispatch["vec_reloads"]
         has_scalar_spills |= dispatch["has_scalar_spills"]
-        vec_registers_usage += Counter(dispatch["global_vector_registers"])
-        vec_registers_count += dispatch["global_vector_registers_count"]
+        if "global_vector_registers" in dispatch:
+            vec_registers_usage += Counter(dispatch["global_vector_registers"])
+        if "global_vector_registers_count" in dispatch:
+            vec_registers_count += dispatch["global_vector_registers_count"]
     return {
         "total_spills": total_spills,
         "total_reloads": total_reloads,

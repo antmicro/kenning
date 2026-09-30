@@ -26,6 +26,12 @@ class CoralNPUPlatform(Platform):
             "nullable": True,
             "default": None,
         },
+        "simulator": {
+            "description": "Selects how CoralNPU will be simulated",
+            "type": str,
+            "enum": ["mpact", "verilator"],
+            "default": "mpact",
+        },
     }
 
     def __init__(
@@ -33,7 +39,9 @@ class CoralNPUPlatform(Platform):
         name: Optional[str] = None,
         platforms_definitions: Optional[List[ResourceURI]] = None,
         compilation_flags: Optional[List[str]] = None,
+        simulator: str = "mpact",
     ):
         self.compilation_flags = compilation_flags
+        self.simulator = simulator
 
         super().__init__(name, platforms_definitions)

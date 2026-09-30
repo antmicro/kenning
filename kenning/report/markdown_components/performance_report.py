@@ -11,6 +11,8 @@ from importlib.resources import path
 from pathlib import Path
 from typing import Any, Dict, Set, Tuple
 
+import numpy as np
+
 from kenning.core.metrics import compute_performance_metrics
 from kenning.report.markdown_components.general import (
     create_report_from_measurements,
@@ -64,8 +66,6 @@ def performance_report(
     KLogger.info(
         f'Running performance_report for {measurementsdata["model_name"]}'
     )
-    metrics = compute_performance_metrics(measurementsdata)
-    measurementsdata |= metrics
 
     # Shifting colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
@@ -82,6 +82,40 @@ def performance_report(
         inference_step = "protocol_inference_step"
     else:
         KLogger.warning("No inference time measurements in the report")
+
+    if cycles := measurementsdata.get("cycles", []):
+        cycles = np.asarray(cycles)
+        plot_path = imgdir / f"{imgprefix}cpu_memory_usage"
+        render_time_series_plot_with_histogram(
+            ydata=cycles,
+            xdata=list(range(cycles.shape[0])),
+            title="Cycles for inference" if draw_titles else None,
+            xtitle="Dispatch",
+            ytitle="Cycles",
+            outpath=str(plot_path),
+            skipfirst=False,
+            outputext=image_formats,
+            **plot_options,
+        )
+        measurementsdata["cycles_series_plot"] = get_plot_wildcard_path(
+            plot_path, root_dir
+        )
+
+        total_number_of_cycles = np.sum(cycles)
+        if inference_step:
+            inference_count = len(measurementsdata[inference_step])
+            mean_cycles = total_number_of_cycles / inference_count
+            measurementsdata["mean_cycles"] = mean_cycles
+        measurementsdata["total_cycles"] = total_number_of_cycles
+
+        # If cycles are available, other metrics do not matter
+        with path(reports, "cycles.md") as reporttemplate:
+            return create_report_from_measurements(
+                reporttemplate, measurementsdata
+            ), {}
+
+    metrics = compute_performance_metrics(measurementsdata)
+    measurementsdata |= metrics
 
     if inference_step:
         plot_path = imgdir / f"{imgprefix}inference_time"

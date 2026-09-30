@@ -4,6 +4,7 @@
 
 import argparse
 from contextlib import nullcontext as does_not_raise
+from enum import Enum
 from pathlib import Path
 from types import NoneType
 from typing import Dict, List, Tuple, Union
@@ -520,3 +521,27 @@ class TestArgsManagerWrapper:
     )
     def test_verify_type(self, value, spec, result):
         assert result == ArgumentsHandler.verify_type(value, spec)
+
+    def test_get_prefixed_parameter_variants(self):
+        class MockConfigKey(str, Enum):
+            test_type = "test_type"
+
+        class TestClass(ArgumentsHandler):
+            block_type = MockConfigKey.test_type
+
+        argparse_flag_names = (
+            "--TestClass:--parameter",
+            "--test-type:--parameter",
+        )
+        argparse_namespace_names = (
+            "TestClass:__parameter",
+            "test_type:__parameter",
+        )
+        assert (
+            argparse_flag_names
+            == TestClass.get_prefixed_parameter_variants("--parameter", True)
+        )
+        assert (
+            argparse_namespace_names
+            == TestClass.get_prefixed_parameter_variants("parameter", False)
+        )

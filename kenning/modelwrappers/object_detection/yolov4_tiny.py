@@ -14,11 +14,12 @@ A class-name file with one name per line must be supplied through class_names.
 """
 
 import shutil
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import onnx
 
+from kenning.core.dataset import Dataset
 from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import (
@@ -37,7 +38,27 @@ class ONNXYOLOV4Tiny(YOLOWrapper):
 
     pretrained_model_uri = "kenning:///models/detection/hand_detector.onnx"
     default_dataset = COCODataset2017
-    arguments_structure = {}
+    arguments_structure = {
+        "temporal_smoothing": {
+            "description": "Smooth the top-scoring detection across frames "
+            "with an exponential moving average and persist the last box for "
+            "a few frames when a frame has no detection.",
+            "type": bool,
+            "default": False,
+        },
+        "smoothing_alpha": {
+            "description": "Weight of the newest detection in the exponential "
+            "moving average (0-1). Lower values smooth more but add lag.",
+            "type": float,
+            "default": 0.4,
+        },
+        "max_dropout_frames": {
+            "description": "Maximum number of consecutive detection-less "
+            "frames for which the last smoothed box is still emitted.",
+            "type": int,
+            "default": 5,
+        },
+    }
 
     thresh = 0.4
 
@@ -45,6 +66,78 @@ class ONNXYOLOV4Tiny(YOLOWrapper):
     # emitted by the network (largest feature map first). YOLOv4-tiny emits
     # two heads at strides 16 and 32.
     STRIDES: List[int] = [16, 32]
+
+    def __init__(
+        self,
+        model_path: PathOrURI,
+        dataset: Optional[Dataset],
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+        class_names: str = "coco",
+        temporal_smoothing: bool = False,
+        smoothing_alpha: float = 0.4,
+        max_dropout_frames: int = 5,
+    ):
+        super().__init__(
+            model_path, dataset, from_file, model_name, class_names
+        )
+        self.temporal_smoothing = temporal_smoothing
+        self.smoothing_alpha = smoothing_alpha
+        self.max_dropout_frames = max_dropout_frames
+        # Per-batch-item temporal state for the top-scoring detection.
+        self._smoothed: List[Optional[DetectObject]] = []
+        self._dropouts: List[int] = []
+
+    def _temporally_smooth(
+        self, frame_dets: List[DetectObject], b: int
+    ) -> List[DetectObject]:
+        """
+        Return the temporally smoothed detections for batch item ``b``.
+
+        The top-scoring detection is tracked with an exponential moving
+        average to reduce jitter, and the last smoothed box is re-emitted for
+        up to ``max_dropout_frames`` consecutive frames without a detection so
+        a stationary hand does not flicker out of existence.
+        """
+        if not self.temporal_smoothing:
+            return frame_dets
+
+        while len(self._smoothed) <= b:
+            self._smoothed.append(None)
+            self._dropouts.append(0)
+
+        if not frame_dets:
+            if (
+                self._smoothed[b] is not None
+                and self._dropouts[b] < self.max_dropout_frames
+            ):
+                self._dropouts[b] += 1
+                return [self._smoothed[b]]
+            self._smoothed[b] = None
+            self._dropouts[b] = 0
+            return []
+
+        best = max(frame_dets, key=lambda d: d.score)
+        prev = self._smoothed[b]
+        if prev is None:
+            smoothed = best
+        else:
+            a = self.smoothing_alpha
+            smoothed = DetectObject(
+                clsname=best.clsname,
+                xmin=a * best.xmin + (1 - a) * prev.xmin,
+                ymin=a * best.ymin + (1 - a) * prev.ymin,
+                xmax=a * best.xmax + (1 - a) * prev.xmax,
+                ymax=a * best.ymax + (1 - a) * prev.ymax,
+                score=best.score,
+                iscrowd=False,
+            )
+        self._smoothed[b] = smoothed
+        self._dropouts[b] = 0
+
+        result = [smoothed]
+        result.extend(d for d in frame_dets if d is not best)
+        return result
 
     @classmethod
     def load_config_file(cls, config_path: PathOrURI):
@@ -138,7 +231,7 @@ class ONNXYOLOV4Tiny(YOLOWrapper):
                     [d for d in cls_dets if d.score > self.finthresh]
                 )
 
-            per_batch.append(frame_dets)
+            per_batch.append(self._temporally_smooth(frame_dets, b))
 
         return [per_batch]
 

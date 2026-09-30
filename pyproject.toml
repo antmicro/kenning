@@ -247,7 +247,7 @@ llm = [
 ]
 sparsity_aware_kernel = [
     "kenning[llm]",
-    "kenning_sparsity_aware_kernel @ file:///${PROJECT_ROOT}/kenning/sparsity_aware_kernel",
+    "kenning_sparsity_aware_kernel",
 ]
 mypy = [
     "mypy[reports]"
@@ -395,12 +395,13 @@ override-dependencies = [
 [tool.uv.workspace]
 members = [
     "kenning/utils/coralnpu_trace_parser",
+    "kenning/sparsity_aware_kernel",
 ]
-
 
 [tool.uv.sources]
 etils = { git = "https://github.com/google/etils" }
 kenning-coralnpu-trace-parser = { workspace = true }
+kenning_sparsity_aware_kernel = { workspace = true }
 
 [tool.mypy]
 python_version = "3.12"

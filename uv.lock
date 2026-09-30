@@ -22,6 +22,7 @@ resolution-markers = [
 members = [
     "kenning",
     "kenning-coralnpu-trace-parser",
+    "kenning-sparsity-aware-kernel",
 ]
 overrides = [
     { name = "click", specifier = ">=8.1.7" },
@@ -4862,7 +4863,7 @@ requires-dist = [
     { name = "kenning", extras = ["torch"], marker = "extra == 'llm'" },
     { name = "kenning", extras = ["torch"], marker = "extra == 'nni'" },
     { name = "kenning-coralnpu-trace-parser", marker = "extra == 'coralnpu'", editable = "kenning/utils/coralnpu_trace_parser" },
-    { name = "kenning-sparsity-aware-kernel", marker = "extra == 'sparsity-aware-kernel'", directory = "kenning/sparsity_aware_kernel" },
+    { name = "kenning-sparsity-aware-kernel", marker = "extra == 'sparsity-aware-kernel'", editable = "kenning/sparsity_aware_kernel" },
     { name = "librosa", marker = "extra == 'speech-to-text'" },
     { name = "matplotlib", specifier = ">=3.3.4" },
     { name = "ml-dtypes", marker = "extra == 'onnx2tf'", specifier = ">=0.5.4,<1.0.0" },
@@ -4991,7 +4992,7 @@ requires-dist = [{ name = "protobuf" }]
 [[package]]
 name = "kenning-sparsity-aware-kernel"
 version = "0.0.1"
-source = { directory = "kenning/sparsity_aware_kernel" }
+source = { editable = "kenning/sparsity_aware_kernel" }
 
 [[package]]
 name = "keras"

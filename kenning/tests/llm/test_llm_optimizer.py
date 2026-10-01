@@ -34,6 +34,10 @@ class TestLLMOptimizers:
         """
         Test compilation of the optimizer given the modelwrapper.
         """
+        # TODO: Support GEMMA model
+        if modelwrapper_cls.__name__ == "Gemma":
+            pytest.skip("Gemma is not yet supported.")
+
         if optimizer_cls.__name__ == "GPTQSparseGPTOptimizer":
             if modelwrapper_cls.__name__ in [
                 "Llama",

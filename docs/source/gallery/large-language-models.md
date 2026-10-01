@@ -2,6 +2,7 @@
 
 This example demonstrates how to optimize large language models using the [safetensors](https://github.com/safetensors/safetensors) format.
 This is useful when deploying quantized LLMs by quickly switching between different quantization methods, such as GPTQ and AWQ.
+For the purpose of demonstration, [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct) is used for quick optimization and report generation.
 
 ## Setup
 
@@ -27,14 +28,14 @@ The configuration specifies the `model_framework` as `safetensors` to ensure com
 
 Use the following configuration:
 
-```{literalinclude} ../scripts/configs/llm-mistral-awq.yaml save-as=llm-mistral-awq.yaml
+```{literalinclude} ../scripts/configs/llm-smol-awq.yaml save-as=llm-smol-awq.yaml
 :language: yaml
 ```
 
 Run the optimization flow:
 
 ```bash
-kenning optimize --cfg llm-mistral-awq.yaml
+kenning optimize --cfg llm-smol-awq.yaml
 ```
 
 ## SparseGPTQ Optimization
@@ -45,14 +46,14 @@ This approach allows the LLM to run on hardware very limited RAM and processing 
 
 Use the following configuration:
 
-```{literalinclude} ../scripts/configs/llm-mistral-sparsegptq.yaml save-as=llm-mistral-sparsegptq.yaml
+```{literalinclude} ../scripts/configs/llm-smol-sparsegptq.yaml save-as=llm-smol-sparsegptq.yaml
 :language: yaml
 ```
 
 Run the optimization flow:
 
 ```bash
-kenning optimize --cfg llm-mistral-sparsegptq.yaml
+kenning optimize --cfg llm-smol-sparsegptq.yaml
 ```
 
 ## vLLM Runtime
@@ -66,7 +67,7 @@ First, perform the evaluation for each model:
 
 ```bash
 kenning test \
-  --cfg llm-mistral-awq.yaml \
+  --cfg llm-smol-awq.yaml \
   --measurements build/awq.json
 ```
 
@@ -74,7 +75,7 @@ and if you want to evaluate `sparsegpt` tests:
 
 ```
 kenning test \
-  --cfg llm-mistral-sparsegptq.yaml \
+  --cfg llm-smol-sparsegptq.yaml \
   --measurements build/sparsegptq.json
 ```
 

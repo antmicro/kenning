@@ -66,9 +66,33 @@ class PhiGPTQForCausalLM(BaseSparseGPTForCausalML):
     ]
 
 
+class LlamaGPTQForCausalLM(BaseSparseGPTForCausalML):
+    """
+    Configuration of LLaMA's OBC compression.
+    """
+
+    inside_layer_modules = ["model.embed_tokens", "model.norm"]
+    outside_layer_modules = [
+        ["self_attn.k_proj", "self_attn.v_proj", "self_attn.q_proj"],
+        ["self_attn.o_proj"],
+        ["mlp.up_proj", "mlp.gate_proj"],
+        ["mlp.down_proj"],
+    ]
+    compressible_modules = [
+        "mlp.up_proj",
+        "mlp.gate_proj",
+        "mlp.down_proj",
+        "self_attn.k_proj",
+        "self_attn.v_proj",
+        "self_attn.q_proj",
+        "self_attn.o_proj",
+    ]
+
+
 SPARSEGPT_MODEL_MAP = {
     "mistral": MistralGPTQForCausalLM,
     "phi": PhiGPTQForCausalLM,
+    "llama": LlamaGPTQForCausalLM,
 }
 
 

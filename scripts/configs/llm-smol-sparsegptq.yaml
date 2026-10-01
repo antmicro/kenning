@@ -1,0 +1,23 @@
+dataset:
+  type: kenning.datasets.cnn_dailymail.CNNDailymailDataset
+  parameters:
+    dataset_root: ./build/CNNDailymailDataset
+    inference_batch_size: 128
+    gather_predictions: true
+    split_fraction_test: 0.001
+model_wrapper:
+  type: kenning.modelwrappers.llm.smol.SmolLM2
+  parameters:
+    model_path: hf://HuggingFaceTB/SmolLM2-135M-Instruct
+optimizers:
+  - type: kenning.optimizers.awq.GPTQSparseGPTOptimizer
+    parameters:
+      compiled_model_path: ./build/smollm2_sparsegptq_4bit
+      group_size: 64
+runtime:
+  type: kenning.runtimes.vllm.VLLMRuntime
+  parameters:
+    save_model_path: ./build/smollm2_sparsegptq_4bit
+    max_tokens: 8192
+    sparse_gptq_kernel: true
+    max_model_len: 1024

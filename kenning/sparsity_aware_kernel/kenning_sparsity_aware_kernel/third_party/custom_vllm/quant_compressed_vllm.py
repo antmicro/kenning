@@ -8,8 +8,9 @@ This module is used to run compressed model with GPTQ quantization.
 from copy import deepcopy
 from typing import Any
 
-import custom_ext
 import torch
+
+import custom_ext  # isort: skip
 import vllm.model_executor.layers.fused_moe  # noqa
 from safetensors.torch import _TYPES as _SAFETENSORS_TO_TORCH_DTYPE
 

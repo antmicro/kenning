@@ -1,0 +1,414 @@
+{
+    "$id": "common_types",
+    "$defs": {
+        "empty": {
+            "description": "Empty object definition",
+            "type": "object",
+            "additionalProperties": false
+        },
+        "null_or_empty": {
+            "description": "Empty or missing object definition",
+            "type": [
+                "object",
+                "null"
+            ],
+            "additionalProperties": false
+        },
+        "node_object": {
+            "description": "Schema that identifies a node in a graph",
+            "type": "object",
+            "properties": {
+                "graph_id": {
+                    "description": "Id of the graph",
+                    "type": "string"
+                },
+                "node_id": {
+                    "description": "Id of the node",
+                    "type": "string"
+                }
+            },
+            "required": ["graph_id", "node_id"]
+        },
+        "urloverrides": {
+            "description": "Override metadata URLs in provided specification",
+            "type": "object",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "string"
+                }
+            }
+        },
+        "loadingScreen": {
+            "description": "Show loading screen",
+            "type": "boolean",
+            "default": false
+        },
+        "tryMinify": {
+            "description": "Try to minify specification if a dataflow or entry graph is provided",
+            "type": "boolean",
+            "default": false
+        },
+        "dataflow_or_url": {
+            "description": "JSON or link to the remote JSON with graph definition",
+            "type": [
+                "object",
+                "string"
+            ]
+        },
+        "dataflow_object": {
+            "description": "Definition containing `dataflow` object",
+            "type": "object",
+            "properties": {
+                "dataflow": {
+                    "description": "JSON with graph definition in PM format",
+                    "type": "object"
+                }
+            },
+            "additionalProperties": false
+        },
+        "specification": {
+            "description": "JSON with specification definition in PM format",
+            "type": "object"
+        },
+        "specification_or_url": {
+            "description": "JSON or link to the remote JSON with specification",
+            "type": [
+                "object",
+                "string"
+            ]
+        },
+        "specification_object": {
+            "description": "Definition containing `specification` object",
+            "type": "object",
+            "properties": {
+                "specification": {
+                    "$ref": "common_types#/$defs/specification"
+                }
+            },
+            "additionalProperties": false
+        },
+        "properties_diff": {
+            "description": "Schema that represents differences in properties of the node",
+            "allOf": [{ "$ref": "common_types#/$defs/node_object" }],
+            "type": "object",
+            "properties": {
+                "properties": {
+                    "type": "array",
+                    "description": "Properties to change specified by either a name or id",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "description": "Id of the property to alter",
+                                        "type": "string"
+                                    },
+                                    "new_value": {
+                                        "description": "New value of the property"
+                                    }
+                                },
+                                "required": ["id", "new_value"],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "Name of the property to alter",
+                                        "type": "string"
+                                    },
+                                    "new_value": {
+                                        "description": "New value of the property"
+                                    }
+                                },
+                                "required": ["name", "new_value"],
+                                "additionalProperties": false
+                            }
+                        ]
+                    }
+                }
+            },
+            "unevaluatedProperties": false,
+            "required": ["properties"]
+        },
+        "interfaces_diff": {
+            "description": "Schema that represents differences in interfaces of the node",
+            "allOf": [{ "$ref": "common_types#/$defs/node_object" }],
+            "type": "object",
+            "properties": {
+                "interfaces": {
+                    "type": "array",
+                    "description": "Interfaces to change specified by either a name or id",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "description": "Id of the interface to alter",
+                                        "type": "string"
+                                    },
+                                    "externalName": {
+                                        "description": "New external name of the interface",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["id"],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "Name of the interface to alter",
+                                        "type": "string"
+                                    },
+                                    "externalName": {
+                                        "description": "New external name of the interface",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["name"],
+                                "additionalProperties": false
+                            }
+                        ]
+                    }
+                }
+            },
+            "unevaluatedProperties": false,
+            "required": ["interfaces"]
+        },
+        "name_diff": {
+            "description": "Schema that represent differences in title change",
+            "allOf": [{ "$ref": "common_types#/$defs/node_object" }],
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the node to change"
+                }
+            },
+            "unevaluatedProperties": false,
+            "required": ["name"]
+        },
+        "position_diff": {
+            "description": "Schema that represent differences in position of the node",
+            "allOf": [{ "$ref": "common_types#/$defs/node_object" }],
+            "type": "object",
+            "properties": {
+                "position": {
+                    "type": "object",
+                    "description": "Position to change specified by either a name or id",
+                    "properties": {
+                        "x": {
+                            "description": "X coordinate",
+                            "type": "number"
+                        },
+                        "y": {
+                            "description": "Y coordinate",
+                            "type": "number"
+                        }
+                    }
+                }
+            },
+            "unevaluatedProperties": false,
+            "required": ["position"]
+        },
+        "nodes_diff": {
+            "description": "Schema that represents nodes' differences in a graph",
+            "type": "object",
+            "properties": {
+                "graph_id": {
+                    "description": "Id of the graph",
+                    "type": "string"
+                },
+                "nodes": {
+                    "description": "",
+                    "type": "object",
+                    "properties": {
+                        "added": {
+                            "description": "List with created nodes",
+                            "type": "array",
+                            "items": {
+                                "description": "JSON with node definition",
+                                "type": "object"
+                            }
+                        },
+                        "deleted": {
+                            "description": "List with removed nodes",
+                            "type": "array",
+                            "items": {
+                                "description": "ID of node to delete",
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "remove_with_connections": {
+                    "description": "Should node be removed with connections",
+                    "type": "boolean"
+                }
+            },
+            "required": ["graph_id", "nodes"]
+        },
+        "connections_diff": {
+            "description": "Schema that represents connections' differences in a graph",
+            "type": "object",
+            "properties": {
+                "graph_id": {
+                    "description": "Id of the graph",
+                    "type": "string"
+                },
+                "connections": {
+                    "description": "",
+                    "type": "object",
+                    "properties": {
+                        "added": {
+                            "description": "List with created connections",
+                            "type": "array",
+                            "items": {
+                                "description": "JSON with connection definition",
+                                "type": "object"
+                            }
+                        },
+                        "deleted": {
+                            "description": "List with removed connections",
+                            "type": "array",
+                            "items": {
+                                "description": "Connection defined with its beginning and end",
+                                "type": "object",
+                                "properties": {
+                                    "from": {
+                                        "description": "ID of output interface",
+                                        "type": "string"
+                                    },
+                                    "to": {
+                                        "description": "ID of input interface",
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "required": ["graph_id", "connections"]
+        },
+        "highlight_diff": {
+            "description": "Schema that represents the difference in node selection in the editor",
+            "type": "object",
+            "properties": {
+                "graph_id": {
+                    "description": "Id of the graph",
+                    "type": "string"
+                },
+                "nodes": {
+                    "description": "",
+                    "type": "object",
+                    "properties": {
+                        "selected": {
+                            "description": "List with selected nodes",
+                            "type": "array",
+                            "items": {
+                                "description": "ID of selected node",
+                                "type": "string"
+                            }
+                        },
+                        "unselected": {
+                            "description": "List with unselected nodes",
+                            "type": "array",
+                            "items": {
+                                "description": "ID of unselected node",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": ["graph_id", "nodes"]
+        },
+        "metadata": {
+            "description": "Type with PM metadata",
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "description": "JSON with metadata description in PM format",
+                    "type": "object"
+                }
+            },
+            "required": ["metadata"],
+            "additionalProperties": false
+        },
+        "external_endpoint_return_type": {
+            "description": "Common type returned by external app",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "[MessageType](message-type) specifying success, error or progress",
+                    "type": "number"
+                },
+                "content": {
+                    "description": "Additional information, either message or dataflow",
+                    "type": [
+                        "object",
+                        "string"
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "type"
+            ]
+        },
+        "navbar_items": {
+            "type": "array",
+            "description": "List of buttons displayed in the application navbar",
+            "items": {
+                "type": "object",
+                "description": "Description of a single button.",
+                "properties": {
+                    "name": {
+                        "description": "Name displayed in the tooltip",
+                        "type": "string"
+                    },
+                    "stopName": {
+                        "description": "Name displayed in the tooltip when the corresponding procedure is running and is stoppable. If not specified simply Stop is added as a prefix to the name",
+                        "type": "string"
+                    },
+                    "iconName": {
+                        "description": "Name of the icon displayed in the navbar. Name should correspond to a file in the asset directory or to an icon in `frontend/src/icons`",
+                        "type": "string"
+                    },
+                    "procedureName": {
+                        "description": "Name of the procedure used when button is pressed. The currently displayed graph is used as an argument",
+                        "type": "string"
+                    },
+                    "allowToRunInParallelWith": {
+                        "description": "List of procedures which can be run when this `navbarItem` is still running",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "`procedureName` of `navbarItem`"
+                        },
+                        "default": []
+                    },
+                    "requireResponse": {
+                        "description": "Flag determining whether response from external application should be awaited when running the procedure",
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "iconName",
+                    "procedureName"
+                ],
+                "additionalProperties": false
+            },
+            "default": []
+        }
+    }
+}

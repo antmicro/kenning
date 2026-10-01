@@ -1,0 +1,42 @@
+/* General report settings */
+.md-typeset figure.align-center {
+  margin-left: 0;
+  margin-right: 0;
+  overflow-y: auto;
+}
+
+.md-grid {
+  margin-left: 0;
+  max-width: none
+}
+
+/* Proper aligning of table columns */
+td.text-right {
+  text-align: right !important;
+}
+
+td.text-center {
+  text-align: center !important;
+}
+
+td.text-left {
+  text-align: left !important;
+}
+
+/* Custom colors */
+.compatible {
+  color: var(--md-primary-fg-color) !important;
+}
+
+.incompatible {
+  color: var(--md-accent-fg-color) !important;
+}
+
+.error,
+.failed {
+  color: var(--md-code-hl-special-color) !important;
+}
+
+.fixed {
+  color: var(--md-code-hl-constant-color) !important;
+}

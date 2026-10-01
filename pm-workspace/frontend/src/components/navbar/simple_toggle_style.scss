@@ -1,0 +1,122 @@
+/*
+ * Copyright (c) 2026 Antmicro <www.antmicro.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+.dropdown-wrapper {
+    user-select: none;
+    position: absolute;
+    flex-direction: column;
+    top: 100%;
+    left: 0;
+    display: none;
+    background-color: #181818;
+    border: 2px solid #737373;
+
+    & > div:hover {
+        background-color: #2A2A2A;
+    }
+}
+.hoverbox {
+    display: flex;
+    flex-grow: 0;
+    width: 3.75em;
+    height: 3.75em;
+
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    border-left: 1px solid $gray-500;
+    // If the navbar is compressed, the navbar button should shrink
+    &.compressed-mobile {
+        width: auto;
+        flex-grow: 1;
+        max-width: 3.75em;
+    }
+
+    & > svg {
+        display: block;
+        width: 1.6875em;
+        height: 1.6875em;
+    }
+
+    & > .small_svg {
+        display: block;
+        width: 1.2em;
+        height: 1.2em;
+        fill: $white;
+    }
+    & > .smaller_svg {
+        display: block;
+        width: 1em;
+        height: 1em;
+    }
+    & > .small_svg_stop {
+        position: absolute;
+        width: 0.8em;
+        height: 0.8em;
+        top: 8%;
+        right: 8%;
+        stroke: $gray-100;
+    }
+
+    &:hover {
+        & > .tooltip {
+            &:not(.compressed-mobile) {
+                display: flex;
+                z-index: 11;
+            }
+        }
+    }
+    & > .tooltip {
+        @extend .dropdown-wrapper;
+        border-radius: 15px;
+        background-color: $gray-600;
+        border: 1px solid $gray-200;
+        padding: $spacing-s;
+        left: calc(3.75em / 2);
+        transform: translate(-50%, 25%);
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    &:hover {
+        & > .tooltip {
+            &:not(.compressed-mobile) {
+                display: flex;
+                z-index: 11;
+            }
+        }
+    }
+}
+.box > .small_svg {
+    filter: brightness(50%);
+}
+.hoverbox:hover {
+    cursor: pointer;
+
+    & > .small_svg {
+        fill: $green;
+    }
+
+    & > .small_svg_stop {
+        stroke: $red-dark;
+    }
+}
+:last-child > div:last-child .tooltip {
+    transform: translate(-75%, 25%);
+}
+:last-child > div:last-child .tooltip.tooltip-left {
+    transform: translate(-50%, 25%);
+}
+span {
+    font-size: $fs-small;
+    color: $white;
+    user-select: none;
+}
+
+.prevent-select {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}

@@ -1,0 +1,875 @@
+{
+    "frontend_endpoints": {
+        "frontend_status_get": {
+            "description": "Returns status of the frontend",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "description": "Description of frontend status",
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "description": "Status",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "status"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "frontend_specification_get": {
+            "description": "Returns specification used by frontend",
+            "params": {
+                "description": "Parameters for specification request",
+                "type": "object",
+                "properties": {
+                    "graph": {
+                        "description": "Specifies whether graph should be returned along with the specification.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "minify": {
+                        "description": "Specifies whether the returned specification should be minified",
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/specification_object"
+            }
+        },
+        "graph_get": {
+            "description": "Returns dataflow used by frontend",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/dataflow_object"
+            }
+        },
+        "node_get": {
+            "description": "Procedure to read node state",
+            "params": {
+                "allOf": [{ "$ref": "common_types#/$defs/node_object" }]
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "description": "State of the node",
+                        "type": "object"
+                    }
+                },
+                "additionalProperties": false,
+                "required": ["node"]
+            }
+        },
+        "properties_get": {
+            "description": "Procedure to alter values of a node",
+            "params": {
+                "allOf": [{ "$ref": "common_types#/$defs/node_object" }],
+                "type": "object",
+                "properties": {
+                    "properties": {
+                        "type": ["array", "null"],
+                        "description": "Properties which values are going to be read specified by either a name of id. If undefined then all properties are returned",
+                        "items": {
+                            "type": "object",
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "description": "Id of the property to read",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": ["id"],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "description": "Name of the property to read",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": ["name"],
+                                    "additionalProperties": false
+                                }
+                            ]
+                        }
+                    }
+                },
+                "unevaluatedProperties": false
+            },
+            "returns": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "description": "Values of the searched properties",
+                    "properties": {
+                        "id": {
+                            "description": "Id of the property",
+                            "type": "string"
+                        },
+                        "name": {
+                            "description": "Name of the property",
+                            "type": "string"
+                        },
+                        "value": {
+                            "description": "Value of the property. Its type depends on the property"
+                        }
+                    },
+                    "required": ["id", "name", "value"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "properties_change": {
+            "description": "Procedure to alter properties of a node",
+            "params": {
+                "$ref": "common_types#/$defs/properties_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "interfaces_change": {
+            "description": "Procedure to alter interfaces of a node",
+            "params": {
+                "$ref": "common_types#/$defs/interfaces_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "name_change": {
+            "description": "Procedure to alter the name of the node.",
+            "params": {
+                "$ref": "common_types#/$defs/name_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "position_change": {
+            "description": "Procedure to alter position of a node",
+            "params": {
+                "$ref": "common_types#/$defs/position_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "nodes_change": {
+            "description": "Procedure to add and delete nodes",
+            "params": {
+                "$ref": "common_types#/$defs/nodes_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "connections_change": {
+            "description": "Procedure to add and delete connections",
+            "params": {
+                "$ref": "common_types#/$defs/connections_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "graph_change": {
+            "description": "Procedure to add and delete nodes",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "dataflow": {
+                        "$ref": "common_types#/$defs/dataflow_or_url"
+                    },
+                    "loadingScreen": {
+                        "$ref": "common_types#/$defs/loadingScreen"
+                    }
+                },
+                "required": ["dataflow"],
+                "additionalProperties": false
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "progress_change": {
+            "description": "Notification with progress of job ran by external application",
+            "params": {
+                "description": "Parameters for notification",
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "description": "Name of the method used to run the job",
+                        "type": "string"
+                    },
+                    "progress": {
+                        "description": "Progress of job ran be external application. If between 0 and 100 progress will be set and if -1, animation will ran.",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "progress", "method"
+                ],
+                "additionalProperties": false
+            },
+            "returns": null
+        },
+        "metadata_change": {
+            "description": "Updates the editor's metadata",
+            "params": {
+                "$ref": "common_types#/$defs/metadata"
+            },
+            "returns": null
+        },
+        "viewport_center": {
+            "description": "Center the editor",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": null
+        },
+        "terminal_add": {
+            "description": "Create new terminal instance",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Unique name for the new terminal instance. This name is used for any communication.",
+                        "type": "string"
+                    },
+                    "readonly": {
+                        "description": "Specifies whether the terminal should be read-only, or editable by user",
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": ["name"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_remove": {
+            "description": "Create new terminal instance",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the terminal to remove",
+                        "type": "string"
+                    }
+                },
+                "required": ["name"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_write": {
+            "description": "Writes a message line to a terminal instance. Allows to send both text and hterm's control sequences. For more details on available control sequences check [hterm Control Sequences](https://chromium.googlesource.com/apps/libapps/+/master/hterm/doc/ControlSequences.md).\n\n```{warning}\nSince data is sent in JSON format, the hexadecimal values need to be escaped with `\\u`, not `\\x`, e.g. `\\u001b[38:2:238:178:17mexample`.\n```",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the terminal to which the message is written.",
+                        "type": "string"
+                    },
+                    "message": {
+                        "description": "Message to be written to the terminal",
+                        "type": "string"
+                    }
+
+                },
+                "required": ["name", "message"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_clear": {
+            "description": "Clears a terminal with a given name",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the terminal to clear. If the name is not provided, the main terminal is cleared.",
+                        "type": "string"
+                    }
+                }
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_hide": {
+            "description": "Hides a terminal panel",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_show": {
+            "params": {
+                "type": "object",
+                "description": "Parameters for request",
+                "properties": {
+                    "name": {
+                        "description": "Name of the terminal to show. If the name is not provided, the main terminal is chosen.",
+                        "type": "string"
+                    }
+                }
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_view": {
+            "description": "Configures the layout of the terminal panel",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "names": {
+                        "description": "Names of the terminal to show. If the parameter is empty, then the terminal view is unmodified",
+                        "type": "array",
+                        "items": {
+                            "description": "Name of the terminal",
+                            "type": "string"
+                        }
+                    },
+                    "clearButton": {
+                        "description": "Specifies whether to 'Clear terminal' button should be displayed. If not specified, the state of the clear button is not modified.",
+                        "type": "boolean"
+                    }
+                }
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_get_instances": {
+            "description": "Configures the layout of the terminal panel",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "description": "Existing terminals",
+                "type": "array",
+                "items": {
+                    "description": "Name of the terminal",
+                    "type": "string"
+                }
+            }
+        },
+        "notification_send": {
+            "description": "Sends a notification to the frontend. It will display the message both in the notifications and in the default terminal",
+            "params": {
+                "description": "Parameters for notification",
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "Type of the notification.",
+                        "enum": ["error", "warning", "info"]
+                    },
+                    "title": {
+                        "description": "Title of the notification, appearing both in the terminal and notification",
+                        "type": "string"
+                    },
+                    "details": {
+                        "description": "Details of the notification, displayed only in the terminal",
+                        "type": "string"
+                    },
+                    "timestamp": {
+                        "description": "Notification timestamp, if not provided, timestamp will be automatically generated (pass non-null falsy value to disable).",
+                        "type": "string"
+                    }
+                },
+                "required": ["type", "title", "details"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "specification_change": {
+            "description": "Procedure to update specification",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "specification": {
+                        "$ref": "common_types#/$defs/specification_or_url"
+                    },
+                    "urloverrides": {
+                        "$ref": "common_types#/$defs/urloverrides"
+                    },
+                    "loadingScreen": {
+                        "$ref": "common_types#/$defs/loadingScreen"
+                    },
+                    "tryMinify": {
+                        "$ref": "common_types#/$defs/tryMinify"
+                    }
+                },
+                "required": ["specification"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "specification_graph_change": {
+            "description": "Procedure to update specification and dataflow",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "specification": {
+                        "$ref": "common_types#/$defs/specification_or_url"
+                    },
+                    "dataflow": {
+                        "$ref": "common_types#/$defs/dataflow_or_url"
+                    },
+                    "urloverrides": {
+                        "$ref": "common_types#/$defs/urloverrides"
+                    },
+                    "loadingScreen": {
+                        "$ref": "common_types#/$defs/loadingScreen"
+                    },
+                    "tryMinify": {
+                        "$ref": "common_types#/$defs/tryMinify"
+                    }
+                },
+                "required": [
+                    "specification",
+                    "dataflow"
+                ],
+                "additionalProperties": false
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "specification_preprocess": {
+            "description": "Handles preprocessor specification directives",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "specification": {
+                        "$ref": "common_types#/$defs/specification"
+                    },
+                    "unmarkNewNodes": {
+                        "type": "boolean",
+                        "description": "Decides whether to remove built-in style of new nodes from specification"
+                    },
+                    "urloverrides": {
+                        "$ref": "common_types#/$defs/urloverrides"
+                    },
+                    "tryMinify": {
+                        "$ref": "common_types#/$defs/tryMinify"
+                    }
+                }
+            },
+            "returns": {
+                "anyOf": [
+                    {"$ref": "common_types#/$defs/specification_object"},
+                    {"$ref": "common_types#/$defs/null_or_empty"}
+                ]
+            }
+        },
+        "specification_expand": {
+            "description": "",
+            "params": {
+                "type": "object",
+                "properties": {
+                    "specification": {
+                        "$ref": "common_types#/$defs/specification"
+                    }
+                }
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/specification_object"
+            }
+        },
+        "nodes_highlight": {
+            "description": "Procedure to highlight specified nodes in the editor",
+            "params": {
+                "$ref": "common_types#/$defs/highlight_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "register_external_frontend": {
+            "description": "Register external frontend in the Pipeline Manager frontend, available only through 'postMessage' interface",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "return_from_subgraph": {
+            "description": "Returns from subgraph if currently in one",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "description": "Specifies whether the editor was in subgraph and returned",
+                "type": "object",
+                "properties": {
+                    "has_returned": {
+                        "description": "Has returned from subgraph",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "has_returned"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "backend_endpoints": {
+        "status_get": {
+            "description": "Returns status of connection with external application",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "description": "Description of backend status",
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "description": "Status",
+                        "type": "object",
+                        "properties": {
+                            "connected": {
+                                "description": "Connection with external application",
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "connected"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [
+                    "status"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "external_app_connect": {
+            "description": "Request to wait till connection with external application is established",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/empty"
+            }
+        },
+        "connected_frontends_get": {
+            "description": "Request the number of connected fronteds",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "connections": {
+                        "type": "number",
+                        "description": "Number of connections"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "connections"
+                ]
+            }
+        }
+    },
+    "external_endpoints": {
+        "specification_get": {
+            "description": "Request specification used by external application",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/external_endpoint_return_type"
+            }
+        },
+        "app_capabilities_get": {
+            "description": "Request external application capabilities",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/navbar_items"
+            }
+        },
+        "dataflow_import": {
+            "description": "Request to convert dataflow in external app to Pipeline Manager format and import it",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "external_application_dataflow": {
+                        "description": "Dataflow in external application format. If loaded file cannot be represented as text, it will be sent as base64 string. To make sure received data are in readable format `convert_message_to_string` from `pipeline_manager_backend_communication.utils` can be used. Optionally, for conversion to bytes `convert_message_to_bytes` function is available",
+                        "type": "string"
+                    },
+                    "mime": {
+                        "description": "MIME type",
+                        "type": "string"
+                    },
+                    "base64": {
+                        "description": "Specifies whether `external_application_dataflow` is in byte64 format",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "external_application_dataflow",
+                    "mime",
+                    "base64"
+                ],
+                "additionalProperties": false
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/external_endpoint_return_type"
+            }
+        },
+        "dataflow_validate": {
+            "description": "Request external application to validate dataflow",
+            "params": {
+                "$ref": "common_types#/$defs/dataflow_object"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/external_endpoint_return_type"
+            }
+        },
+        "dataflow_run": {
+            "description": "Request external application to run dataflow",
+            "params": {
+                "$ref": "common_types#/$defs/dataflow_object"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/external_endpoint_return_type"
+            }
+        },
+        "dataflow_stop": {
+            "description": "Request external application to run dataflow",
+            "params": {
+                "description": "Parameters for stopping dataflow",
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "description": "Name of the method used to start run",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "method"
+                ],
+                "additionalProperties": false
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/external_endpoint_return_type"
+            }
+        },
+        "dataflow_export": {
+            "description": "Request external application to export dataflow",
+            "params": {
+                "$ref": "common_types#/$defs/dataflow_object"
+            },
+            "returns": {
+                "description": "Common type returned by external app",
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "[MessageType](message-type) specifying success or error",
+                        "type": "number"
+                    },
+                    "content": {
+                        "description": "Exported dataflow, which is then saved by the frontend user. Should be either a json object, or a base64 encoded string. If any error occurred then it should contain a proper message.",
+                        "type": [
+                            "object",
+                            "string"
+                        ]
+                    },
+                    "filename": {
+                        "description": "Suggested filename used to save the file",
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "type"
+                ]
+            }
+        },
+        "frontend_on_connect": {
+            "description": "Request sent when Pipeline Manager frontend connects to backend and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "properties_on_change": {
+            "description": "Request sent when properties of any node change and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/properties_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "interfaces_on_change": {
+            "description": "Request sent when interface of any node changes and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/interfaces_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "name_on_change": {
+            "description": "Request sent when node name was changed and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/name_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "position_on_change": {
+            "description": "Request sent when position of any node changes and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/position_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "nodes_on_change": {
+            "description": "Request sent when node was added or deleted and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/nodes_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "connections_on_change": {
+            "description": "Request sent when connection was added or deleted and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/connections_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "graph_on_change": {
+            "description": "Request sent when whole dataflow changed, e.g. when dataflow is loaded, and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/dataflow_object"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "specification_on_change": {
+            "description": "Request sent when whole specification changed, e.g. when node type is modified, and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/specification_object"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "metadata_on_change": {
+            "description": "Request sent when metadata was changed, and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/metadata"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "viewport_on_center": {
+            "description": "Request sent when editor was centered and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "terminal_read": {
+            "description": "Request sent by the frontend when terminal received an input",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the terminal to which the message was written. Terminal has to be not read-only",
+                        "type": "string"
+                    },
+                    "message": {
+                        "description": "Terminal input",
+                        "type": "string"
+                    }
+                },
+                "required": ["name", "message"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "nodes_on_highlight": {
+            "description": "Request sent when node was either selected or unselected and `notifyWhenChanged` option is enabled in the metadata section of specification.",
+            "params": {
+                "$ref": "common_types#/$defs/highlight_diff"
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        },
+        "button_click": {
+            "description": "Request send when button node property was pressed",
+            "params": {
+                "description": "Parameters for request",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "ID of the property",
+                        "type": "string"
+                    },
+                    "value": {
+                        "description": "Value of the property",
+                        "type": ["object", "null"]
+                    }
+                },
+                "required": ["id", "value"]
+            },
+            "returns": {
+                "$ref": "common_types#/$defs/null_or_empty"
+            }
+        }
+    }
+}

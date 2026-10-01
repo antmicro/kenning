@@ -1,0 +1,465 @@
+{
+    "$id": "metadata_schema.json",
+    "description": "Schema used to validate specification metadata",
+    "type": "object",
+    "properties": {
+        "interfaces": {
+            "description": "Styling of the nodes",
+            "type": "object",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "object",
+                    "properties": {
+                        "interfaceColor": {
+                            "type": "string",
+                            "description": "Color of the interface instance"
+                        },
+                        "interfaceConnectionPattern": {
+                            "description": "Pattern of the connection going from the interface",
+                            "enum": [
+                                "solid",
+                                "dashed",
+                                "dotted"
+                            ],
+                            "default": "solid"
+                        },
+                        "interfaceConnectionColor": {
+                            "description": "Color of the connection going from the interface",
+                            "type": "string",
+                            "default": "#FFFFFF"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "default": {}
+        },
+        "navbarItems": {
+            "type": "array",
+            "description": "List of buttons displayed in the application navbar",
+            "items": {
+                "type": "object",
+                "description": "Description of a single button.",
+                "properties": {
+                    "name": {
+                        "description": "Name displayed in the tooltip",
+                        "type": "string"
+                    },
+                    "stopName": {
+                        "description": "Name displayed in the tooltip when the corresponding procedure is running and is stoppable. If not specified simply Stop is added as a prefix to the name",
+                        "type": "string"
+                    },
+                    "iconName": {
+                        "description": "Name of the icon displayed in the navbar. Name should correspond to a file in the asset directory or to an icon in `frontend/src/icons`",
+                        "type": "string"
+                    },
+                    "procedureName": {
+                        "description": "Name of the procedure used when button is pressed. The currently displayed graph is used as an argument",
+                        "type": "string"
+                    },
+                    "allowToRunInParallelWith": {
+                        "description": "List of procedures which can be run when this `navbarItem` is still running",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "`procedureName` of `navbarItem`"
+                        },
+                        "default": []
+                    },
+                    "requireResponse": {
+                        "description": "Flag determining whether response from external application should be awaited when running the procedure",
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "iconName",
+                    "procedureName"
+                ],
+                "additionalProperties": false
+            },
+            "default": []
+        },
+        "contextMenuActions": {
+            "type": "array",
+            "description": "List of custom actions displayed in the context menu of every node, in addition to any node-type-specific actions declared for that node in its `contextMenuActions` list",
+            "items": {
+                "$ref": "#/$defs/contextMenuAction"
+            },
+            "default": []
+        },
+        "subgraphContextMenuActions": {
+            "type": "array",
+            "description": "List of custom actions displayed in the context menu of every subgraph node",
+            "items": {
+                "$ref": "#/$defs/contextMenuAction"
+            },
+            "default": []
+        },
+        "allowLoopbacks": {
+            "type": "boolean",
+            "description": "Flag allowing connections with endpoints at the same node",
+            "default": false
+        },
+        "disableInterfaceExpose": {
+            "type": "boolean",
+            "description": "Flag that disables ability to expose node's interfaces.",
+            "default": false
+        },
+        "readonly": {
+            "type": "boolean",
+            "description": "Flag determining whether the editor is in readonly mode",
+            "default": false
+        },
+        "twoColumn": {
+            "type": "boolean",
+            "description": "Flag determining whether displaying nodes as two columns",
+            "default": false
+        },
+        "connectionStyle": {
+            "enum": [
+                "curved",
+                "orthogonal",
+                "alternativeOrthogonal",
+                "switchableOrthogonal",
+                "straight"
+            ],
+            "description": "Defines connection style",
+            "default": "curved"
+        },
+        "hideHud": {
+            "type": "boolean",
+            "description": "Hides HUD elements, such as popup notifications, navbar or terminal",
+            "default": false
+        },
+        "layers": {
+            "type": "array",
+            "default": [],
+            "description": "Layers of interfaces and nodes that can be ignored using settings.",
+            "items": {
+                "type": "object",
+                "description": "Description of a single layer.",
+                "properties": {
+                    "name": {
+                        "description": "Name of the layer",
+                        "type": "string"
+                    },
+                    "nodeLayers": {
+                        "type": "array",
+                        "description": "Types of nodes that are ignored in this layer",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "nodeInterfaces": {
+                        "type": "array",
+                        "description": "Types of interfaces that are ignored in this layer",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "urls": {
+            "type": "object",
+            "description": "URL description put in node palette and nodes",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "object",
+                    "description": "A single entry representing an URL group",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the url group, appearing in hints"
+                        },
+                        "icon": {
+                            "type": "string",
+                            "description": "Path of the icon in assets"
+                        },
+                        "url": {
+                            "type": "string",
+                            "description": "Base of URL for group"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "icon",
+                        "url"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "default": {}
+        },
+        "collapseSidebar": {
+            "type": "boolean",
+            "description": "Defines whether nodes sidebar should be collapsed by default",
+            "default": true
+        },
+        "movementStep": {
+            "type": "number",
+            "description": "Defines offset to which nodes snap in the grid",
+            "default": 1
+        },
+        "backgroundColor": {
+            "type": "string",
+            "description": "Color of the background"
+        },
+        "backgroundSize": {
+            "type": "number",
+            "description": "Defines size of the background grid",
+            "default": 100
+        },
+        "layout": {
+            "type": "string",
+            "description": "Defines the default autolayout algorithm",
+            "default": "CytoscapeEngine - dagre-longest-path"
+        },
+        "randomizedOffset": {
+            "type": "boolean",
+            "description": "Determines whether connections should have randomized, but deterministic offset",
+            "default": false
+        },
+        "removeEmptySubgraphs": {
+            "type": "boolean",
+            "description": "When enabled, subgraphs with no nodes will be removed automatically.",
+            "default": false
+        },
+        "editableTypes": {
+            "type": "boolean",
+            "description": "Determines whether the user can edit existing and add new node types",
+            "default": false
+        },
+        "toggleableEditableTypes": {
+            "type": "boolean",
+            "description": "Determines whether node editibility can be toggled from the UI.",
+            "default": true
+        },
+        "hideAnchors": {
+            "type": "boolean",
+            "description": "Hides anchors in all connections. The anchors are still visible on hover",
+            "default": false
+        },
+        "switchableInterfaces": {
+            "type": "boolean",
+            "description": "Enables automatic interfaces side switching for optimal layout",
+            "default": false
+        },
+        "showIds": {
+            "type": "boolean",
+            "description": "Displays node ID in the node details view",
+            "default": false
+        },
+        "newGraphNode": {
+            "type": "boolean",
+            "description": "Displays new graph node button in the node palette",
+            "default": true
+        },
+        "newNodeType": {
+            "type": "boolean",
+            "description": "Displays new node type button in the node palette",
+            "default": true
+        },
+        "icons": {
+            "type": "object",
+            "description": "Mapping from icon URL class to URL prefix",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "string",
+                    "description": "URL prefix for a given icon class"
+                }
+            },
+            "default": {}
+        },
+        "nodeLists": {
+            "type": "object",
+            "description": "Mapping from names of node lists to jq-like queries",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "string",
+                    "description": "Jq-like query for a given list name"
+                }
+            }
+        },
+        "styles": {
+            "type": "object",
+            "description": "Defines node styles",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "object",
+                    "properties": {
+                        "color": {
+                            "$ref": "#/$defs/color"
+                        },
+                        "icon": {
+                            "description": "Icon of a node. Can be a string with predefined icon name, relative path, URL, or tuple {'icon_type': 'url_suffix'}",
+                            "type": [
+                                "object",
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "pill": {
+                            "$ref": "#/$defs/pill"
+                        },
+                        "properties": {
+                            "description": "Styling of properties.",
+                            "type": "object",
+                            "patternProperties": {
+                                "^.*$": {
+                                    "type": "object",
+                                    "description": "Name of the style affected.",
+                                    "properties": {
+                                        "^.*$": {
+                                            "description": "Types of properties with CSS attributes inside"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "interfaces": {
+                            "description": "Styling of interfaces.",
+                            "type": "object",
+                            "patternProperties": {
+                                "^.*$": {
+                                    "type": "object",
+                                    "description": "Name of the style affected.",
+                                    "properties": {
+                                        "^.*$": {
+                                            "description": "Types of interfaces with CSS attributes inside"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "nodes": {
+                            "description": "Styling of the nodes",
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "description": "Definition of title styles",
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^.*$": {
+                                            "description": "List of css attributes."
+                                        }
+                                    }
+                                },
+                                "content": {
+                                    "description": "Definition of content styles",
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^.*$": {
+                                            "description": "List of css attributes."
+                                        }
+                                    }
+                                },
+                                "body": {
+                                    "description": "Definition of body styles",
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^.*$": {
+                                            "description": "List of css attributes."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "welcome": {
+            "type": "boolean",
+            "description": "Determines whether a welcome text should appear on empty editor",
+            "default": true
+        },
+        "notifyWhenChanged": {
+            "type": "boolean",
+            "description": "Determines whether external application should be informed about changes in dataflow. Works only when Pipeline Manager is run in server-app mode",
+            "default": false
+        },
+        "showHiddenProperties": {
+            "type": "boolean",
+            "description": "Determines whether properties marked with 'hideOnDefault' should be visible regardless of their value",
+            "default": false
+        },
+        "logLevel": {
+            "description": "Verbosity of pop-up notifications",
+            "enum": [
+                "INFO",
+                "WARNING",
+                "ERROR"
+            ],
+            "default": "WARNING"
+        },
+        "tag": {
+            "description": "Tag used to search specification by, assigned to all node types from the specification, excluding the ones from included subspecifications",
+            "type": "string",
+            "default": "default"
+        }
+    },
+    "$defs": {
+        "pill": {
+            "description": "Pill displayed in the top right corner of a node",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "description": "Color of the pill"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Text of the pill"
+                }
+            },
+            "required": ["text"],
+            "additionalProperties": false
+        },
+        "color": {
+            "description": "Node color in hexadecimal representation",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "contextMenuAction": {
+            "description": "Description of a single custom context menu action.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Label displayed in the context menu",
+                    "type": "string"
+                },
+                "iconName": {
+                    "description": "Name of the icon displayed next to the action. Name should correspond to a file in the asset directory or to an icon in `frontend/src/icons`",
+                    "type": "string"
+                },
+                "procedureName": {
+                    "description": "Name of the JSON-RPC procedure requested from the external application when the action is clicked. The id of the node that was right-clicked is sent as an argument. Unless this is one of the built-in endpoints known to pipeline_manager_backend_communication, it must start with `custom_`",
+                    "type": "string"
+                },
+                "requireResponse": {
+                    "description": "Flag determining whether response from external application should be awaited when running the procedure",
+                    "type": "boolean",
+                    "default": true
+                }
+            },
+            "required": [
+                "name",
+                "procedureName"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false
+}

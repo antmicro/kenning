@@ -283,7 +283,7 @@ class LLM(ModelWrapper, ABC):
 
     @classmethod
     def get_output_formats(cls):
-        return ["safetensors-native", "safetensors-awq"]
+        return ["safetensors"]
 
     def train_model(self):
         raise NotSupportedError("This model does not support training.")

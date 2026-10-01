@@ -677,8 +677,18 @@ class BaseSparseGPTForCausalML(nn.Module):
         safetensors_metadata = self._safetensors_metadata()
 
         os.makedirs(path, exist_ok=True)
+        state_dict = self.model.state_dict()
+
+        # Avoid overlapping tensor memory by cloning duplicate tensors.
+        seen_ptrs = set()
+        for key, tensor in state_dict.items():
+            if tensor.data_ptr() in seen_ptrs:
+                state_dict[key] = tensor.clone()
+            else:
+                seen_ptrs.add(tensor.data_ptr())
+
         save_file(
-            self.model.state_dict(),
+            state_dict,
             (path + "/model.safetensors"),
             safetensors_metadata,
         )

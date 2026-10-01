@@ -26,9 +26,7 @@ class VLLMRuntime(Runtime):
     """
 
     inputtypes = [
-        "safetensors-native",
-        "safetensors-awq",
-        "safetensors-gptq",
+        "safetensors",
         "safetensors-sparsity-aware-kernel",
     ]
 

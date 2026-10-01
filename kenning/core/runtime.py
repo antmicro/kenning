@@ -458,7 +458,10 @@ class Runtime(ArgumentsHandler, ABC):
         Path
             Returns path to the specification.
         """
-        spec_path = model_path.with_suffix(model_path.suffix + ".json")
+        if model_path.is_dir():
+            spec_path = model_path / "kenning_io_spec.json"
+        else:
+            spec_path = model_path.with_suffix(model_path.suffix + ".json")
 
         return Path(str(spec_path))
 

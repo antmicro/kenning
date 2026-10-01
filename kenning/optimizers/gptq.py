@@ -113,7 +113,7 @@ class GPTQOptimizer(LLMOptimizer):
         tokenizer.save_pretrained(str(self.compiled_model_path))
 
         model.save(str(self.compiled_model_path))
-        self.save_io_specification(input_model_path)
+        self.save_io_specification(self.compiled_model_path)
 
     def get_framework(self) -> str:
         return "safetensors"

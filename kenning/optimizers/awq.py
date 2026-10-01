@@ -166,7 +166,7 @@ class AWQOptimizer(LLMOptimizer):
         io_spec["quantization_config"] = quantization_config.to_dict()
         io_spec["quantization_config"]["version"] = self.mm_version
 
-        self.save_io_specification(input_model_path, io_spec)
+        self.save_io_specification(self.compiled_model_path, io_spec)
 
     def get_framework(self) -> str:
         return "safetensors"

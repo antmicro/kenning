@@ -73,7 +73,9 @@ We can distinguish the following groups of extra requirements:
 * `reports` - modules for generating reports and comparisons,
 * `uart` - modules for work with serial ports,
 * `renode` - modules for work with Renode,
-* `fuzzy` - modules for fuzzy search.
+* `fuzzy` - modules for fuzzy search,
+* `llm` - modules for llm optimization,
+* `sparsity-aware-kernel` - modules for [SparseGPT](https://arxiv.org/abs/2301.00774).
 
 To install the extra requirements, e.g. `tensorflow`, run:
 

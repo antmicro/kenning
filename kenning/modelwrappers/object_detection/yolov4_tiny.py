@@ -39,6 +39,8 @@ class ONNXYOLOV4Tiny(YOLOWrapper):
     default_dataset = COCODataset2017
     arguments_structure = {}
 
+    thresh = 0.4
+
     # Downsampling factor of each detection head, in the order the heads are
     # emitted by the network (largest feature map first). YOLOv4-tiny emits
     # two heads at strides 16 and 32.

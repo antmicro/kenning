@@ -141,7 +141,13 @@ def run_pytest(session: nox.Session, device):
         "--cov-report=html",
         "--timeout=720",
         "-m",
-        "(not snippets) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
+        (
+            "(not snippets) and "
+            "(not gpu) and "
+            "(not automl) and "
+            "(not compat_matrix) and "
+            "(not python_compat)"
+        ),
         f"--report-log={report_path}",
         env={"ARROW_DEFAULT_MEMORY_POOL": "system"},
     )

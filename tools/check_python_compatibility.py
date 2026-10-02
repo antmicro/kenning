@@ -50,9 +50,15 @@ def uv_resolve(
         None if requirements resolve, uv's error output otherwise
     """
     command = [
-        "uv", "pip", "compile", "-",
-        "--python-version", version,
-        "--quiet", "--no-header", "--no-annotate",
+        "uv",
+        "pip",
+        "compile",
+        "-",
+        "--python-version",
+        version,
+        "--quiet",
+        "--no-header",
+        "--no-annotate",
     ]
     process = subprocess.run(
         command,
@@ -94,6 +100,31 @@ def unsupported(requirements: List[str], version: str) -> List[str]:
             or requirement.marker.evaluate(environment)
         )
     return sorted(name for name, ok in applies.items() if not ok)
+
+
+def is_untested(
+    requirements: List[str], base: List[str], version: str
+) -> bool:
+    """
+    Checks whether no package of an extra applies to a Python version,
+    so resolving it only checks the base requirements.
+
+    Parameters
+    ----------
+    requirements : List[str]
+        Requirements of the extra, including the base ones
+    base : List[str]
+        Base requirements of the project
+    version : str
+        Python version, e.g. 3.14
+
+    Returns
+    -------
+    bool
+        True if all packages the extra adds to the base are dropped
+    """
+    own = {Requirement(line).name for line in requirements if line not in base}
+    return bool(own) and own <= set(unsupported(requirements, version))
 
 
 def render(
@@ -194,15 +225,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         errors = dict(zip(extras, pool.map(resolve, extras.values())))
 
     base = extras[pyproject.name]
-    untested = set()
-    for extra, requirements in extras.items():
-        own = {
-            Requirement(line).name
-            for line in requirements
-            if line not in base
-        }
-        if own and own <= set(unsupported(requirements, args.python)):
-            untested.add(extra)
+    untested = {
+        extra
+        for extra, requirements in extras.items()
+        if is_untested(requirements, base, args.python)
+    }
 
     print(render(args.python, errors, untested, args.errors))
     failed = any(error is not None for error in errors.values())

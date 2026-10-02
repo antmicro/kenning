@@ -337,6 +337,7 @@ markers = [
     "ros",           # marks tests requiring ROS for running
     "automl",        # marks tests for AutoML flow
     "compat_matrix", # marks tests for creating compatibility matrices
+    "python_compat", # marks tests resolving extras for Python versions
 ]
 log_cli = true
 log_level = "DEBUG"

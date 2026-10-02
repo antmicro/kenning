@@ -15,7 +15,9 @@ from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.dispatcher.block_config import (
     ConfigKey,
-    yaml_or_json_to_config_dict,
+    block_parameters_to_config_dict,
+    get_empty_config_dict,
+    merge_config_dicts,
 )
 from kenning.utils.args_manager import (
     get_parsed_json_dict,
@@ -170,13 +172,18 @@ class ModelRuntimeRunner(Runner):
         Tuple[ModelWrapper, Runtime]
             The ModelWrapper object and the Runtime object, respectively.
         """
-        config = {
-            "model_wrapper": model_wrapper_parameters,
-            "runtime": runtime_parameters,
-        }
+        parameters_dicts = [model_wrapper_parameters, runtime_parameters]
         if dataset_parameters:
-            config["dataset"] = dataset_parameters
-        config = yaml_or_json_to_config_dict(config)
+            parameters_dicts.append(dataset_parameters)
+        config = get_empty_config_dict()
+        for parameters in parameters_dicts:
+            block_class = load_class(parameters["type"])
+            config = merge_config_dicts(
+                config,
+                block_parameters_to_config_dict(
+                    block_class, parameters["parameters"]
+                ),
+            )
         objs = objs_from_full_dict_config(config)
         return objs[ConfigKey.model_wrapper], objs[ConfigKey.runtime]
 

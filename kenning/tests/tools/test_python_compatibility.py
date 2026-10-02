@@ -52,5 +52,7 @@ def test_extra_resolves(version: str, extra: str):
         requirements, EXTRAS[PROJECT.name], version
     ), f"No package of {extra} has a requirement for Python {version}"
 
-    error = uv_resolve(requirements, version, PYPROJECT.parent)
+    error = uv_resolve(
+        PYPROJECT, version, extra=None if extra == PROJECT.name else extra
+    )
     assert error is None, error

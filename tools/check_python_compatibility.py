@@ -30,19 +30,22 @@ UNTESTED = "?"
 
 
 def uv_resolve(
-    requirements: List[str], version: str, root: Path
+    pyproject: Path, version: str, extra: Optional[str] = None
 ) -> Optional[str]:
     """
-    Resolves requirement list for a Python version.
+    Resolves the project's requirements with an extra for a Python version.
+
+    The project file is passed to uv directly, so that sources from
+    `tool.uv.sources`, e.g. workspace members, are respected.
 
     Parameters
     ----------
-    requirements : List[str]
-        Requirements
+    pyproject : Path
+        Path to pyproject.toml.
     version : str
-        Python version
-    root : Path
-        Project directory
+        Python version.
+    extra : Optional[str]
+        Extra to resolve, None to resolve only the base requirements
 
     Returns
     -------
@@ -53,19 +56,20 @@ def uv_resolve(
         "uv",
         "pip",
         "compile",
-        "-",
+        str(pyproject.resolve()),
         "--python-version",
         version,
         "--quiet",
         "--no-header",
         "--no-annotate",
     ]
+    if extra is not None:
+        command += ["--extra", extra]
     process = subprocess.run(
         command,
-        input="\n".join(requirements),
         capture_output=True,
         text=True,
-        cwd=root,
+        cwd=pyproject.resolve().parent,
     )
     if process.returncode == 0:
         return None
@@ -79,14 +83,14 @@ def unsupported(requirements: List[str], version: str) -> List[str]:
     Parameters
     ----------
     requirements : List[str]
-        Requirements
+        Requirements.
     version : str
-        Python version, e.g. 3.14
+        Python version, e.g. 3.14.
 
     Returns
     -------
     List[str]
-        Names of packages none of whose lines apply to the version
+        Names of packages none of whose lines apply to the version.
     """
     environment = {
         "python_version": version,
@@ -112,16 +116,16 @@ def is_untested(
     Parameters
     ----------
     requirements : List[str]
-        Requirements of the extra, including the base ones
+        Requirements of the extra, including the base ones.
     base : List[str]
         Base requirements of the project
     version : str
-        Python version, e.g. 3.14
+        Python version, e.g. 3.14.
 
     Returns
     -------
     bool
-        True if all packages the extra adds to the base are dropped
+        True if all packages the extra adds to the base are dropped.
     """
     own = {Requirement(line).name for line in requirements if line not in base}
     return bool(own) and own <= set(unsupported(requirements, version))
@@ -134,19 +138,19 @@ def render(
     show_errors: bool = False,
 ) -> str:
     """
-    Renders results as Markdown.
+    Renders results as Markdown..
 
     Parameters
     ----------
     version : str
-        Checked Python version
+        Checked Python version.
     errors : Dict[str, Optional[str]]
-        uv's error for each extra, None if the extra resolves
+        Uv's error for each extra, None if the extra resolves.
     untested : Set[str]
         Extras whose own packages were all dropped, so only the base
-        requirements were resolved
+        requirements were resolved.
     show_errors : bool
-        Whether to append uv's error output of failed extras
+        Whether to append uv's error output of failed extras.
 
     Returns
     -------
@@ -193,13 +197,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     Parameters
     ----------
     argv : Optional[List[str]]
-        Command-line arguments, sys.argv is used if None
+        Command-line arguments, sys.argv is used if None.
 
     Returns
     -------
     int
         1 if any extra cannot be installed or was not tested,
-        0 otherwise
+        0 otherwise.
     """
     parser = argparse.ArgumentParser(
         description="Checks whether Kenning's extras can be installed on a "
@@ -216,13 +220,16 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     pyproject = Pyproject.load(args.pyproject)
     extras = pyproject.get_extras()
-    root = args.pyproject.resolve().parent
 
-    def resolve(requirements: List[str]) -> Optional[str]:
-        return uv_resolve(requirements, args.python, root)
+    def resolve(extra: str) -> Optional[str]:
+        return uv_resolve(
+            args.pyproject,
+            args.python,
+            extra=None if extra == pyproject.name else extra,
+        )
 
     with ThreadPoolExecutor() as pool:
-        errors = dict(zip(extras, pool.map(resolve, extras.values())))
+        errors = dict(zip(extras, pool.map(resolve, extras)))
 
     base = extras[pyproject.name]
     untested = {

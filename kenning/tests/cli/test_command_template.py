@@ -60,6 +60,18 @@ def selected_class(config: Dict, key: ConfigKey) -> str:
     return classes_from_full_dict_config(config)[key].__name__
 
 
+class RecordingScenario(CommandTemplate):
+    parse_all = True
+    did_run = False
+
+    @staticmethod
+    def run(
+        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs: Any
+    ) -> int:
+        RecordingScenario.did_run = True
+        return 0
+
+
 def flags_of(group: argparse._ArgumentGroup) -> List[str]:
     return [
         flag
@@ -349,3 +361,27 @@ class TestParseConfiguration:
         )
 
         assert selected_class(config, ConfigKey.platform) == "CUDAPlatform"
+
+
+class TestScenarioRun:
+    @pytest.fixture(autouse=True)
+    def reset_did_run(self) -> None:
+        RecordingScenario.did_run = False
+
+    def test_the_scenario_runs_without_help(self) -> None:
+        """
+        Tests if the scenario is run when help is not requested.
+        """
+        assert RecordingScenario.scenario_run(["kenning"]) == 0
+        assert RecordingScenario.did_run
+
+    @pytest.mark.parametrize("flag", HELP["flags"])
+    def test_the_scenario_is_not_run_with_help(
+        self, flag: str, capsys: pytest.CaptureFixture
+    ) -> None:
+        """
+        Tests if help is printed instead of running the scenario.
+        """
+        assert RecordingScenario.scenario_run(["kenning", flag]) is None
+        assert not RecordingScenario.did_run
+        assert "usage" in capsys.readouterr().out.lower()

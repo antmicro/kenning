@@ -15,6 +15,7 @@ import yaml
 
 from kenning.cli.parser import HELP_FLAGS, Parser, ParserHelpException
 from kenning.dispatcher.block_config import (
+    BLOCK_CONFIGURATIONS_KEY,
     CONFIG_KEY_TO_CLS_FLAG,
     KenningBlockConfigDict,
     apply_default_blocks_by_block_type,
@@ -367,9 +368,15 @@ class CommandTemplate(ABC):
             KLogger.debug(f"Config file detected at {args.json_cfg}.")
             with open(args.json_cfg, "r") as f:
                 cfg = yaml.safe_load(f)
-                config = merge_config_dicts(
-                    yaml_or_json_to_config_dict(cfg), config
-                )
+            file_config = yaml_or_json_to_config_dict(cfg)
+            file_blocks = file_config[BLOCK_CONFIGURATIONS_KEY]
+            for block_type, blocks in config[BLOCK_CONFIGURATIONS_KEY].items():
+                cli_class = next(iter(blocks))
+                if cli_class is not None and cli_class not in file_blocks.get(
+                    block_type, {}
+                ):
+                    file_blocks.pop(block_type, None)
+            config = merge_config_dicts(file_config, config)
         apply_default_blocks_by_block_type(cls.default_block_classes, config)
 
         def flatten_list(irregular_list):

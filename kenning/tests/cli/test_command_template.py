@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-from typing import List, Type
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type
 
 import pytest
 
@@ -15,10 +17,47 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.config import MAP_COMMAND_TO_SCENARIO
 from kenning.cli.parser import Parser
+from kenning.dispatcher.block_config import (
+    BLOCK_CONFIG_PARAMETERS_KEY,
+    BLOCK_CONFIGURATIONS_KEY,
+    UNAFFILIATED_PARAMETERS_KEY,
+    ConfigKey,
+)
+from kenning.utils.class_loader import classes_from_full_dict_config
+
+KEYS = [ConfigKey.dataset, ConfigKey.platform]
 
 
 def group_titles(parser: argparse.ArgumentParser) -> List[str]:
     return [group.title for group in parser._action_groups]
+
+
+def make_args(
+    json_cfg: Optional[Path] = None,
+    dataset_cls: Optional[str] = None,
+    platform_cls: Optional[str] = None,
+) -> argparse.Namespace:
+    return argparse.Namespace(
+        json_cfg=json_cfg,
+        help=False,
+        verbosity="INFO",
+        dataset_cls=dataset_cls,
+        platform_cls=platform_cls,
+    )
+
+
+def write_config(tmp_path: Path, config: Dict[str, Any]) -> Path:
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(config))
+    return path
+
+
+def blocks_of(config: Dict, key: ConfigKey) -> Dict:
+    return config[BLOCK_CONFIGURATIONS_KEY][key.value]
+
+
+def selected_class(config: Dict, key: ConfigKey) -> str:
+    return classes_from_full_dict_config(config)[key].__name__
 
 
 def flags_of(group: argparse._ArgumentGroup) -> List[str]:
@@ -195,3 +234,118 @@ class TestAddGroups:
 
         assert flags_of(groups["first"]) == ["--in-first"]
         assert flags_of(groups["second"]) == ["--in-second"]
+
+
+class TestParseConfiguration:
+    FILE_DATASET = {
+        "type": "MagicWandDataset",
+        "parameters": {"dataset_root": "./from-file", "batch_size": 4},
+    }
+
+    def test_flags_alone_build_the_config(self) -> None:
+        """
+        Tests if blocks and their flags are taken from CLI without a file.
+        """
+        config = CommandTemplate.parse_configuration(
+            make_args(dataset_cls="MagicWandDataset"),
+            ["--dataset-root", "./from-cli"],
+            KEYS,
+        )
+
+        assert selected_class(config, ConfigKey.dataset) == "MagicWandDataset"
+        assert config[UNAFFILIATED_PARAMETERS_KEY]["dataset_root"] == Path(
+            "./from-cli"
+        )
+
+    def test_file_alone_builds_the_config(self, tmp_path: Path) -> None:
+        """
+        Tests if blocks and their parameters are taken from the config file.
+        """
+        cfg = write_config(tmp_path, {"dataset": self.FILE_DATASET})
+
+        config = CommandTemplate.parse_configuration(make_args(cfg), [], KEYS)
+
+        assert selected_class(config, ConfigKey.dataset) == "MagicWandDataset"
+        assert (
+            blocks_of(config, ConfigKey.dataset)["MagicWandDataset"][
+                BLOCK_CONFIG_PARAMETERS_KEY
+            ]
+            == self.FILE_DATASET["parameters"]
+        )
+
+    def test_cli_class_overrides_the_file_class(self, tmp_path: Path) -> None:
+        """
+        Tests if a block class given in CLI replaces the one from the file.
+        """
+        cfg = write_config(tmp_path, {"dataset": self.FILE_DATASET})
+
+        config = CommandTemplate.parse_configuration(
+            make_args(cfg, dataset_cls="AnomalyDetectionDataset"), [], KEYS
+        )
+
+        assert "MagicWandDataset" not in blocks_of(config, ConfigKey.dataset)
+        assert (
+            selected_class(config, ConfigKey.dataset)
+            == "AnomalyDetectionDataset"
+        )
+
+    def test_flags_of_the_cli_class_are_accepted(self, tmp_path: Path) -> None:
+        """
+        Tests if flags of the CLI block class are parsed, when the file
+        chooses a different class.
+        """
+        cfg = write_config(tmp_path, {"dataset": self.FILE_DATASET})
+
+        config = CommandTemplate.parse_configuration(
+            make_args(cfg, dataset_cls="AnomalyDetectionDataset"),
+            ["--label-type", "some-label"],
+            KEYS,
+        )
+
+        assert (
+            config[UNAFFILIATED_PARAMETERS_KEY]["label_type"] == "some-label"
+        )
+
+    def test_same_class_in_cli_keeps_file_parameters(
+        self, tmp_path: Path
+    ) -> None:
+        """
+        Tests if file parameters are kept when CLI chooses the same class.
+        """
+        cfg = write_config(tmp_path, {"dataset": self.FILE_DATASET})
+
+        config = CommandTemplate.parse_configuration(
+            make_args(cfg, dataset_cls="kenning.datasets.MagicWandDataset"),
+            [],
+            KEYS,
+        )
+
+        assert selected_class(config, ConfigKey.dataset) == "MagicWandDataset"
+        assert (
+            blocks_of(config, ConfigKey.dataset)["MagicWandDataset"][
+                BLOCK_CONFIG_PARAMETERS_KEY
+            ]
+            == self.FILE_DATASET["parameters"]
+        )
+
+    def test_file_block_takes_precedence_over_the_default(
+        self, tmp_path: Path
+    ) -> None:
+        """
+        Tests if a block from the file is used instead of the default one.
+        """
+        cfg = write_config(tmp_path, {"platform": {"type": "CUDAPlatform"}})
+
+        config = CommandTemplate.parse_configuration(make_args(cfg), [], KEYS)
+
+        assert selected_class(config, ConfigKey.platform) == "CUDAPlatform"
+
+    def test_cli_block_takes_precedence_over_the_default(self) -> None:
+        """
+        Tests if a block from CLI is used instead of the default one.
+        """
+        config = CommandTemplate.parse_configuration(
+            make_args(platform_cls="CUDAPlatform"), [], KEYS
+        )
+
+        assert selected_class(config, ConfigKey.platform) == "CUDAPlatform"

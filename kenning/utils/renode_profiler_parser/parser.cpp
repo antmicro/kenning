@@ -144,6 +144,7 @@ int parse_dump(
     double start_timestamp,
     double end_timestamp,
     double interval_step,
+    bool skip_progress_bar,
     std::vector< double > &profiler_timestamps,
     std::map< std::string, std::vector< int > > &executed_instructions,
     std::map< char, std::vector< int > > &memory_accesses,
@@ -209,7 +210,7 @@ int parse_dump(
 
     while (dump_file.peek() != EOF)
     {
-        if (0 == (entries % 1000))
+        if (!skip_progress_bar && 0 == (entries % 1000))
         {
             print_progress(dump_file.tellg(), dump_file_size);
         }
@@ -377,7 +378,10 @@ int parse_dump(
         }
     }
 
-    print_progress(dump_file_size, dump_file_size);
+    if (!skip_progress_bar)
+    {
+        print_progress(dump_file_size, dump_file_size);
+    }
 
     dump_file.close();
 

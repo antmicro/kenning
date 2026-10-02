@@ -7,6 +7,7 @@ Provides a wrapper for platforms that can be simulated with Renode.
 """
 
 import logging
+import os
 import tempfile
 from abc import ABC
 from collections import defaultdict
@@ -639,12 +640,14 @@ class SimulatablePlatform(Platform, ABC):
             start_timestamp = None
             end_timestamp = None
 
+        skip_progress_bar = os.getenv("TQDM_DISABLE") == "1"
         try:
             parsed_stats = profiler_parser.parse(
                 str(self.profiler_dump_path.resolve()).encode(),
                 start_timestamp,
                 end_timestamp,
                 self.profiler_interval_step,
+                skip_progress_bar,
             )
         except TypeError:
             KLogger.warning("Could not parse Renode profiler dump")

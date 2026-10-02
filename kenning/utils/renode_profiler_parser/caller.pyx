@@ -12,6 +12,7 @@ cdef extern from "parser.hpp":
         double start_timestamp,
         double end_timestamp,
         double interval_step,
+        bool skip_progress_bar,
         vector[double] profiler_timestamps,
         map[string, vector[int]] executed_instructions,
         map[char, vector[int]] memory_accesses,
@@ -27,7 +28,13 @@ ctypedef enum PeripheralOperationType:
     PERIPH_OP_READ = 0x0,
     PERIPH_OP_WRITE = 0x1,
 
-def parse(filename, start_timestamp, end_timestamp, interval_step):
+def parse(
+    filename,
+    start_timestamp,
+    end_timestamp,
+    interval_step,
+    skip_progress_bar
+):
     cdef vector[double] profiler_timestamps
     cdef map[string, vector[int]] executed_instructions
     cdef map[char, vector[int]] memory_accesses
@@ -39,6 +46,7 @@ def parse(filename, start_timestamp, end_timestamp, interval_step):
         start_timestamp,
         end_timestamp,
         interval_step,
+        skip_progress_bar,
         profiler_timestamps,
         executed_instructions,
         memory_accesses,

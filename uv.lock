@@ -4896,8 +4896,8 @@ requires-dist = [
     { name = "peft", marker = "extra == 'llm'", specifier = "==0.10.0" },
     { name = "pexpect", marker = "extra == 'test'" },
     { name = "pillow", specifier = ">=8.1.0" },
-    { name = "pipeline-manager", marker = "extra == 'pipeline-manager'", url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl" },
-    { name = "pipeline-manager", extras = ["to-image"], marker = "extra == 'docs'", url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl" },
+    { name = "pipeline-manager", marker = "extra == 'pipeline-manager'", url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.2/pipeline_manager-0.5.2-py3-none-any.whl" },
+    { name = "pipeline-manager", extras = ["to-image"], marker = "extra == 'docs'", url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.2/pipeline_manager-0.5.2-py3-none-any.whl" },
     { name = "pipeline-manager-backend-communication", marker = "extra == 'pipeline-manager'", git = "https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git" },
     { name = "ply", marker = "extra == 'zephyr'" },
     { name = "polars" },
@@ -8074,8 +8074,8 @@ wheels = [
 
 [[package]]
 name = "pipeline-manager"
-version = "0.5.1"
-source = { url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl" }
+version = "0.5.2"
+source = { url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.2/pipeline_manager-0.5.2-py3-none-any.whl" }
 dependencies = [
     { name = "attrs" },
     { name = "beautifulsoup4" },
@@ -8094,7 +8094,7 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 wheels = [
-    { url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.1/pipeline_manager-0.5.1-py3-none-any.whl", hash = "sha256:b53b88d30bc88ab80dfd5153ae4c1c070183014263aae80e1c0e128188ffef05" },
+    { url = "https://github.com/antmicro/kenning-pipeline-manager/releases/download/v0.5.2/pipeline_manager-0.5.2-py3-none-any.whl", hash = "sha256:f450ffe51efb461f37a46f7720f5fb690b60a6a9047af0ea1c66d158a5b08980" },
 ]
 
 [package.optional-dependencies]

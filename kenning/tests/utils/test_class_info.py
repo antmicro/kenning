@@ -4,6 +4,7 @@
 
 import ast
 import textwrap
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, List, Tuple
 
@@ -12,6 +13,9 @@ import pytest
 from kenning.utils import class_info
 from kenning.utils.class_info import (
     Argument,
+    evaluate_argument_list,
+    evaluate_argument_list_of_keys,
+    get_args_structure_from_parameterschema,
     get_class_module_docstrings,
     get_class_module_name,
     get_dependency,
@@ -19,6 +23,7 @@ from kenning.utils.class_info import (
     get_io_specification,
     get_output_specification,
     parse_io_dict_node_to_string,
+    parse_io_spec_dict_to_str,
 )
 
 IO_SPECIFICATION_CLASS = """
@@ -54,6 +59,27 @@ IO_SPECIFICATION_LINES = [
     "    * `shape`: `(batch_size, num_classes)`\n",
     "    * `dtype`: `float32`\n",
 ]
+
+EVALUATE_ARGUMENT_LIST_MODULE = """
+OTHER = ["unused"]
+obj.attribute = ["unused"]
+first, second = ["unused"], ["unused"]
+MODES = ["fast", "slow"]
+PRECISIONS = [8, 16]
+RESOURCES = {"small": 1, "large": 2}
+"""
+
+
+@pytest.fixture
+def evaluate_argument_list_source(tmp_path: Path) -> str:
+    """
+    Writes a module with sample list and dict assignments to a file and
+    returns the path to it.
+    """
+    source_path = tmp_path / "sample_module.py"
+    source_path.write_text(EVALUATE_ARGUMENT_LIST_MODULE)
+
+    return str(source_path)
 
 
 @pytest.fixture
@@ -320,3 +346,133 @@ class TestGetIOSpecification:
         )
 
         assert get_io_specification(class_node) == []
+
+
+class TestEvaluateArgumentListOfKeys:
+    def test_keys(self, evaluate_argument_list_source):
+        assert evaluate_argument_list_of_keys(
+            "RESOURCES", evaluate_argument_list_source
+        ) == (["small", "large"], "List[str]")
+
+    def test_missing(self, evaluate_argument_list_source):
+        assert evaluate_argument_list_of_keys(
+            "MISSING", evaluate_argument_list_source
+        ) == ([], "")
+
+
+class TestEvaluateArgumentList:
+    @pytest.mark.parametrize(
+        "argument_list,expected",
+        [
+            ("MODES", (["fast", "slow"], "List[str]")),
+            ("PRECISIONS", ([8, 16], "List[int]")),
+            ('["fast", "slow"]', (["fast", "slow"], "List[str]")),
+            ("[]", ([], "List[]")),
+            ("MISSING", ([], "")),
+        ],
+        ids=["variable", "int-variable", "inline-list", "empty", "missing"],
+    )
+    def test_evaluate(
+        self,
+        evaluate_argument_list_source,
+        argument_list: str,
+        expected: Tuple[List, str],
+    ):
+        assert (
+            evaluate_argument_list(
+                argument_list, evaluate_argument_list_source
+            )
+            == expected
+        )
+
+    def test_unresolvable(self, evaluate_argument_list_source):
+        enum_elements, argument_type = evaluate_argument_list(
+            "[Mode.FAST]", evaluate_argument_list_source
+        )
+
+        assert argument_type == "Error"
+        assert enum_elements[0].startswith("Static code analysis failed")
+
+
+class TestGetArgsStructureFromParameterschema:
+    def test_empty(self):
+        assert get_args_structure_from_parameterschema({"properties": {}}) == [
+            ""
+        ]
+
+    def test_minimal(self):
+        assert get_args_structure_from_parameterschema(
+            {"properties": {"model_path": {}}}
+        ) == [
+            "### `model_path`\n",
+            "* argparse flag: `--model-path`\n",
+        ]
+
+    def test_all_fields(self):
+        parameterschema = {
+            "properties": {
+                "model_path": {
+                    "real_name": "model_path",
+                    "description": "Path to the model",
+                    "type": ["string"],
+                    "enum": ["a.onnx", "b.onnx"],
+                    "class": Path,
+                    "default": None,
+                },
+            },
+            "required": ["model_path"],
+        }
+
+        assert get_args_structure_from_parameterschema(parameterschema) == [
+            "### `model_path`\n",
+            "* Path to the model\n",
+            "* argparse flag: `--model-path`\n",
+            "* type: `string`\n",
+            "* enum\n",
+            "    * `a.onnx`\n",
+            "    * `b.onnx`\n",
+            f"* class: `{Path.__module__}.{Path.__qualname__}`\n",
+            "* default: `None`\n",
+            "* required: `True`\n",
+        ]
+
+
+class TestParseIOSpecDictToStr:
+    def test_not_a_dict(self):
+        assert parse_io_spec_dict_to_str(["input"]) == [""]
+
+    def test_empty(self):
+        assert parse_io_spec_dict_to_str({}) == []
+
+    def test_io_spec(self):
+        io_spec = {
+            "input": [
+                {"name": "input_1", "shape": [1, 3], "dtype": "float32"}
+            ],
+            "output": [
+                {"name": "output_1", "dtype": "float32"},
+                {"name": "output_2", "dtype": "int8"},
+            ],
+            "processed_output": [],
+        }
+
+        assert parse_io_spec_dict_to_str(io_spec) == [
+            "### input\n\n",
+            "### output\n\n",
+            "### processed_output\n\n",
+            "* `input_1`\n",
+            "    * `shape`\n",
+            "        * `1`\n",
+            "        * `3`\n",
+            "    * `dtype`: `float32`\n",
+            "* `output_1`\n",
+            "    * `dtype`: `float32`\n",
+            "* `output_2`\n",
+            "    * `dtype`: `int8`\n",
+        ]
+
+    def test_non_list_value(self):
+        assert parse_io_spec_dict_to_str({"input": "float32"}) == [
+            "### input\n\n",
+            "* `input`: `float32`\n",
+        ]

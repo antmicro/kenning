@@ -1,0 +1,27 @@
+dataset:
+  type: NYUDepthDatasetV2
+  parameters:
+    dataset_root: build/nyu_depth
+    split_fraction_test: 1
+model_wrapper:
+  type: Dinov2ONNX
+  parameters:
+    model_path: kenning:///models/depth_estimation/dinov2.onnx
+    input_width: 640
+    input_height: 480
+optimizers:
+- type: IREECompiler
+  parameters:
+    compiled_model_path: ./build/iree-compiled
+    backend: llvm-cpu
+    compiler_args:
+    - iree-hal-target-device=local
+    - iree-llvmcpu-target-cpu=host
+    - iree-opt-level=O3
+runtime:
+   type: IREERuntime
+   parameters:
+     save_model_path: ./build/iree-compiled
+     driver: local-task
+     runtime_args:
+     - task_topology_group_count=8

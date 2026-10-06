@@ -419,12 +419,12 @@ def create_script(snippet: Snippet, working_dir: Path) -> str:
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
             snippet.text = re.sub(
-                KENNING_LINK_RE, rf"{kenning_path}\2", snippet.text
+                KENNING_LINK_RE, rf"{working_dir}\2", snippet.text
             )
         else:
             snippet.text = re.sub(
                 PIP_INSTALL_KENNING_LOCAL_RE,
-                rf"\1'{kenning_path}\2'",
+                rf"\1'{working_dir}\2'",
                 snippet.text,
             )
         script = snippet.text
@@ -441,7 +441,7 @@ def create_script(snippet: Snippet, working_dir: Path) -> str:
             snippet.meta[SNIPPET_MARKDOWN_PARENT], Path
         ):
             full_path = (
-                kenning_path
+                working_dir
                 / snippet.meta[SNIPPET_MARKDOWN_PARENT]
                 / snippet.meta[SNIPPET_POSITIONAL_ARG]
             )

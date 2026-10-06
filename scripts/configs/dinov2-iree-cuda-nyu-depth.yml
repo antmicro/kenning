@@ -1,0 +1,26 @@
+dataset:
+  type: NYUDepthDatasetV2
+  parameters:
+    dataset_root: build/nyu_depth
+    split_fraction_test: 1
+model_wrapper:
+  type: Dinov2ONNX
+  parameters:
+    model_path: kenning:///models/depth_estimation/dinov2.onnx
+    input_width: 640
+    input_height: 480
+optimizers:
+- type: IREECompiler
+  parameters:
+    compiled_model_path: ./build/iree-compiled
+    backend: cuda
+    compiler_args:
+    - iree-hal-target-device=cuda
+    - iree-cuda-target=sm_86
+    - iree-opt-level=O3
+    - iree-preprocessing-pass-pipeline=builtin.module(util.func(iree-global-opt-raise-special-ops, iree-flow-canonicalize), iree-preprocessing-transpose-convolution-pipeline, iree-preprocessing-pad-to-intrinsics, util.func(iree-preprocessing-generalize-linalg-matmul-experimental),iree-preprocessing-convert-conv-to-channels-last,iree-preprocessing-convert-conv-filter-to-channels-last{filter-layout=fhwc})
+runtime:
+  type: IREERuntime
+  parameters:
+    save_model_path: ./build/iree-compiled
+    driver: cuda

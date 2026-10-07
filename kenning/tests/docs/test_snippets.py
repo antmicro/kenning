@@ -7,6 +7,7 @@ import os
 import re
 import shlex
 import shutil
+import string
 import subprocess
 import tempfile
 import uuid
@@ -73,6 +74,7 @@ SNIPPET_ARGUMENTS = ("test-skip", "timeout", "terminal", "save-as")
 SNIPPET_POSITIONAL_ARG = "__arg"
 # Key of the snippet's metadata containing markdown directory
 SNIPPET_MARKDOWN_PARENT = "__markdown_dir"
+PRINTABLE_CHARACTERS = set(string.printable)
 
 
 def extract_snippet_args(snippet: Snippet):
@@ -333,6 +335,30 @@ def get_working_directory(
         return working_dir_path
 
 
+def subshell_output(
+    subshell: pexpect.spawn, last_lines_count: int = 10
+) -> str:
+    """
+    Gets given last lines amount from subshell output.
+
+    Parameters
+    ----------
+    subshell : pexpect.spawn
+        Interface for communication with subshell.
+
+    last_lines_count : int
+        Amount of lines from the end to be included in output.
+
+    Returns
+    -------
+    str
+        Concatenated lines, filtered from non-printable characters.
+    """
+    output = str(subshell.before)
+    output = "".join(output.split("\n")[-last_lines_count:])
+    return "".join([char for char in output if char in PRINTABLE_CHARACTERS])
+
+
 def get_subshell(
     markdown: str,
     _id: int,
@@ -577,11 +603,17 @@ class TestDocsSnippets:
                 )
             success = execute_script_and_wait(subshell, script, timeout)
             if not success:
-                pytest.fail(reason=f"'{script}' returned non-zero code")
+                pytest.fail(
+                    reason=f"'{script}' returned non-zero code. "
+                    f"Shell output:\n{subshell_output(subshell)}"
+                )
         except pexpect.TIMEOUT:
             # Fail if timeout was not expected
             if not timeout:
-                pytest.fail(reason=f"Unexpected timeout during: '{snippet}'")
+                pytest.fail(
+                    reason=f"Unexpected timeout during: '{snippet}'. "
+                    f"Shell output:\n{subshell_output(subshell)}"
+                )
         except pexpect.EOF:
             pytest.fail(
                 reason=f"'{script}' finished without printing status message"

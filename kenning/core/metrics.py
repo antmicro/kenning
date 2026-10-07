@@ -888,7 +888,7 @@ class REG_THRESH_ACC(ParametrizedMetric):
 
     @staticmethod
     def _get_value(power_coefficient: float, **kwargs):
-        return f"δ^{power_coefficient}"
+        return rf"{{math}}`\delta^{{{power_coefficient}}}`"
 
 
 @dataclass(frozen=True)

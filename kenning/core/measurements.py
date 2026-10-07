@@ -408,7 +408,6 @@ class SystemStatsCollector(Thread):
         self.step = step
         self.runningcondition = Condition()
         self.kenning_process = psutil.Process(kenning_pid)
-        self.kenning_process.cpu_percent()
         self.last_nvidia_stats_read_us = 0
         self.nvidia_stats_read_window_sec = 2
 
@@ -477,9 +476,10 @@ class SystemStatsCollector(Thread):
 
         while self.running:
             self._get_process_cpu_stats()
+            self._get_system_cpu_stats()
 
             if self.jetson and self.jetson.ok(spin=True):
-                self._get_global_jetson_stats()
+                self._get_system_jetson_stats()
             elif pynvml and self.nvmlReady:
                 gpu_processes = self._get_nvidia_gpu_processes()
                 if not gpu_processes:
@@ -491,12 +491,10 @@ class SystemStatsCollector(Thread):
                     stats = self._is_kenning_process_in_nvidia(gpu_processes)
                     if stats is not None:
                         self._get_process_nvidia_stats(stats)
-                    else:
-                        # TODO when Kenning report will support multiple GPU
-                        # usage reports, change to global GPU load
-                        self._get_global_nvidia_stats(
-                            next(iter(gpu_processes))
-                        )
+
+                    # TODO when Kenning report will support multiple GPU
+                    # usage reports, change to system GPU load
+                    self._get_system_nvidia_stats(next(iter(gpu_processes)))
 
             with self.runningcondition:
                 self.runningcondition.wait(timeout=self.step)
@@ -609,14 +607,14 @@ class SystemStatsCollector(Thread):
             )
 
         self.measurements += {
-            f"{self.prefix}_gpu_utilization": [
+            f"{self.prefix}_process_gpu_percent": [
                 stats.process_newest_usage.smUtil
             ],
-            f"{self.prefix}_gpu_mem_utilization": [gpu_usage_percent],
-            f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+            f"{self.prefix}_process_gpu_mem_percent": [gpu_usage_percent],
+            f"{self.prefix}_process_gpu_timestamp": [time.perf_counter()],
         }
 
-    def _get_global_nvidia_stats(self, gpu_index: int) -> None:
+    def _get_system_nvidia_stats(self, gpu_index: int) -> None:
         if not pynvml:
             return
 
@@ -631,9 +629,9 @@ class SystemStatsCollector(Thread):
             )
 
             self.measurements += {
-                f"{self.prefix}_gpu_utilization": [None],
-                f"{self.prefix}_gpu_mem_utilization": [None],
-                f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+                f"{self.prefix}_system_gpu_percent": [None],
+                f"{self.prefix}_system_gpu_mem_percent": [None],
+                f"{self.prefix}_system_gpu_timestamp": [time.perf_counter()],
             }
             return
 
@@ -642,9 +640,9 @@ class SystemStatsCollector(Thread):
         )
 
         self.measurements += {
-            f"{self.prefix}_gpu_utilization": [util.gpu],
-            f"{self.prefix}_gpu_mem_utilization": [gpu_usage_percent],
-            f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+            f"{self.prefix}_system_gpu_percent": [util.gpu],
+            f"{self.prefix}_system_gpu_mem_percent": [gpu_usage_percent],
+            f"{self.prefix}_system_gpu_timestamp": [time.perf_counter()],
         }
 
     def _get_process_cpu_stats(self) -> None:
@@ -657,12 +655,24 @@ class SystemStatsCollector(Thread):
         cpus = cpu_percent / self.cpu_count
         memory_percent = self.kenning_process.memory_percent()
         self.measurements += {
-            f"{self.prefix}_cpus_percent": [[cpus]],
-            f"{self.prefix}_mem_percent": [memory_percent],
-            f"{self.prefix}_timestamp": [time.perf_counter()],
+            # `cpus` for process scope has type `float` and is already average
+            f"{self.prefix}_process_cpu_percent": [cpus],
+            f"{self.prefix}_process_cpu_mem_percent": [memory_percent],
+            f"{self.prefix}_process_cpu_timestamp": [time.perf_counter()],
         }
 
-    def _get_global_jetson_stats(self) -> None:
+    def _get_system_cpu_stats(self) -> None:
+        cpus = psutil.cpu_percent(interval=0, percpu=True)
+        mem = psutil.virtual_memory()
+        self.measurements += {
+            # not a typo, `cpus` has type `list[float]` and mean value
+            # is later calculated into `"{self.prefix}_system_cpu_percent"`
+            f"{self.prefix}_system_cpu_percents": [cpus],
+            f"{self.prefix}_system_cpu_mem_percent": [mem.percent],
+            f"{self.prefix}_system_cpu_timestamp": [time.perf_counter()],
+        }
+
+    def _get_system_jetson_stats(self) -> None:
         if not self.jetson:
             return
 
@@ -674,10 +684,10 @@ class SystemStatsCollector(Thread):
             memory_percent = self.kenning_process.memory_percent()
 
             self.measurements += {
-                f"{self.prefix}_gpu_utilization": [gpu_usage],
+                f"{self.prefix}_system_gpu_percent": [gpu_usage],
                 # Jetson use RAM for GPU memory
-                f"{self.prefix}_gpu_mem_utilization": [memory_percent],
-                f"{self.prefix}_gpu_timestamp": [time.perf_counter()],
+                f"{self.prefix}_system_gpu_mem_percent": [memory_percent],
+                f"{self.prefix}_system_gpu_timestamp": [time.perf_counter()],
             }
 
         # collect power information from each lines:

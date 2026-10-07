@@ -68,7 +68,7 @@ from kenning.core.drawing import (
     choose_theme,
 )
 from kenning.core.measurements import Measurements
-from kenning.core.report import Report, ReportTypes
+from kenning.core.report import PerformanceReportScope, Report, ReportTypes
 
 
 class MarkdownReport(Report):
@@ -79,6 +79,14 @@ class MarkdownReport(Report):
     report_path: Path
 
     arguments_structure = {
+        "performance_report_scope": {
+            "description": 'Resource usage metrics collection scope: \
+                "process" - Kenning-only usage, "system" - system usage \
+                "all" - combination of "process" and "system".',
+            "type": PerformanceReportScope,
+            "default": PerformanceReportScope.PROCESS,
+            "overridable": True,
+        },
         "to_html": {
             "description": "Generate HTML version of the report, \
                 it can receive path to the folder where HTML will be saved",
@@ -212,6 +220,9 @@ class MarkdownReport(Report):
         measurements: List[Path] | Path | None = None,
         report_name: Optional[str] = None,
         report_path: Optional[Path] = None,
+        performance_report_scope: PerformanceReportScope = (
+            PerformanceReportScope.PROCESS
+        ),
         to_html: bool | Path = False,
         root_dir: Optional[Path] = None,
         report_types: Optional[List[str]] = None,
@@ -250,6 +261,7 @@ class MarkdownReport(Report):
             model_wrapper,
         )
 
+        self.performance_report_scope = performance_report_scope
         self.to_html = to_html
         self.report_path = report_path
         self.root_dir = root_dir
@@ -440,6 +452,7 @@ class MarkdownReport(Report):
                     colors=self.colors,
                     draw_titles=draw_titles,
                     main_quality_metric=self.main_quality_metric,
+                    performance_report_scope=self.performance_report_scope,
                 )
 
         if not self.comparison_only or self.save_summary:
@@ -477,6 +490,7 @@ class MarkdownReport(Report):
                         model_wrapper=self.model_wrapper,
                         remove_layer_prefix=self.remove_layer_prefix,
                         report_path=self.report_path,
+                        performance_report_scope=self.performance_report_scope,
                     )
                     if metrics:
                         for metric_name, metric in metrics.items():

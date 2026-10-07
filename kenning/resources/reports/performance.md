@@ -14,6 +14,18 @@ align: center
 Inference time
 ```
 
+{% if 'pre_post_process_path' in data -%}
+```{figure} {{data["pre_post_process_path"]}}
+---
+name: {{basename}}_pre_post_process
+alt: Preprocessing and postprocessing time
+align: center
+---
+
+Preprocessing and postprocessing time
+```
+{% endif %}
+
 ```{list-table} Inference time metrics
 ---
 header-rows: 1
@@ -38,20 +50,20 @@ align: center
 ```
 {% endif %}
 
-{% if 'session_utilization_cpus_percent_avg' in data -%}
-### Average CPU usage
+{% if 'cpu_system_usage_path' in data -%}
+### Average CPU usage by system
 
-```{figure} {{data["cpuusagepath"]}}
+```{figure} {{data["cpu_system_usage_path"]}}
 ---
 name: {{basename}}_cpuusage
-alt: Average CPU usage
+alt: Average CPU usage by system
 align: center
 ---
 
-Average CPU usage during benchmark
+Average CPU usage by system during benchmark
 ```
 
-```{list-table} CPU usage metrics
+```{list-table} CPU usage by system metrics
 ---
 header-rows: 1
 align: center
@@ -60,29 +72,43 @@ align: center
   - Usage [%]
 
 * - Mean
-  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_mean'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_mean'] }}**
 * - Standard deviation
-  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_std'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_std'] }}**
 * - Median
-  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_median'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_median'] }}**
 
 ```
 {% endif %}
 
-{% if 'session_utilization_mem_percent' in data -%}
-### Memory usage
+{% if 'cpu_process_usage_path' in data -%}
+### Average CPU usage by process
 
-```{figure} {{data["memusagepath"]}}
+```{figure} {{data["cpu_process_usage_path"]}}
 ---
-name: {{basename}}_memusage
-alt: Memory usage
+name: {{basename}}_cpuusage
+alt: Average CPU usage by process
 align: center
 ---
 
-Memory usage during benchmark
+Average CPU usage by process during benchmark
+```
+{% endif %}
+
+{% if 'cpu_all_usage_path' in data -%}
+### Average CPU usage by system and process
+
+```{figure} {{data["cpu_all_usage_path"]}}
+---
+name: {{basename}}_cpuusage
+alt: Average CPU usage by system and process
+align: center
+---
+
+Average CPU usage by system and processes during benchmark
 ```
 
-```{list-table} Memory usage metrics
+```{list-table} CPU usage by system metrics
 ---
 header-rows: 1
 align: center
@@ -91,30 +117,204 @@ align: center
   - Usage [%]
 
 * - Mean
-  - **{{'%.3f' %  data['session_utilization_mem_percent_mean'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_mean'] }}**
 * - Standard deviation
-  - **{{'%.3f' %  data['session_utilization_mem_percent_std'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_std'] }}**
 * - Median
-  - **{{'%.3f' %  data['session_utilization_mem_percent_median'] }}**
+  - **{{'%.3f' %  data['session_utilization_system_cpu_percent_median'] }}**
+
+```
+
+{% endif %}
+
+{% if 'cpu_mem_system_usage_path' in data -%}
+### RAM usage by system
+
+```{figure} {{data["cpu_mem_system_usage_path"]}}
+---
+name: {{basename}}_system_memusage
+alt: RAM usage by system
+align: center
+---
+
+RAM usage by system during benchmark
+```
+
+```{list-table} RAM usage by system metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_median'] }}**
 
 ```
 {% endif %}
 
-{% if 'session_utilization_gpu_utilization' in data and data['session_utilization_gpu_utilization']|length > 0 -%}
-## GPU usage
+{% if 'cpu_mem_process_usage_path' in data -%}
+### RAM usage by process
+
+```{figure} {{data["cpu_mem_process_usage_path"]}}
+---
+name: {{basename}}_process_memusage
+alt: RAM usage by process
+align: center
+---
+
+RAM usage by process during benchmark
+```
+
+```{list-table} RAM usage by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_median'] }}**
+
+```
+{% endif %}
+
+{% if 'cpu_mem_all_usage_path' in data -%}
+### RAM usage by system and process
+
+```{figure} {{data["cpu_mem_all_usage_path"]}}
+---
+name: {{basename}}_all_memusage
+alt: RAM usage by system and process
+align: center
+---
+
+RAM usage by system and process during benchmark
+```
+
+```{list-table} RAM usage by system metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.3f' %  data['session_utilization_system_cpu_mem_percent_median'] }}**
+
+```
+
+```{list-table} RAM usage by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.3f' %  data['session_utilization_process_cpu_mem_percent_median'] }}**
+
+```
+{% endif %}
+
+{% if 'gpu_system_usage_path' in data -%}
+### GPU usage by system
 
 
-```{figure} {{data["gpuusagepath"]}}
+```{figure} {{data["gpu_system_usage_path"]}}
+---
+name: {{basename}}_gpuusage
+alt: GPU usage by system
+align: center
+---
+
+GPU utilization by system during benchmark
+```
+
+```{list-table} GPU utilization by system metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_std'] }}**
+* - Median
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_median'] }}**
+
+```
+{% endif %}
+
+{% if 'gpu_process_usage_path' in data -%}
+### GPU usage by process
+
+
+```{figure} {{data["gpu_process_usage_path"]}}
+---
+name: {{basename}}_gpuusage
+alt: GPU usage by process
+align: center
+---
+
+GPU utilization by process during benchmark
+```
+
+```{list-table} GPU utilization by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_std'] }}**
+* - Median
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_median'] }}**
+
+```
+{% endif %}
+
+{% if 'gpu_all_usage_path' in data -%}
+### GPU usage by system and process
+
+```{figure} {{data["gpu_all_usage_path"]}}
 ---
 name: {{basename}}_gpuusage
 alt: GPU usage
 align: center
 ---
 
-GPU utilization during benchmark
+GPU utilization by system and process during benchmark
 ```
 
-```{list-table} GPU utilization metrics
+```{list-table} GPU utilization by system metrics
 ---
 header-rows: 1
 align: center
@@ -123,29 +323,48 @@ align: center
   - Usage [%]
 
 * - Mean
-  - **{{'%.3f' % data['session_utilization_gpu_utilization_mean'] }}**
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_mean'] }}**
 * - Standard deviation
-  - **{{'%.3f' % data['session_utilization_gpu_utilization_std'] }}**
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_std'] }}**
 * - Median
-  - **{{'%.3f' % data['session_utilization_gpu_utilization_median'] }}**
+  - **{{'%.3f' % data['session_utilization_system_gpu_percent_median'] }}**
+
+```
+
+{% if 'session_utilization_process_gpu_percent_mean' in data -%}
+```{list-table} GPU utilization by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Usage [%]
+
+* - Mean
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_std'] }}**
+* - Median
+  - **{{'%.3f' % data['session_utilization_process_gpu_percent_median'] }}**
 
 ```
 {% endif %}
+{% endif %}
 
-{% if 'session_utilization_gpu_mem_utilization' in data and data['session_utilization_gpu_mem_utilization']|length > 0 -%}
-## GPU memory usage
+{% if 'gpu_mem_system_usage_path' in data -%}
+### GPU memory usage by system
 
-```{figure} {{data["gpumemusagepath"]}}
+```{figure} {{data["gpu_mem_system_usage_path"]}}
 ---
 name: {{basename}}_gpumemusage
-alt: GPU memory usage
+alt: GPU memory usage by system
 align: center
 ---
 
-GPU memory usage during benchmark
+GPU memory usage by system during benchmark
 ```
 
-```{list-table} GPU memory usage metrics
+```{list-table} GPU memory usage by system metrics
 ---
 header-rows: 1
 align: center
@@ -154,12 +373,92 @@ align: center
   - Memory used [%]
 
 * - Mean
-  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_mean'] }}**
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_mean'] }}**
 * - Standard deviation
-  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_std'] }}**
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_std'] }}**
 * - Median
-  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_median'] }}**
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_median'] }}**
 
 ```
 {% endif %}
 
+{% if 'gpu_mem_process_usage_path' in data -%}
+### GPU memory usage by process
+
+```{figure} {{data["gpu_mem_process_usage_path"]}}
+---
+name: {{basename}}_gpumemusage
+alt: GPU memory usage by process
+align: center
+---
+
+GPU memory usage by process during benchmark
+```
+
+```{list-table} GPU memory usage by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Memory used [%]
+
+* - Mean
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_median'] }}**
+
+```
+{% endif %}
+
+{% if 'gpu_mem_all_usage_path' in data -%}
+### GPU memory usage by system and process
+
+```{figure} {{data["gpu_mem_all_usage_path"]}}
+---
+name: {{basename}}_gpumemusage
+alt: GPU memory usage by system and process
+align: center
+---
+
+GPU memory usage by system and process during benchmark
+```
+
+```{list-table} GPU memory usage by system metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Memory used [%]
+
+* - Mean
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.6f' % data['session_utilization_system_gpu_mem_percent_median'] }}**
+
+```
+
+{% if 'session_utilization_process_gpu_mem_percent_mean' in data -%}
+```{list-table} GPU memory usage by process metrics
+---
+header-rows: 1
+align: center
+---
+* - Statistic
+  - Memory used [%]
+
+* - Mean
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_mean'] }}**
+* - Standard deviation
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_std'] }}**
+* - Median
+  - **{{'%.6f' % data['session_utilization_process_gpu_mem_percent_median'] }}**
+
+```
+{% endif %}
+{% endif %}

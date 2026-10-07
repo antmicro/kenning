@@ -41,6 +41,16 @@ class ReportTypes(str, Enum):
     COMPILATION = "compilation"
 
 
+class PerformanceReportScope(str, Enum):
+    """
+    Enum that describes the scope of resource usage metrics collection.
+    """
+
+    PROCESS = "process"
+    SYSTEM = "system"
+    ALL = "all"
+
+
 class Report(ArgumentsHandler, ABC):
     """
     Generate report based on measurements data gathered during

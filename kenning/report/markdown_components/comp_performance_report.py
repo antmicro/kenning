@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2025-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -69,13 +69,32 @@ def comparison_performance_report(
 
     metric_names = {
         "inference_step": ("Inference time", "s"),
-        "session_utilization_mem_percent": ("Memory usage", "%"),
-        "session_utilization_cpus_percent_avg": ("CPU usage", "%"),
-        "session_utilization_gpu_mem_utilization": (
-            "GPU memory usage",
+        "session_utilization_system_cpu_mem_percent": (
+            "System memory usage",
             "%",
         ),
-        "session_utilization_gpu_utilization": ("GPU usage", "%"),
+        "session_utilization_process_cpu_mem_percent": (
+            "Process memory usage",
+            "%",
+        ),
+        "session_utilization_system_cpu_percent": (
+            "System CPU usage",
+            "%",
+        ),
+        "session_utilization_process_cpu_percent": (
+            "Process CPU usage",
+            "%",
+        ),
+        "session_utilization_system_gpu_mem_percent": (
+            "System GPU memory usage",
+            "%",
+        ),
+        "session_utilization_process_gpu_mem_percent": (
+            "Process GPU memory usage",
+            "%",
+        ),
+        "session_utilization_system_gpu_percent": ("System GPU usage", "%"),
+        "session_utilization_process_gpu_percent": ("Process GPU usage", "%"),
     }
     common_metrics = set(metric_names.keys())
     hardware_usage_metrics = common_metrics - {"inference_step"}
@@ -110,14 +129,21 @@ def comparison_performance_report(
                 "protocol_inference_step_timestamp"
             ]
 
-        if "session_utilization_cpus_percent" in data:
-            data["session_utilization_cpus_percent_avg"] = performance_metrics[
-                "session_utilization_cpus_percent_avg"
-            ]
+        if "session_utilization_system_cpu_percents" in data:
+            data[
+                "session_utilization_system_cpu_percent"
+            ] = performance_metrics["session_utilization_system_cpu_percent"]
+
+        if "session_utilization_process_cpu_percents" in data:
+            data[
+                "session_utilization_process_cpu_percent"
+            ] = performance_metrics["session_utilization_process_cpu_percent"]
 
         gpumetrics = [
-            "session_utilization_gpu_mem_utilization",
-            "session_utilization_gpu_utilization",
+            "session_utilization_system_gpu_mem_percent",
+            "session_utilization_system_gpu_percent",
+            "session_utilization_process_gpu_mem_percent",
+            "session_utilization_process_gpu_percent",
         ]
         for gpumetric in gpumetrics:
             if gpumetric in data and len(data[gpumetric]) == 0:
@@ -125,18 +151,20 @@ def comparison_performance_report(
 
         modelmetrics = set(data.keys())
         common_metrics &= modelmetrics
-    if "session_utilization_cpus_percent_avg" in available_metrics:
-        available_metrics.remove("session_utilization_cpus_percent_avg")
+    if "session_utilization_system_cpu_percent" in available_metrics:
+        available_metrics.remove("session_utilization_system_cpu_percent")
+    if "session_utilization_process_cpu_percent" in available_metrics:
+        available_metrics.remove("session_utilization_process_cpu_percent")
     report_variables["available_metrics"] = available_metrics
 
     for metric, (metric_name, unit) in metric_names.items():
         metric_data = {}
         if metric_name == "Inference time":
             timestamp_key = "inference_step_timestamp"
-        elif metric_name in ("GPU usage", "GPU memory usage"):
-            timestamp_key = "session_utilization_gpu_timestamp"
+        elif metric_name in ("System GPU usage", "System GPU memory usage"):
+            timestamp_key = "session_utilization_system_gpu_timestamp"
         else:
-            timestamp_key = "session_utilization_timestamp"
+            timestamp_key = "session_utilization_system_cpu_timestamp"
         if timestamp_key not in data:
             KLogger.warning(
                 f'Missing measurement "{timestamp_key}" \

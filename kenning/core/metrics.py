@@ -675,16 +675,21 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Computes mean, standard deviation and median for keys:
 
     * target_inference_step or protocol_inference_step
-    * session_utilization_mem_percent
-    * session_utilization_cpus_percent
-    * session_utilization_gpu_mem_utilization
-    * session_utilization_gpu_utilization
+    * session_utilization_(system|process)_cpu_mem_percent
+    * session_utilization_system_cpu_percents
+    * session_utilization_(system|process)_gpu_mem_percent
+    * session_utilization_(system|process)_gpu_percent
+
+    Since session_utilization_process_cpu_percents has already an average CPU
+    usage due to `shutil` library limitation, its value moved to
+    `session_utilization_process_cpu_percents_avg` without calculating
+    remaining metrics.
 
     Those metrics are stored as <name_of_key>_<mean|std|median>
 
     Additionally computes time of first inference step
     as `inferencetime_first` and average utilization
-    of all cpus used as `session_utilization_cpus_percent_avg` key.
+    of all cpus used as `session_utilization_cpu_percents_avg` key.
 
     Parameters
     ----------
@@ -742,32 +747,46 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
         compute_min_max("inferencetime", measurementsdata[inference_step])
 
     # mem_percent
-    if "session_utilization_mem_percent" in measurementsdata:
+    if "session_utilization_process_cpu_mem_percent" in measurementsdata:
         compute_metrics(
-            "session_utilization_mem_percent",
-            measurementsdata["session_utilization_mem_percent"],
+            "session_utilization_process_cpu_mem_percent",
+            measurementsdata["session_utilization_process_cpu_mem_percent"],
         )
 
-    # cpus_percent
-    if "session_utilization_cpus_percent" in measurementsdata:
-        cpus_percent_avg = [
+    if "session_utilization_system_cpu_mem_percent" in measurementsdata:
+        compute_metrics(
+            "session_utilization_system_cpu_mem_percent",
+            measurementsdata["session_utilization_system_cpu_mem_percent"],
+        )
+
+    # cpu_percents
+    if "session_utilization_system_cpu_percents" in measurementsdata:
+        cpu_percents_avg = [
             np.mean(cpus)
-            for cpus in measurementsdata["session_utilization_cpus_percent"]
+            for cpus in measurementsdata[
+                "session_utilization_system_cpu_percents"
+            ]
         ]
         computed_metrics[
-            "session_utilization_cpus_percent_avg"
-        ] = cpus_percent_avg
+            "session_utilization_system_cpu_percent"
+        ] = cpu_percents_avg
         compute_metrics(
-            "session_utilization_cpus_percent_avg", cpus_percent_avg
+            "session_utilization_system_cpu_percent", cpu_percents_avg
         )
 
     # gpu_mem
-    if "session_utilization_gpu_mem_utilization" in measurementsdata:
-        compute_metrics("session_utilization_gpu_mem_utilization")
+    if "session_utilization_system_gpu_mem_percent" in measurementsdata:
+        compute_metrics("session_utilization_system_gpu_mem_percent")
+
+    if "session_utilization_process_gpu_mem_percent" in measurementsdata:
+        compute_metrics("session_utilization_process_gpu_mem_percent")
 
     # gpu
-    if "session_utilization_gpu_utilization" in measurementsdata:
-        compute_metrics("session_utilization_gpu_utilization")
+    if "session_utilization_system_gpu_percent" in measurementsdata:
+        compute_metrics("session_utilization_system_gpu_percent")
+
+    if "session_utilization_process_gpu_percent" in measurementsdata:
+        compute_metrics("session_utilization_process_gpu_percent")
 
     return computed_metrics
 

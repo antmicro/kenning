@@ -9,8 +9,9 @@ Reads a project's requirements and extras from its pyproject.toml.
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
+from packaging.markers import Marker
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
@@ -20,6 +21,7 @@ else:
     import tomli as tomllib
 
 RE_EXACT_PYTHON = re.compile(r";.*python_version\s*==")
+
 
 class Pyproject:
     """
@@ -100,6 +102,31 @@ class Pyproject:
             return []
         return sorted(parsed.extras)
 
+    @staticmethod
+    def _add_marker(requirement: str, marker: Optional[Marker]) -> str:
+        """
+        Restricts a requirement with an additional environment marker.
+
+        Parameters
+        ----------
+        requirement : str
+            Requirement, e.g. `torch>=2.0 ; python_version < '3.13'`
+        marker : Optional[Marker]
+            Marker to combine with the requirement's own one, if any
+
+        Returns
+        -------
+        str
+            Requirement that applies only where both markers hold
+        """
+        if marker is None:
+            return requirement
+        parsed = Requirement(requirement)
+        if parsed.marker is not None:
+            marker = Marker(f"({parsed.marker}) and ({marker})")
+        parsed.marker = marker
+        return str(parsed)
+
     def _expand(self, extra: str, seen: Set[str]) -> List[str]:
         """
         Lists requirements of an extra, with references to other extras
@@ -125,6 +152,11 @@ class Pyproject:
             nested = self._own_extras(requirement)
             if not nested:
                 requirements.append(requirement)
+                continue
+            marker = Requirement(requirement).marker
             for nested_extra in nested:
-                requirements += self._expand(nested_extra, seen)
+                requirements += [
+                    self._add_marker(line, marker)
+                    for line in self._expand(nested_extra, seen)
+                ]
         return requirements

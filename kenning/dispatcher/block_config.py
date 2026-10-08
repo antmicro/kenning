@@ -38,6 +38,7 @@ RUNTIMES = "runtimes"
 AUTOML = "automl"
 REPORT = "report"
 CONVERTERS = "converters"
+SENSORS = "sensor"
 
 
 class ConfigKey(str, Enum):
@@ -60,6 +61,7 @@ class ConfigKey(str, Enum):
     dataconverter = DATA_CONVERTERS
     automl = AUTOML
     report = REPORT
+    sensor = SENSORS
 
 
 # Keys used in the config dict (see this file's docstring for dict structure).

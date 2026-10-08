@@ -43,6 +43,7 @@ from kenning.core.report import Report
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.core.sensor import Sensor
 from kenning.dispatcher.block_config import (
     AUTOML,
     BLOCK_CONFIGURATIONS_KEY,
@@ -60,6 +61,7 @@ from kenning.dispatcher.block_config import (
     RUNTIME_BUILDERS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
+    SENSORS,
     ConfigKey,
     KenningBlockConfigDict,
 )
@@ -92,6 +94,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         AUTOML: ("kenning.automl", AutoML),
         REPORT: ("kenning.report", Report),
         CONVERTERS: ("kenning.converters", ModelConverter),
+        SENSORS: ("kenning.core.sensor", Sensor),
     }
 
 

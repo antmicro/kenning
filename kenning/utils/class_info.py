@@ -277,21 +277,20 @@ def resolve_returned_dict(
 ) -> Optional[ast.Dict]:
     """
     Returns the dict returned by the function. When the function returns
-    a variable it is followed to its assignment in
-    the function body.
+    a variable it is followed to its assignment in the function body.
 
     Parameters
     ----------
     function_node: ast.FunctionDef
-        AST function node to search for the assignment in
+        AST function node to search for the assignment in.
     returned: Optional[ast.expr]
-        Value of the return statement of the function
+        Value of the return statement of the function.
 
     Returns
     -------
     Optional[ast.Dict]
         AST dict node, or None if the returned value is not a dict or
-        a variable with a dict assigned to it in the function
+        a variable with a dict assigned to it in the function.
     """
     if isinstance(returned, ast.Dict):
         return returned
@@ -319,7 +318,7 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
     Parameters
     ----------
     class_node: ast.ClassDef
-        AST class node to find and extract io_specification from
+        AST class node to find and extract io_specification from.
 
     Returns
     -------
@@ -366,7 +365,7 @@ def get_output_specification(syntax_node: ast.Assign) -> Optional[str]:
     Parameters
     ----------
     syntax_node: ast.Assign
-        An assignment like `outputtypes = ['iree']`
+        An assignment like `outputtypes = ['iree']`.
 
     Returns
     -------
@@ -385,12 +384,12 @@ def clean_variable_name(variable_name: ast.AST) -> str:
     Parameters
     ----------
     variable_name: ast.AST
-        Variable to be cleaned up, e.g. "'tflite' "
+        Variable to be cleaned up, e.g. "'tflite' ".
 
     Returns
     -------
     str
-        Cleaned up variable
+        Cleaned up variable.
     """
     return (
         astunparse.unparse(variable_name)
@@ -408,9 +407,9 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
     Parameters
     ----------
     syntax_node: ast.Assign
-        An assignment like `arguments_structure = {'compiler_args': {}}`
+        An assignment like `arguments_structure = {'compiler_args': {}}`.
     source_path: str
-        Source path of the code to be parsed
+        Source path of the code to be parsed.
 
     Returns
     -------
@@ -492,15 +491,15 @@ def evaluate_argument_list_of_keys(
     Parameters
     ----------
     argument_list_name: str
-        Variable name that the list of keys is assigned to
+        Variable name that the list of keys is assigned to.
     source_path: str
-        Path of the code to be parsed
+        Path of the code to be parsed.
 
     Returns
     -------
     Tuple[List[str], str]
-        tuple with the first argument being the list of
-        evaluated elements and the second being the type as a string
+        Tuple with the first argument being the list of
+        evaluated elements and the second being the type as a string.
     """
     with open(source_path, "r") as file:
         parsed_file = ast.parse(file.read())
@@ -542,13 +541,13 @@ def evaluate_argument_list(
     argument_list_name: str
         Variable name that the list of elements is assigned to.
     source_path: str
-        Path of the code to be parsed
+        Path of the code to be parsed.
 
     Returns
     -------
     Tuple[List[str], str]
-        tuple with the first argument being the list of
-        evaluated elements and the second being the type as a string
+        Tuple with the first argument being the list of
+        evaluated elements and the second being the type as a string.
     """
     with open(source_path) as file:
         parsed_file = ast.parse(file.read())
@@ -604,7 +603,7 @@ def get_args_structure_from_parameterschema(
     Parameters
     ----------
     parameterschema: Dict
-        Arguments specification of the class
+        Arguments specification of the class.
 
     Returns
     -------
@@ -671,12 +670,12 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
     Parameters
     ----------
     dictionary: Dict
-        A python dictionary to be parsed
+        A python dictionary to be parsed.
 
     Return
     ------
     List[str]
-        A list of formatted, Markdown-like strings
+        A list of formatted, Markdown-like strings.
     """
     resulting_output = []
 
@@ -721,14 +720,14 @@ def instantiate_object(
     imported_class: Type
         Class to create an instance of.
     parameterschema: Dict
-        Argument structure of the class
+        Argument structure of the class.
     arguments: List[str]
-        Arguments provided by the user, will be used to create an object
+        Arguments provided by the user, will be used to create an object.
 
     Returns
     -------
     object
-        An instance of imported_class
+        An instance of imported_class.
 
     Raises
     ------
@@ -783,7 +782,7 @@ def instantiate_object_based_on_base_class(
     Returns
     -------
     object
-        An instance of imported_class
+        An instance of imported_class.
 
     Raises
     ------
@@ -853,14 +852,14 @@ def get_class_description(target: str, class_name: str) -> str:
     ----------
     target: str
         Target module-like path e.g.
-        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`
+        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`.
     class_name: str
-        Name of a specific class to display information about
+        Name of a specific class to display information about.
 
     Returns
     -------
     str
-        List of formatted, Markdown-like lines to be printed
+        List of formatted, Markdown-like lines to be printed.
     """
     # if target contains a class, split to path and class name
     split_target = target.split(".")
@@ -908,26 +907,26 @@ def generate_class_info(
     ----------
     target: str
         Target module-like path e.g.
-        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`
+        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`.
     class_name: str
-        Name of a specific class to display information about
+        Name of a specific class to display information about.
     docstrings: bool
-        Flag whether to display docstrings or not
+        Flag whether to display docstrings or not.
     dependencies: bool
-        Flag whether to display dependencies and their availability
+        Flag whether to display dependencies and their availability.
     input_formats: bool
-        Flag whether to display input formats
+        Flag whether to display input formats.
     output_formats: bool
-        Flag whether to display output formats
+        Flag whether to display output formats.
     argument_formats: bool
-        Flag whether to display argument formats
+        Flag whether to display argument formats.
     load_class_with_args: Optional[List[str]]
-        List of arguments provided to load a specific class with arguments
+        List of arguments provided to load a specific class with arguments.
 
     Returns
     -------
     List[str]
-        List of formatted, Markdown-like lines to be printed
+        List of formatted, Markdown-like lines to be printed.
     """
     resulting_lines = []
 

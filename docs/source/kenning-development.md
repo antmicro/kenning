@@ -182,12 +182,7 @@ Kenning classes can be created in three ways:
 
 To support all three methods, the newly implemented class requires creating a dictionary called `arguments_structure` that holds all configurable parameters of the class, along with their description, type and additional information.
 
-This structure is used to create:
-
-* an `argparse` group, to configure class parameters from terminal level (via the [](argumentshandler-api)'s `form_argparse` method).
-  Later, a class can be created with the `from_argparse` method.
-* a JSON schema to configure the class from a JSON file (via the [](argumentshandler-api)'s `form_parameterschema` method).
-  Later, a class can be created with the `from_parameterschema` method.
+This structure is used to create a JSON schema to configure the class from a JSON file (via the [](argumentshandler-api)'s `form_parameterschema` method). Later, a class can be created with the `from_parameterschema` method.
 
 `arguments_structure` is a dictionary in the following form:
 
@@ -281,22 +276,9 @@ class LiteRTCompiler(Optimizer):
             location=location,
             model_wrapper=model_wrapper,
         )
-
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.inference_input_type,
-            args.inference_output_type,
-            args.dataset_percentage,
-            args.quantization_aware_training
-        )
 ```
 
 In addition to defined arguments, there are also default [](optimizer-api) arguments - the [](dataset-api) object and path to save the model (`compiled_model_path`).
-
-Also, a `from_argparse` object creator is implemented, since there are additional parameters (`dataset`) to handle. The `from_parameterschema` function is created automatically.
 
 Additionally, if the new class does not inherit from any Kenning core classes, then it should inherit directly from [](argumentshandler-api) class which is responsible for creating `argparse` groups and JSON schema from `arguments_structure`.
 
@@ -386,17 +368,6 @@ class LiteRtCompiler(Optimizer):
             location=location,
             model_wrapper=model_wrapper,
         )
-
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.inference_input_type,
-            args.inference_output_type,
-            args.dataset_percentage,
-            args.quantize_model,
-        )
 ```
 
 ### Implementing unimplemented methods
@@ -404,7 +375,7 @@ class LiteRtCompiler(Optimizer):
 The remaining aspect of developing Kenning classes is implementing unimplemented methods.
 Unimplemented methods raise the `NotImplementedError`.
 
-In case of the [](optimizer-api) class, it is the `compile` method and `get_framework_and_version`.
+In case of the [](optimizer-api) class, it is the `compile` method and two functions: `get_framework` and `get_framework_version`.
 
 When implementing unimplemented methods, it is crucial to follow type hints both for inputs and outputs - more details can be found in the documentation for the method.
 Sticking to the type hints ensures compatibility between blocks, which is required for a seamless connection between compilation components.
@@ -473,17 +444,6 @@ class LiteRtCompiler(Optimizer):
         self.dataset_percentage = dataset_percentage
         self.quantization_aware_training = quantization_aware_training
         super().__init__(dataset, compiled_model_path, location=location)
-
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.inference_input_type,
-            args.inference_output_type,
-            args.dataset_percentage,
-            args.quantize_model,
-        )
 
     def compile(
         self,

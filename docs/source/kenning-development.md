@@ -158,7 +158,7 @@ The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. 
 Firstly, check [](kenning-api) for available building blocks for Kenning and their documentation.
 Adding a new block to Kenning is a matter of creating a new class inheriting from one of `kenning.core` classes, providing configuration parameters, and implementing methods - at least the unimplemented ones.
 
-For example purposes, let's create a sample [](optimizer-api)-based class, which will convert an input model to the TensorFlow Lite format.
+For example purposes, let's create a sample [](optimizer-api)-based class, which will convert an input model to the LiteRT format.
 
 First, let's create minimal code with an empty class:
 
@@ -166,7 +166,7 @@ First, let's create minimal code with an empty class:
 from kenning.core.optimizer import Optimizer
 
 
-class TensorFlowLiteCompiler(Optimizer):
+class LiteRTCompiler(Optimizer):
     pass
 ```
 
@@ -231,14 +231,15 @@ The fields describing the argument are as follows:
 Let's add parameters to the example class:
 
 ```python
-from typing import Optional, Literal
 from pathlib import Path
+from typing import Literal, Optional
+
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
-from kenning.core.dataset import Dataset
 
 
-class TensorFlowLiteCompiler(Optimizer):
+class LiteRTCompiler(Optimizer):
     arguments_structure = {
         "inferenceinputtype": {
             "argparse_name": "--inference-input-type",
@@ -252,35 +253,28 @@ class TensorFlowLiteCompiler(Optimizer):
             "default": "float32",
             "enum": ["float32", "int8", "uint8"],
         },
-        "quantize_model": {
-            "argparse_name": "--quantize-model",
-            "description": "Tells if model should be quantized",
+        "quantization_aware_training": {
+            "description": "Enable quantization aware training",
             "type": bool,
             "default": False,
-        },
-        "dataset_percentage": {
-            "description": "Tells how much data from dataset (from 0.0 to "
-            "1.0) will be used for calibration dataset",
-            "type": float,
-            "default": 0.25,
         },
     }
 
     def __init__(
-        self,
-        dataset: Dataset,
-        compiled_model_path: Path,
-        location: Literal["host", "target"] = "host",
-        inferenceinputtype: str = "float32",
-        inferenceoutputtype: str = "float32",
-        dataset_percentage: float = 0.25,
-        quantize_model: bool = False,
-        model_wrapper: Optional[ModelWrapper] = None,
+            self,
+            dataset: Dataset,
+            compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
+            inferenceinputtype: str = 'float32',
+            inferenceoutputtype: str = 'float32',
+            dataset_percentage: float = 0.25,
+            quantization_aware_training: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
-        self.quantize_model = quantize_model
+        self.quantization_aware_training = quantization_aware_training
         super().__init__(
             dataset,
             compiled_model_path,
@@ -296,7 +290,7 @@ class TensorFlowLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.quantize_model,
+            args.quantization_aware_training
         )
 ```
 
@@ -317,7 +311,9 @@ Usually, each class can accept multiple model input formats and provides at leas
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
 ```python test-skip
-outputtypes = ["tflite"]
+    outputtypes = [
+        'litert'
+    ]
 ```
 
 Likewise, the list of support input formats is also organized in the same class as the `inputtypes` list:
@@ -329,21 +325,25 @@ inputtypes = ["keras", "tensorflow"]
 Let's update the code with supported types:
 
 ```python
+from pathlib import Path
+from typing import Literal, Optional
+
+from kenning.converters import converter_registry
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
-from kenning.core.dataset import Dataset
-
-from typing import Optional, Literal
 
 
-import tensorflow as tf
-from pathlib import Path
+class LiteRtCompiler(Optimizer):
 
+    outputtypes = [
+        'litert'
+    ]
 
-class TensorFlowLiteCompiler(Optimizer):
-    outputtypes = ["tflite"]
-
-    inputtypes = ["keras", "tensorflow"]
+    inputtypes = [
+        'keras',
+        'tensorflow'
+    ]
 
     arguments_structure = {
         "inferenceinputtype": {
@@ -358,35 +358,28 @@ class TensorFlowLiteCompiler(Optimizer):
             "default": "float32",
             "enum": ["float32", "int8", "uint8"],
         },
-        "quantize_model": {
-            "argparse_name": "--quantize-model",
-            "description": "Tells if model should be quantized",
+        "quantization_aware_training": {
+            "description": "Enable quantization aware training",
             "type": bool,
             "default": False,
-        },
-        "dataset_percentage": {
-            "description": "Tells how much data from dataset (from 0.0 to "
-            "1.0) will be used for calibration dataset",
-            "type": float,
-            "default": 0.25,
         },
     }
 
     def __init__(
-        self,
-        dataset: Dataset,
-        compiled_model_path: Path,
-        location: Literal["host", "target"] = "host",
-        inferenceinputtype: str = "float32",
-        inferenceoutputtype: str = "float32",
-        dataset_percentage: float = 0.25,
-        quantize_model: bool = False,
-        model_wrapper: Optional[ModelWrapper] = None,
+            self,
+            dataset: Dataset,
+            compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
+            inferenceinputtype: str = 'float32',
+            inferenceoutputtype: str = 'float32',
+            dataset_percentage: float = 0.25,
+            quantization_aware_training: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
-        self.quantize_model = quantize_model
+        self.quantization_aware_training = quantization_aware_training
         super().__init__(
             dataset,
             compiled_model_path,
@@ -419,19 +412,25 @@ Sticking to the type hints ensures compatibility between blocks, which is requir
 Let's finish the implementation of the [](optimizer-api)-based class.
 
 ```python
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
-from kenning.core.dataset import Dataset
-from kenning.utils.update_h5_file import update_h5_file
-import tensorflow as tf
+from copy import deepcopy
 from pathlib import Path
-from typing import Optional, Dict, List, Literal
+from typing import Dict, List, Literal, Optional
+
+import numpy as np
+import tensorflow as tf
 
 from kenning.converters import converter_registry
+from kenning.core.dataset import Dataset
+from kenning.core.exceptions import IOSpecificationNotFoundError
+from kenning.core.model import ModelWrapper
+from kenning.utils.logger import KLogger
+from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.update_h5_file import update_h5_file
 
-
-class TensorFlowLiteCompiler(Optimizer):
-    outputtypes = ["mytflite"]
+class LiteRtCompiler(Optimizer):
+    outputtypes = [
+        'litert'
+    ]
 
     inputtypes = [
         "keras",
@@ -451,35 +450,28 @@ class TensorFlowLiteCompiler(Optimizer):
             "default": "float32",
             "enum": ["float32", "int8", "uint8"],
         },
-        "quantize_model": {
-            "argparse_name": "--quantize-model",
-            "description": "Tells if model should be quantized",
+        "quantization_aware_training": {
+            "description": "Enable quantization aware training",
             "type": bool,
             "default": False,
-        },
-        "dataset_percentage": {
-            "description": "Tells how much data from dataset (from 0.0 to "
-            "1.0) will be used for calibration dataset",
-            "type": float,
-            "default": 0.25,
         },
     }
 
     def __init__(
-        self,
-        dataset: Dataset,
-        compiled_model_path: Path,
-        location: Literal["host", "target"] = "host",
-        inferenceinputtype: str = "float32",
-        inferenceoutputtype: str = "float32",
-        dataset_percentage: float = 0.25,
-        quantize_model: bool = False,
-        model_wrapper: Optional[ModelWrapper] = None,
+            self,
+            dataset: Dataset,
+            compiled_model_path: Path,
+            location: Literal['host', 'target'] = 'host',
+            inferenceinputtype: str = 'float32',
+            inferenceoutputtype: str = 'float32',
+            dataset_percentage: float = 0.25,
+            quantization_aware_training: bool = False,
+            model_wrapper: Optional[ModelWrapper] = None
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.dataset_percentage = dataset_percentage
-        self.quantize_model = quantize_model
+        self.quantization_aware_training = quantization_aware_training
         super().__init__(dataset, compiled_model_path, location=location)
 
     @classmethod
@@ -495,79 +487,143 @@ class TensorFlowLiteCompiler(Optimizer):
 
     def compile(
         self,
-        inputmodelpath: Path,
+        input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
+        **kwargs: Dict,
     ):
+        import tensorflow as tf
+        import tensorflow_model_optimization as tfmot
 
-        # load I/O specification for the model
         if io_spec is None:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
-        # load the model using chosen input type
-        if self.inputtype == "keras":
-            if inputmodelpath.suffix in (".h5", ".hdf5"):
-                # Update to the newest version of Tensorflow.
-                inputmodelpath = update_h5_file(inputmodelpath)
-            model = tf.keras.models.load_model(str(inputmodelpath))
-            keras_model = model
+        if not io_spec or not io_spec["output"] or not io_spec["input"]:
+            raise IOSpecificationNotFoundError(
+                "No input/ouput specification found"
+            )
 
-            if self.quantize_model:
-                import tensorflow_model_optimization as tfmodt
+        model_cls = self.get_model_class()
 
-                def annotate_model(layer):
-                    # Mark every dense layer so that it will be quantized.
-                    if isinstance(layer, tf.keras.layers.Dense):
-                        return (
-                            tfmot.quantization.keras.quantize_annotate_layer(
-                                layer
-                            )
-                        )
-                    return layer
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
 
-                # Create a copy with the quantize annotations applied.
-                quant_aware_annotate_model = tf.keras.models.clone_model(
-                    model, clone_function=annotate_model
-                )
+        if self.quantization_aware_training:
+            assert self.inputtype == "keras"
+            if input_model_path.suffix in (".h5", ".hdf5"):
+                input_model_path = update_h5_file(input_model_path)
 
-                # Perform quantization
-                pcqat_model = tfmot.quantization.keras.quantize_apply(
-                    quant_aware_annotate_model,
-                    tfmot.experimental.combine.Default8BitClusterPreserveQuantizeScheme(
-                        preserve_sparsity=True
-                    ),
-                )
+            model = tf.keras.models.load_model(str(input_model_path))
 
-                keras_model = self.train_model(pcqat_model)
-            converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
+            def annotate_model(layer):
+                if isinstance(layer, tf.keras.layers.Dense):
+                    return tfmot.quantization.keras.quantize_annotate_layer(
+                        layer
+                    )
+                return layer
+
+            quant_aware_annotate_model = tf.keras.models.clone_model(
+                model, clone_function=annotate_model
+            )
+
+            pcqat_model = tfmot.quantization.keras.quantize_apply(
+                quant_aware_annotate_model,
+                tfmot.experimental.combine.Default8BitClusterPreserveQuantizeScheme(
+                    preserve_sparsity=True
+                ),
+            )
+
+            pcqat_model = self.train_model(pcqat_model)
+            converter = tf.lite.TFLiteConverter.from_keras_model(pcqat_model)
         else:
-            # We need to find the converter somewhere else.
-            inputtype = self.get_input_type(inputmodelpath)
+            input_type = self.get_input_type(input_model_path)
+
             conversion_kwargs = {
-                "io_spec": io_spec_processed,
+                "io_spec": io_spec,
+                "model_cls": model_cls,
                 "target": self.target,
                 "inferenceinputtype": self.inferenceinputtype,
                 "inferenceoutputtype": self.inferenceoutputtype,
+                "use_tf_select_ops": self.use_tf_select_ops,
             }
-
-            # Use the converter_registry to find a converter from
-            # our input type to tflite
             converter = converter_registry.convert(
-                inputmodelpath, inputtype, "tflite", **conversion_kwargs
+                input_model_path,
+                input_type,
+                "litert",
+                **conversion_kwargs,
+                **kwargs,
             )
+            import ai_edge_litert.schema_py_generated
 
-        # compile and save the model
-        tflite_model = converter.convert()
+            is_model = isinstance(
+                converter, ai_edge_litert.schema_py_generated.ModelT
+            )
+        if not is_model:
+            self._configure_converter(converter)
+
+            if self.dataset is not None and self.target != "default":
+
+                def generator():
+                    for entry in self.dataset.calibration_dataset_generator(
+                        self.dataset_percentage
+                    ):
+                        entry = self.model_wrapper.preprocess_input(entry)
+
+                        yield [
+                            np.array(entry, dtype=np.float32).reshape(
+                                io_spec.get(
+                                    "processed_input", io_spec["input"]
+                                )[0]["shape"]
+                            )
+                        ]
+
+                converter.representative_dataset = generator
+
+            tflite_model = converter.convert()
+        else:
+            from ai_edge_litert.tools import flatbuffer_utils as fbu
+
+            tflite_model = fbu.convert_object_to_bytearray(converter)
+
+        self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.compiled_model_path, "wb") as f:
             f.write(tflite_model)
+        if self.save_to_zip:
+            self.compress_model_to_zip()
 
-        # update the I/O specification
-        interpreter = tf.lite.Interpreter(model_content=tflite_model)
+        if self.resolver_output_path is not None:
+            LiteRTCompiler.create_resolver_file_from_model(
+                modeldata=tflite_model,
+                output_path=self.resolver_output_path,
+                resolver_template=self.resolver_template_path,
+            )
+
+        import ai_edge_litert.interpreter
+
+        interpreter = ai_edge_litert.interpreter.Interpreter(
+            model_path=self.compiled_model_path
+        )
         signature = interpreter.get_signature_runner()
 
         def update_io_spec(sig_det, int_det, key):
             for order, spec in enumerate(io_spec[key]):
                 old_name = spec["name"]
-                new_name = sig_det[old_name]["name"]
+                new_name = None
+                if old_name in sig_det:
+                    new_name = sig_det[old_name]["name"]
+                else:
+                    if "index" in spec:
+                        for v in sig_det.values():
+                            if v.get("index", None) == spec["index"]:
+                                new_name = v["name"]
+                                break
+                    # Fallback: use the first available name.
+                    if new_name is None:
+                        sig_det_values = list(sig_det.values())
+                        if sig_det_values:
+                            idx = min(order, len(sig_det_values) - 1)
+                            new_name = sig_det_values[idx]["name"]
+                        else:
+                            new_name = ""
                 spec["name"] = new_name
                 spec["order"] = order
 
@@ -579,6 +635,11 @@ class TensorFlowLiteCompiler(Optimizer):
                     for spec in io_spec[key]
                     if det["name"] == spec["name"]
                 ][0]
+                # Remember batch_size (dimension 0) from spec and take format
+                # (NHWC or NCHW) from det
+                spec["shape"] = [spec["shape"][0]] + [
+                    int(dim) for dim in det["shape"][1:]
+                ]
 
                 if quantized:
                     scale, zero_point = det["quantization"]
@@ -589,10 +650,15 @@ class TensorFlowLiteCompiler(Optimizer):
                 new_spec.append(spec)
             io_spec[key] = new_spec
 
+        if "processed_input" not in io_spec:
+            io_spec["processed_input"] = deepcopy(io_spec["input"])
+        if "processed_output" not in io_spec:
+            io_spec["processed_output"] = deepcopy(io_spec["output"])
+
         update_io_spec(
             signature.get_input_details(),
             interpreter.get_input_details(),
-            "input",
+            "processed_input",
         )
         update_io_spec(
             signature.get_output_details(),
@@ -600,11 +666,17 @@ class TensorFlowLiteCompiler(Optimizer):
             "output",
         )
 
-        # save updated I/O specification
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)
 
-    def get_framework_and_version(self):
-        return "tensorflow", tf.__version__
+        return 0
+
+    @classmethod
+    def get_framework(cls) -> str:
+        return "litert"
+
+    @classmethod
+    def get_framework_version(cls) -> str:
+        return tf.__version__
 ```
 
 There are several important things regarding the code snippet above:
@@ -646,7 +718,7 @@ The scenario can look as follows:
     "optimizers":
     [
         {
-            "type": "my_optimizer.TensorFlowLiteCompiler",
+            "type": "my_optimizer.LiteRTCompiler",
             "parameters":
             {
                 "compiled_model_path": "./build/compiled-model.tflite",
@@ -666,7 +738,7 @@ The scenario can look as follows:
 }
 ```
 
-The emphasized line demonstrates usage of the implemented `TensorFlowLiteCompiler` from the `my_optimizer.py` script.
+The emphasized line demonstrates usage of the implemented `LiteRTCompiler` from the `my_optimizer.py` script.
 
 This sums up the Kenning development process.
 

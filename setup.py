@@ -50,5 +50,6 @@ setuptools.setup(
                 extra_compile_args=["-O3", "-Os"],
             ),
         ],
+        force=True,
     ),
 )

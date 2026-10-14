@@ -111,6 +111,7 @@ setup(
                 extra_compile_args=["-O3", "-Os"],
             ),
         ],
+        force=True,
     ),
     cmdclass={
         "build_py": BuildPy,

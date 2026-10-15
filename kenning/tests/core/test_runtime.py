@@ -5,7 +5,7 @@
 import sys
 from contextlib import contextmanager
 from time import sleep
-from typing import Any, Iterator, Tuple, Type
+from typing import Any, Iterator, List, Tuple, Type
 
 import numpy as np
 import pytest
@@ -29,6 +29,17 @@ RUNTIME_SUBCLASSES = get_all_subclasses(
 RUNTIME_INPUTTYPES = [
     (run, inp) for run in RUNTIME_SUBCLASSES for inp in run.inputtypes
 ]
+
+
+MARKS = {
+    "VLLMRuntime": [
+        pytest.mark.xfail(reason="vLLM: no supported device available"),
+    ],
+}
+
+
+def extra_marks(runtime_cls: Type[Runtime]) -> List[pytest.MarkDecorator]:
+    return MARKS.get(runtime_cls.__name__, [])
 
 
 @contextmanager
@@ -61,6 +72,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -94,6 +106,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -126,6 +139,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -180,6 +194,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -229,6 +244,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -264,6 +280,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -299,6 +316,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -340,6 +358,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
@@ -377,6 +396,7 @@ class TestRuntime:
                     pytest.mark.xdist_group(
                         name=f"TestRuntime_{runtime_cls.__name__}"
                     ),
+                    *extra_marks(runtime_cls),
                 ],
             )
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES

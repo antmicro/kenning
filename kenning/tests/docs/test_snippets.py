@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -158,6 +158,7 @@ def get_all_snippets(
 
             # Parse args from language
             extract_snippet_args(snippet)
+
             if "save-as" in snippet.meta:
                 if snippet.lang == "{literalinclude}":
                     # Take path to the markdown directory
@@ -305,7 +306,20 @@ def get_working_directory(
         if markdown in WORKING_DIRS:
             return WORKING_DIRS[markdown]
 
-        working_dir_path = tmpfolder / f"{markdown}_wd"
+        working_dir_path = tmpfolder / f"{markdown}_wd" / "kenning"
+
+        if not working_dir_path.exists():
+            patch_file = "temp.patch"
+            subprocess.check_output(
+                ["git", "clone", "/ci", str(working_dir_path)]
+            )
+            with open(str(working_dir_path / patch_file), "wb") as file:
+                file.write(subprocess.check_output(["git", "diff"]))
+            subprocess.check_output(
+                ["git", "apply", patch_file, "--allow-empty"],
+                cwd=str(working_dir_path),
+            )
+            os.remove(str(working_dir_path / patch_file))
 
         venv_path = working_dir_path / "venv"
         if not venv_path.exists():
@@ -315,17 +329,6 @@ def get_working_directory(
                 upgrade_deps=True,
                 system_site_packages=use_system_site_packages,
             )
-        kenning_path = working_dir_path / "kenning"
-        if not kenning_path.exists():
-            patch_file = "temp.patch"
-            subprocess.check_output(["git", "clone", "/ci", str(kenning_path)])
-            with open(str(kenning_path / patch_file), "wb") as file:
-                file.write(subprocess.check_output(["git", "diff"]))
-            subprocess.check_output(
-                ["git", "apply", patch_file, "--allow-empty"],
-                cwd=str(kenning_path),
-            )
-            os.remove(str(kenning_path / patch_file))
         WORKING_DIRS[markdown] = working_dir_path
         return working_dir_path
 
@@ -410,7 +413,6 @@ def create_script(snippet: Snippet, working_dir: Path) -> str:
     str
         Prepared script
     """
-    kenning_path = working_dir / "kenning"
     script = None
     if snippet.lang == "bash":
         # If `pip install` change it to install local Kenning version

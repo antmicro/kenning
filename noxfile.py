@@ -198,7 +198,7 @@ def run_gallery_tests(session: nox.Session, specification):
         "--save-tmp-pattern",
         "_autoPyTorch_tmp",
         "--capture=fd",
-        "-n=6",
+        "-n=0",
         "-x",
         f"--report-log={report_path}",
         f"--test-docs-log-dir={test_docs_log_dir}",

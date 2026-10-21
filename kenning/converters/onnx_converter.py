@@ -150,7 +150,7 @@ class OnnxConverter(ModelConverter):
             )
         except (TypeError, ValueError) as e:
             # Fallback: try simpler conversion without input name preservation
-            # This may lose some shape information but should avoid symbolici
+            # This may lose some shape information but should avoid symbolic
             # issues
             if "symbolic inputs/outputs do not implement `__len__`" in str(e):
                 model = onnx2tf.convert(
@@ -160,6 +160,14 @@ class OnnxConverter(ModelConverter):
                 )
             else:
                 raise
+        except Exception:
+            # Try without forcing the batch size. Workaround for
+            # PyTorchAnomalyDetectionGRU (and possibly other models).
+            # TODO: look for proper fix after updating onnx2tf
+            model = onnx2tf.convert(
+                str(model_path),
+                disable_strict_mode=True,
+            )
         converted_path = self.source_model_path.with_suffix(
             f".{datetime.now().strftime('%Y%m%d-%H%M%S')}.pb"
         )

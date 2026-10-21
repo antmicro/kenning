@@ -47,6 +47,13 @@ class RandomizedImageClassificationDataset(Dataset):
             "type": int,
             "default": 3,
         },
+        "integer_classes": {
+            "argparse_name": "--integer-classes",
+            "description": "Whether the classes should be represented as a "
+            "single integer or one-hot encoded array",
+            "type": bool,
+            "default": False,
+        },
         "inputdims": {
             "argparse_name": "--input-dims",
             "description": "Dimensionality of the inputs",
@@ -87,10 +94,9 @@ class RandomizedImageClassificationDataset(Dataset):
         batch_size : int
             The size of batches of data delivered during inference.
         download_dataset : bool
-            Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again.
+            Ignored: this dataset will be generated on the fly.
         force_download_dataset : bool
-            Forces dataset download.
+            Ignored: this dataset will be generated on the fly.
         shuffle_data : bool
             Shuffle dataset data when loading.
         samplescount : int
@@ -123,10 +129,10 @@ class RandomizedImageClassificationDataset(Dataset):
 
         kwargs.pop("dataset_percentage", None)
         super().__init__(
-            root,
-            batch_size,
-            force_download_dataset,
-            download_dataset,
+            root=root,
+            batch_size=batch_size,
+            force_download_dataset=False,
+            download_dataset=False,
             dataset_percentage=1,
             shuffle_data=shuffle_data,
             **kwargs,

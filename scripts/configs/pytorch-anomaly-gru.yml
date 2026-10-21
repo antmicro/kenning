@@ -1,0 +1,13 @@
+dataset:
+  type: RandomizedAnomalyDetectionDataset
+  parameters:
+    dataset_root: ./build/anomaly_dataset
+    samplescount: 256
+    numclasses: 2
+    integer_classes: true
+    num_features: 18
+    window_size: 5
+model_wrapper:
+  type: PyTorchAnomalyDetectionGRU
+  parameters:
+    model_path: ./build/model

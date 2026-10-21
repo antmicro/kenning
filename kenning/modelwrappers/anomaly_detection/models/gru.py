@@ -98,6 +98,11 @@ class AnomalyDetectionGRU(nn.Module):
         self,
         labels: Tensor,
         outputs: Tensor,
+        aggregate: bool = True,
     ) -> Tensor:
         score = (labels - outputs) ** 2
-        return torch.mean(score, dim=2)
+
+        if aggregate:
+            return torch.mean(score, dim=2)
+
+        return score

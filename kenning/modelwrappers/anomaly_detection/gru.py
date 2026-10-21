@@ -237,14 +237,18 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
         )
 
     def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
-        # Get index of bigger value
+        outputs = y[0]
+
+        # Take the mean anomaly score (across features) at the last timestamp
+        # and compare it to the anomaly threshold
         anomalies = (
-            np.argmax(np.asarray(y), axis=-1).reshape(-1).astype(np.int8)
+            (np.mean(outputs[:, -1, :], axis=-1) >= self.threshold)
+            .reshape(-1)
+            .astype(np.int8)
         )
         return (anomalies,)
 
     def run_inference(self, X: List[Any]) -> List[Any]:
-        import numpy as np
         import torch
 
         self.prepare_model()
@@ -257,13 +261,18 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
             inp = inp.squeeze(1)
 
         out = self.model(inp)
+
+        # We must calculate the anomaly score here, because it's the only
+        # function where we have access both to model inputs and outputs, but
+        # we can't calculate the mean, because we need to conform to io_spec
         scores = (
-            self.model.anomaly_score(inp, out)[:, -1].detach().cpu().numpy()
+            self.model.anomaly_score(inp, out, aggregate=False)
+            .detach()
+            .cpu()
+            .numpy()
         )
 
-        # return distances in shape (batch, 2) as required by IO spec
-        distances = np.stack([1.0 - scores, scores], axis=1)
-        return [distances]
+        return [scores]
 
     def prepare_criterion(self) -> nn.Module:
         return torch.nn.MSELoss()
@@ -380,7 +389,7 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
             "output": [
                 {
                     "name": "distances",
-                    "shape": (batch_size, 2),
+                    "shape": (batch_size, window_size, num_features),
                     "dtype": "float32",
                 }
             ],

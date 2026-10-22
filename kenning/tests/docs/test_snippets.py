@@ -11,7 +11,6 @@ import string
 import subprocess
 import tempfile
 import uuid
-import venv
 from collections import defaultdict
 from glob import glob
 from pathlib import Path
@@ -308,31 +307,29 @@ def get_working_directory(
         if markdown in WORKING_DIRS:
             return WORKING_DIRS[markdown]
 
-        working_dir_path = tmpfolder / f"{markdown}_wd" / "kenning"
+        working_dir_path = tmpfolder / f"{markdown}_wd"
+        kenning_path = working_dir_path / "kenning"
 
-        if not working_dir_path.exists():
+        if not kenning_path.exists():
             patch_file = "temp.patch"
-            subprocess.check_output(
-                ["git", "clone", "/ci", str(working_dir_path)]
-            )
-            with open(str(working_dir_path / patch_file), "wb") as file:
+            subprocess.check_output(["git", "clone", "/ci", str(kenning_path)])
+            with open(str(kenning_path / patch_file), "wb") as file:
                 file.write(subprocess.check_output(["git", "diff"]))
             subprocess.check_output(
                 ["git", "apply", patch_file, "--allow-empty"],
-                cwd=str(working_dir_path),
+                cwd=str(kenning_path),
             )
-            os.remove(str(working_dir_path / patch_file))
+            os.remove(str(kenning_path / patch_file))
 
-        venv_path = working_dir_path / "venv"
+        venv_path = kenning_path / "venv"
         if not venv_path.exists():
-            venv.create(
-                venv_path,
-                with_pip=True,
-                upgrade_deps=True,
-                system_site_packages=use_system_site_packages,
-            )
-        WORKING_DIRS[markdown] = working_dir_path
-        return working_dir_path
+            cmd = ["uv", "venv", str(venv_path), "--seed"]
+            if use_system_site_packages:
+                cmd.append("--system-site-packages")
+            subprocess.check_output(cmd)
+
+        WORKING_DIRS[markdown] = kenning_path
+        return kenning_path
 
 
 def subshell_output(

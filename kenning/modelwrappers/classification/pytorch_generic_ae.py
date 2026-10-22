@@ -11,7 +11,6 @@ from typing import Callable, TypeVar
 import numpy as np
 from tqdm import tqdm
 
-from kenning.core import metrics
 from kenning.modelwrappers.classification.pytorch_generic import (
     PyTorchGenericClassification,
 )
@@ -35,6 +34,7 @@ class PyTorchGenericAutoencoderClassification(PyTorchGenericClassification):
     def train_model(self):
         import torch
         import torch.optim as optim
+        from sklearn.metrics import f1_score
 
         ae_train_loader, _ = self._prepare_loaders(select_class=0)
 
@@ -82,7 +82,7 @@ class PyTorchGenericAutoencoderClassification(PyTorchGenericClassification):
         self._test_model(
             test_loader,
             self._prepare_postprocess(),
-            partial(metrics.f1_score, average="binary", pos_label=1),
+            partial(f1_score, average="binary", pos_label=1),
             40,
         )
 

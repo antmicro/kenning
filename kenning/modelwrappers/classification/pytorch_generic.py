@@ -13,7 +13,6 @@ from typing import Optional
 
 import numpy as np
 
-from kenning.core import metrics
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import TrainingParametersMissingError
 from kenning.datasets.tabular_dataset import TabularDataset
@@ -124,6 +123,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
     def train_model(self):
         import torch
         import torch.optim as optim
+        from sklearn.metrics import f1_score
 
         train_loader, test_loader = self._prepare_loaders()
 
@@ -139,7 +139,7 @@ class PyTorchGenericClassification(PyTorchWrapper):
             opt,
             criterion,
             postprocess,
-            partial(metrics.f1_score, average="binary", pos_label=1),
+            partial(f1_score, average="binary", pos_label=1),
         )
 
     def _prepare_missing_params(self):

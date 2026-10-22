@@ -30,15 +30,14 @@ First, let's install the dependencies needed to run this scenario on GPU, and we
 
 Let's install Kenning:
 ```bash test-skip
-git clone https://github.com/antmicro/kenning.git
+git clone https://github.com/antmicro/kenning.git && cd kenning
 ```
 
 and the required libraries:
 ```bash
 uv pip install \
-  --project ./kenning \
   --group tvm-cuda \
-  "./kenning[object_detection,onnxruntime_gpu,reports]"
+  ".[object_detection,onnxruntime_gpu,reports]"
 ```
 
 ### (GPU) Optimization
@@ -134,7 +133,7 @@ Most of the steps for CPU will look nearly identical to those for GPU - the CPU 
 Since we currently have `TVM and ONNX Runtime` packages installed for GPU, we need to **uninstall** them and install the CPU-compatible versions instead.
 We can install CPU-only replacements with:
 ```bash
-uv pip install "./kenning[object_detection, tvm, onnxruntime, reports]"
+uv pip install ".[object_detection, tvm, onnxruntime, reports]"
 ```
 
 ### (CPU) Optimization

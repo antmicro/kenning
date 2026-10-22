@@ -26,7 +26,7 @@ To run this scenario, you will need:
 For transfer learning and model optimization, we can directly clone the Kenning repository from:
 
 ```bash test-skip
-git clone https://github.com/antmicro/kenning.git
+git clone https://github.com/antmicro/kenning.git && cd kenning
 ```
 
 and perform the next steps ({ref}`2 <configuration-files-section>`, {ref}`3 <transfer-learning-section>`, {ref}`4 <optimization-section>`) inside it.
@@ -56,7 +56,6 @@ git config --global user.name "Name Surname"
 ## Configuration Files
 
 Everything in Kenning revolves around configuration files, which store configurations for various scenarios, such as model optimization.
-Let's enter the directory where Kenning is located (`kenning/`).
 In the `scripts/configs/` directory, we can find the [pytorch-open-images-yolact-tvm-gpu.yaml](https://github.com/antmicro/kenning/tree/main/scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml) file, which contains the YOLACT model configuration for report generation, optimization, training, and benchmarking.
 The individual sections are taken into account when invoking the relevant scenarios using the `kenning [scenario] [params]` command, e.g., `kenning train --cfg path/file.yaml`.
 In this case, only `model_wrapper` and `dataset` will be taken into account:
@@ -105,7 +104,7 @@ These classes will be:
 /m/080hkjn,Handbag
 ```
 
-Let's save these classes to the `transfer_learning.csv` file, preferably in the Kenning root directory (`kenning/`).
+Let's save these classes to the `transfer_learning.csv` file, preferably in the Kenning root directory.
 
 ### Adapting the Prediction Head
 
@@ -145,7 +144,7 @@ xhost +local:
 and let's install Kenning and the required libraries with:
 
 ```bash test-skip
-uv pip install --project ./kenning -e "./kenning[object_detection,pose_estimation,onnxruntime_gpu,torch]" --group tvm-cuda
+uv pip install --project . -e ".[object_detection,pose_estimation,onnxruntime_gpu,torch]" --group tvm-cuda
 ```
 
 or when not using `ROS2`, create a virtual environment:
@@ -162,13 +161,13 @@ See the [Kenning installation](https://github.com/antmicro/kenning/blob/main/REA
 and run:
 
 ```bash
-uv pip install --project ./kenning -e "./kenning[object_detection, torch]" --group tvm-cuda
+uv pip install --project . -e ".[object_detection, torch]" --group tvm-cuda
 ```
 
 Then, let's run the training process for the head itself (it will be modified automatically based on the number of dataset classes):
 
 ```bash
-kenning train --cfg kenning/scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
+kenning train --cfg scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
 ```
 
 Depending on the available hardware, it may take a while.
@@ -189,7 +188,7 @@ Additionally, the recently trained model (`pretrained_weights_path: ./build/yola
 Let's train the model again, this time in its entirety:
 
 ```bash test-skip
-kenning train --cfg kenning/scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
+kenning train --cfg scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
 ```
 
 The resulting model will be located in `./build/final_yolact.pth`.
@@ -245,7 +244,7 @@ optimizers:
 Now, let's run the optimization scenario using the command:
 
 ```bash
-kenning optimize --cfg kenning/scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
+kenning optimize --cfg scripts/configs/pytorch-open-images-yolact-tvm-gpu.yaml
 ```
 
 Our optimized model is located in `./build/yolact_tvm_int8.tar`.

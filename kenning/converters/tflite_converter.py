@@ -119,6 +119,54 @@ class TFLiteConverter(ModelConverter):
             dtype_dict=dtypes,
         )
 
+    def to_tvm_relax(
+        self,
+        io_spec: Dict[str, List[Dict]],
+        model: Optional["tf.lite.TFLiteConverter"] = None,
+        **kwargs,
+    ) -> "tvm.IRModule":
+        """
+        Converts TFLite model to TVM Relax module.
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
+        model : Optional["tf.lite.TFLiteConverter"]
+            Optional model object.
+        **kwargs:
+            Keyword arguments passed between conversions.
+
+        Returns
+        -------
+        tvm.IRModule
+            The Relax module, with weights embedded as constants.
+
+        Raises
+        ------
+        ValueError
+            Raised if no shapes provided in the input specification.
+        """
+        import tflite
+        from tvm.relax.frontend.tflite import from_tflite
+
+        model = self.to_tflite(model=model, **kwargs)
+
+        if not isinstance(model, tflite.Model):
+            model_data = model.convert()
+            model = tflite.Model.GetRootAsModel(model_data, 0)
+
+        input_shapes = {
+            spec["name"]: spec["shape"] for spec in io_spec["processed_input"]
+        }
+        if not input_shapes:
+            raise ValueError("No shapes in the input specification")
+        dtypes = {
+            spec["name"]: spec["dtype"] for spec in io_spec["processed_input"]
+        }
+
+        return from_tflite(model, shape_dict=input_shapes, dtype_dict=dtypes)
+
     def to_onnx(
         self,
         model: Optional["tf.lite.TFLiteConverter"] = None,

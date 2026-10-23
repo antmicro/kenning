@@ -163,6 +163,32 @@ class ModelConverter(ABC):
         """
         ...
 
+    def to_tvm_relax(
+        self,
+        io_spec: Dict[str, List[Dict]],
+        model: Optional[Any] = None,
+        **kwargs,
+    ) -> "tvm.IRModule":
+        """
+        Converts model to TVM Relax module.
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List[Dict]]
+            Input and output specification.
+        model : Optional[Any]
+            Optional model object. If not provided, model is
+            loaded from file.
+        **kwargs:
+            Keyword arguments passed between conversions.
+
+        Returns
+        -------
+        tvm.IRModule
+            The Relax module, with weights embedded as constants.
+        """
+        ...
+
     def to_keras(
         self,
         model: Optional[Any] = None,

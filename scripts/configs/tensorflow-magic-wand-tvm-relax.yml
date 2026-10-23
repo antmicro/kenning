@@ -1,0 +1,18 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: MagicWandModelWrapper
+  parameters:
+    model_path: kenning:///models/classification/magic_wand.h5
+dataset:
+  type: MagicWandDataset
+  parameters:
+    dataset_root: ./build/MagicWandDataset
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    target: default
+    compiled_model_path: ./build/magic-wand.tflite
+- type: TVMRelaxCompiler
+  parameters:
+    compiled_model_path: ./build/magic-wand-relax.so

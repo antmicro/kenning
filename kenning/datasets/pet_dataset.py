@@ -231,13 +231,13 @@ class PetDataset(Dataset):
                 else 0
             )
         measurements = Measurements()
-        measurements.accumulate(
+        measurements.add_measurement(
             "eval_confusion_matrix",
             confusion_matrix,
             lambda: np.zeros((self.numclasses, self.numclasses)),
         )
-        measurements.accumulate("top_5_count", top_5_count, lambda: 0)
-        measurements.accumulate("total", len(predictions), lambda: 0)
+        measurements.add_measurement("top_5_count", top_5_count, lambda: 0)
+        measurements.add_measurement("total", len(predictions), lambda: 0)
         return measurements
 
     def compute_input_mean_std(self) -> Tuple[Any, Any]:

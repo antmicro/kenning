@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import warnings
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
@@ -170,6 +171,10 @@ class Measurements(object):
         """
         Adds given value to a measurement.
 
+        .. deprecated:: 0.8.2
+            Method `accumulate` is deprecated, please use `add_measurement`
+            instead.
+
         This function adds given value (it can be integer, float, numpy array,
         or any type that implements iadd operator).
 
@@ -186,6 +191,9 @@ class Measurements(object):
         initvaluefunc : Callable[[], Any]
             The initial value of the measurement, default 0.
         """
+        warnings.warn(
+            "Method accumulate is deprecated, please use add_measurement instead"  # noqa: E501
+        )
         if measurementtype not in self.data:
             self.data[measurementtype] = initvaluefunc()
         self.data[measurementtype] += valuetoadd

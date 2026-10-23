@@ -230,12 +230,12 @@ class AnomalyDetectionDataset(Dataset):
             truth[0], predictions[0][: len(truth[0])], labels=[0, 1]
         )
         measurements = Measurements()
-        measurements.accumulate(
+        measurements.add_measurement(
             "eval_confusion_matrix",
             confusion_matrix,
             lambda: np.zeros((2, 2)),
         )
-        measurements.accumulate("total", len(predictions), lambda: 0)
+        measurements.add_measurement("total", len(predictions), lambda: 0)
         if self.gather_predictions:
             measurements.add_measurement(
                 "predictions",

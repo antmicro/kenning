@@ -160,7 +160,7 @@ class TabularDataset(Dataset):
         confusion_matrix = metrics.confusion_matrix(
             ts, ps, labels=range(len(self.classnames))
         )
-        measurements.accumulate(
+        measurements.add_measurement(
             "eval_confusion_matrix",
             confusion_matrix,
             lambda: np.zeros((len(self.classnames), len(self.classnames))),

@@ -201,12 +201,12 @@ class VisualWakeWordsDataset(Dataset):
             confusion_matrix[label, np.argmax(prediction)] += 1
 
         measurements = Measurements()
-        measurements.accumulate(
+        measurements.add_measurement(
             "eval_confusion_matrix",
             confusion_matrix,
             lambda: np.zeros((self.numclasses, self.numclasses)),
         )
-        measurements.accumulate("total", len(predictions), lambda: 0)
+        measurements.add_measurement("total", len(predictions), lambda: 0)
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:

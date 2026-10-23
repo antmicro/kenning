@@ -649,7 +649,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
 
             # Add measurements for not-matched groundtruths
             for gtid, gt in enumerate(groundtruths):
-                measurements.accumulate(
+                measurements.add_measurement(
                     f"eval_gtcount/{gt.clsname}", 1, lambda: 0
                 )
 

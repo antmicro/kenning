@@ -234,7 +234,7 @@ class CNNDailymailDataset(Dataset):
             scores = scorer.score(t, p)
 
             for metric in self.metrics:
-                measurements.accumulate(
+                measurements.add_measurement(
                     metric, scores[metric].precision, lambda: 0
                 )
 
@@ -248,5 +248,5 @@ class CNNDailymailDataset(Dataset):
                         }
                     ],
                 )
-        measurements.accumulate("total", len(truth[0]), lambda: 0)
+        measurements.add_measurement("total", len(truth[0]), lambda: 0)
         return measurements

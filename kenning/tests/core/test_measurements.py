@@ -80,15 +80,15 @@ class TestMeasurements:
 
         assert measurements.data["counter"] == 12
 
-    def test_accumulate_sums_values(self):
+    def test_add_measurement_sums_values(self):
         """
         Tests that accumulate creates a scalar entry and adds consecutive
         values to it.
         """
         measurements = Measurements()
 
-        measurements.accumulate("total", 2)
-        measurements.accumulate("total", 3)
+        measurements.add_measurement("total", 2, lambda: 0)
+        measurements.add_measurement("total", 3)
 
         assert measurements.data["total"] == 5
 

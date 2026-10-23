@@ -213,14 +213,14 @@ class ImageNetDataset(Dataset):
             currindex += 1
 
         measurements = Measurements()
-        measurements.accumulate(
+        measurements.add_measurement(
             "eval_confusion_matrix",
             confusion_matrix,
             lambda: np.zeros((self.numclasses, self.numclasses)),
         )
         measurements.add_measurement("top_5", top_5_results)
-        measurements.accumulate("top_5_count", top_5_count, lambda: 0)
-        measurements.accumulate("total", len(predictions), lambda: 0)
+        measurements.add_measurement("top_5_count", top_5_count, lambda: 0)
+        measurements.add_measurement("total", len(predictions), lambda: 0)
         return measurements
 
     def get_class_names(self):

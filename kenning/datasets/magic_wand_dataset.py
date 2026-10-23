@@ -279,7 +279,7 @@ class MagicWandDataset(Dataset):
                     assert len(prediction) == 1
                     prediction = prediction[0]
                 confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
-            measurements.accumulate(
+            measurements.add_measurement(
                 "eval_confusion_matrix",
                 confusion_matrix,
                 lambda: np.zeros((self.numclasses, self.numclasses)),
@@ -291,12 +291,12 @@ class MagicWandDataset(Dataset):
                     assert len(prediction) == 1
                     prediction = prediction[0]
                 predictions_vector[np.argmax(prediction)] += 1
-            measurements.accumulate(
+            measurements.add_measurement(
                 "predictions",
                 predictions_vector,
                 lambda: np.zeros(self.numclasses),
             )
-        measurements.accumulate("total", len(predictions), lambda: 0)
+        measurements.add_measurement("total", len(predictions), lambda: 0)
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:

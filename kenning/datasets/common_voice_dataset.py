@@ -463,7 +463,9 @@ class CommonVoiceDataset(Dataset):
                 ],
                 lambda: list(),
             )
-            measurements.accumulate(f"eval_gtcount{type_suffix}", 1, lambda: 0)
+            measurements.add_measurement(
+                f"eval_gtcount{type_suffix}", 1, lambda: 0
+            )
         return measurements
 
     def train_test_split_representations(

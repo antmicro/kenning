@@ -8,6 +8,7 @@ Wrapper for TVM Relax IR compiler.
 
 from typing import Dict, List, Literal, Optional, Tuple
 
+from kenning.converters import converter_registry
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
@@ -88,7 +89,32 @@ class TVMRelaxCompiler(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
         **kwargs: Dict,
     ):
-        raise NotImplementedError
+        from tvm import relax
+
+        if io_spec is None:
+            io_spec = self.load_io_specification(input_model_path)
+
+        input_type = self.get_input_type(input_model_path)
+        model_cls = self.get_model_class()
+
+        if model_cls is None:
+            KLogger.warning("Cannot get model class from model wrapper.")
+
+        mod = converter_registry.convert(
+            input_model_path,
+            input_type,
+            "tvm_relax",
+            io_spec=io_spec,
+            model_cls=model_cls,
+            **kwargs,
+        )
+
+        mod = relax.get_pipeline("zero")(mod)
+        executable = relax.build(mod, target=self.target_obj)
+
+        self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
+        executable.export_library(str(self.compiled_model_path))
+        self.save_io_specification(input_model_path, io_spec)
 
     def get_framework_and_version(self) -> Tuple[str, str]:
         return (self.get_framework(), self.get_framework_version())

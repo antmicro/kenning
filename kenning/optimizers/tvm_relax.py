@@ -11,6 +11,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -33,6 +34,10 @@ class TVMRelaxCompiler(Optimizer):
             "default": "any",
             "enum": inputtypes,
         },
+        "target": {
+            "description": "The kind of the target device",
+            "default": "llvm",
+        },
     }
 
     def __init__(
@@ -41,6 +46,7 @@ class TVMRelaxCompiler(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_framework: str = "any",
+        target: str = "llvm",
         model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
@@ -59,12 +65,22 @@ class TVMRelaxCompiler(Optimizer):
             Framework of the input model, used to select a proper backend. If
             set to "any", then the optimizer will try to derive model framework
             from file extension.
+        target : str
+            The kind of the target device.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)
+        self.target = target
+        self.target_obj = None
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
+
+    def init(self):
+        import tvm
+
+        self.target_obj = tvm.target.Target({"kind": self.target})
+        KLogger.debug(f"Using target: {self.target_obj}")
 
     def compile(
         self,

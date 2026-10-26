@@ -39,6 +39,11 @@ def get_default_runtime(
 
         return TVMRuntime(model_path)
 
+    if model_framework == "tvm_relax":
+        from kenning.runtimes.tvm_relax import TVMRelaxRuntime
+
+        return TVMRelaxRuntime(model_path)
+
     if model_framework == "tflite":
         from kenning.runtimes.tflite import TFLiteRuntime
 

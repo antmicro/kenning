@@ -11,6 +11,7 @@ from typing import List, Optional
 import numpy as np
 
 from kenning.core.runtime import Runtime
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -50,6 +51,7 @@ class TVMRelaxRuntime(Runtime):
             Batch size for inference, which is a number of sample
             in a single batch.
         """
+        self.model = None
         super().__init__(
             model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
@@ -60,7 +62,16 @@ class TVMRelaxRuntime(Runtime):
         raise NotImplementedError
 
     def prepare_model(self, input_data: Optional[bytes]):
-        raise NotImplementedError
+        import tvm
+        from tvm.runtime.vm import VirtualMachine
+
+        KLogger.info("Loading model")
+        if input_data:
+            with open(self.model_path, "wb") as outmodel:
+                outmodel.write(input_data)
+        module = tvm.runtime.load_module(str(self.model_path))
+        self.model = VirtualMachine(module, tvm.cpu())
+        KLogger.info("Model loading ended successfully")
 
     def run(self):
         raise NotImplementedError

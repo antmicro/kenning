@@ -62,7 +62,7 @@ We can distinguish the following groups of extra requirements:
 * `object_detection` - modules for work with YOLOv3 object detection and the Open Images Dataset V6 computer vision dataset,
 * `speech_to_text` - modules for work with audio samples and speech-to-text models,
 * `iree` - modules for IREE compilation and runtime,
-* `tvm` - modules for Apache TVM compilation and runtime,
+* `tvm` - modules for Apache TVM compilation and runtime (Relay-based TVM 0.18, for other TVM variants see [Dependency groups](#dependency-groups)),
 * `onnxruntime` - modules for ONNX Runtime with CPU support,
 * `onnxruntime_gpu` - modules for ONNX Runtime with GPU support,
 * `nni` - modules for Neural Network Intelligence optimizers,
@@ -108,6 +108,20 @@ Then install using:
 
 ```bash
 uv sync --extra tensorflow,tflite,tvm,reports
+```
+
+### Dependency groups
+
+Some dependencies are provided as dependency groups instead of extras, so that they are not pulled in by `--all-extras`.
+They are available only when working directly with the repository:
+
+* `tvm-cuda` - Apache TVM 0.18 with CUDA support, used instead of the `tvm` extra,
+* `tvm-relax` - Relax-based Apache TVM compilation and runtime, conflicts with the `tvm` extra.
+
+To install a dependency group, e.g. `tvm-relax`, run:
+
+```bash test-skip
+uv sync --extra tensorflow,tflite,reports --group tvm-relax
 ```
 
 ## Kenning structure

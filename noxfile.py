@@ -128,6 +128,7 @@ def run_pytest(session: nox.Session, device):
         "sparsity_aware_kernel",
         "sparsegpt",
         "llm",
+        "tvm_relax",
     ]
 
     ignore_args = [f"--ignore=kenning/tests/{test}" for test in ignored_tests]

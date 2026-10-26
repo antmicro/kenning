@@ -267,6 +267,10 @@ all = [
 ]
 
 [dependency-groups]
+tvm-relax = [
+    "apache-tvm[meta-schedule,popen-pool]==0.27.0.post1",
+    "apache-tvm-ffi<0.1.15",
+]
 tvm-cuda = [
     "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
@@ -392,6 +396,14 @@ override-dependencies = [
     "jsonschema>=4.23.0",
     "protobuf>=7.34.0",
     "click>=8.1.7",
+]
+conflicts = [
+    [{ extra = "tvm" }, { group = "tvm-relax" }],
+    [{ extra = "all" }, { group = "tvm-relax" }],
+    [{ group = "tvm-cuda" }, { group = "tvm-relax" }],
+    # vllm/tilelang pin apache-tvm-ffi==0.1.11, apache-tvm needs >=0.1.14
+    [{ extra = "llm" }, { group = "tvm-relax" }],
+    [{ extra = "sparsity_aware_kernel" }, { group = "tvm-relax" }],
 ]
 
 [tool.uv.workspace]

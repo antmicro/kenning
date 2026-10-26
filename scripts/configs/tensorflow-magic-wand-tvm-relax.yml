@@ -16,3 +16,7 @@ optimizers:
 - type: TVMRelaxCompiler
   parameters:
     compiled_model_path: ./build/magic-wand-relax.so
+runtime:
+  type: TVMRelaxRuntime
+  parameters:
+    save_model_path: ./build/magic-wand-relax.so

@@ -10,6 +10,10 @@ from typing import List, Optional
 
 import numpy as np
 
+from kenning.core.exceptions import (
+    InputNotPreparedError,
+    ModelNotPreparedError,
+)
 from kenning.core.runtime import Runtime
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -52,6 +56,7 @@ class TVMRelaxRuntime(Runtime):
             in a single batch.
         """
         self.model = None
+        self._input_prepared = False
         super().__init__(
             model_path=model_path,
             disable_performance_measurements=disable_performance_measurements,
@@ -59,7 +64,20 @@ class TVMRelaxRuntime(Runtime):
         )
 
     def load_input(self, input_data: List[np.ndarray]) -> bool:
-        raise NotImplementedError
+        import tvm
+
+        KLogger.debug(f"Number of loaded inputs: {len(input_data)}")
+        if self.model is None:
+            raise ModelNotPreparedError
+        if input_data is None or len(input_data) == 0:
+            KLogger.error("Received empty input data")
+            return False
+
+        self.model.set_input(
+            "main", *[tvm.runtime.tensor(inp) for inp in input_data]
+        )
+        self._input_prepared = True
+        return True
 
     def prepare_model(self, input_data: Optional[bytes]):
         import tvm
@@ -74,7 +92,17 @@ class TVMRelaxRuntime(Runtime):
         KLogger.info("Model loading ended successfully")
 
     def run(self):
-        raise NotImplementedError
+        if self.model is None:
+            raise ModelNotPreparedError
+        if not self._input_prepared:
+            raise InputNotPreparedError
+        self.model.invoke_stateful("main")
 
     def extract_output(self) -> List[np.ndarray]:
-        raise NotImplementedError
+        if self.model is None:
+            raise ModelNotPreparedError
+
+        outputs = self.model.get_outputs("main")
+        if hasattr(outputs, "numpy"):
+            outputs = [outputs]
+        return [output.numpy() for output in outputs]

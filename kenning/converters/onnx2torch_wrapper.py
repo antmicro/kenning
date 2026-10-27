@@ -528,6 +528,7 @@ def add_sub_converter(
     in_name_1 = node.input_values[1]
     input_0 = extract_value_from_graph(node, graph, in_name_0)
     input_1 = extract_value_from_graph(node, graph, in_name_1)
+
     if input_0 is not None:
         bias = input_0
         input_name = in_name_1
@@ -537,9 +538,22 @@ def add_sub_converter(
     else:
         # If both input is not known return default conversion
         return _binary_math_converter(node, graph)
+
     if node.operation_type == "Sub":
         # Subtraction is addition of reversed value
         bias = bias * -1
+
+    # The bias can have a lower rank than input and might need broadcasting
+    try:
+        out_shape = [
+            dim.dim_value
+            for dim in graph.value_info[input_name].type.tensor_type.shape.dim
+        ]
+
+        bias = bias.expand(out_shape)
+    except KeyError:
+        pass
+
     # Creating Linear layer with frozen weights as identity matrix
     weights = torch.eye(bias.shape[-1], requires_grad=False)
     linear = create_linear_from_weights(weights, bias)

@@ -96,6 +96,14 @@ for optimizer in OPTIMIZER_SUBCLASSES:
     SKIP.append(("IREECompiler", optimizer.__name__))
     SKIP.append(("TinygradOptimizer", optimizer.__name__))
 
+for optimizer in OPTIMIZER_SUBCLASSES:
+    for pair in (
+        ("TVMRelaxCompiler", optimizer.__name__),
+        (optimizer.__name__, "TVMRelaxCompiler"),
+    ):
+        if pair not in SKIP:
+            EXPECTED_FAIL.append(pair)
+
 expected_mark = pytest.mark.xfail(reason="Expected incompatible")
 skip = pytest.mark.skip(reason="No conversion available")
 

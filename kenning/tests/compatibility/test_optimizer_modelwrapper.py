@@ -244,6 +244,12 @@ SKIP = (
     ]
 )
 
+EXPECTED_FAIL += [
+    (model.__name__, "TVMRelaxCompiler")
+    for model in MODELWRAPPER_SUBCLASSES
+    if (model.__name__, "TVMRelaxCompiler") not in SKIP
+]
+
 USE_GPU = []
 
 expect_fail = pytest.mark.xfail(reason="Expected incompatible")

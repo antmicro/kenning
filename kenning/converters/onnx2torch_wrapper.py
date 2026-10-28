@@ -62,6 +62,7 @@ _REMOVED_DEFAULT_CONVERTER = (
     ("Add", (1, 6, 7, 13, 14)),
     ("Sub", (1, 6, 7, 13, 14)),
     ("Shape", (1, 13, 15)),
+    ("Slice", (10, 11, 13)),
 )
 # Removing default converters
 for op_type, versions in _REMOVED_DEFAULT_CONVERTER:
@@ -168,6 +169,62 @@ def extract_value_from_graph(
         elif isinstance(value, (int, float)):
             value = torch.tensor(value)
     return value
+
+
+def make_const_slices(
+    starts: torch.Tensor,
+    ends: torch.Tensor,
+    axes: Optional[torch.Tensor] = None,
+    steps: Optional[torch.Tensor] = None,
+) -> Tuple[slice]:
+    """
+    Converts ONNX Slice op inputs and converts them to a tuple of Python
+    slice objects which can be used to directly slice a PyTorch Tensor when
+    passed to the get item operator.
+
+    For the argument description please refer to
+    https://onnx.ai/onnx/operators/onnx__Slice.html
+
+    Parameters
+    ----------
+    starts : torch.Tensor
+        The ONNX Slice 'starts' input.
+    ends : torch.Tensor
+        The ONNX Slice 'ends' input.
+    axes : Optional[torch.Tensor]
+        The ONNX Slice 'axes' input.
+    steps : Optional[torch.Tensor]
+        The ONNX Slice 'steps' input.
+
+    Returns
+    -------
+    Tuple[slice]
+        The tuple of slice objects which will slice a PyTorch Tensor according
+        to the ONNX spec.
+    """
+    ndim = starts.shape[0]
+
+    if axes is None:
+        axes = [i for i in range(ndim)]
+    else:
+        axes = list(axes)
+        ndim = max(ndim, max(axes) + 1)
+
+    if steps is not None:
+        steps = [1 for _ in range(ndim)]
+
+    slices = []
+
+    for dim in range(ndim):
+        try:
+            idx = axes.index(dim)
+        except ValueError:
+            slices.append(slice(None))
+            continue
+
+        slices.append(slice(starts[idx], ends[idx], steps[idx]))
+
+    return tuple(slices)
 
 
 class Transposition(torch.nn.Module):
@@ -607,6 +664,96 @@ def shape_converter(
     return OperationConverterResult(
         torch_module=ShapeWithMemory(),
         onnx_mapping=onnx_mapping_from_node(node),
+    )
+
+
+class SliceWithConstShape(torch.nn.Module):
+    def __init__(
+        self,
+        slices: Tuple[slice],
+    ):
+        super().__init__()
+        self.slices = slices
+
+    def forward(
+        self,
+        input_tensor: torch.Tensor,
+    ) -> torch.Tensor:
+        return input_tensor[self.slices]
+
+
+@add_converter(operation_type="Slice", version=10)
+@add_converter(operation_type="Slice", version=11)
+@add_converter(operation_type="Slice", version=13)
+def slice_converter(
+    node: OnnxNode, graph: OnnxGraph
+) -> OperationConverterResult:
+    """
+    Conversion of Slice.
+
+    If all slice arguments other than the input tensor are constant, it returns
+    an instance of SliceWithConstShape. Contrary to the default
+    implementation, it doesn't use any NumPy conversions and, as a result,
+    doesn't break graph tracing.
+
+    Parameters
+    ----------
+    node : OnnxNode
+        The Slice node for conversion.
+    graph : OnnxGraph
+        The whole model wrapped in OnnxGraph.
+
+    Returns
+    -------
+    OperationConverterResult
+        Scheme for converting Shape.
+    """
+    starts = extract_value_from_graph(node, graph, node.input_values[1])
+    ends = extract_value_from_graph(node, graph, node.input_values[2])
+    axes = None
+    steps = None
+
+    if len(node.input_values) >= 3:
+        axes = extract_value_from_graph(node, graph, node.input_values[3])
+
+        if len(node.input_values) >= 4:
+            steps = extract_value_from_graph(node, graph, node.input_values[4])
+
+    has_dynamic_input = False
+
+    if None in (starts, ends):
+        # starts/ends are obligatory, so if they are None they must be dynamic
+        has_dynamic_input = True
+    else:
+        # axes/steps can legally be None, so we must manually check if they are
+        # dynamic
+        for in_name in node.input_values[3:]:
+            if in_name in graph._node_output_values:
+                providing_node, _ = graph.value_as_node_output(in_name)
+
+                if providing_node.operation_type != "Constant":
+                    has_dynamic_input = True
+                    break
+
+    if has_dynamic_input:
+        return _CONVERTER_REGISTRY_BACKUP[
+            OperationDescription(
+                domain=onnx.defs.ONNX_DOMAIN,
+                operation_type="Slice",
+                version=version,  # Comes from the decorator argument
+            )
+        ](node, graph)
+
+    slices = make_const_slices(starts, ends, axes, steps)
+
+    mapping = OnnxMapping(
+        inputs=(node.input_values[0],),
+        outputs=(node.output_values[0],),
+    )
+
+    return OperationConverterResult(
+        torch_module=SliceWithConstShape(slices),
+        onnx_mapping=mapping,
     )
 
 

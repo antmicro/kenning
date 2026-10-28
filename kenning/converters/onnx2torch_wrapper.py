@@ -63,6 +63,7 @@ _REMOVED_DEFAULT_CONVERTER = (
     ("Sub", (1, 6, 7, 13, 14)),
     ("Shape", (1, 13, 15)),
     ("Slice", (10, 11, 13)),
+    ("Expand", (8, 13)),
 )
 # Removing default converters
 for op_type, versions in _REMOVED_DEFAULT_CONVERTER:
@@ -753,6 +754,62 @@ def slice_converter(
 
     return OperationConverterResult(
         torch_module=SliceWithConstShape(slices),
+        onnx_mapping=mapping,
+    )
+
+
+class ExpandWithConstShape(torch.nn.Module):
+    def __init__(self, size: torch.Size):
+        super().__init__()
+        self.size = size
+
+    def forward(self, input_tensor: torch.Tensor):
+        return input_tensor * torch.ones(
+            self.size, dtype=input_tensor.dtype, device=input_tensor.device
+        )
+
+
+@add_converter(operation_type="Expand", version=8)
+@add_converter(operation_type="Expand", version=13)
+def expand_converter(
+    node: OnnxNode, graph: OnnxGraph
+) -> OperationConverterResult:
+    """
+    Conversion of Expand.
+
+    Tries to return ExpandWithConstShape if the shape is constant and falls
+    back to the default conversion otherwise.
+
+    Parameters
+    ----------
+    node : OnnxNode
+        The Slice node for conversion.
+    graph : OnnxGraph
+        The whole model wrapped in OnnxGraph.
+
+    Returns
+    -------
+    OperationConverterResult
+        Scheme for converting Shape.
+    """
+    shape = extract_value_from_graph(node, graph, node.input_values[1])
+
+    if shape is None:
+        return _CONVERTER_REGISTRY_BACKUP[
+            OperationDescription(
+                domain=onnx.defs.ONNX_DOMAIN,
+                operation_type="Expand",
+                version=version,  # Comes from the decorator argument
+            )
+        ](node, graph)
+
+    mapping = OnnxMapping(
+        inputs=(node.input_values[0],),
+        outputs=(node.output_values[0],),
+    )
+
+    return OperationConverterResult(
+        torch_module=ExpandWithConstShape(torch.Size(shape)),
         onnx_mapping=mapping,
     )
 

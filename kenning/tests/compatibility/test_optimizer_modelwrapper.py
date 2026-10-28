@@ -123,7 +123,6 @@ EXPECTED_FAIL = [
     ("ONNXYOLOV4", "TensorFlowClusteringOptimizer"),
     ("ONNXYOLOV4", "TensorFlowPruningOptimizer"),
     ("ONNXYOLOV4Tiny", "Ai8xCompiler"),
-    ("ONNXYOLOV4Tiny", "ExecuTorchOptimizer"),
     ("ONNXYOLOV4Tiny", "NNIPruningOptimizer"),
     ("PersonDetectionModelWrapper", "IREECompiler"),
     ("PersonDetectionModelWrapper", "Ai8xCompiler"),

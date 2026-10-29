@@ -1,0 +1,844 @@
+{
+    "graphs": [
+        {
+            "connections": [
+                {
+                    "from": "1b6fa9b7-4b52-44d2-aff4-eb7c3e05719f",
+                    "id": "997b6f57-55ed-4416-be81-d58b2fa2e55c",
+                    "to": "cbe23b04-06d0-4ce5-9342-c1707f82bff3"
+                },
+                {
+                    "from": "659d18d8-c303-479c-863d-18941235c974",
+                    "id": "8f632413-9d44-4920-a17a-77038fdac199",
+                    "to": "62ce34d2-ee24-4c4e-b444-d8735666a95a"
+                },
+                {
+                    "from": "4a736467-1e31-4d3b-b845-f5e97e666b81",
+                    "id": "0032a508-3df7-4e7d-97e3-c91f3ad5ef22",
+                    "to": "3d6cdd9d-253d-4c38-9247-b830c951971d"
+                },
+                {
+                    "from": "8f51bba6-d3da-4353-a9ee-1ac1e498bdc5",
+                    "id": "70b13b01-7549-452d-a5c6-087659358a1e",
+                    "to": "c720f6a7-83d3-4941-a39a-861b511d0414"
+                },
+                {
+                    "from": "a67d92f6-7a88-45f8-a40a-b2a73c7bb901",
+                    "id": "f2e33daf-4804-43ee-9896-c910b3063f03",
+                    "to": "ce621b56-0d45-43ae-9b83-fec72736ef8b"
+                },
+                {
+                    "from": "39a38786-95c1-428a-8621-aead4373238e",
+                    "id": "95a7d17f-674d-4987-aee9-53bd11785426",
+                    "to": "8fed5c1a-8946-4c92-8117-c76f049d6981"
+                },
+                {
+                    "from": "e30e29c5-57e9-4dc0-9c57-4951ca88dc9d",
+                    "id": "da4f06cb-613b-4828-9147-32f8d004bfe0",
+                    "to": "324053bb-32e0-4bd0-a223-f5b085c89deb"
+                },
+                {
+                    "from": "3088d69a-a25c-4780-a12e-8b244b5fa701",
+                    "id": "6e4089be-a36a-4ba7-b836-96737c29789a",
+                    "to": "4181a7c5-13a0-4a8e-b940-fc07590336bb"
+                },
+                {
+                    "from": "10cf3e4b-41fa-4dfa-b5cd-80ec27b8f511",
+                    "id": "d25d0ffd-c8f7-4e01-8514-2ca00014e22d",
+                    "to": "89e32e8f-fffb-43d7-b6e6-676ee480b016"
+                },
+                {
+                    "from": "5404da25-a3b5-4672-83ba-3b68b1cfba4e",
+                    "id": "2e1a6634-8227-4da5-b76c-0db78c3dc28c",
+                    "to": "b57af95f-d74a-4ff1-ad52-0c42bfc5a65a"
+                },
+                {
+                    "from": "55918be4-ae74-4384-ac34-e875cc213c7c",
+                    "id": "2474b2b1-028c-46a2-a9e5-98ff28401a60",
+                    "to": "4165cbab-9e14-49dc-8a64-2c16a0b81320"
+                },
+                {
+                    "from": "fc63162b-e12b-4eb2-924c-1eab8092ee1d",
+                    "id": "6835a984-5fd6-487d-86a9-00baab3f1a09",
+                    "to": "f34a1539-140c-450e-936a-49dad6fc8e4f"
+                }
+            ],
+            "id": "ddd7ea4f-c54d-4957-8f33-1081aaf52026",
+            "nodes": [
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "ae744564-2941-41cf-be6e-1385dc23acc5",
+                    "instanceName": "node_Conv_21",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "62ce34d2-ee24-4c4e-b444-d8735666a95a",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "1b6fa9b7-4b52-44d2-aff4-eb7c3e05719f",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Conv",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 1
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 22
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 416
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 104
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "float32"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "1x1x128x3"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "8x1x4x3"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "dc16c0cc-a7cf-4237-ab67-25ff44c64000",
+                    "interfaces": [
+                        {
+                            "direction": "output",
+                            "id": "659d18d8-c303-479c-863d-18941235c974",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "input",
+                    "properties": [
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "shape",
+                            "value": "1x1x128x3"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "df60437d-71dc-4a60-bac1-838ec331da7f",
+                    "instanceName": "node_relu",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "cbe23b04-06d0-4ce5-9342-c1707f82bff3",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "4a736467-1e31-4d3b-b845-f5e97e666b81",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Relu",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 2
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 14
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "8x1x4x3"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "8"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "6a1b87b5-9bd0-432d-8e70-b28347e7f5c0",
+                    "instanceName": "node_max_pool2d",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "3d6cdd9d-253d-4c38-9247-b830c951971d",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "8f51bba6-d3da-4353-a9ee-1ac1e498bdc5",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "MaxPool",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 3
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 22
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "8"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16x8x4x1"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "a01fda9b-9975-490e-90b7-079d8b03a137",
+                    "instanceName": "node_Conv_22",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "c720f6a7-83d3-4941-a39a-861b511d0414",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "a67d92f6-7a88-45f8-a40a-b2a73c7bb901",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Conv",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 4
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 22
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 2112
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 528
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "float32"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16x8x4x1"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "2b775ec0-1444-4a95-8556-5929359ec1ef",
+                    "instanceName": "node_relu_1",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "ce621b56-0d45-43ae-9b83-fec72736ef8b",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "39a38786-95c1-428a-8621-aead4373238e",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Relu",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 5
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 14
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16x224"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "59ab9394-c253-40e3-a7ff-e3a150eb594a",
+                    "instanceName": "node_max_pool2d_1",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "8fed5c1a-8946-4c92-8117-c76f049d6981",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "e30e29c5-57e9-4dc0-9c57-4951ca88dc9d",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "MaxPool",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 6
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 22
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16x224"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "f8aece94-092d-4d1c-b940-6dde61fc5db2",
+                    "instanceName": "node_view",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "324053bb-32e0-4bd0-a223-f5b085c89deb",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "3088d69a-a25c-4780-a12e-8b244b5fa701",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Reshape",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 7
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 25
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 16
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 2
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "int64"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16x16"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "7af13a3a-97ba-4371-b466-42c6b9e89104",
+                    "instanceName": "node_linear",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "4181a7c5-13a0-4a8e-b940-fc07590336bb",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "10cf3e4b-41fa-4dfa-b5cd-80ec27b8f511",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Gemm",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 8
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 13
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 14400
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 3600
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "float32"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16x16"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "16"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "8701246e-5e42-43be-bae5-ad884e461cea",
+                    "instanceName": "node_relu_2",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "89e32e8f-fffb-43d7-b6e6-676ee480b016",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "5404da25-a3b5-4672-83ba-3b68b1cfba4e",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Relu",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 9
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 14
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "16"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "4x16"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "98ffe4a9-e833-4b7c-9f46-e23f80eafb1e",
+                    "instanceName": "node_linear_1",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "b57af95f-d74a-4ff1-ad52-0c42bfc5a65a",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "55918be4-ae74-4384-ac34-e875cc213c7c",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Gemm",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 10
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 13
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 1088
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 272
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "float32"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "4x16"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "4"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "d810192a-17c5-4326-ae55-e2ee81484015",
+                    "instanceName": "node_relu_3",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "4165cbab-9e14-49dc-8a64-2c16a0b81320",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "fc63162b-e12b-4eb2-924c-1eab8092ee1d",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Relu",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 11
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 14
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 0
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "-"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "4"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "2"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                },
+                {
+                    "enabledInterfaceGroups": [],
+                    "id": "8d6312dd-fe4f-4adb-9860-c7de88a809a1",
+                    "instanceName": "node_linear_2",
+                    "interfaces": [
+                        {
+                            "direction": "input",
+                            "id": "f34a1539-140c-450e-936a-49dad6fc8e4f",
+                            "name": "input",
+                            "side": "left"
+                        },
+                        {
+                            "direction": "output",
+                            "id": "3905f6b3-5e4f-4ff9-81e6-6e2ae47065ea",
+                            "name": "output",
+                            "side": "left"
+                        }
+                    ],
+                    "name": "Gemm",
+                    "properties": [
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "ID",
+                            "value": 12
+                        },
+                        {
+                            "hidden": true,
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "operation version",
+                            "value": 13
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "bytes",
+                            "value": 272
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "parameters",
+                            "value": 68
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "data type",
+                            "value": "float32"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "input shape",
+                            "value": "2"
+                        },
+                        {
+                            "id": "b3350360-7949-4469-a965-608a33f1ff35",
+                            "name": "output shape",
+                            "value": "1x8x128x3"
+                        }
+                    ],
+                    "twoColumn": true,
+                    "width": 200
+                }
+            ]
+        }
+    ],
+    "version": "20260623.14"
+}

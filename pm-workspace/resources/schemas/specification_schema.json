@@ -1,0 +1,31 @@
+{
+    "$id": "specification_schema.json",
+    "type": "object",
+    "description": "Schema used to validate specification that has resolved inheritance",
+    "allOf": [
+        {
+            "$ref": "unresolved_specification_schema.json"
+        },
+        {
+            "properties": {
+                "nodes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "category": {
+                                "description": "Category of a node in a side bar",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "nodes"
+            ]
+        }
+    ],
+    "unevaluatedProperties": false
+}

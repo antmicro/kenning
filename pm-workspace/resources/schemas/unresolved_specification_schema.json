@@ -1,0 +1,752 @@
+{
+    "version": "20250623.14",
+    "$id": "unresolved_specification_schema.json",
+    "description": "Schema used to validate specification that hasn't resolved inheritance",
+    "type": "object",
+    "properties": {
+        "version": {
+            "description": "Version of the specification.",
+            "type": "string"
+        },
+        "metadata": {
+            "$ref": "metadata_schema.json"
+        },
+        "include": {
+            "description": "List of paths to other specifications that should be included",
+            "type": "array",
+            "items": {
+                "anyOf": [
+                    {
+                        "description": "Path to the specification",
+                        "type": "string"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "description": "Path to the specification",
+                                "type": "string"
+                            },
+                            "style": {
+                                "$ref": "#/$defs/style"
+                            }
+                        },
+                        "required": [
+                            "url"
+                        ],
+                        "additionalProperties": false
+                    }
+                ]
+            }
+        },
+        "urloverrides": {
+            "description": "Override metadata URLs in provided specification",
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "string"
+                }
+            }
+        },
+        "includeGraphs": {
+            "description": "List of paths to dataflow files that should be included as graphs",
+            "type": "array",
+            "items": {
+                "description": "Definition of the graphs included from the dataflow file",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the subgraph",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "url": {
+                        "description": "URL of the dataflow file",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "url"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "nodes": {
+            "description": "Definition of the available nodes",
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/node"
+            }
+        },
+        "graphs": {
+            "description": "Definition of the available graphs",
+            "type": "array",
+            "items": {
+                "$ref": "graph_schema.json"
+            }
+        },
+        "entryGraph": {
+            "description": "ID of the graph from 'graphs' property that specifies default dataflow of the specification",
+            "type": "string"
+        }
+    },
+    "$defs": {
+        "interfacesRangeArray": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+                "type": "number"
+            }
+        },
+        "style": {
+            "description": "A style or an array of non-repeating styles defined by 'styles' in metadata",
+            "type": [
+                "string",
+                "array"
+            ]
+        },
+        "node": {
+            "type": "object",
+            "allOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "description": "Name displayed in a node",
+                            "type": "string"
+                        },
+                        "subgraphId": {
+                            "description": "Graph ID that the subgraph node corresponds to",
+                            "type": "string"
+                        },
+                        "relatedGraphs": {
+                            "description": "Map containing name and ID of a related graph",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "id": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "id"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "includeName": {
+                            "type": "string",
+                            "description": "Name of the included node to override"
+                        },
+                        "abstract": {
+                            "description": "Tells if the given node type is abstract or not",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "layer": {
+                            "description": "Layer that defines styling of a node",
+                            "type": "string"
+                        },
+                        "category": {
+                            "description": "Category of a node in a side bar",
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "isCategory": {
+                            "description": "Determines whether the nodes defines a category",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "icon": {
+                            "description": "Icon of a node. Can be a string with relative path, URL, or tuple {'icon_type': 'url_suffix'}",
+                            "type": [
+                                "object",
+                                "string"
+                            ]
+                        },
+                        "color": {
+                            "$ref": "metadata_schema.json#/$defs/color"
+                        },
+                        "twoColumn": {
+                            "description": "Determines whether sockets should be rendered in the top part of the node and properties below them",
+                            "type": "boolean"
+                        },
+                        "style": {
+                            "$ref": "#/$defs/style"
+                        },
+                        "pill": {
+                            "$ref": "metadata_schema.json#/$defs/pill"
+                        },
+                        "defaultInterfaceGroups": {
+                            "description": "List of names of chosen interface groups that are enabled by default",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "direction": {
+                                        "enum": [
+                                            "input",
+                                            "output",
+                                            "inout"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "interfaces": {
+                            "description": "Definition of available interfaces of the node",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/interface"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "array": {
+                                                "description": "Used to define multiple similar interfaces using only one entry",
+                                                "$ref": "#/$defs/interfacesRangeArray"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "properties": {
+                                            "dynamic": {
+                                                "description": "Determines whether the interface should have a property assigned to it that determines the number of interfaces created",
+                                                "oneOf": [
+                                                    {
+                                                        "const": true
+                                                    },
+                                                    {
+                                                        "$ref": "#/$defs/interfacesRangeArray"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "unevaluatedProperties": false
+                            }
+                        },
+                        "interfaceGroups": {
+                            "description": "Defines groups of interfaces that use multiple interfaces",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/interface"
+                                    },
+                                    {
+                                        "properties": {
+                                            "interfaces": {
+                                                "description": "Describes interfaces that create the interface group",
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "allOf": [
+                                                        {
+                                                            "properties": {
+                                                                "array": {
+                                                                    "description": "Used to define multiple similar interfaces using only one entry",
+                                                                    "$ref": "#/$defs/interfacesRangeArray"
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "description": "Name of the the group of interfaces",
+                                                                    "type": "string"
+                                                                },
+                                                                "direction": {
+                                                                    "description": "Tells whether the connector is input, output, or both",
+                                                                    "enum": [
+                                                                        "input",
+                                                                        "output",
+                                                                        "inout"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "name"
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "unevaluatedProperties": false
+                                                }
+                                            }
+                                        }
+                                    }
+                                ],
+                                "unevaluatedProperties": false
+                            }
+                        },
+                        "properties": {
+                            "description": "Definition of the properties of the node",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/property"
+                                    },
+                                    {
+                                        "properties": {
+                                            "group": {
+                                                "description": "Definition of the group properties",
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/property"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ],
+                                "unevaluatedProperties": false
+                            }
+                        },
+                        "urls": {
+                            "type": "object",
+                            "description": "Map containing URL group in key and URL suffix in value",
+                            "patternProperties": {
+                                "^.*$": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "contextMenuActions": {
+                            "type": "array",
+                            "description": "List of custom actions displayed in the context menu of nodes of this type, in addition to the global actions declared in specification metadata",
+                            "items": {
+                                "$ref": "metadata_schema.json#/$defs/contextMenuAction"
+                            }
+                        },
+                        "extends": {
+                            "type": "array",
+                            "description": "Node names to extend",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Description of the node in markdown"
+                        },
+                        "additionalData": {
+                            "description": "Any JSON data that provides additional information regarding the specification",
+                            "type": [
+                                "number",
+                                "string",
+                                "boolean",
+                                "object",
+                                "array",
+                                "null"
+                            ]
+                        },
+                        "tag": {
+                            "description": "Tag used to make a node searchable",
+                            "type": "string"
+                        },
+                        "width": {
+                            "description": "Width, in pixels, of the node in the visual editor. The minimum value is 300.",
+                            "type": "number"
+                        },
+                        "height": {
+                            "description": "Height, in pixels, of the node in the visual editor.",
+                            "type": "number"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "isCategory": {
+                                    "const": true
+                                }
+                            },
+                            "required": [
+                                "isCategory"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "isCategory": {
+                                    "const": [
+                                        null,
+                                        false
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "interface": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name of the socket displayed in the node",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type that defines styling of the input socket. It is also used for validation purposes",
+                    "type": [
+                        "string",
+                        "array"
+                    ]
+                },
+                "direction": {
+                    "description": "Tells whether the connector is input, output, or both",
+                    "enum": [
+                        "input",
+                        "output",
+                        "inout"
+                    ]
+                },
+                "side": {
+                    "description": "Determines the side on which the socket is rendered",
+                    "enum": [
+                        "left",
+                        "right",
+                        "top",
+                        "bottom"
+                    ]
+                },
+                "maxConnectionsCount": {
+                    "description": "Tells how many connections can be established with given interface, <= 0 value for unlimited",
+                    "type": "number",
+                    "default": 0
+                },
+                "sidePosition": {
+                    "description": "Determines the order of interfaces rendered",
+                    "type": "number"
+                },
+                "override": {
+                    "description": "Determines whether this interface can should overridden",
+                    "type": "boolean",
+                    "default": false
+                },
+                "hidden": {
+                    "$ref": "graph_schema.json#/$defs/hidden"
+                },
+
+                "bus": {
+                    "description": "Determines bus attributes",
+                    "type": "object",
+                    "properties": {
+                        "size": {
+                            "description": "Determines the size of bus interface",
+                            "type": "number"
+                        },
+                        "type": {
+                            "description": "Determines the type of bus interface",
+                            "enum": [
+                                "oneSided",
+                                "twoSided"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "property": {
+            "type": "object",
+            "allOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "description": "Name of the property. Can be displayed for some types of properties",
+                            "type": "string"
+                        },
+                        "type": {
+                            "description": "Type of the property",
+                            "enum": [
+                                "text",
+                                "multiline",
+                                "number",
+                                "integer",
+                                "select",
+                                "bool",
+                                "slider",
+                                "list",
+                                "constant",
+                                "hex",
+                                "button-url",
+                                "button-api",
+                                "button-graph"
+                            ]
+                        },
+                        "description": {
+                            "description": "Description of the property. Can be displayed to the user",
+                            "type": "string"
+                        },
+                        "default": {
+                            "description": "Default value of the property",
+                            "type": [
+                                "number",
+                                "string",
+                                "boolean",
+                                "object",
+                                "array",
+                                "null"
+                            ]
+                        },
+                        "min": {
+                            "description": "Minimum value of a range for slider, number, integer and hex type",
+                            "type": [
+                                "number",
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "max": {
+                            "description": "Maximum value of a range for slider, number, integer and hex type",
+                            "type": [
+                                "number",
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "step": {
+                            "description": "Step value for slider type",
+                            "type": ["number", "string"]
+                        },
+                        "values": {
+                            "description": "Range of values for the select type",
+                            "type": "array"
+                        },
+                        "dtype": {
+                            "description": "Data types of elements in a list type",
+                            "type": "string",
+                            "enum": [
+                                "integer",
+                                "number",
+                                "string",
+                                "boolean"
+                            ]
+                        },
+                        "override": {
+                            "description": "Determines whether this property should be overridden",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "readonly": {
+                            "description": "Determines whether this property should be readonly",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "hidden": {
+                            "$ref": "graph_schema.json#/$defs/hidden"
+                        }
+                    }
+                },
+                {
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "slider"
+                                },
+                                "default": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "default",
+                                "min",
+                                "max"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "bool"
+                                },
+                                "default": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "default"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "select"
+                                },
+                                "values": {
+                                    "type": "array"
+                                }
+                            },
+                            "required": [
+                                "values"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "enum": [
+                                        "integer",
+                                        "number"
+                                    ]
+                                },
+                                "default": {
+                                    "type": "number"
+                                },
+                                "min": {
+                                    "type": "number"
+                                },
+                                "max": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "text"
+                                },
+                                "default": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "multiline"
+                                },
+                                "default": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "constant"
+                                },
+                                "default": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "default"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "hex"
+                                },
+                                "default": {
+                                    "type": "string",
+                                    "format": "hex"
+                                },
+                                "min": {
+                                    "type": [ "string", "null" ],
+                                    "format": "hex"
+                                },
+                                "max": {
+                                    "type": [ "string", "null" ],
+                                    "format": "hex"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "list"
+                                },
+                                "default": {
+                                    "type": ["array", "null"]
+                                }
+                            },
+                            "required": [
+                                "dtype"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "button-url"
+                                },
+                                "default": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "button-graph"
+                                },
+                                "default": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "button-api"
+                                },
+                                "default": {
+                                    "type": ["object", "null"]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
+            "required": [
+                "name",
+                "type",
+                "default"
+            ],
+            "unevaluatedProperties": true
+        }
+    },
+    "additionalProperties": false
+}

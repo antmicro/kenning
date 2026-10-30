@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import sys
 from pathlib import Path
 from typing import Optional, Type
 from unittest.mock import patch
@@ -22,7 +21,6 @@ from kenning.modelwrappers.anomaly_detection.gru import (
 from kenning.modelwrappers.classification.pytorch_generic import (
     PyTorchGenericClassification,
 )
-from kenning.modelwrappers.frameworks.flax import FlaxWrapper
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.tests.core.conftest import (
     copy_model_to_tmp,
@@ -135,11 +133,6 @@ class TestModelWrapper:
         """
         Tests model initialization without specified dataset.
         """
-        if model_cls.__name__ == "TinygradImageNet" and sys.version_info < (
-            3,
-            11,
-        ):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         _ = create_model(model_cls, None)
 
     @pytest.mark.parametrize(
@@ -163,11 +156,6 @@ class TestModelWrapper:
         """
         Tests model initialization with specified dataset.
         """
-        if model_cls.__name__ == "TinygradImageNet" and sys.version_info < (
-            3,
-            11,
-        ):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         dataset_cls = model_cls.default_dataset
         if dataset_cls is None:
             pytest.xfail("default dataset was not defined")
@@ -344,8 +332,6 @@ class TestModelWrapper:
         """
         Tests the `train_model` method.
         """
-        if isinstance(model, FlaxWrapper) and sys.version_info[1] < 11:
-            pytest.xfail("Flax training is not supported for Python 3.10")
         model.prepare_model()
 
         model.batch_size = 16

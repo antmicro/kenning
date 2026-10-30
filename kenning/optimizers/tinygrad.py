@@ -10,20 +10,7 @@ import importlib.metadata
 import json
 import shutil
 import tempfile
-
-try:
-    from enum import StrEnum
-except ImportError:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        """
-        StrEnum stand-in for python 3.10.
-        """
-
-        pass
-
-
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 

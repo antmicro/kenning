@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 from contextlib import contextmanager
 from time import sleep
 from typing import Any, Iterator, List, Tuple, Type
@@ -82,11 +81,6 @@ class TestRuntime:
         """
         Tests runtime initialization.
         """
-        if (
-            runtime_cls.__name__ == "TinygradRuntime"
-            or inputtype == "tinygrad"
-        ) and sys.version_info < (3, 11):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         with prepare_objects(runtime_cls, inputtype):
             pass
 

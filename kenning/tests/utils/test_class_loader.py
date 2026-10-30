@@ -71,18 +71,18 @@ class TestGetKenningSubmoduleFromPath:
         assert "not in tuple" in str(execinfo.value)
 
     def test_valid_class_loader_path(self):
-        x = "/usr/lib/python3.10/site-packages/kenning/utils/class_loader.py"
+        x = "/usr/lib/python3.11/site-packages/kenning/utils/class_loader.py"
         y = "kenning.utils.class_loader"
         assert get_kenning_submodule_from_path(x) == y
 
     def test_module_name(self):
-        x = "/usr/lib/python3.10/site-packages/kenning/"
+        x = "/usr/lib/python3.11/site-packages/kenning/"
         y = "kenning"
         assert get_kenning_submodule_from_path(x) == y
 
     def test_invalid_capitalization(self):
         with pytest.raises(ValueError) as execinfo:
-            x = "/usr/lib/python3.10/site-packages/Kenning/utils/class_loader.py"  # noqa: E501
+            x = "/usr/lib/python3.11/site-packages/Kenning/utils/class_loader.py"  # noqa: E501
             get_kenning_submodule_from_path(x)
         assert "not in tuple" in str(execinfo.value)
 
@@ -92,14 +92,14 @@ class TestGetCommand:
     def test_invalid_capitalization(self):
         with pytest.raises(ValueError) as execinfo:
             x = [
-                "/usr/lib/python3.10/Kenning/utils/class_loader.py",
+                "/usr/lib/python3.11/Kenning/utils/class_loader.py",
             ]
             get_command(x)
         assert "not in tuple" in str(execinfo.value)
 
     def test_different_flags(self):
         x = [
-            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "/usr/lib/python3.11/kenning/scenarios/model_training.py",
             "--help",
             "-h",
         ]
@@ -112,7 +112,7 @@ class TestGetCommand:
 
     def test_only_file(self):
         x = [
-            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "/usr/lib/python3.11/kenning/scenarios/model_training.py",
         ]
         y = [
             "python -m kenning.scenarios.model_training",
@@ -121,7 +121,7 @@ class TestGetCommand:
 
     def test_multiple_flags(self):
         x = [
-            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "/usr/lib/python3.11/kenning/scenarios/model_training.py",
             "--modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",  # noqa: E501
             "--dataset-cls kenning.datasets.pet_dataset.PetDataset",
             "--logdir",
@@ -164,7 +164,7 @@ class TestGetCommand:
 
     def test_empty_flags(self):
         x = [
-            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "/usr/lib/python3.11/kenning/scenarios/model_training.py",
             "",
         ]
         y = ["python -m kenning.scenarios.model_training"]

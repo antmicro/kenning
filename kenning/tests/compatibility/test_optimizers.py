@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 from pathlib import Path
 from typing import Tuple, Type
 
@@ -165,11 +164,6 @@ class TestOptimizersCompatibility:
         optimizer_cls1: Type[Optimizer],
         optimizer_cls2: Type[Optimizer],
     ):
-        if (
-            optimizer_cls1.__name__ == "TinygradOptimizer"
-            or optimizer_cls2.__name__ == "TinygradOptimizer"
-        ) and sys.version_info < (3, 11):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         compiled_model_path = get_tmp_path()
         dataset, model, optimizer1, optimizer2 = prepare_objects(
             optimizer_cls1,

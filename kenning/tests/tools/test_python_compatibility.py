@@ -10,19 +10,33 @@ import pytest
 from check_python_compatibility import PYPROJECT, is_untested, uv_resolve
 from pyproject_requirements import Pyproject
 
-VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+VERSIONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 
 # Extras known not to resolve on a Python version.
 # An extra that starts resolving fails the test, so it can be removed here.
 EXPECTED_FAILURES = {
-    "3.10": {
-        "tinygrad": "tinygrad requires Python 3.11 or newer",
-    },
     "3.14": {
         "tensorflow": "tensorflow has no cp314 wheels",
         "onnx2tf": "requires tensorflow",
         "tvm": "no tvm wheel for cp314",
         "all": "requires tensorflow and tvm",
+    },
+    "3.15": {
+        "tensorflow": "tensorflow has no cp315 wheels",
+        "onnx2tf": "requires tensorflow",
+        "tvm": "no tvm wheel for cp315",
+        "all": "requires tensorflow and tvm",
+        "torch": "no torch wheel for cp315",
+        "anomaly_detection": "requires torch",
+        "auto_pytorch": "requires torch",
+        "nni": "requires torch",
+        "executorch": "requires torch",
+        "llm": "requires torch",
+        "sparsity_aware_kernel": "requires torch",
+        "onnxruntime": "no onnxruntime wheel for cp315",
+        "onnxruntime_gpu": "no onnxruntime-gpu wheel for cp315",
+        "real_time_visualization": "no dearpygui wheel for cp315",
+        "gemma": "gemma requires grain, which has no cp315 wheel",
     },
 }
 

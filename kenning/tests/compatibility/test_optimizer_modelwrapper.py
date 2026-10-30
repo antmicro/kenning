@@ -4,7 +4,6 @@
 
 import gc
 import os
-import sys
 import uuid
 from itertools import product
 from pathlib import Path
@@ -452,11 +451,6 @@ class TestOptimizerModelWrapper:
         model_cls: Type[ModelWrapper],
         optimizer_cls: Type[Optimizer],
     ):
-        if model_cls.__name__ == "TinygradOptimizer" and sys.version_info < (
-            3,
-            11,
-        ):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         model, optimizer, platform = prepare_objects(model_cls, optimizer_cls)
 
         if isinstance(model, YOLACT):

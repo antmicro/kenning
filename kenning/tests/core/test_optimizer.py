@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 from contextlib import contextmanager
 from typing import Iterator, Tuple, Type
 
@@ -90,10 +89,6 @@ class TestOptimizer:
         """
         Tests optimizer initialization.
         """
-        if (
-            opt_cls.__name__ == "TinygradOptimizer" or inputtype == "tinygrad"
-        ) and sys.version_info < (3, 11):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         with prepare_objects(opt_cls, inputtype):
             pass
 
@@ -193,9 +188,5 @@ class TestOptimizer:
         """
         Tests `get_framework_version` method.
         """
-        if (
-            opt_cls.__name__ == "TinygradOptimizer" or inputtype == "tinygrad"
-        ) and sys.version_info < (3, 11):
-            pytest.xfail("Tinygrad is not supported on Python 3.10")
         with prepare_objects(opt_cls, inputtype) as (optimizer, _):
             assert optimizer.get_framework_version() is not None

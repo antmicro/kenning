@@ -8,7 +8,7 @@ from pathlib import Path
 import nox
 from nox_uv import session
 
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
+PYTHON_VERSIONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
 PYTEST_EXPLICIT_DOWNLOAD = (
     os.environ.get("NOX_PYTEST_EXPLICIT_DOWNLOAD", "n") != "n"
@@ -53,7 +53,7 @@ def _prepare_pyrenode(session: nox.Session):
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
-    `run_pytest-3.10(device='cpu')` is converted into `run_pytest-3.10-cpu`.
+    `run_pytest-3.11(device='cpu')` is converted into `run_pytest-3.11-cpu`.
     """
     namever, _, args = name.partition("(")
     name, _, ver = namever.partition("-")

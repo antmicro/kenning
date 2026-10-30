@@ -52,15 +52,6 @@ class TestVEnvHandler:
         assert 0 == code
         assert "pyinstrument 5.1.2, on Python 3.12." in output
 
-        venv.python = "3.10"
-        venv.dependencies = ["pyinstrument==5.0.2", "numpy==2.0.0"]
-
-        venv._setup_venv()
-        code, output, err = venv.execute_module("pyinstrument", ["--version"])
-
-        assert 0 == code
-        assert "pyinstrument 5.0.2, on Python 3.10." in output
-
     def test_read_yaml(self):
         kenning.dispatcher.venv_handler.REQUIREMENTS_MODULE = (
             "kenning.tests.dispatcher.test-requirement-files"

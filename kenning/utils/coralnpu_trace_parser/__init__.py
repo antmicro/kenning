@@ -13,7 +13,7 @@ flags = sys.getdlopenflags()
 
 try:
     sys.setdlopenflags(flags | os.RTLD_DEEPBIND)
-    from ._parser import parse
+    from kenning_coralnpu_trace_parser._parser import parse
 finally:
     sys.setdlopenflags(flags)
 

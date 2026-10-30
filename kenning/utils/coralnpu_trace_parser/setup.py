@@ -73,7 +73,7 @@ class BuildExt(build_ext):
     """
 
     def build_extension(self, ext):
-        if ext.name == "kenning.utils.coralnpu_trace_parser._parser":
+        if ext.name == "kenning_coralnpu_trace_parser._parser":
             output_dir = (
                 Path(self.build_temp) / "coralnpu_trace_parser"
             ).resolve()
@@ -88,19 +88,19 @@ class BuildExt(build_ext):
 
 
 setup(
-    packages=["kenning.utils.coralnpu_trace_parser"],
+    packages=["kenning_coralnpu_trace_parser"],
     package_dir={
-        "kenning.utils.coralnpu_trace_parser": ".",
+        "kenning_coralnpu_trace_parser": ".",
     },
     package_data={
-        "kenning.utils.coralnpu_trace_parser": [
+        "kenning_coralnpu_trace_parser": [
             "coralnpu_trace.proto",
         ],
     },
     ext_modules=cythonize(
         [
             Extension(
-                "kenning.utils.coralnpu_trace_parser._parser",
+                "kenning_coralnpu_trace_parser._parser",
                 sources=[
                     "caller.pyx",
                     "parser.cpp",

@@ -78,6 +78,10 @@ torch = [
     "tensorboard",
     "torchvision>=0.15.0",
 ]
+vela = [
+    "ethos-u-vela>=5.2.0",
+    "tensorflow>=2.21.0"
+]
 coralnpu = [
     # Fix newest flax/jax releases being out of sync
     "flax==0.12.9 ; python_version >= '3.12'",

@@ -33,7 +33,7 @@ dependencies = [
     "onnx==1.22.0",
     "importlib-resources",
     "pandoc",
-    "Pillow>=8.1.0",
+    "Pillow>=13.0.0",
     "psutil>=5.8.0",
     "pyyaml",
     "requests",
@@ -43,7 +43,6 @@ dependencies = [
     # code with versions [1.7.2 - 1.9.0). It should also removed.
     "scikit_learn>=1.7.2",
     "scipy>1.12.0",
-    "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
     "polars",
     "typeguard",
@@ -69,7 +68,7 @@ tensorflow = [
     "tensorflow_model_optimization",
     "tensorboard",
     "h5py",
-    "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
+    "tensorflow_probability>=0.19.0,<0.23.0; python_version<'3.13'",
     "tf2onnx",
 ]
 torch = [
@@ -128,13 +127,12 @@ tflite = [
     "tflite>=2.1",
 ]
 tvm = [
-    "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
     "tvm @ https://dl.antmicro.com/kenning/packages/tvm/tvm-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
 ]
 tinygrad = [
-    "tinygrad==0.12.0 ; python_version>='3.11'", # Fixing version, because of a bug in 0.13.0.
+    "tinygrad==0.12.0", # Fixing version, because of a bug in 0.13.0.
 ]
 iree = [
     "iree-base-compiler[onnx]==3.11.0",
@@ -143,15 +141,13 @@ iree = [
     "iree-tools-tflite",
 ]
 onnxruntime = [
-    "onnxruntime==1.23.2; python_version < '3.11'",
-    "onnxruntime>=1.29.0; python_version >= '3.11'",
+    "onnxruntime>=1.29.0",
 ]
 onnxruntime_gpu = [
-    "onnxruntime-gpu==1.23.2; python_version < '3.11'",
-    "onnxruntime-gpu>=1.29.0; python_version >= '3.11'",
+    "onnxruntime-gpu>=1.29.0",
 ]
 test = [
-    "filelock",
+    "filelock>=4.2.1",
     "pexpect",
     "pytest",
     "pytest-env",
@@ -210,8 +206,7 @@ albumentations = [
 ]
 onnx2tf = [
     "onnx2tf>=1.28.8",
-    "onnxruntime==1.23.2; python_version < '3.11'",
-    "onnxruntime>=1.29.0; python_version >= '3.11'",
+    "onnxruntime>=1.29.0",
     "onnxsim==0.4.33; python_version < '3.12'",
     "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",
@@ -243,7 +238,7 @@ llm = [
     "peft==0.10.0",
     "kenning[torch]",
     "safetensors",
-    "vllm==0.28.0",
+    "vllm>=0.32.0",
     "gptqmodel>=7.3.2",
     "huggingface_hub",
 ]
@@ -260,7 +255,7 @@ gemma = [
     "jax",
     "jaxlib",
     "gemma==4.0.1; python_version>='3.12'",
-    "etils; python_version>='3.11'"
+    "etils"
 ]
 all = [
     "kenning[nvidia_perf,docs,tensorflow,torch,object_detection,pose_estimation,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,tinygrad,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,onnx2tf,executorch,sklearn,emlearn,coralnpu]"
@@ -272,7 +267,6 @@ tvm-relax = [
     "apache-tvm-ffi<0.1.15",
 ]
 tvm-cuda = [
-    "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10'",
     "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11'",
     "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
     "tvm-cuda @ https://dl.antmicro.com/kenning/packages/tvm/cuda/tvm_cuda-0.18.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
@@ -396,6 +390,10 @@ override-dependencies = [
     "jsonschema>=4.23.0",
     "protobuf>=7.34.0",
     "click>=8.1.7",
+    # pipeline-manager pins uvicorn==0.24.0.post1, mcp>=1.30 requires >=0.31.1
+    "uvicorn[standard]>=0.31.1",
+    # vllm pins setuptools<81
+    "setuptools>=84.1.0",
 ]
 conflicts = [
     [{ extra = "tvm" }, { group = "tvm-relax" }],

@@ -139,9 +139,16 @@ class TabularDataset(Dataset):
         # Making sure shapes of mean and std match shape of inputs (so that
         # it can be easily subtracted/added to inputs for standardization).
         # We also want normal numpy arrays, not whatever `polars` lib returns.
-        self.mean = np.asarray(list(dfX.mean())).transpose()
-        self.std = np.asarray(list(dfX.std())).transpose()
+        self.mean = dfX.mean().to_numpy()
+        self.std = dfX.std().to_numpy()
+        self.median = dfX.median().to_numpy()
+        percentile_25 = dfX.quantile(0.25)
+        percentile_75 = dfX.quantile(0.75)
+        self.iqr = (percentile_75 - percentile_25).to_numpy()
         self.classnames = list(map(str, dfY.unique().sort()))
+
+        self.min = np.asarray(list(dfX.min())).transpose()
+        self.max = np.asarray(list(dfX.max())).transpose()
         self.num_features = dfX.shape[1]
 
     def prepare_output_samples(self, samples):
@@ -179,6 +186,12 @@ class TabularDataset(Dataset):
 
     def get_input_mean_std(self):
         return self.mean, self.std
+
+    def get_robust_scaler_params(self):
+        return self.iqr, self.median
+
+    def get_min_max_scaler_params(self):
+        return self.max - self.min, self.min
 
     def get_class_names(self):
         return self.classnames

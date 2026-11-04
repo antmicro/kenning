@@ -1,0 +1,52 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: KerasGenericClassification
+  parameters:
+    learning_rate: 0.001
+    batch_size: 256
+    num_epochs: 400
+    model_path: ./build/anomaly_detection/keras_anomaly.h5
+    normalization_method: robust
+    from_file: False
+dataset:
+  type: TabularDataset
+  parameters:
+    dataset_root: ./build/dataset
+    dataset_path: ./build/imu_anomaly.csv
+    cols_x: [ax, ay, az]
+    col_y: anomaly
+    split_fraction_test: 0.1
+    window_size: 80
+    shuffle_data: False
+    download_dataset: True
+    force_download_dataset: True
+    expand_classes: False
+optimizers:
+- type: LiteRTCompiler
+  parameters:
+    model_framework: keras
+    target: int8
+    inference_input_type: int8
+    inference_output_type: int8
+    compiled_model_path: ./build/anomaly_detection/out.tflite
+- type: VelaCompiler
+  parameters:
+    compiled_model_path: ./build/anomaly_detection/vela_output
+    output_type: tflite
+    accelerator_config: ethos-u55-128
+    system_config: Ethos_U55_High_End_Embedded
+    memory_mode: Shared_Sram
+    cop_format: COP1
+    tensor_allocator: Greedy
+    show_cpu_operations: True
+runtime:
+  type: kenning.runtimes.litert.LiteRTRuntime
+  parameters:
+    save_model_path: ./build/anomaly_detection/out.tflite
+report:
+  type: MarkdownReport
+  parameters:
+    measurements: ./build/anomaly_detection/vela.json
+    report_path: ./build/reports/anomaly-vela/report.md
+    to_html: true

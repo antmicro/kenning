@@ -960,6 +960,30 @@ class Dataset(ArgumentsHandler, ABC):
         """
         ...
 
+    def get_robust_scaler_params(self) -> Tuple[Any, Any]:
+        """
+        Returns interquartile range and median for input tensors.
+
+        Returns
+        -------
+        Tuple[Any, Any]
+            Tuple of two variables describing interquartile range and median
+            for a given train dataset.
+        """
+        ...
+
+    def get_min_max_scaler_params(self) -> Tuple[Any, Any]:
+        """
+        Returns means and zero used for MinMax input tensors scaling.
+
+        Returns
+        -------
+        Tuple[Any, Any]
+            Tuple of two variables describing mean and zero for a given train
+            dataset.
+        """
+        ...
+
     @abstractmethod
     def get_class_names(self) -> List[str]:
         """

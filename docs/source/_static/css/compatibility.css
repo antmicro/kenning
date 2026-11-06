@@ -11,11 +11,6 @@
   overflow-y: auto;
 }
 
-.md-grid {
-  margin-left: 0;
-  max-width: none
-}
-
 /* Proper aligning of table columns */
 td.text-right {
   text-align: right !important;

@@ -1091,7 +1091,7 @@ class AutoPyTorchML(AutoML):
                         "memout"
                     ],
                     "The number of models that failed due to incompatibility": stats[  # noqa: E501
-                        "incompatbile"
+                        "incompatible"
                     ],
                 },
                 "trained_model_metrics": metrics_over_time,

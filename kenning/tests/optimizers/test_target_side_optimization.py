@@ -36,7 +36,7 @@ from kenning.utils.resource_manager import PathOrURI
 
 @contextmanager
 def prepare_objects(
-    framework: str
+    framework: str,
 ) -> Generator[Tuple[Dataset, ModelWrapper], None, None]:
     """
     Context manager to prepare mock dataset and model wrapper for tests.
@@ -91,12 +91,12 @@ def running_inference_server(
 
     try:
         while not inference_server.serving_event.wait(0.1):
-            assert (
-                server_thread.is_alive()
-            ), "Inference server stopped before serving start."
-            assert (
-                time.time() < deadline
-            ), f"Server failed to initialize in {TIMEOUT} seconds."
+            assert server_thread.is_alive(), (
+                "Inference server stopped before serving start."
+            )
+            assert time.time() < deadline, (
+                f"Server failed to initialize in {TIMEOUT} seconds."
+            )
 
         assert protocol_client.initialize_client(), "Client failed to connect"
         yield
@@ -337,9 +337,10 @@ class TestServerSideOptimization:
                 protocol=protocol_host,
             )
 
-            with running_inference_server(
-                inference_server, protocol_host
-            ), pytest.raises(RequestFailure):
+            with (
+                running_inference_server(inference_server, protocol_host),
+                pytest.raises(RequestFailure),
+            ):
                 pipeline_runner._handle_optimizations()
 
     @pytest.mark.xdist_group(name="use_socket")

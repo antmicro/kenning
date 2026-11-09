@@ -192,9 +192,9 @@ class InferenceTester(CommandTemplate):
         ]
 
         if REPORT not in get_used_subcommands(args):
-            InferenceTester.default_block_classes[
-                ConfigKey.report
-            ] = "StubReport"
+            InferenceTester.default_block_classes[ConfigKey.report] = (
+                "StubReport"
+            )
 
         config = InferenceTester.parse_configuration(args, not_parsed, keys)
 
@@ -227,7 +227,7 @@ class InferenceTester(CommandTemplate):
 
         output = None
 
-        # this is added to make inference testser's tests work
+        # this is added to make inference tester's tests work
         if pipeline_runner.output is None:
             output = (
                 args.measurements[0]

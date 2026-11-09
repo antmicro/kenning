@@ -6,7 +6,6 @@
 Test code for checking sanity of LLM optimizers.
 """
 
-
 import pytest
 
 from kenning.tests.core.conftest import remove_file_or_dir

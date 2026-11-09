@@ -23,7 +23,7 @@ Tensor = TypeVar("torch.Tensor")
 
 class PyTorchGenericAutoencoderClassification(PyTorchGenericClassification):
     """
-    Wrapper for autoencoder based PyTorch classfication models.
+    Wrapper for autoencoder based PyTorch classification models.
     """
 
     default_template_path = (
@@ -204,8 +204,7 @@ class PyTorchGenericAutoencoderClassification(PyTorchGenericClassification):
                 true = np.concatenate((true, labels.cpu().numpy()))
                 metric = metric_func(true, predicted)
                 bar.set_description(
-                    f"valid epoch: {epoch:3d} {str(metric_func)}: "
-                    f"{metric:.3f}"
+                    f"valid epoch: {epoch:3d} {str(metric_func)}: {metric:.3f}"
                 )
 
             writer.add_scalar(f"{str(metric_func)}/valid", metric, epoch)

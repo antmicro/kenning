@@ -71,6 +71,8 @@ class Ai8xTools(object):
         ------
         FileNotFoundError
             Raised if any of the provided path does not exist.
+        ValueError
+            Raised if any of the paths is not specified.
         """
         if ai8x_training_path is None and "AI8X_TRAINING_PATH" in os.environ:
             ai8x_training_path = Path(os.environ["AI8X_TRAINING_PATH"])
@@ -124,7 +126,7 @@ class Ai8xTools(object):
 
         Raises
         ------
-        CalledProcessError
+        subprocess.CalledProcessError
             Raised when executed script fails.
         """
         try:
@@ -171,7 +173,7 @@ class Ai8xTools(object):
 
         Raises
         ------
-        CalledProcessError
+        subprocess.CalledProcessError
             Raised when executed script fails.
         """
         try:

@@ -79,7 +79,7 @@ class Argument:
 
 
 def get_class_module_name(
-    syntax_node: Union[ast.ClassDef, ast.Module]
+    syntax_node: Union[ast.ClassDef, ast.Module],
 ) -> Optional[str]:
     """
     Displays class name from syntax node.
@@ -99,7 +99,7 @@ def get_class_module_name(
 
 
 def get_class_module_docstrings(
-    syntax_node: Union[ast.ClassDef, ast.Module]
+    syntax_node: Union[ast.ClassDef, ast.Module],
 ) -> str:
     """
     Displays docstrings of provided class or module.
@@ -130,7 +130,7 @@ def get_class_module_docstrings(
 
 
 def get_dependency(
-    syntax_node: Union[ast.Import, ast.ImportFrom]
+    syntax_node: Union[ast.Import, ast.ImportFrom],
 ) -> Optional[str]:
     """
     Extracts a dependency from an import syntax node and checks whether the
@@ -265,8 +265,7 @@ def parse_io_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
                 dict_element.keys[1:], dict_element.values[1:]
             ):
                 resulting_output.append(
-                    f"    * `{key.value}`: "
-                    f"`{clean_variable_name(value)}`\n"
+                    f"    * `{key.value}`: `{clean_variable_name(value)}`\n"
                 )
 
     return resulting_output
@@ -392,7 +391,8 @@ def clean_variable_name(variable_name: ast.AST) -> str:
         Cleaned up variable.
     """
     return (
-        astunparse.unparse(variable_name)
+        astunparse
+        .unparse(variable_name)
         .strip()
         .removeprefix("'")
         .removesuffix("'")
@@ -435,7 +435,8 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
                 and value.func.id == "list"
             ):
                 argument_list_variable = (
-                    astunparse.unparse(value)
+                    astunparse
+                    .unparse(value)
                     .strip()
                     .removeprefix("'")
                     .removesuffix("'")
@@ -594,7 +595,7 @@ def evaluate_argument_list(
 
 
 def get_args_structure_from_parameterschema(
-    parameterschema: Dict
+    parameterschema: Dict,
 ) -> List[str]:
     """
     Returns argument structure in the form of Markdown-like strings based on
@@ -693,7 +694,7 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
         [dict_elements.append(elt) for elt in value]
 
     for dict_element in dict_elements:
-        resulting_output.append(f'* `{dict_element["name"]}`\n')
+        resulting_output.append(f"* `{dict_element['name']}`\n")
         dict_element.pop("name", None)
 
         for key, value in dict_element.items():
@@ -731,7 +732,7 @@ def instantiate_object(
 
     Raises
     ------
-    ClassInfoInvalidArgumentError:
+    ClassInfoInvalidArgumentError
         Raised when invalid name is provided for a class.
     """
     # create a dict of arguments that will be used to create an instance
@@ -786,7 +787,7 @@ def instantiate_object_based_on_base_class(
 
     Raises
     ------
-    ClassInfoInvalidArgumentError:
+    ClassInfoInvalidArgumentError
         Raised when class could not be created or arguments were missing.
     """
     try:

@@ -389,12 +389,13 @@ class AutoML(ArgumentsHandler, ABC):
             )
             for module_path in use_models
         ]
-        assert all(
-            [
-                issubclass(cls, AutoMLModel) and issubclass(cls, ModelWrapper)
-                for cls in self.use_models
-            ]
-        ), "All provided classes in `use_models` have to inherit from AutoMLModel"  # noqa: E501
+        assert all([
+            issubclass(cls, AutoMLModel) and issubclass(cls, ModelWrapper)
+            for cls in self.use_models
+        ]), (
+            "All provided classes in `use_models` have to inherit from "
+            "AutoMLModel"
+        )
 
         # Override ranges of AutoML parameter
         for i, (_class, model_with_conf) in enumerate(

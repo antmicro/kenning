@@ -497,8 +497,7 @@ def nab_metric(
         )
     if afn > 0:
         raise ValueError(
-            "False negative coefficient should be less "
-            f"or equal 0, got {afn}"
+            f"False negative coefficient should be less or equal 0, got {afn}"
         )
 
     # score from current detections
@@ -767,9 +766,9 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
                 "session_utilization_system_cpu_percents"
             ]
         ]
-        computed_metrics[
-            "session_utilization_system_cpu_percent"
-        ] = cpu_percents_avg
+        computed_metrics["session_utilization_system_cpu_percent"] = (
+            cpu_percents_avg
+        )
         compute_metrics(
             "session_utilization_system_cpu_percent", cpu_percents_avg
         )
@@ -1061,9 +1060,9 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     # If ground truths count is not present in the measurementsdata, then
     # mAP metric can not be calculated.
-    if any(
-        [key.startswith("eval_gtcount") for key in measurementsdata.keys()]
-    ):
+    if any([
+        key.startswith("eval_gtcount") for key in measurementsdata.keys()
+    ]):
         return {
             Metric.mAP: compute_map_per_threshold(measurementsdata, [0.0])[0]
         }
@@ -1191,7 +1190,7 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
 
 
 def compute_text_summarization_metrics(
-    measurementsdata: List[Dict[str, List]]
+    measurementsdata: List[Dict[str, List]],
 ) -> Dict:
     """
     Computes text summarization metrics based on `measurementsdata` argument.

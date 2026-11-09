@@ -309,6 +309,8 @@ class BareMetalPlatform(SimulatablePlatform):
         ------
         KenningPlatformError
             Raised when OpenOCD fails.
+        Exception
+            Re-raised if running OpenOCD fails for any other reason.
         """
         openocd_cmd = [str(self.openocd_path.expanduser())]
 

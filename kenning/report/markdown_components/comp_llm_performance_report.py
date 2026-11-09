@@ -97,9 +97,9 @@ def comparison_llm_performance_report(
         y_data=values,
         colors=colors,
     ).plot(imgdir, image_formats)
-    report_variables[
-        "barplot_tokens_per_second_comparison"
-    ] = get_plot_wildcard_path(imgdir, root_dir)
+    report_variables["barplot_tokens_per_second_comparison"] = (
+        get_plot_wildcard_path(imgdir, root_dir)
+    )
 
     with path(reports, "llm_performance_comparison.md") as reporttemplate:
         return create_report_from_measurements(

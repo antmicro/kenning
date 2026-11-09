@@ -66,9 +66,9 @@ def assert_compiler_flags(
 
     actual = flags2set(actual_flags)
 
-    assert (
-        actual == expected
-    ), "User-defined flags were overridden by platform flags"
+    assert actual == expected, (
+        "User-defined flags were overridden by platform flags"
+    )
 
 
 class TestTargetUserOverride:
@@ -128,9 +128,9 @@ class TestTargetUserOverride:
         original_flags = map(CompilerFlag, compiler.platform_target_attrs)
         actual_flags = compiler._get_target_attrs(tostring=False)
 
-        assert (
-            compiler._get_target() == "zephyr"
-        ), "The target was not set to platform default"
+        assert compiler._get_target() == "zephyr", (
+            "The target was not set to platform default"
+        )
 
         assert_compiler_flags([], None, original_flags, actual_flags)
 
@@ -152,9 +152,9 @@ class TestTargetUserOverride:
         compiler.read_platform(platform)
         compiler.init()
 
-        assert (
-            compiler._get_target() == "cuda"
-        ), "User-supplied CUDA was overwritten"
+        assert compiler._get_target() == "cuda", (
+            "User-supplied CUDA was overwritten"
+        )
 
     def test_no_platform_tvm(self, dataset: Dataset, tmpfolder: Path) -> None:
         compiled_model_path = tmpfolder / "model-mock.tar"
@@ -188,9 +188,9 @@ class TestTargetUserOverride:
         compiler.read_platform(platform)
         compiler.init()
 
-        assert (
-            compiler._get_backend() == "vulkan"
-        ), "The backend was overridden"
+        assert compiler._get_backend() == "vulkan", (
+            "The backend was overridden"
+        )
 
     def test_user_no_override_iree(
         self, dataset: Dataset, tmpfolder: Path
@@ -209,9 +209,9 @@ class TestTargetUserOverride:
         compiler.read_platform(platform)
         compiler.init()
 
-        assert (
-            compiler._get_backend() == "cuda"
-        ), "The backend is not the default"
+        assert compiler._get_backend() == "cuda", (
+            "The backend is not the default"
+        )
 
     def test_no_platform_iree(self, dataset: Dataset, tmpfolder: Path) -> None:
         compiled_model_path = tmpfolder / "model-mock.tar"

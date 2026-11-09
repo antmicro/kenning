@@ -6,7 +6,6 @@
 Module used for regression quality report generation.
 """
 
-
 from importlib.resources import path
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -64,7 +63,7 @@ def regression_report(
         Content of the report in MyST format.
     """
     KLogger.info(
-        f'Running regression report for {measurementsdata["model_name"]}'
+        f"Running regression report for {measurementsdata['model_name']}"
     )
 
     metrics = compute_regression_metrics(measurementsdata)

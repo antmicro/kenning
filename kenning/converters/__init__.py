@@ -6,7 +6,6 @@
 Module containing converters for model formats and optimizers.
 """
 
-
 from kenning.core.converter import ModelConverter
 from kenning.utils.class_loader import get_all_subclasses
 

@@ -5,6 +5,7 @@
 """
 Provide resource manager responsible for downloading and caching resources.
 """
+
 import hashlib
 import os
 import re
@@ -70,9 +71,10 @@ def extract_zip(target_dir: Path, src_path: Path):
     src_path : Path
         Path to the ZIP file.
     """
-    with LoggerProgressBar() as logger_progress_bar, ZipFile(
-        src_path, "r"
-    ) as zip:
+    with (
+        LoggerProgressBar() as logger_progress_bar,
+        ZipFile(src_path, "r") as zip,
+    ):
         for f in tqdm(
             iterable=zip.namelist(),
             total=len(zip.namelist()),
@@ -84,8 +86,8 @@ def extract_zip(target_dir: Path, src_path: Path):
 def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
     netloc = netloc.split(":")
     return (
-        f'https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/'
-        f'{params_dict["branch"]}{path}'
+        f"https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/"
+        f"{params_dict['branch']}{path}"
     )
 
 
@@ -272,7 +274,7 @@ class ResourceManager(metaclass=Singleton):
 
         Raises
         ------
-        ChecksumVerifyError :
+        ChecksumVerifyError
             Raised when downloaded file has invalid checksum
         """
         # check if file is already cached
@@ -469,7 +471,7 @@ class ResourceManager(metaclass=Singleton):
 
         Raises
         ------
-        ValueError :
+        ValueError
             Raised when provided URI has invalid scheme or the defined
             scheme's conversion is invalid.
         """
@@ -549,12 +551,10 @@ class ResourceManager(metaclass=Singleton):
                 if param_as_list is None:
                     raise ValueError(f"Invalid param: {param}")
                 # convert slice str to slice object
-                param_slice = slice(
-                    *[
-                        {True: lambda n: None, False: int}[x == ""](x)
-                        for x in (index.split(":") + ["", "", ""])[:3]
-                    ]
-                )
+                param_slice = slice(*[
+                    {True: lambda n: None, False: int}[x == ""](x)
+                    for x in (index.split(":") + ["", "", ""])[:3]
+                ])
                 value = sep.join(param_as_list[param_slice])
             elif index.isnumeric():
                 # numeric index
@@ -576,7 +576,7 @@ class ResourceManager(metaclass=Singleton):
         params_check = set(self.params_any_index_pattern.findall(converter))
         if len(params_check):
             raise ValueError(
-                "Invalid syntax for params: " f"{[p[1] for p in params_check]}"
+                f"Invalid syntax for params: {[p[1] for p in params_check]}"
             )
 
         return converter
@@ -784,7 +784,7 @@ class ResourceManager(metaclass=Singleton):
 
         Raises
         ------
-        ValueError :
+        ValueError
             Raised when required free space is bigger that max cache size.
         """
         if required_free > self.max_cache_size:
@@ -887,7 +887,7 @@ class ResourceURI(Path):
     @property
     def uri(self) -> Optional[str]:
         """
-        Get URI of the resource.
+        URI of the resource.
         """
         if self._uri is None:
             return None
@@ -899,14 +899,14 @@ class ResourceURI(Path):
     @property
     def origin(self) -> str:
         """
-        Returns the original string passed to the constructor.
+        Original string passed to the constructor.
         """
         return self._origin
 
     @property
     def parent(self) -> "ResourceURI":
         """
-        Get parent of the URI.
+        Parent of the URI.
         """
         ret = super().parent
         ret._uri = self._uri

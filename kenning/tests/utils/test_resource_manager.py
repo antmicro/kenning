@@ -145,9 +145,9 @@ class TestResourceManager:
         """
         target_path: Path = pytest.test_directory
 
-        ResourceManager().add_custom_url_schemes(
-            {"customschema": lambda uri: target_path / uri.path[1:]}
-        )
+        ResourceManager().add_custom_url_schemes({
+            "customschema": lambda uri: target_path / uri.path[1:]
+        })
 
         expected_path = target_path / "test_file.txt"
         expected_path.parent.mkdir(parents=True, exist_ok=True)
@@ -372,12 +372,10 @@ class TestResourceManager:
 @pytest.mark.xdist_group(name="cache_test")
 class TestResources:
     def test_initializer_with_dict(self):
-        resources = Resources(
-            {
-                "model_1": MAGIC_WAND_MODEL_URI,
-                "model_2": PERSON_DETECTION_MODEL_URI,
-            }
-        )
+        resources = Resources({
+            "model_1": MAGIC_WAND_MODEL_URI,
+            "model_2": PERSON_DETECTION_MODEL_URI,
+        })
 
         assert "model_1" in resources
         assert "model_2" in resources
@@ -385,14 +383,12 @@ class TestResources:
         assert len(resources) == 2
 
     def test_initializer_with_nested_dict(self):
-        resources = Resources(
-            {
-                "model_1": MAGIC_WAND_MODEL_URI,
-                "nested": {
-                    "model_2": PERSON_DETECTION_MODEL_URI,
-                },
-            }
-        )
+        resources = Resources({
+            "model_1": MAGIC_WAND_MODEL_URI,
+            "nested": {
+                "model_2": PERSON_DETECTION_MODEL_URI,
+            },
+        })
 
         assert "model_1" in resources
         assert ("nested", "model_2") in resources
@@ -413,14 +409,12 @@ class TestResources:
         with pytest.raises(KeyError):
             _ = resources[tuple()]
 
-        resources = Resources(
-            {
-                "model_1": MAGIC_WAND_MODEL_URI,
-                "nested": {
-                    "model_2": PERSON_DETECTION_MODEL_URI,
-                },
-            }
-        )
+        resources = Resources({
+            "model_1": MAGIC_WAND_MODEL_URI,
+            "nested": {
+                "model_2": PERSON_DETECTION_MODEL_URI,
+            },
+        })
 
         with pytest.raises(KeyError):
             _ = resources["model_2"]

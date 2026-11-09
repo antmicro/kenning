@@ -322,11 +322,9 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
     <https://lila.science/datasets/lindenthal-camera-traps/>`_.
     """
 
-    resources = Resources(
-        {
-            "images": "https://storage.googleapis.com/public-datasets-lila/lindenthal-camera-traps/lindenthal-camera-traps.zip",
-        }
-    )
+    resources = Resources({
+        "images": "https://storage.googleapis.com/public-datasets-lila/lindenthal-camera-traps/lindenthal-camera-traps.zip",
+    })
 
     demo_dataset_uri = ResourceURI(
         "kenning:///datasets/lindenthal-dataset-sample.zip"
@@ -421,10 +419,13 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         # Set max cache size to 220 GB to allow dataset download
         ResourceManager().set_max_cache_size(220 * 10**9)
 
-        with LoggerProgressBar() as logger_progress_bar, ZipFile(
-            self.resources["images"],
-            "r",
-        ) as zip:
+        with (
+            LoggerProgressBar() as logger_progress_bar,
+            ZipFile(
+                self.resources["images"],
+                "r",
+            ) as zip,
+        ):
             iterable = tuple(
                 filter(lambda x: x.endswith(".bag"), zip.namelist())
             )

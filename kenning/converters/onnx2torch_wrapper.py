@@ -349,7 +349,7 @@ def dropout_converter(
 
     Raises
     ------
-    NotImplementedError
+    NotSupportedError
         Raised when no seeds for Dropout are provided
     """
     if len(node.input_values) > 1:
@@ -703,9 +703,9 @@ class FunctionWrapperForCheckingConst:
                 )
             else:
                 # Creating module without registered submodule
-                module.__dict__[
-                    "wrapped_module"
-                ] = default_conversion.torch_module
+                module.__dict__["wrapped_module"] = (
+                    default_conversion.torch_module
+                )
             # Registering constant values as module buffer,
             # so it will be moved to specific device when method .to() invoked
             i = 0
@@ -732,7 +732,7 @@ for description, converter in _CONVERTER_REGISTRY.items():
 
 
 def convert(
-    onnx_model: Union[Path, onnx.ModelProto]
+    onnx_model: Union[Path, onnx.ModelProto],
 ) -> torch.fx.graph_module.GraphModule:
     """
     Function for converting model from ONNX framework to PyTorch.

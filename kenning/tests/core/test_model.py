@@ -85,7 +85,7 @@ def ensure_types_native_or_numpy(X):
     else:
         raise TypeError(
             f"preprocess_input should return framework agnostic"
-            f"values, got: { type(X) }"
+            f"values, got: {type(X)}"
         )
 
 

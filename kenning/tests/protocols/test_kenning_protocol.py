@@ -105,61 +105,51 @@ MODEL_TRANSMISSION = (
     [
         Message(
             MessageType.MODEL,
-            b"\x45\x87\x12\xAC",
+            b"\x45\x87\x12\xac",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.SUCCESS: True,
-                    FlagName.FIRST: True,
-                    FlagName.IS_HOST_MESSAGE: True,
-                    FlagName.HAS_PAYLOAD: True,
-                }
-            ),
+            Flags({
+                FlagName.SUCCESS: True,
+                FlagName.FIRST: True,
+                FlagName.IS_HOST_MESSAGE: True,
+                FlagName.HAS_PAYLOAD: True,
+            }),
         ),
         Message(
             MessageType.MODEL,
-            b"\x87\x12\xFE",
+            b"\x87\x12\xfe",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.HAS_PAYLOAD: True,
-                }
-            ),
+            Flags({
+                FlagName.HAS_PAYLOAD: True,
+            }),
         ),
         Message(
             MessageType.MODEL,
             b"",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.HAS_PAYLOAD: True,
-                }
-            ),
+            Flags({
+                FlagName.HAS_PAYLOAD: True,
+            }),
         ),
         Message(
             MessageType.MODEL,
-            b"\x00\x00\xFF\xFE",
+            b"\x00\x00\xff\xfe",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.HAS_PAYLOAD: True,
-                }
-            ),
+            Flags({
+                FlagName.HAS_PAYLOAD: True,
+            }),
         ),
         Message(
             MessageType.MODEL,
-            b"\xC5\x7D\xAC",
+            b"\xc5\x7d\xac",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.LAST: True,
-                    FlagName.HAS_PAYLOAD: True,
-                }
-            ),
+            Flags({
+                FlagName.LAST: True,
+                FlagName.HAS_PAYLOAD: True,
+            }),
         ),
     ],
     MessageType.MODEL,
-    b"\x45\x87\x12\xAC\x87\x12\xFE\x00\x00\xFF\xFE\xC5\x7D\xAC",
+    b"\x45\x87\x12\xac\x87\x12\xfe\x00\x00\xff\xfe\xc5\x7d\xac",
     [TransmissionFlag.SUCCESS, TransmissionFlag.IS_HOST_MESSAGE],
 )
 
@@ -170,21 +160,19 @@ IO_SPEC_TRANSMISSION_SINGLE_MESSAGE = (
     [
         Message(
             MessageType.IO_SPEC,
-            b"\x45\x87\x12\xAC\x12\xFE\x00\x00\xFF",
+            b"\x45\x87\x12\xac\x12\xfe\x00\x00\xff",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.FAIL: True,
-                    FlagName.FIRST: True,
-                    FlagName.LAST: True,
-                    FlagName.HAS_PAYLOAD: False,
-                    FlagName.SPEC_FLAG_1: True,
-                }
-            ),
+            Flags({
+                FlagName.FAIL: True,
+                FlagName.FIRST: True,
+                FlagName.LAST: True,
+                FlagName.HAS_PAYLOAD: False,
+                FlagName.SPEC_FLAG_1: True,
+            }),
         ),
     ],
     MessageType.IO_SPEC,
-    b"\x45\x87\x12\xAC\x12\xFE\x00\x00\xFF",
+    b"\x45\x87\x12\xac\x12\xfe\x00\x00\xff",
     [TransmissionFlag.FAIL, TransmissionFlag.SERIALIZED],
 )
 
@@ -197,15 +185,13 @@ IO_SPEC_TRANSMISSION_NO_PAYLOAD = (
             MessageType.IO_SPEC,
             b"",
             FlowControlFlags.TRANSMISSION,
-            Flags(
-                {
-                    FlagName.FAIL: True,
-                    FlagName.FIRST: True,
-                    FlagName.LAST: True,
-                    FlagName.HAS_PAYLOAD: False,
-                    FlagName.SPEC_FLAG_1: False,
-                }
-            ),
+            Flags({
+                FlagName.FAIL: True,
+                FlagName.FIRST: True,
+                FlagName.LAST: True,
+                FlagName.HAS_PAYLOAD: False,
+                FlagName.SPEC_FLAG_1: False,
+            }),
         ),
     ],
     MessageType.IO_SPEC,
@@ -423,9 +409,9 @@ class TestProtocolEvent:
 
         protocol_event.start(test_success_callback, test_deny_callback)
         protocol_event.signal_callback(event_success, example_object)
-        assert callback_finished_event.wait(
-            DEFAULT_EVENT_TIMEOUT
-        ), "Finish callback was not invoked"
+        assert callback_finished_event.wait(DEFAULT_EVENT_TIMEOUT), (
+            "Finish callback was not invoked"
+        )
         protocol.stop()
 
 
@@ -627,7 +613,7 @@ class TestIncomingTransmission:
         state_checker: Callable[[ProtocolEvent], None],
     ):
         transmission = self._get_receiving_object(message_type)
-        payload = b"\x0B\xDC\x2E"
+        payload = b"\x0b\xdc\x2e"
         with patch(
             signal_callback_method_path("IncomingTransmission")
         ) as signal_callback_mock:
@@ -636,13 +622,11 @@ class TestIncomingTransmission:
                     message_type,
                     payload,
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.LAST: last_flag_set,
-                            FlagName.FIRST: first_flag_set,
-                            FlagName.FAIL: True,
-                        }
-                    ),
+                    Flags({
+                        FlagName.LAST: last_flag_set,
+                        FlagName.FIRST: first_flag_set,
+                        FlagName.FAIL: True,
+                    }),
                 )
             )
             state_checker(transmission)
@@ -868,14 +852,12 @@ class TestOutgoingRequest:
                 message_type,
                 b"",
                 FlowControlFlags.ACKNOWLEDGE,
-                Flags(
-                    {
-                        FlagName.FAIL: True,
-                        FlagName.FIRST: True,
-                        FlagName.LAST: True,
-                        FlagName.HAS_PAYLOAD: False,
-                    }
-                ),
+                Flags({
+                    FlagName.FAIL: True,
+                    FlagName.FIRST: True,
+                    FlagName.LAST: True,
+                    FlagName.HAS_PAYLOAD: False,
+                }),
             )
             for i in range(retries):
                 assert (retries - i) == request.retry
@@ -922,11 +904,9 @@ class TestOutgoingRequest:
                     message_type,
                     None,
                     FlowControlFlags.ACKNOWLEDGE,
-                    Flags(
-                        {
-                            FlagName.FAIL: fail_flag_set,
-                        }
-                    ),
+                    Flags({
+                        FlagName.FAIL: fail_flag_set,
+                    }),
                 )
             )
             if request_sent_again:
@@ -970,18 +950,16 @@ class TestOutgoingRequest:
         with patch(
             signal_callback_method_path("OutgoingRequest")
         ) as signal_callback_mock:
-            payload = b"\x32\xF4\xCE"
+            payload = b"\x32\xf4\xce"
             outgoing_request.receive_message(
                 Message(
                     message_type,
                     payload,
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.FIRST: True,
-                            FlagName.LAST: last_flag_set,
-                        }
-                    ),
+                    Flags({
+                        FlagName.FIRST: True,
+                        FlagName.LAST: last_flag_set,
+                    }),
                 )
             )
             state_checker(outgoing_request)
@@ -1288,12 +1266,10 @@ class TestListen:
                 message_type,
                 None,
                 flow_control_flags,
-                Flags(
-                    {
-                        FlagName.FIRST: first_flag_set,
-                        FlagName.LAST: last_flag_set,
-                    }
-                ),
+                Flags({
+                    FlagName.FIRST: first_flag_set,
+                    FlagName.LAST: last_flag_set,
+                }),
             )
             listen.receive_message(message)
             state_checker(listen)
@@ -1358,7 +1334,7 @@ class TestKenningProtocol:
     EXAMPLE_MIXED_MESSAGE_STREAM = [
         Message(
             DEFAULT_MESSAGE_TYPE,
-            b"\x3F\x4C",
+            b"\x3f\x4c",
             FlowControlFlags.TRANSMISSION,
             Flags(),
         ),
@@ -1367,21 +1343,17 @@ class TestKenningProtocol:
             DEFAULT_MESSAGE_TYPE,
             b"\5G\x12\x63",
             FlowControlFlags.REQUEST,
-            Flags(
-                {
-                    FlagName.SPEC_FLAG_1: True,
-                }
-            ),
+            Flags({
+                FlagName.SPEC_FLAG_1: True,
+            }),
         ),
         Message(
             DEFAULT_MESSAGE_TYPE,
-            b"\x3F\x4C",
+            b"\x3f\x4c",
             FlowControlFlags.ACKNOWLEDGE,
-            Flags(
-                {
-                    FlagName.FIRST: True,
-                }
-            ),
+            Flags({
+                FlagName.FIRST: True,
+            }),
         ),
     ]
 
@@ -1416,7 +1388,7 @@ class TestKenningProtocol:
         event_mock = MockEvent(DEFAULT_MESSAGE_TYPE, len(expected_dump_buffer))
 
         def kenning_protocol_receive_message_mock(
-            timeout: Optional[float] = None
+            timeout: Optional[float] = None,
         ) -> Optional[Message]:
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
@@ -1480,7 +1452,7 @@ class TestKenningProtocol:
         messages = [
             Message(
                 MessageType.IO_SPEC,
-                b"\x3F\x4C",
+                b"\x3f\x4c",
                 FlowControlFlags.TRANSMISSION,
                 Flags(),
             ),
@@ -1506,9 +1478,9 @@ class TestKenningProtocol:
             MessageType.IO_SPEC: event_mock_3,
         }
         protocol.send_messages(None, messages)
-        assert wait_for(
-            lambda: len(message_dump_buffer) == len(messages)
-        ), "Not all messages were sent until timeout"
+        assert wait_for(lambda: len(message_dump_buffer) == len(messages)), (
+            "Not all messages were sent until timeout"
+        )
         protocol.stop()
 
         assert 0 == event_mock_2.messages_sent_count
@@ -1519,7 +1491,7 @@ class TestKenningProtocol:
         self._assert_message_lists_equal(messages, message_dump_buffer)
 
     @staticmethod
-    def _assert_ougoing_transmission_success(
+    def _assert_outgoing_transmission_success(
         message_type,
         message_number,
         payload,
@@ -1614,7 +1586,7 @@ class TestKenningProtocol:
         ) = multiprocessing.Pipe(duplex=True)
 
         def kenning_protocol_receive_message_mock(
-            timeout: Optional[float] = None
+            timeout: Optional[float] = None,
         ):
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
@@ -1646,7 +1618,7 @@ class TestKenningProtocol:
                 protocol.start()
                 transmit()
                 protocol.stop()
-                self._assert_ougoing_transmission_success(
+                self._assert_outgoing_transmission_success(
                     message_type,
                     message_number,
                     payload,
@@ -1702,7 +1674,7 @@ class TestKenningProtocol:
         REQUEST_MESSAGES = multiprocessing.Queue()
 
         def kenning_protocol_receive_message_mock(
-            timeout: Optional[float] = DEFAULT_EVENT_TIMEOUT
+            timeout: Optional[float] = DEFAULT_EVENT_TIMEOUT,
         ) -> Optional[Message]:
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
@@ -1765,13 +1737,11 @@ class TestKenningProtocol:
                                 message_type,
                                 None,
                                 FlowControlFlags.ACKNOWLEDGE,
-                                Flags(
-                                    {
-                                        FlagName.FIRST: True,
-                                        FlagName.LAST: True,
-                                        FlagName.FAIL: True,
-                                    }
-                                ),
+                                Flags({
+                                    FlagName.FIRST: True,
+                                    FlagName.LAST: True,
+                                    FlagName.FAIL: True,
+                                }),
                             )
                         )
 
@@ -1897,7 +1867,7 @@ class TestKenningProtocol:
         messages, message_type, payload, flags = transmission
 
         def kenning_protocol_receive_message_mock(
-            timeout: Optional[float] = None
+            timeout: Optional[float] = None,
         ):
             if CONNECTION_PROTOCOL_SIDE.poll(timeout):
                 return CONNECTION_PROTOCOL_SIDE.recv()
@@ -2028,9 +1998,9 @@ class TestKenningProtocol:
         )
         other_device.start()
 
-        assert wait_for(
-            lambda: len(protocol.current_protocol_events) == 0
-        ), "Protocol did not receive all events within timeout."
+        assert wait_for(lambda: len(protocol.current_protocol_events) == 0), (
+            "Protocol did not receive all events within timeout."
+        )
 
         other_device.join(DEFAULT_EVENT_TIMEOUT)
         assert not other_device.is_alive()

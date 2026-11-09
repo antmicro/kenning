@@ -8,6 +8,7 @@ Custom op handlers for tf2onnx library.
 Functions from this module are registered with decorators for internal usage in
 the library and are not meant to be used directly.
 """
+
 from typing import Any
 
 import numpy as np

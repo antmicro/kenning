@@ -13,7 +13,7 @@ from kenning.pipeline_manager.core import BaseDataflowHandler
 
 
 def load_json_files(
-    path_to_json_files: Union[str, Path]
+    path_to_json_files: Union[str, Path],
 ) -> Tuple[List[Dict], List[str]]:
     """
     Loads JSON files from given directory.
@@ -42,7 +42,7 @@ def load_json_files(
 
 
 def factory_test_create_dataflow(
-    path_to_json_files: Union[str, Path]
+    path_to_json_files: Union[str, Path],
 ) -> Callable:
     """
     Creates test for `create_dataflow` method of dataflow handlers. The test

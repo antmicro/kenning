@@ -37,14 +37,12 @@ def valid_status_message(action: ServerAction):
         MessageType.STATUS,
         action.to_bytes(),
         FlowControlFlags.TRANSMISSION,
-        Flags(
-            {
-                FlagName.FIRST: True,
-                FlagName.LAST: True,
-                FlagName.SPEC_FLAG_2: True,
-                FlagName.SUCCESS: True,
-            }
-        ),
+        Flags({
+            FlagName.FIRST: True,
+            FlagName.LAST: True,
+            FlagName.SPEC_FLAG_2: True,
+            FlagName.SUCCESS: True,
+        }),
     )
 
 
@@ -246,9 +244,10 @@ class TestNetworkProtocol(TestCoreProtocol):
                         client_process.terminate()
                         client_process.join()
 
-                assert (
-                    client_process.exitcode == 0
-                ), f"Client process failed with code {client_process.exitcode}"
+                assert client_process.exitcode == 0, (
+                    "Client process failed with code "
+                    f"{client_process.exitcode}"
+                )
                 s.shutdown(socket.SHUT_RDWR)
             return output
 

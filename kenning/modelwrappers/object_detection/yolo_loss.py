@@ -328,7 +328,8 @@ class YoloLoss:
                 fsize, dtype=torch.float, device=device
             ).repeat(1, 3, fsize, 1)
             grid_y = (
-                torch.arange(fsize, dtype=torch.float, device=device)
+                torch
+                .arange(fsize, dtype=torch.float, device=device)
                 .repeat(1, 3, fsize, 1)
                 .permute(0, 1, 3, 2)
             )

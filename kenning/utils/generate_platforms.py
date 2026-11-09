@@ -223,7 +223,8 @@ def run_one_cmake(board_target: str, source_dir: Path, out_dir: Path):
                 "-B",
                 str(
                     out_dir
-                    / board_target.replace("/", "_")
+                    / board_target
+                    .replace("/", "_")
                     .replace("@", "_")
                     .replace(".", "_")
                 ),
@@ -237,7 +238,7 @@ def run_one_cmake(board_target: str, source_dir: Path, out_dir: Path):
 
 
 def get_all_variants(
-    var: Optional[list_boards.Variant]
+    var: Optional[list_boards.Variant],
 ) -> Generator[str, None, None]:
     """
     Recursively generates all variants of a board.
@@ -403,7 +404,8 @@ def get_platforms_definitions() -> Dict:
             dts_path = next(
                 (
                     tmpdir
-                    / board_target.replace("/", "_")
+                    / board_target
+                    .replace("/", "_")
                     .replace("@", "_")
                     .replace(".", "_")
                 ).glob("**/zephyr.dts.pre"),
@@ -415,7 +417,7 @@ def get_platforms_definitions() -> Dict:
             dt = get_dt(dts_path)
             if board_target in board_catalog:
                 KLogger.error(
-                    f"{board_target} already exist " "in the catalog, skipping"
+                    f"{board_target} already exist in the catalog, skipping"
                 )
                 continue
 

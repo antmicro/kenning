@@ -50,14 +50,12 @@ def zephyr_workspace():
 def kenning_zephyr_runtime_repo(zephyr_workspace: Path):
     repo_dir = "kenning-zephyr-runtime"
     if not (zephyr_workspace / repo_dir).exists():
-        run_sys(
-            [
-                "git",
-                "clone",
-                "https://github.com/antmicro/kenning-zephyr-runtime.git",
-                str(zephyr_workspace / repo_dir),
-            ]
-        )
+        run_sys([
+            "git",
+            "clone",
+            "https://github.com/antmicro/kenning-zephyr-runtime.git",
+            str(zephyr_workspace / repo_dir),
+        ])
     return zephyr_workspace / repo_dir
 
 
@@ -110,17 +108,17 @@ runtime_builder:
     def make_scenario(name):
         scenario = deepcopy(scenario_schema)
         scenario["platform"]["parameters"]["name"] = name
-        scenario["runtime_builder"]["parameters"][
-            "output_path"
-        ] = f"./output/kzr_build/{name}"
+        scenario["runtime_builder"]["parameters"]["output_path"] = (
+            f"./output/kzr_build/{name}"
+        )
         return scenario
 
     SCENARIOS = []
     for i, name in enumerate(ground_truth_platforms):
-        scenerio_path = tmp_path / str(i)
-        with open(scenerio_path, "w") as fd:
+        scenario_path = tmp_path / str(i)
+        with open(scenario_path, "w") as fd:
             yaml.safe_dump(make_scenario(name), fd)
-        SCENARIOS.append((name, scenerio_path))
+        SCENARIOS.append((name, scenario_path))
 
     return SCENARIOS
 
@@ -131,7 +129,7 @@ class TestGeneratedPlatformsSpecs:
         Determines if tested Dict constrains testing Dict.
 
         The inclusion is in the sense that for  "x" to contain "y"
-        then "x" must have all the paths from the root to the leafs
+        then "x" must have all the paths from the root to the leaves
         that are in "y".
 
         Function returns at the first met mismatch.

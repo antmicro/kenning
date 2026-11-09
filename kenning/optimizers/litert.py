@@ -577,16 +577,14 @@ class LiteRTCompiler(TensorFlowOptimizer):
     def zpl_prepare_cmd_flags(self):
         flags = super().zpl_prepare_cmd_flags()
         if getattr(self, "compiled_model_path", None) is not None:
-            flags.extend(
-                [
-                    "--tflm-model-paths",
-                    str(
-                        ZplSuffix.TFLITE._get_path_with_suffix(
-                            self.compiled_model_path
-                        )
-                    ),
-                ]
-            )
+            flags.extend([
+                "--tflm-model-paths",
+                str(
+                    ZplSuffix.TFLITE._get_path_with_suffix(
+                        self.compiled_model_path
+                    )
+                ),
+            ])
 
         return flags
 

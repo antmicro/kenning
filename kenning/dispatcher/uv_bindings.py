@@ -2,7 +2,6 @@
 A set of Python bindings for the uv command line tool.
 """
 
-
 import subprocess
 from typing import List
 

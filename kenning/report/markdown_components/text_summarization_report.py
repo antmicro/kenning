@@ -75,7 +75,7 @@ def text_summarization_report(
     if not metrics:
         KLogger.error(
             "No metrics were computed for the text summarization task "
-            + f'for {measurementsdata["model_name"]}'
+            + f"for {measurementsdata['model_name']}"
         )
         return ""
 

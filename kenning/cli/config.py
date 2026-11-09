@@ -160,7 +160,7 @@ CommandGrammar: TypeAlias = Union[
 
 
 def get_all_sequences(
-    sequence: CommandGrammar
+    sequence: CommandGrammar,
 ) -> Generator[Tuple[str, ...], None, None]:
     """
     Yields possible sequences of commands.
@@ -175,16 +175,16 @@ def get_all_sequences(
         Every path through this graph should be a valid
         cli subcommand configuration.
 
+    Yields
+    ------
+    Tuple[str, ...]
+        Possible sequence of commands
+
     Examples
     --------
         [automl, train] -> returns [('automl', 'train')]
         [optimize, (test, None)] -> returns [('optimize', 'test'), ('optimize')]
         [(automl, train, None), optimize] -> returns [('automl', 'optimize), ('train', 'optimize'), ('optimize')]
-
-    Yields
-    ------
-    Tuple[str, ...]
-        Possible sequence of commands
     """  # noqa: E501
     if sequence is None:
         yield tuple()
@@ -279,7 +279,7 @@ def create_subcommands(
 
 
 def setup_base_parser(
-    with_arguments: bool = False
+    with_arguments: bool = False,
 ) -> Tuple[argparse.ArgumentParser, Dict[Tuple[str], argparse.ArgumentParser]]:
     """
     Sets up parser containing only subcommands and help message.

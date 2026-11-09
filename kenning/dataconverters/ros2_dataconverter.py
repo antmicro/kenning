@@ -4,7 +4,7 @@
 
 """
 A DataConverter-derived class used to manipulate the data using the
-SegmentationAction object for compatibility between surronding blocks
+SegmentationAction object for compatibility between surrounding blocks
 during runtime.
 """
 
@@ -40,7 +40,7 @@ class ROS2DataConverter(DataConverter):
 
         Raises
         ------
-        ROS2ActionTypeNotFound
+        KenningDataConverterError
             Exception raised when specific ROS2
             action type has been not found.
         """

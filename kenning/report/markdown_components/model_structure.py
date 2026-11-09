@@ -216,16 +216,14 @@ class ModelStructure:
         ) -> None:
             nonlocal layer_nr
             layer_nr += 1
-            rows.append(
-                (
-                    layer_nr,
-                    layer_name,
-                    layer_op_type,
-                    tensor_type,
-                    layer_output_count,
-                    layer_output_size,
-                )
-            )
+            rows.append((
+                layer_nr,
+                layer_name,
+                layer_op_type,
+                tensor_type,
+                layer_output_count,
+                layer_output_size,
+            ))
 
         initializers = {tensor.name: tensor for tensor in graph.initializer}
 

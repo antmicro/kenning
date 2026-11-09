@@ -19,7 +19,7 @@ KENNING_PYTHON_FILES = list(Path(kenning.__file__).parent.rglob("*.py"))
 
 
 def get_all_classes(
-    python_files: List[str]
+    python_files: List[str],
 ) -> Generator[Tuple[ast.ClassDef, str], None, None]:
     """
     Generator returning every Class defined in files.

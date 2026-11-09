@@ -142,18 +142,13 @@ class ONNXRuntime(Runtime):
         def update_io_spec(read_spec, session_spec):
             model_spec = []
             for input in session_spec:
-                model_spec.append(
-                    {
-                        "name": input.name,
-                        "shape": np.array(
-                            [
-                                s if isinstance(s, int) else -1
-                                for s in input.shape
-                            ]
-                        ),
-                        "dtype": onnx_to_np_dtype(input.type),
-                    }
-                )
+                model_spec.append({
+                    "name": input.name,
+                    "shape": np.array([
+                        s if isinstance(s, int) else -1 for s in input.shape
+                    ]),
+                    "dtype": onnx_to_np_dtype(input.type),
+                })
 
             if not read_spec:
                 return model_spec

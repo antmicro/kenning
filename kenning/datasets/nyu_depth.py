@@ -5,6 +5,7 @@
 """
 The NYU Depth Dataset V2 wrapper.
 """
+
 import bisect
 import shutil
 from pathlib import Path
@@ -49,11 +50,9 @@ class NYUDepthDatasetV2(Dataset):
     }
     """  # noqa: E501
 
-    resources = Resources(
-        {
-            "dataset": "http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/nyu_depth_v2_labeled.mat"
-        }
-    )
+    resources = Resources({
+        "dataset": "http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/nyu_depth_v2_labeled.mat"
+    })
 
     arguments_structure = {
         "image_memory_layout": {

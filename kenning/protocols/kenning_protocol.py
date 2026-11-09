@@ -1248,7 +1248,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         self.callback_runner = None
         self.protocol_running = False
         self.error_recovery = error_recovery
-        # Mimumum max_message_size is size of the header plus 1 byte for
+        # Minimum max_message_size is size of the header plus 1 byte for
         # payload. That's because otherwise the protocol would not be able to
         # send a request/transmission with payload (there is no way to divide
         # a payload into 0-byte chunks).
@@ -1286,7 +1286,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         kp2 = KenningProtocol()
         kp3 = KenningProtocol()
 
-        # These three instances will share the same callback runnner:
+        # These three instances will share the same callback runner:
         kp1.start()
         kp2.start(kp1)
         kp3.start(kp2)

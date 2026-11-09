@@ -126,12 +126,10 @@ class PyTorchAnomalyDetectionWrapper(PyTorchWrapper, ABC):
         return [X]
 
     @abstractmethod
-    def prepare_criterion(self) -> nn.Module:
-        ...
+    def prepare_criterion(self) -> nn.Module: ...
 
     @abstractmethod
-    def prepare_optimizer(self, model: nn.Module) -> torch.optim.Optimizer:
-        ...
+    def prepare_optimizer(self, model: nn.Module) -> torch.optim.Optimizer: ...
 
     @abstractmethod
     def _forward_pass(

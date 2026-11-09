@@ -173,29 +173,25 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         if self.model_prepared:
             return None
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51
-        self.model = tf.keras.Sequential(
-            [
-                tf.keras.layers.InputLayer(
-                    input_shape=(self.window_size, 3, 1), name="input_1"
-                ),
-                tf.keras.layers.Conv2D(
-                    8, (4, 3), padding="same", activation="relu"
-                ),
-                tf.keras.layers.MaxPool2D((3, 3)),
-                tf.keras.layers.Dropout(0.1),
-                tf.keras.layers.Conv2D(
-                    16, (4, 1), padding="same", activation="relu"
-                ),
-                tf.keras.layers.MaxPool2D((3, 1), padding="same"),
-                tf.keras.layers.Dropout(0.1),
-                tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(16, activation="relu"),
-                tf.keras.layers.Dropout(0.1),
-                tf.keras.layers.Dense(
-                    4, activation="softmax", name="out_layer"
-                ),
-            ]
-        )
+        self.model = tf.keras.Sequential([
+            tf.keras.layers.InputLayer(
+                input_shape=(self.window_size, 3, 1), name="input_1"
+            ),
+            tf.keras.layers.Conv2D(
+                8, (4, 3), padding="same", activation="relu"
+            ),
+            tf.keras.layers.MaxPool2D((3, 3)),
+            tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Conv2D(
+                16, (4, 1), padding="same", activation="relu"
+            ),
+            tf.keras.layers.MaxPool2D((3, 1), padding="same"),
+            tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(16, activation="relu"),
+            tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Dense(4, activation="softmax", name="out_layer"),
+        ])
         self.model.summary()
 
         if self.from_file:
@@ -209,12 +205,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         import tensorflow as tf
 
         def convert_to_tf_dataset(features: List, labels: List):
-            return tf.data.Dataset.from_tensor_slices(
-                (
-                    np.array(self.dataset.prepare_input_samples(features)[0]),
-                    np.array(self.dataset.prepare_output_samples(labels)[0]),
-                )
-            )
+            return tf.data.Dataset.from_tensor_slices((
+                np.array(self.dataset.prepare_input_samples(features)[0]),
+                np.array(self.dataset.prepare_output_samples(labels)[0]),
+            ))
 
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(

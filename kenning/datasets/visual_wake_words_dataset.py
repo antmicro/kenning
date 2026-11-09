@@ -38,18 +38,16 @@ class VisualWakeWordsDataset(Dataset):
     *Page*: `Visual Wake Words Dataset site <https://arxiv.org/abs/1906.05721>`
     """
 
-    resources = Resources(
-        {
-            "train2017": {
-                "images": "http://images.cocodataset.org/zips/train2017.zip",
-                "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
-            },
-            "val2017": {
-                "images": "http://images.cocodataset.org/zips/val2017.zip",
-                "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
-            },
-        }
-    )
+    resources = Resources({
+        "train2017": {
+            "images": "http://images.cocodataset.org/zips/train2017.zip",
+            "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+        },
+        "val2017": {
+            "images": "http://images.cocodataset.org/zips/val2017.zip",
+            "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+        },
+    })
 
     arguments_structure = {
         "dataset_type": {

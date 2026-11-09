@@ -6,7 +6,6 @@
 Enables loading of Flax models and conversion to other formats.
 """
 
-
 from kenning.core.converter import ModelConverter
 from kenning.modelwrappers.frameworks.flax import FlaxWrapper
 

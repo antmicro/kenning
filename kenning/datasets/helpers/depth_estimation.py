@@ -5,6 +5,7 @@
 """
 Functions and common depth estimation utils.
 """
+
 from typing import NamedTuple
 
 import matplotlib

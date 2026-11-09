@@ -36,12 +36,10 @@ class AnomalyDetectionANN(nn.Module):
                 layers.append(nn.Dropout(dropout))
             in_features = h
 
-        layers.extend(
-            [
-                nn.Linear(in_features, num_classes),
-                nn.Flatten(start_dim=0),
-            ]
-        )
+        layers.extend([
+            nn.Linear(in_features, num_classes),
+            nn.Flatten(start_dim=0),
+        ])
         self.net = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

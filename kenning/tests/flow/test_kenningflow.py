@@ -177,9 +177,9 @@ FLOW_SCENARIO_VALID = FLOW_SCENARIO_DETECTION
 # to prepare scenario with redefined variable, we change model output name to
 # same as camera provider output - 'cam_frame'
 MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
-MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON["outputs"][
-    "detection_output"
-] = "cam_frame"
+MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON["outputs"]["detection_output"] = (
+    "cam_frame"
+)
 
 FLOW_SCENARIO_REDEF_VARIABLE = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,

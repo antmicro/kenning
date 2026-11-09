@@ -88,5 +88,4 @@ class LLMOptimizer(Optimizer, ABC):
         warnings.filterwarnings("ignore", module="torchao")
 
     @abstractmethod
-    def _get_quantization_config(self) -> Dict:
-        ...
+    def _get_quantization_config(self) -> Dict: ...

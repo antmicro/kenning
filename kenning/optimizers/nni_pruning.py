@@ -367,18 +367,16 @@ class NNIPruningOptimizer(Optimizer):
         nni_logger.setLevel(KLogger.level)
         nni_graph_logger.setLevel(KLogger.level)
 
-        replace_module.update(
-            {
-                "Add": add_replacer,
-                "Reshape": reshape_replacer,
-                "Expand": expand_conversion,
-                "Mul": no_replace,
-                "Concat": no_replace,
-                "LeakyRelu": no_replace,
-                "MaxPool": no_replace,
-                "Mish": no_replace,
-            }
-        )
+        replace_module.update({
+            "Add": add_replacer,
+            "Reshape": reshape_replacer,
+            "Expand": expand_conversion,
+            "Mul": no_replace,
+            "Concat": no_replace,
+            "LeakyRelu": no_replace,
+            "MaxPool": no_replace,
+            "Mish": no_replace,
+        })
 
     def init(self):
         self.prepare_dataloader_train_valid()
@@ -769,9 +767,9 @@ class NNIPruningOptimizer(Optimizer):
             if "processed_input" in io_spec
             else io_spec["input"]
         )
-        assert (
-            len(inputs) <= 1
-        ), "NNI pruners only support dummy_input in form of one Tensor"
+        assert len(inputs) <= 1, (
+            "NNI pruners only support dummy_input in form of one Tensor"
+        )
         assert len(inputs) >= 1, (
             "At least one"
             " input shape have to be specified to provide dummy input"

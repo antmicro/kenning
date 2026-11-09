@@ -256,8 +256,7 @@ class RealtimeInferenceLoop(InferenceLoop):
         )
         self._stop_event = threading.Event()
 
-    def _prepare(self):
-        ...
+    def _prepare(self): ...
 
     def _cleanup(self):
         self._protocol.disconnect()

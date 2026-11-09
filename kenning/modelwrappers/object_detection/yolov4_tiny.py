@@ -227,9 +227,9 @@ class ONNXYOLOV4Tiny(YOLOWrapper):
                             > self.iouthresh
                         ):
                             cls_dets[j] = cls_dets[j]._replace(score=0.0)
-                frame_dets.extend(
-                    [d for d in cls_dets if d.score > self.finthresh]
-                )
+                frame_dets.extend([
+                    d for d in cls_dets if d.score > self.finthresh
+                ])
 
             per_batch.append(self._temporally_smooth(frame_dets, b))
 

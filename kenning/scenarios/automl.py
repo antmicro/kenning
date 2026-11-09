@@ -150,9 +150,9 @@ class AutoMLCommand(InferenceTester):
         types: List[str] = [],
         groups: Optional[ArgumentsGroups] = None,
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
-        assert (
-            TRAIN not in types
-        ), "AutoML has training embedded, does not support `train` subcommand"
+        assert TRAIN not in types, (
+            "AutoML has training embedded, does not support `train` subcommand"
+        )
         parser, groups = super(AutoMLCommand, AutoMLCommand).configure_parser(
             parser,
             command,

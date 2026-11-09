@@ -69,7 +69,7 @@ def renode_stats_report(
     from kenning.core.drawing import SERVIS_PLOT_OPTIONS, Barplot, LinePlot
 
     KLogger.info(
-        f'Running renode_stats_report for {measurementsdata["model_name"]}'
+        f"Running renode_stats_report for {measurementsdata['model_name']}"
     )
     # shift colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)

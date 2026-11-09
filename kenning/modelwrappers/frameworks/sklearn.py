@@ -50,8 +50,7 @@ class SKLearnModelWrapper(ModelWrapper, ABC):
         self.dtype = dtype
 
     @abstractmethod
-    def get_model(self):
-        ...
+    def get_model(self): ...
 
     def prepare_model(self):
         if self.model_prepared:

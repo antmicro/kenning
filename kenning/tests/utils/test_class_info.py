@@ -479,9 +479,9 @@ class TestGetArgsStructureFromParameterschema:
         """
         Argument without fields renders its name and argparse flag.
         """
-        assert get_args_structure_from_parameterschema(
-            {"properties": {"model_path": {}}}
-        ) == [
+        assert get_args_structure_from_parameterschema({
+            "properties": {"model_path": {}}
+        }) == [
             "### `model_path`\n",
             "* argparse flag: `--model-path`\n",
         ]

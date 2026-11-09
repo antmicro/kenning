@@ -203,13 +203,11 @@ class ImageNetDataset(Dataset):
             top_5 = np.argsort(prediction)[::-1][:5]
             top_5_count += 1 if np.argmax(label) in top_5 else 0
             if hasattr(self, "_indices"):
-                top_5_results.append(
-                    {
-                        Path(
-                            self.dataX[self._indices[currindex]]
-                        ).name: top_5.tolist()
-                    }
-                )
+                top_5_results.append({
+                    Path(
+                        self.dataX[self._indices[currindex]]
+                    ).name: top_5.tolist()
+                })
             currindex += 1
 
         measurements = Measurements()

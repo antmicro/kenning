@@ -5,6 +5,7 @@
 """
 Module for ONNX related functions.
 """
+
 __all__ = ["try_extracting_input_shape_from_onnx"]
 from typing import Dict, Iterable, List, Optional
 
@@ -15,7 +16,7 @@ from kenning.utils.logger import KLogger
 
 
 def try_extracting_input_shape_from_onnx(
-    model_onnx: onnx.ModelProto
+    model_onnx: onnx.ModelProto,
 ) -> Optional[List[List]]:
     """
     Function for extracting ONNX model's input shape.
@@ -31,9 +32,9 @@ def try_extracting_input_shape_from_onnx(
         List of tensors input shapes or None if extracting was impossible
     """
     try:
-        initializers = set(
-            [node.name for node in model_onnx.graph.initializer]
-        )
+        initializers = set([
+            node.name for node in model_onnx.graph.initializer
+        ])
         inputs = model_onnx.graph.input
         shapes = []
         for input_ in inputs:
@@ -107,7 +108,7 @@ def apply_io_spec_to_node_list(
 
     Raises
     ------
-    ValueError
+    DynamicIOSpecError
         Raised when sub_io_spec contains unspecified dimension sizes.
     """
     for node in nodes:

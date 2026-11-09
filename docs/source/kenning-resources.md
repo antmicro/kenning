@@ -23,15 +23,17 @@ If the output path is not specified, the file will be saved in `$KENNING_CACHE_D
 import pathlib
 from kenning.utils.resource_manager import ResourceManager, ResourceURI
 
-model_path = pathlib.Path('./model.h5')
-ResourceManager().get_resource('kenning:///models/classification/magic_wand.h5', model_path)
+model_path = pathlib.Path("./model.h5")
+ResourceManager().get_resource(
+    "kenning:///models/classification/magic_wand.h5", model_path
+)
 ```
 
 Another way of accessing those resources is to use [](resourceuri-api) class.
 You can simply create an instance of this class and use it similarly to [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path):
 
 ```python
-model_path = ResourceURI('kenning:///models/classification/magic_wand.h5')
+model_path = ResourceURI("kenning:///models/classification/magic_wand.h5")
 ```
 
 The provided path can be URL to remote resource, path to local file or URI which scheme is defined in `ResourceManager` conversions dictionary.
@@ -75,7 +77,7 @@ If the provided path does not have any scheme, the it will be interpreted as a p
 For example:
 
 ```python
-ResourceURI('/some/path/magic_wand.h5')
+ResourceURI("/some/path/magic_wand.h5")
 ```
 
 Would behave the same as `Path('/some/path/magic_wand.h5')`.
@@ -97,11 +99,11 @@ The above default scheme conversions can be defined as:
 
 ```python test-skip
 BASE_URL_SCHEMES = {
-    'http': None,
-    'https': None,
-    'kenning': 'https://dl.antmicro.com/kenning/{path}',
-    'gh': _gh_converter,
-    'file': lambda path: Path(path).expanduser().resolve(),
+    "http": None,
+    "https": None,
+    "kenning": "https://dl.antmicro.com/kenning/{path}",
+    "gh": _gh_converter,
+    "file": lambda path: Path(path).expanduser().resolve(),
 }
 ```
 
@@ -112,11 +114,12 @@ The `_gh_converter` is defined as:
 ```python
 from typing import Dict
 
+
 def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
-    netloc = netloc.split(':')
+    netloc = netloc.split(":")
     return (
-        f'https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/'
-        f'{params_dict["branch"]}{path}'
+        f"https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/"
+        f"{params_dict['branch']}{path}"
     )
 ```
 

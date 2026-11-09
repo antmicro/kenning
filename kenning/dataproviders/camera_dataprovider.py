@@ -7,6 +7,7 @@ A DataProvider-derived class used to interface with a
 camera, video file or a dummy video device
 (consult ffmpeg and v4l2loopback for configuration for dummy video devices).
 """
+
 from pathlib import Path
 from typing import Dict, List, Tuple
 

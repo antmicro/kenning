@@ -190,12 +190,10 @@ class SparseGPT:
                     tmp = (
                         W1[:, i : (i + prunem)] ** 2
                         / (
-                            torch.diag(Hinv1)[i : (i + prunem)].reshape(
-                                (
-                                    1,
-                                    -1,
-                                )
-                            )
+                            torch.diag(Hinv1)[i : (i + prunem)].reshape((
+                                1,
+                                -1,
+                            ))
                         )
                         ** 2
                     )

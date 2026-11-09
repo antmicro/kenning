@@ -5,6 +5,7 @@
 """
 Module for ConverterRegistry related functions.
 """
+
 from typing import Dict, List
 
 from kenning.core.exceptions import IOSpecificationNotFoundError

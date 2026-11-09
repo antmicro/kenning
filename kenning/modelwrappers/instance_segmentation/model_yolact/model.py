@@ -40,9 +40,9 @@ class _Bottleneck(nn.Module):
         planes : int
             Base channel width; the final output has planes * expansion
             channels.
-        stride : int, optional
+        stride : int
             Stride applied to the 3x3 convolution. Defaults to 1.
-        downsample : nn.Module | None, optional
+        downsample : nn.Module | None
             Optional projection shortcut (conv + BN) to match spatial and
             channel dimensions when stride > 1 or
             inplanes != planes * expansion. Defaults to None.
@@ -126,7 +126,7 @@ class _ResNetBackbone(nn.Module):
             planes * _Bottleneck.expansion channels.
         blocks : int
             Number of bottleneck blocks in the stage.
-        stride : int, optional
+        stride : int
             Stride for the first block's 3x3 convolution and its shortcut
             projection. Defaults to 1.
 
@@ -191,22 +191,17 @@ class _FPN(nn.Module):
             FPN (e.g. [512, 1024, 2048] for C3-C5 of ResNet-50).
         """
         super().__init__()
-        self.lat_layers = nn.ModuleList(
-            [nn.Conv2d(x, 256, kernel_size=1) for x in reversed(in_channels)]
-        )
-        self.pred_layers = nn.ModuleList(
-            [
-                nn.Conv2d(256, 256, kernel_size=3, padding=1)
-                for _ in in_channels
-            ]
-        )
-        self.downsample_layers = nn.ModuleList(
-            [
-                nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
-                nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
-                nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
-            ]
-        )
+        self.lat_layers = nn.ModuleList([
+            nn.Conv2d(x, 256, kernel_size=1) for x in reversed(in_channels)
+        ])
+        self.pred_layers = nn.ModuleList([
+            nn.Conv2d(256, 256, kernel_size=3, padding=1) for _ in in_channels
+        ])
+        self.downsample_layers = nn.ModuleList([
+            nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2),
+        ])
 
     def forward(self, backbone_outs: list[torch.Tensor]) -> list[torch.Tensor]:
         """
@@ -265,13 +260,13 @@ class _PredictionModule(nn.Module):
         """
         Parameters
         ----------
-        num_classes : int, optional
+        num_classes : int
             Total number of classes including background. Defaults to 81
             (COCO).
-        coef_dim : int, optional
+        coef_dim : int
             Number of mask prototype coefficients per detection.
             Defaults to 32.
-        num_priors : int, optional
+        num_priors : int
             Number of anchor priors per spatial location. Defaults to 3.
         """
         super().__init__()
@@ -318,13 +313,15 @@ class _PredictionModule(nn.Module):
             self.bbox_layer(x).permute(0, 2, 3, 1).contiguous().view(b, -1, 4)
         )
         conf = (
-            self.conf_layer(x)
+            self
+            .conf_layer(x)
             .permute(0, 2, 3, 1)
             .contiguous()
             .view(b, -1, self.num_classes)
         )
         coef = torch.tanh(
-            self.mask_layer(x)
+            self
+            .mask_layer(x)
             .permute(0, 2, 3, 1)
             .contiguous()
             .view(b, -1, self.coef_dim)
@@ -353,9 +350,9 @@ class _YolactModel(nn.Module):
         resnet_layers : list[int]
             List of four integers specifying bottleneck block counts per stage,
             e.g. [3, 4, 6, 3] for ResNet-50.
-        coef_dim : int, optional
+        coef_dim : int
             Number of mask prototype coefficients. Defaults to 32.
-        max_size : int, optional
+        max_size : int
             Expected square input resolution in pixels, used to generate anchor
             priors. Defaults to 550.
         """
@@ -377,9 +374,9 @@ class _YolactModel(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(256, coef_dim, kernel_size=1),
         )
-        self.prediction_layers = nn.ModuleList(
-            [_PredictionModule(num_classes, coef_dim)]
-        )
+        self.prediction_layers = nn.ModuleList([
+            _PredictionModule(num_classes, coef_dim)
+        ])
         self.semantic_seg_conv = nn.Conv2d(256, num_classes - 1, kernel_size=1)
 
         self.criterion = _YolactLoss(num_classes=num_classes)
@@ -407,13 +404,11 @@ class _YolactModel(nn.Module):
             5. priors: anchor priors in center form, shape (P, 4).
         """
         backbone_outs = self.backbone(x)
-        fpn_outs = self.fpn(
-            [
-                backbone_outs[1],
-                backbone_outs[2],
-                backbone_outs[3],
-            ]
-        )
+        fpn_outs = self.fpn([
+            backbone_outs[1],
+            backbone_outs[2],
+            backbone_outs[3],
+        ])
         fpn_outs = fpn_outs[:5]
 
         proto = F.relu(self.proto_net(fpn_outs[0]))
@@ -558,7 +553,7 @@ class _YolactModel(nn.Module):
 
         Parameters
         ----------
-        mode : bool, optional
+        mode : bool
             If True, set the model to training mode; if False, set it to
             evaluation mode (equivalent to model.eval()). Defaults to True.
 

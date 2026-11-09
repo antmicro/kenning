@@ -197,13 +197,11 @@ class AnomalyDetectionVAE(VAEModel):
             eps = torch.sqrt(-2 * torch.log(std_norm[:-1])) * torch.cos(
                 2 * math.pi * std_norm[1:]
             )
-            eps = torch.cat(
-                [
-                    eps,
-                    torch.sqrt(-2 * torch.log(std_norm[-1:]))
-                    * torch.cos(2 * math.pi * std_norm[0:1]),
-                ]
-            )
+            eps = torch.cat([
+                eps,
+                torch.sqrt(-2 * torch.log(std_norm[-1:]))
+                * torch.cos(2 * math.pi * std_norm[0:1]),
+            ])
             return mu + eps.detach() * std
         else:
             return mu

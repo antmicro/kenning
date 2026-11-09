@@ -277,12 +277,8 @@ class SKLearnGenericDecisionTreeClassifier(SKLearnModelWrapper):
         # serialization - this will need to be changed.
         size = 4
         return [
-            np.asarray(
-                [
-                    int.from_bytes(
-                        outputdata[i : i + size], byteorder="little"
-                    )
-                    for i in range(0, len(outputdata), size)
-                ]
-            ).astype(DECISION_TREE_OUTPUT_DTYPE)
+            np.asarray([
+                int.from_bytes(outputdata[i : i + size], byteorder="little")
+                for i in range(0, len(outputdata), size)
+            ]).astype(DECISION_TREE_OUTPUT_DTYPE)
         ]

@@ -196,7 +196,7 @@ class LLM(ModelWrapper, ABC):
             If the output data is not properly formatted, ie. the length
             of the output does not precede the output string or its
             value does not match the length of the string.
-        """
+        """  # noqa: DOC503
         result = []
         output = outputdata.decode()
 

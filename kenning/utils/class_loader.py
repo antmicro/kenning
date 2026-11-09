@@ -136,7 +136,9 @@ def get_all_subclasses(
 
     Raises
     ------
-    ModuleNotFoundError, ImportError
+    ModuleNotFoundError
+        When modules could not be found.
+    ImportError
         When modules could not be imported.
     Exception
         If some unspecified errors occurred during imports.
@@ -262,7 +264,7 @@ def get_all_subclasses(
 
 
 def classes_from_full_dict_config(
-    full_dict_config: KenningBlockConfigDict
+    full_dict_config: KenningBlockConfigDict,
 ) -> Dict[ConfigKey, Union[type, List[type]]]:
     """
     Loads and returns block classes based on a Kenning configuration dict.
@@ -310,7 +312,7 @@ def classes_from_full_dict_config(
 
 
 def objs_from_full_dict_config(
-    full_dict_config: KenningBlockConfigDict
+    full_dict_config: KenningBlockConfigDict,
 ) -> Dict[ConfigKey, Any]:
     """
     Builds block objects based on a Kenning configuration dict.
@@ -449,7 +451,7 @@ def parse_classes(
     ------
     ParserHelpException
         Raised when help is requested in arguments.
-    argparse.ArgumentParser
+    argparse.ArgumentError
         Raised when report types cannot be deduced from measurements data.
     """
     command = get_command(with_slash=False)
@@ -539,8 +541,6 @@ def get_module_path(class_name: str) -> str:
 
     Raises
     ------
-    AmbiguousModuleError
-        Raised if two or more classes named `class_name` exist.
     ModuleNotFoundError
         Raised if there is no class matching `class_name`.
     """

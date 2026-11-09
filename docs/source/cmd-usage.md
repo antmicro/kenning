@@ -92,7 +92,7 @@ Dataset arguments:
   --split-fraction-test SPLIT_FRACTION_TEST
                         Default fraction of data to leave for model testing
   --split-fraction-val SPLIT_FRACTION_VAL
-                        Default fraction of data to leave for model valdiation
+                        Default fraction of data to leave for model validation
   --split-seed SPLIT_SEED
                         Default seed used for dataset split
 ```
@@ -231,7 +231,7 @@ Dataset arguments:
   --split-fraction-test SPLIT_FRACTION_TEST
                         Default fraction of data to leave for model testing
   --split-fraction-val SPLIT_FRACTION_VAL
-                        Default fraction of data to leave for model valdiation
+                        Default fraction of data to leave for model validation
   --split-seed SPLIT_SEED
                         Default seed used for dataset split
 

@@ -39,7 +39,7 @@ STAT_SIZE = struct.calcsize(RUNTIME_STAT_FMT)
 
 # How many seconds to wait for the client to respond to our connection attempt.
 CONNECTION_TIMEOUT = 1
-# How many times to re-try estabilishing a connection before throwing an error.
+# How many times to re-try establishing a connection before throwing an error.
 CONNECTION_RETRY = 5
 
 
@@ -106,9 +106,9 @@ def _parse_stats(data: bytes, final: bool = False) -> dict:
 
                 if RUNTIME_ALLOCATION_STATS_KEY not in stats_json:
                     stats_json[RUNTIME_ALLOCATION_STATS_KEY] = {}
-                stats_json[RUNTIME_ALLOCATION_STATS_KEY][
-                    stat_name
-                ] = stat_value
+                stats_json[RUNTIME_ALLOCATION_STATS_KEY][stat_name] = (
+                    stat_value
+                )
 
             elif (
                 stat_type == RuntimeStatType.RUNTIME_STATISTICS_INFERENCE_TIME

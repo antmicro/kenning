@@ -34,9 +34,9 @@ def create_gelu_model(approximate: bool):
         keras.activations.gelu, approximate=approximate
     )
 
-    model = keras.Sequential(
-        [keras.layers.Activation(activation, input_shape=(INPUT_SIZE,))]
-    )
+    model = keras.Sequential([
+        keras.layers.Activation(activation, input_shape=(INPUT_SIZE,))
+    ])
 
     with (
         NamedTemporaryFile() as tflite_temp,

@@ -6,10 +6,10 @@
 Module containing a specialized inference loop, dedicated to the Zephyr Sensor
 Anomalies library.
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import sklearn
 import sklearn.metrics
 
 from kenning.core.dataconverter import DataConverter
@@ -182,38 +182,32 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
                     prev_result_idx = result_idx
                     anomaly_pred = r[0] == 1
 
-                    scored_results.append(
-                        {
-                            "sample_time": sample_time,
-                            "result_time": result_time,
-                            "target": anomaly,
-                            "pred": anomaly_pred,
-                            "pred_scored": score,
-                        }
-                    )
+                    scored_results.append({
+                        "sample_time": sample_time,
+                        "result_time": result_time,
+                        "target": anomaly,
+                        "pred": anomaly_pred,
+                        "pred_scored": score,
+                    })
 
                     if anomaly_time > anomaly_pred_time and anomaly:
                         if anomaly_pred:
                             anomaly_pred_time = result_time
-                            detections.append(
-                                {
-                                    "target_time": anomaly_time,
-                                    "prediction_time": anomaly_pred_time,
-                                    "result_delay": detection_delay_counter,
-                                }
-                            )
+                            detections.append({
+                                "target_time": anomaly_time,
+                                "prediction_time": anomaly_pred_time,
+                                "result_delay": detection_delay_counter,
+                            })
                             detection_delay_counter = 0
                         else:
                             detection_delay_counter += 1
 
                     elif detection_delay_counter:
-                        detections.append(
-                            {
-                                "target_time": anomaly_time,
-                                "prediction_time": None,
-                                "result_delay": detection_delay_counter,
-                            }
-                        )
+                        detections.append({
+                            "target_time": anomaly_time,
+                            "prediction_time": None,
+                            "result_delay": detection_delay_counter,
+                        })
                         detection_delay_counter = 0
 
         return scored_results, detections
@@ -232,22 +226,21 @@ class AnomalyDetectionInferenceLoop(SensorRealtimeInferenceLoop):
                 n_result["target"] != cur_chunk_state
                 or i == len(scored_results) - 1
             ):
-                chunks.append(
-                    {
-                        "target_time": n_result["sample_time"],
-                        "target": cur_chunk_state,
-                        "results": [*cur_chunk],
-                    }
-                )
+                chunks.append({
+                    "target_time": n_result["sample_time"],
+                    "target": cur_chunk_state,
+                    "results": [*cur_chunk],
+                })
                 cur_chunk = []
                 cur_chunk_state = n_result["target"]
                 window_func.window_buffer = [
                     False
                 ] * self.smoothing_window_size
             anomaly_score = window_func(n_result["pred"])
-            cur_chunk.append(
-                {"time": n_result["result_time"], "score": anomaly_score}
-            )
+            cur_chunk.append({
+                "time": n_result["result_time"],
+                "score": anomaly_score,
+            })
 
         return chunks
 

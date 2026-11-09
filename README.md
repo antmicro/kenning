@@ -562,30 +562,34 @@ The example compilation of the model can look as follows:
 ```python test-skip
 from pathlib import Path
 from kenning.datasets.pet_dataset import PetDataset
-from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
+from kenning.modelwrappers.classification.tensorflow_pet_dataset import (
+    TensorFlowPetDatasetMobileNetV2,
+)
 from kenning.optimizers.litert import LiteRTCompiler
 from kenning.runtimes.litert import LiteRTRuntime
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.resource_manager import ResourceURI
 
-dataset = PetDataset(
-    root=Path('./build/pet-dataset/')
-)
+dataset = PetDataset(root=Path("./build/pet-dataset/"))
 model = TensorFlowPetDatasetMobileNetV2(
-    model_path=ResourceURI('kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'),
-    dataset=dataset
+    model_path=ResourceURI(
+        "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    ),
+    dataset=dataset,
 )
 model.save_io_specification(model.model_path)
 compiler = LiteRTCompiler(
     dataset=dataset,
-    compiled_model_path=Path('./build/compiled-model.tflite'),
-    modelframework='keras',
-    target='default',
-    inferenceinputtype='float32',
-    inferenceoutputtype='float32'
+    compiled_model_path=Path("./build/compiled-model.tflite"),
+    modelframework="keras",
+    target="default",
+    inferenceinputtype="float32",
+    inferenceoutputtype="float32",
 )
 compiler.compile(
-    input_model_path=ResourceURI('kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5')
+    input_model_path=ResourceURI(
+        "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    )
 )
 ```
 
@@ -596,15 +600,17 @@ To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceo
 ```python test-skip
 compiler = LiteRTCompiler(
     dataset=dataset,
-    compiled_model_path=Path('./build/compiled-model.tflite'),
-    modelframework='keras',
-    target='int8',
-    inferenceinputtype='int8',
-    inferenceoutputtype='int8',
-    dataset_percentage=0.3
+    compiled_model_path=Path("./build/compiled-model.tflite"),
+    modelframework="keras",
+    target="int8",
+    inferenceinputtype="int8",
+    inferenceoutputtype="int8",
+    dataset_percentage=0.3,
 )
 compiler.compile(
-    input_model_path=ResourceURI('kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5')
+    input_model_path=ResourceURI(
+        "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    )
 )
 ```
 
@@ -612,16 +618,11 @@ To check how the compiled model is performing, create `LiteRTRuntime` object and
 
 ```python test-skip
 runtime = LiteRTRuntime(
-    protocol=None,
-    model_path=Path('./build/compiled-model.tflite')
+    protocol=None, model_path=Path("./build/compiled-model.tflite")
 )
 
-runtime.run_locally(
-    dataset,
-    model,
-    Path('./build/compiled-model.tflite')
-)
-MeasurementsCollector.save_measurements('out.json')
+runtime.run_locally(dataset, model, Path("./build/compiled-model.tflite"))
+MeasurementsCollector.save_measurements("out.json")
 ```
 
 The `runtime.run_locally` method runs benchmarks of the model on the current device.

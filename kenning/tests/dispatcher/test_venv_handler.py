@@ -25,7 +25,7 @@ class TestVEnvHandler:
         with open(
             Path.home() / (ENVIRONMENT_FOLDER_NAME + "/.test.checksum"), "rb"
         ) as file:
-            assert b"\xDC\x22\x0B\x33" == file.read()
+            assert b"\xdc\x22\x0b\x33" == file.read()
 
         code, output, err = venv.execute_module("pyinstrument", ["--version"])
         assert 0 == code

@@ -111,8 +111,6 @@ class OnnxConverter(ModelConverter):
             If conversion fails.
         ValueError
             If conversion fails.
-        RuntimeError
-            If export or converter initialization fails.
         """
         import tempfile
         from datetime import datetime
@@ -200,8 +198,8 @@ class OnnxConverter(ModelConverter):
         ------
         IndexError
             Raised when no dtype was provided in the IO specification.
-        IOSpecificationNotFoundError
-            Raised if input specification is not provided.
+        ValueError
+            Raised if no shapes provided in the input specification.
         """
         import onnx
         import tvm.relay as relay

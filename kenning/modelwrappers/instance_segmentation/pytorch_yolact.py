@@ -559,7 +559,7 @@ class PyTorchYOLACT(PyTorchWrapper, ABC):
         ----------
         model_path : PathOrURI
             Path where the model will be saved.
-        export_dict : Optional[bool], optional
+        export_dict : Optional[bool]
             If True, only state_dict is saved.
             Otherwise, the whole model is pickled.
         """

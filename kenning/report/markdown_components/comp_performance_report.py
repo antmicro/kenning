@@ -130,14 +130,14 @@ def comparison_performance_report(
             ]
 
         if "session_utilization_system_cpu_percents" in data:
-            data[
-                "session_utilization_system_cpu_percent"
-            ] = performance_metrics["session_utilization_system_cpu_percent"]
+            data["session_utilization_system_cpu_percent"] = (
+                performance_metrics["session_utilization_system_cpu_percent"]
+            )
 
         if "session_utilization_process_cpu_percents" in data:
-            data[
-                "session_utilization_process_cpu_percent"
-            ] = performance_metrics["session_utilization_process_cpu_percent"]
+            data["session_utilization_process_cpu_percent"] = (
+                performance_metrics["session_utilization_process_cpu_percent"]
+            )
 
         gpumetrics = [
             "session_utilization_system_gpu_mem_percent",

@@ -114,7 +114,7 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         Raises
         ------
-        VisualEditorGraphParserError :
+        VisualEditorGraphParserError
             If the pipeline is not valid or contains unsupported blocks.
         """
         # Create runner nodes and register connections between them.

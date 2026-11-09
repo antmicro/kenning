@@ -46,12 +46,10 @@ class PetDataset(Dataset):
 
     classification_types = ["species", "breeds"]
 
-    resources = Resources(
-        {
-            "images": "kenning:///datasets/pet_dataset/images.tar.gz",
-            "annotations": "kenning:///datasets/pet_dataset/annotations.tar.gz",
-        }
-    )
+    resources = Resources({
+        "images": "kenning:///datasets/pet_dataset/images.tar.gz",
+        "annotations": "kenning:///datasets/pet_dataset/annotations.tar.gz",
+    })
 
     arguments_structure = {
         "classify_by": {
@@ -125,9 +123,9 @@ class PetDataset(Dataset):
         **kwargs : Any
             Extra args passed into the `Dataset` superclass.
         """
-        assert (
-            classify_by in self.classification_types
-        ), f"Invalid {classify_by}, should be {self.classification_types}"
+        assert classify_by in self.classification_types, (
+            f"Invalid {classify_by}, should be {self.classification_types}"
+        )
         assert image_memory_layout in [
             "NHWC",
             "NCHW",

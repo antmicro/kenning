@@ -100,7 +100,7 @@ kenning test report \
 
 First, we add the `report` subcommand to enable reporting features.
 Than we specify the path for the markdown report.
-Finally, we add the `--to-html` flag which turns the mardown into HTML with beautifully rendered charts.
+Finally, we add the `--to-html` flag which turns the markdown into HTML with beautifully rendered charts.
 
 `NYUDepthDatasetV2` also allows us to set the number of best and worst predictions for visualization.
 Let's extend our dataset config:

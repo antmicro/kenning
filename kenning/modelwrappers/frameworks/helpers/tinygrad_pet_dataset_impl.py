@@ -139,9 +139,9 @@ class BasicBlock:
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1, groups=1, base_width=64):
-        assert (
-            groups == 1 and base_width == 64
-        ), "BasicBlock only supports groups=1 and base_width=64"
+        assert groups == 1 and base_width == 64, (
+            "BasicBlock only supports groups=1 and base_width=64"
+        )
 
         self.conv1 = Conv2d(
             in_planes,
@@ -374,23 +374,23 @@ class ResNet:
         """Load pretrained PyTorch ResNet weights."""
         model_urls = {
             (18, 1, 64): (
-                "https://download.pytorch.org/models/" "resnet18-5c106cde.pth"
+                "https://download.pytorch.org/models/resnet18-5c106cde.pth"
             ),
             (34, 1, 64): (
-                "https://download.pytorch.org/models/" "resnet34-333f7ec4.pth"
+                "https://download.pytorch.org/models/resnet34-333f7ec4.pth"
             ),
             (50, 1, 64): (
-                "https://download.pytorch.org/models/" "resnet50-19c8e357.pth"
+                "https://download.pytorch.org/models/resnet50-19c8e357.pth"
             ),
             (50, 32, 4): (
                 "https://download.pytorch.org/models/"
                 "resnext50_32x4d-7cdf4587.pth"
             ),
             (101, 1, 64): (
-                "https://download.pytorch.org/models/" "resnet101-5d3b4d8f.pth"
+                "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth"
             ),
             (152, 1, 64): (
-                "https://download.pytorch.org/models/" "resnet152-b121ed2d.pth"
+                "https://download.pytorch.org/models/resnet152-b121ed2d.pth"
             ),
         }
 
@@ -492,35 +492,30 @@ class ResNetWithClassifier(ResNet):
         std = np.array([0.229, 0.224, 0.225], dtype="float32")
         mean = mean.reshape(1, 1, 1, 3)
         std = std.reshape(1, 1, 1, 3)
-        transform = ComposeTransforms(
-            [
-                lambda x: [
-                    color_jitter(
-                        random_hflip(
-                            Image.open(xx).convert("RGB").resize((224, 224)),
-                        )
+        transform = ComposeTransforms([
+            lambda x: [
+                color_jitter(
+                    random_hflip(
+                        Image.open(xx).convert("RGB").resize((224, 224)),
                     )
-                    for xx in x
-                ],
-                lambda x: np.stack([np.asarray(xx) for xx in x], 0),
-                lambda x: x / 255.0,
-                lambda x: (x - mean) / std,
-                lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
-            ]
-        )
+                )
+                for xx in x
+            ],
+            lambda x: np.stack([np.asarray(xx) for xx in x], 0),
+            lambda x: x / 255.0,
+            lambda x: (x - mean) / std,
+            lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
+        ])
 
-        test_transform = ComposeTransforms(
-            [
-                lambda x: [
-                    Image.open(xx).convert("RGB").resize((224, 224))
-                    for xx in x
-                ],
-                lambda x: np.stack([np.asarray(xx) for xx in x], 0),
-                lambda x: x / 255.0,
-                lambda x: (x - mean) / std,
-                lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
-            ]
-        )
+        test_transform = ComposeTransforms([
+            lambda x: [
+                Image.open(xx).convert("RGB").resize((224, 224)) for xx in x
+            ],
+            lambda x: np.stack([np.asarray(xx) for xx in x], 0),
+            lambda x: x / 255.0,
+            lambda x: (x - mean) / std,
+            lambda x: x.transpose(0, 3, 1, 2).astype(np.float32),
+        ])
 
         classes = 37
         lr = 1e-4

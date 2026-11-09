@@ -12,6 +12,7 @@ performs a grid search to find optimal parameters for each block specified
 in `optimizable` parameter. Every block that is to be optimized should have
 list of parameters instead of a singular value specified.
 """
+
 import argparse
 import copy
 import json
@@ -250,16 +251,14 @@ def grid_search(
                 block_config[BLOCK_CONFIG_PARAMETERS_KEY]
             )
             for parameter_variant in parameter_variants:
-                variants.append(
-                    {
-                        name: {
-                            BLOCK_CONFIG_PARAMETERS_KEY: parameter_variant,
-                            BLOCK_DIRECT_ARGUMENTS_KEY: block_config[
-                                BLOCK_DIRECT_ARGUMENTS_KEY
-                            ],
-                        }
+                variants.append({
+                    name: {
+                        BLOCK_CONFIG_PARAMETERS_KEY: parameter_variant,
+                        BLOCK_DIRECT_ARGUMENTS_KEY: block_config[
+                            BLOCK_DIRECT_ARGUMENTS_KEY
+                        ],
                     }
-                )
+                })
 
         # We need to treat optimizers differently, as those can be chained.
         # For other blocks we have to pick only one.
@@ -353,7 +352,7 @@ def replace_paths(
 
 
 def filter_invalid_pipelines(
-    pipelines: List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]
+    pipelines: List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]],
 ) -> List[Tuple[int, KenningBlockConfigDict, Dict[ConfigKey, Any]]]:
     """
     Filter pipelines with incompatible blocks.
@@ -514,12 +513,10 @@ class OptimizationRunner(CommandTemplate):
                 computed_metrics.pop("session_utilization_cpus_percent_avg")
 
                 try:
-                    pipelines_scores.append(
-                        {
-                            "pipeline": pipeline_config,
-                            "metrics": computed_metrics,
-                        }
-                    )
+                    pipelines_scores.append({
+                        "pipeline": pipeline_config,
+                        "metrics": computed_metrics,
+                    })
                 except KeyError:
                     KLogger.error(f"{metric} not found in the metrics")
                     raise

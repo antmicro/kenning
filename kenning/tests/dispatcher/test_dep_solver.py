@@ -12,13 +12,11 @@ from kenning.utils.class_loader import load_class
 
 class TestDependencySolver:
     def test_init_with_multiple_block_types(self):
-        solver = DependencySolver(
-            {
-                "dataset": ["PetDataset"],
-                "model_wrapper": ["PyTorchPetDatasetMobileNetV2"],
-                "runtime": ["ExecuTorchRuntime"],
-            }
-        )
+        solver = DependencySolver({
+            "dataset": ["PetDataset"],
+            "model_wrapper": ["PyTorchPetDatasetMobileNetV2"],
+            "runtime": ["ExecuTorchRuntime"],
+        })
         assert len(solver.blocks) == 3
         assert load_class("PetDataset") in solver.blocks
         assert load_class("PyTorchPetDatasetMobileNetV2") in solver.blocks
@@ -37,13 +35,11 @@ class TestDependencySolver:
             def __init__(self, runtime: Runtime):
                 pass
 
-        solver = DependencySolver(
-            {
-                "dataset": ["PetDataset"],
-                "runtime": ["ExecuTorchRuntime"],
-                "custom": [ClientBlock, AnotherClient],
-            }
-        )
+        solver = DependencySolver({
+            "dataset": ["PetDataset"],
+            "runtime": ["ExecuTorchRuntime"],
+            "custom": [ClientBlock, AnotherClient],
+        })
         graph = solver.get_dependency_graph()
         assert graph["ClientBlock"] == ["PetDataset"]
         assert graph["AnotherClient"] == ["ExecuTorchRuntime"]
@@ -56,12 +52,10 @@ class TestDependencySolver:
         assert graph == {}
 
     def test_graph_with_no_dependencies(self):
-        solver = DependencySolver(
-            {
-                "dataset": ["PetDataset"],
-                "runtime": ["ModelRuntimeRunner"],
-            }
-        )
+        solver = DependencySolver({
+            "dataset": ["PetDataset"],
+            "runtime": ["ModelRuntimeRunner"],
+        })
         graph = solver.get_dependency_graph()
         assert graph == {
             "PetDataset": [],
@@ -81,14 +75,12 @@ class TestDependencySolver:
             def __init__(self, dataset: Dataset, runtime: Runtime):
                 pass
 
-        solver = DependencySolver(
-            {
-                "dataset": ["PetDataset"],
-                "model_wrapper": ["PyTorchPetDatasetMobileNetV2"],
-                "runtime": ["ExecuTorchRuntime"],
-                "custom": [RuntimeBlock, OptimizerBlock, ReportBlock],
-            }
-        )
+        solver = DependencySolver({
+            "dataset": ["PetDataset"],
+            "model_wrapper": ["PyTorchPetDatasetMobileNetV2"],
+            "runtime": ["ExecuTorchRuntime"],
+            "custom": [RuntimeBlock, OptimizerBlock, ReportBlock],
+        })
         graph = solver.get_dependency_graph()
         assert sorted(graph["RuntimeBlock"]) == [
             "PetDataset",

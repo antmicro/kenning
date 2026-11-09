@@ -45,31 +45,31 @@ class _YolactLoss(nn.Module):
         """
         Parameters
         ----------
-        num_classes : int, optional
+        num_classes : int
             Total number of classes including background.
             Defaults to 81 (COCO).
-        pos_threshold : float, optional
+        pos_threshold : float
             IoU threshold above which a prior is treated as a positive match
             during anchor assignment. Defaults to 0.5.
-        neg_threshold : float, optional
+        neg_threshold : float
             IoU threshold below which a prior is a clear negative. Priors
             between neg_threshold and pos_threshold are neutral and excluded
             from the loss. Defaults to 0.4.
-        negpos_ratio : int, optional
+        negpos_ratio : int
             Maximum ratio of hard negatives to positives kept by OHEM for the
             classification loss. Defaults to 3.
-        masks_to_train : int, optional
+        masks_to_train : int
             Maximum number of positive priors used per image when computing the
             mask loss; extras are randomly subsampled. Defaults to 100.
-        bbox_alpha : float, optional
+        bbox_alpha : float
             Loss weight for the box localization term B. Defaults to 1.5.
-        conf_alpha : float, optional
+        conf_alpha : float
             Loss weight for the classification term C. Defaults to 1.0.
-        mask_alpha : float, optional
+        mask_alpha : float
             Loss weight for the lincomb mask term M. Defaults to 6.125.
-        semantic_alpha : float, optional
+        semantic_alpha : float
             Loss weight for the semantic segmentation term S. Defaults to 1.0.
-        crowd_iou_threshold : float, optional
+        crowd_iou_threshold : float
             Priors overlapping crowd regions above this IoA are marked neutral
             during anchor matching. Defaults to 0.7.
         """
@@ -447,7 +447,8 @@ class _YolactLoss(nn.Module):
                 # Downsample GT instance masks to the semantic head resolution
                 # and binarize at 0.5: (M_i, mask_h, mask_w)
                 dsm = (
-                    F.interpolate(
+                    F
+                    .interpolate(
                         mask_t[idx].unsqueeze(0),
                         (mask_h, mask_w),
                         mode="bilinear",

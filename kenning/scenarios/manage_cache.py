@@ -6,6 +6,7 @@
 A script for managing Kenning's cache. It can list cached files, clear cache
 and print cache settings.
 """
+
 import argparse
 import sys
 from typing import List, Optional, Tuple, Union
@@ -145,8 +146,8 @@ class ManageCacheRunner(CommandTemplate):
 
         else:
             print(
-                f'Invalid action: {args.action}. Available actions: '
-                f'{", ".join(ManageCacheRunner.action_arguments)}.'
+                f"Invalid action: {args.action}. Available actions: "
+                f"{', '.join(ManageCacheRunner.action_arguments)}."
             )
 
 

@@ -8,7 +8,6 @@ Provides wrapper for Phi-2 model.
 https://huggingface.co/microsoft/phi-2
 """
 
-
 from kenning.modelwrappers.llm.llm import LLM
 
 

@@ -405,13 +405,10 @@ class TestRuntime:
             dataset,
             model,
         ):
-            model_output_size = sum(
-                [
-                    np.prod(output["shape"])
-                    * np.dtype(output["dtype"]).itemsize
-                    for output in model.get_io_specification()["output"]
-                ]
-            )
+            model_output_size = sum([
+                np.prod(output["shape"]) * np.dtype(output["dtype"]).itemsize
+                for output in model.get_io_specification()["output"]
+            ])
 
             with pytest.raises(ModelNotPreparedError):
                 runtime.upload_output(b"")

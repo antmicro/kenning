@@ -58,8 +58,7 @@ class PipelineManagerRPC(ABC):
         self.filename = None
 
     @abstractmethod
-    def app_capabilities_get(self) -> list:
-        ...
+    def app_capabilities_get(self) -> list: ...
 
     async def dataflow_import(
         self,

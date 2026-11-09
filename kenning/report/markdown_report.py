@@ -496,13 +496,11 @@ class MarkdownReport(Report):
                         for metric_name, metric in metrics.items():
                             models_metrics[model_data["model_name"]][
                                 "metrics"
-                            ].append(
-                                {
-                                    "type": _type,
-                                    "name": metric_name,
-                                    "value": metric,
-                                }
-                            )
+                            ].append({
+                                "type": _type,
+                                "name": metric_name,
+                                "value": metric,
+                            })
                     if not self.comparison_only:
                         content += additional_content
 

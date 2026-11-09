@@ -219,23 +219,21 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
     <https://storage.googleapis.com/openimages/web/index.html>`_.
     """
 
-    resources = Resources(
-        {
-            "class_names": "https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv",
-            "train": {
-                "object_detection": "https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv",
-                "instance_segmentation": "https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv",
-            },
-            "validation": {
-                "object_detection": "https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv",
-                "instance_segmentation": "https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv",
-            },
-            "test": {
-                "object_detection": "https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv",
-                "instance_segmentation": "https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv",
-            },
-        }
-    )
+    resources = Resources({
+        "class_names": "https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv",
+        "train": {
+            "object_detection": "https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv",
+            "instance_segmentation": "https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv",
+        },
+        "validation": {
+            "object_detection": "https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv",
+            "instance_segmentation": "https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv",
+        },
+        "test": {
+            "object_detection": "https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv",
+            "instance_segmentation": "https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv",
+        },
+    })
     arguments_structure = {
         "classes": {
             "argparse_name": "--classes",
@@ -376,9 +374,12 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         sampleids = filtered.groupby(
             filtered.LabelName, group_keys=False
         ).apply(
-            lambda grp: grp.sample(frac=1.0)
-            .ImageID.drop_duplicates()
-            .head(self.download_num_bboxes_per_class)
+            lambda grp: (
+                grp
+                .sample(frac=1.0)
+                .ImageID.drop_duplicates()
+                .head(self.download_num_bboxes_per_class)
+            )
         )
 
         # get final annotations

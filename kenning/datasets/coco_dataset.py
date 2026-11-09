@@ -39,18 +39,16 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     *Page*: `COCO Dataset site <https://cocodataset.org>`_.
     """
 
-    resources = Resources(
-        {
-            "train2017": {
-                "images": "http://images.cocodataset.org/zips/train2017.zip",
-                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
-            },
-            "val2017": {
-                "images": "http://images.cocodataset.org/zips/val2017.zip",
-                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
-            },
-        }
-    )
+    resources = Resources({
+        "train2017": {
+            "images": "http://images.cocodataset.org/zips/train2017.zip",
+            "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+        },
+        "val2017": {
+            "images": "http://images.cocodataset.org/zips/val2017.zip",
+            "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+        },
+    })
 
     arguments_structure = {
         "task": {

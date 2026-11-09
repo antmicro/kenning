@@ -38,12 +38,12 @@ class MMPoseRTMOONNX(ModelWrapper):
     pretrained_model_uri = "kenning:///models/pose_estimation/mmpose_rtmo.onnx"
     arguments_structure = {
         "keypoint_threshold": {
-            "description": "Minimal score for " "keypoint to pass.",
+            "description": "Minimal score for keypoint to pass.",
             "type": float,
             "default": 0.7,
         },
         "box_threshold": {
-            "description": "Minimal score for " "keypoint to pass.",
+            "description": "Minimal score for keypoint to pass.",
             "type": float,
             "default": 0.45,
         },

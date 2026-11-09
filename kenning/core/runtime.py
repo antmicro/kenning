@@ -484,7 +484,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Raises
         ------
-        ModelNotLoadedError :
+        ModelNotLoadedError
             Raised if model is not loaded.
         """
         ...

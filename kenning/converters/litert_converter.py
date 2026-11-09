@@ -117,8 +117,6 @@ class LiteRTConverter(ModelConverter):
         ------
         ValueError
             Raised if no shapes provided in the input specification.
-        IOSpecificationNotFoundError
-            Raised if input specification is not provided.
         """
         import tensorflow as tf
         import tvm.relay as relay

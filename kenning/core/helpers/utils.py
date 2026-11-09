@@ -35,7 +35,7 @@ def _get_model_size(
     ------
     Exception
         If model size cannot be retrieved.
-    """
+    """  # noqa: DOC503
     if not model_path.exists():
         if exception:
             raise exception

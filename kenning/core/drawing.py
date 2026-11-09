@@ -1341,14 +1341,12 @@ class BubblePlot(Plot):
         bbox_extra.append(bubblelegend)
 
         box = ax.get_position()
-        ax.set_position(
-            [
-                box.x0,
-                box.y0 + 0.05,
-                box.width * 0.85,
-                box.height - 0.05,
-            ]
-        )
+        ax.set_position([
+            box.x0,
+            box.y0 + 0.05,
+            box.width * 0.85,
+            box.height - 0.05,
+        ])
 
         if self.title:
             bbox_extra.append(fig.suptitle(self.title))
@@ -1679,9 +1677,9 @@ class ConfusionMatrixPlot(Plot):
                     color="black",
                     fontsize=percent_font_size,
                 )
-                txt.set_path_effects(
-                    [patheffects.withStroke(linewidth=2, foreground="w")]
-                )
+                txt.set_path_effects([
+                    patheffects.withStroke(linewidth=2, foreground="w")
+                ])
 
             # configure and draw sensitivity percentages
             axPredicted.set_xticks(ticks)
@@ -1709,9 +1707,9 @@ class ConfusionMatrixPlot(Plot):
                     color="black",
                     fontsize=percent_font_size,
                 )
-                txt.set_path_effects(
-                    [patheffects.withStroke(linewidth=2, foreground="w")]
-                )
+                txt.set_path_effects([
+                    patheffects.withStroke(linewidth=2, foreground="w")
+                ])
 
             # configure and draw precision percentages
             axActual.set_xticks([0])
@@ -1740,9 +1738,9 @@ class ConfusionMatrixPlot(Plot):
                     color="black",
                     fontsize=percent_font_size,
                 )
-                txt.set_path_effects(
-                    [patheffects.withStroke(linewidth=2, foreground="w")]
-                )
+                txt.set_path_effects([
+                    patheffects.withStroke(linewidth=2, foreground="w")
+                ])
 
             # configure and draw total accuracy
             axTotal.set_xticks([0])
@@ -1765,9 +1763,9 @@ class ConfusionMatrixPlot(Plot):
                 color="black",
                 fontsize=percent_font_size,
             )
-            txt.set_path_effects(
-                [patheffects.withStroke(linewidth=2, foreground="w")]
-            )
+            txt.set_path_effects([
+                patheffects.withStroke(linewidth=2, foreground="w")
+            ])
 
             # disable axes for other matrices than confusion matrix
             for a in (axPredicted, axActual, axTotal):
@@ -2803,9 +2801,9 @@ class LinePlot(Plot):
         self.dashed = dashed
         if self.dashed is None:
             self.dashed = [False for _ in self.lines]
-        assert len(self.dashed) == len(
-            self.lines
-        ), "`dashed` has to be defined for each line"
+        assert len(self.dashed) == len(self.lines), (
+            "`dashed` has to be defined for each line"
+        )
 
     def plot_matplotlib(
         self, output_path: Optional[Path], output_formats: Iterable[str]
@@ -2839,9 +2837,9 @@ class LinePlot(Plot):
         ncols = 2
         bbox_to_anchor = [0.5, -0.06]
         if self.lines_labels is not None:
-            bbox_to_anchor[1] = -(
-                np.ceil(len(self.lines_labels) / ncols) - 1
-            ) * 0.04
+            bbox_to_anchor[1] = (
+                -(np.ceil(len(self.lines_labels) / ncols) - 1) * 0.04
+            )
         if self.lines_labels is not None:
             bbox_extra.append(
                 plt.legend(

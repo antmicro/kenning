@@ -252,7 +252,7 @@ def performance_report(
     import servis
 
     KLogger.info(
-        f'Running performance_report for {measurementsdata["model_name"]}'
+        f"Running performance_report for {measurementsdata['model_name']}"
     )
 
     # Shifting colors to match color_offset
@@ -302,9 +302,9 @@ def performance_report(
                 reporttemplate, measurementsdata
             ), {}
 
-    measurementsdata[
-        "performance_report_scope"
-    ] = performance_report_scope.value
+    measurementsdata["performance_report_scope"] = (
+        performance_report_scope.value
+    )
     metrics = compute_performance_metrics(measurementsdata)
     measurementsdata |= metrics
 

@@ -116,13 +116,11 @@ class TestGetAllSequences:
 
 class TestCreateSubcommands:
     @staticmethod
-    def empty_registries() -> (
-        Tuple[
-            argparse.ArgumentParser,
-            Dict[Tuple[str, ...], argparse.ArgumentParser],
-            Dict[Tuple[str, ...], argparse._SubParsersAction],
-        ]
-    ):
+    def empty_registries() -> Tuple[
+        argparse.ArgumentParser,
+        Dict[Tuple[str, ...], argparse.ArgumentParser],
+        Dict[Tuple[str, ...], argparse._SubParsersAction],
+    ]:
         root = argparse.ArgumentParser(prog="kenning", add_help=False)
         groups = {(): root.add_subparsers(dest=SUB_DEST_FORM.format(0))}
         return root, {}, groups
@@ -201,9 +199,12 @@ class TestSetupBaseParser:
             in parsers[(OPTIMIZE, TEST)]._option_string_actions
         )
 
-        args, rest = parser.parse_known_args(
-            [OPTIMIZE, TEST, "--evaluate-unoptimized", "--not-a-flag"]
-        )
+        args, rest = parser.parse_known_args([
+            OPTIMIZE,
+            TEST,
+            "--evaluate-unoptimized",
+            "--not-a-flag",
+        ])
 
         assert getattr(args, SUB_DEST_FORM.format(0)) == OPTIMIZE
         assert getattr(args, SUB_DEST_FORM.format(1)) == TEST

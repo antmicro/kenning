@@ -80,6 +80,7 @@ The easiest option to execute Kenning process in ROS 2 project is to use ROS 2 l
 
 ```python test-skip
 from launch_ros.actions import Node
+
 # ...
 kenning_node = Node(
     name="kenning_node",

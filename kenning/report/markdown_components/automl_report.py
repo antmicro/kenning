@@ -6,7 +6,6 @@
 Module used for Automl report generation stage.
 """
 
-
 from collections import defaultdict
 from importlib.resources import path
 from pathlib import Path

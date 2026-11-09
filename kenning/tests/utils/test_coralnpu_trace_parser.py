@@ -5,10 +5,10 @@
 from pathlib import Path
 from typing import Dict, List
 
+import kenning.utils.coralnpu_trace_parser.coralnpu_trace_pb2 as trace_pb2
 import pytest
 
 import kenning.utils.coralnpu_trace_parser as trace_parser
-import kenning.utils.coralnpu_trace_parser.coralnpu_trace_pb2 as trace_pb2
 
 
 class TestCoralNPUTraceParser:

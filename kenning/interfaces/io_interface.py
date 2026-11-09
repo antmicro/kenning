@@ -95,8 +95,7 @@ def disable_when_defined(
         if not should_disable:
             return func
 
-        def noop(*args, **kwargs):
-            ...
+        def noop(*args, **kwargs): ...
 
         return noop
 
@@ -531,7 +530,7 @@ class IOInterface(ABC):
 
     @staticmethod
     def serialize_io_specification_for_uart(
-        json_dict: Dict[str, List[Dict]]
+        json_dict: Dict[str, List[Dict]],
     ) -> bytes:
         return IOSpecSerializer.io_spec_to_struct(json_dict)
 

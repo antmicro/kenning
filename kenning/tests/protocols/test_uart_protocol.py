@@ -145,9 +145,9 @@ class TestParseAllocationStats:
         stats_json = _parse_stats(valid_iree_stats)["allocation_stats"]
 
         assert len(stats_json) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE // 4
-        assert all(
-            [isinstance(stat_name, str) for stat_name in stats_json.keys()]
-        )
+        assert all([
+            isinstance(stat_name, str) for stat_name in stats_json.keys()
+        ])
         assert all([isinstance(stat, int) for stat in stats_json.values()])
         assert json.loads(json.dumps(stats_json)) == stats_json
 
@@ -157,9 +157,9 @@ class TestParseAllocationStats:
         assert len(stats_json) == len(valid_generic_stats) / (
             RUNTIME_STAT_NAME_MAX_LEN + 8
         )
-        assert all(
-            [isinstance(stat_name, str) for stat_name in stats_json.keys()]
-        )
+        assert all([
+            isinstance(stat_name, str) for stat_name in stats_json.keys()
+        ])
         assert all([isinstance(stat, int) for stat in stats_json.values()])
         assert json.loads(json.dumps(stats_json)) == stats_json
 
@@ -260,28 +260,24 @@ class TestUARTProtocol(TestCoreProtocol):
                     message_type,
                     None,
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: True,
-                            FlagName.IS_ZEPHYR: True,
-                            FlagName.FIRST: True,
-                            FlagName.LAST: True,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: True,
+                        FlagName.IS_ZEPHYR: True,
+                        FlagName.FIRST: True,
+                        FlagName.LAST: True,
+                    }),
                 )
             else:
                 response = Message(
                     message_type,
                     None,
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.FAIL: True,
-                            FlagName.IS_ZEPHYR: True,
-                            FlagName.FIRST: True,
-                            FlagName.LAST: True,
-                        }
-                    ),
+                    Flags({
+                        FlagName.FAIL: True,
+                        FlagName.IS_ZEPHYR: True,
+                        FlagName.FIRST: True,
+                        FlagName.LAST: True,
+                    }),
                 )
             with open(self.port_in, "wb", 0) as serial_f:
                 serial_f.write(response.to_bytes())
@@ -313,26 +309,22 @@ class TestUARTProtocol(TestCoreProtocol):
                     message.message_type,
                     payload,
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: True,
-                            FlagName.FIRST: True,
-                            FlagName.LAST: True,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: True,
+                        FlagName.FIRST: True,
+                        FlagName.LAST: True,
+                    }),
                 )
             else:
                 response = Message(
                     message.message_type,
                     ServerAction.COMPUTING_STATISTICS.to_bytes(),
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.FAIL: True,
-                            FlagName.FIRST: True,
-                            FlagName.LAST: True,
-                        }
-                    ),
+                    Flags({
+                        FlagName.FAIL: True,
+                        FlagName.FIRST: True,
+                        FlagName.LAST: True,
+                    }),
                 )
 
             with open(self.port_in, "wb", 0) as serial_f:

@@ -6,7 +6,6 @@
 Base ROS2 action parser template.
 """
 
-
 from typing import Any
 
 

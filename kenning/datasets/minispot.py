@@ -13,8 +13,7 @@ from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.utils.resource_manager import ResourceURI
 
 MINISPOT_DEFAULT_URI = (
-    "https://dl.antmicro.com/kenning/"
-    "datasets/anomaly_detection/minispot.csv"
+    "https://dl.antmicro.com/kenning/datasets/anomaly_detection/minispot.csv"
 )
 
 

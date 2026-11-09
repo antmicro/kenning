@@ -212,7 +212,7 @@ class ROS2Protocol(Protocol):
 
     def upload_io_specification(self, path: Optional[Path]) -> bool:
         KLogger.warning(
-            "IO specification is not supported in ROS2 protocol. " "Skipping."
+            "IO specification is not supported in ROS2 protocol. Skipping."
         )
         return True
 
@@ -392,7 +392,7 @@ class ROS2Protocol(Protocol):
 
     def upload_optimizers(self, optimizers_cfg: Dict[str, Any]) -> bool:
         raise NotSupportedError(
-            "ROS2 protocol does not support upload opimizers."
+            "ROS2 protocol does not support upload optimizers."
         )
 
     def upload_runtime(self, path: Optional[Path]) -> bool:

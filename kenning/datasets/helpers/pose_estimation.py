@@ -6,7 +6,6 @@
 Structure that holds pose estimation results.
 """
 
-
 from typing import List, NamedTuple
 
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject

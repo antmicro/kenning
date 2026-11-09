@@ -6,7 +6,6 @@
 Base ROS2 action parser template.
 """
 
-
 from typing import TYPE_CHECKING, Any, List
 
 import numpy as np
@@ -49,9 +48,9 @@ class SegmentationActionParser(ROS2ActionParser):
         from sensor_msgs.msg import Image
 
         def prepare_image(frame: np.ndarray) -> Image:
-            assert (
-                len(frame.shape) == 3
-            ), "Input data must be 3-dimensional and have BGR8 encoding"
+            assert len(frame.shape) == 3, (
+                "Input data must be 3-dimensional and have BGR8 encoding"
+            )
 
             if frame.shape[2] > frame.shape[0]:
                 frame = np.transpose(frame, (1, 2, 0))
@@ -84,7 +83,7 @@ class SegmentationActionParser(ROS2ActionParser):
 
     @staticmethod
     def to_associated_type(
-        x: "SegmentationAction.Result"
+        x: "SegmentationAction.Result",
     ) -> List[List[SegmObject]]:
         """
         A function that takes result of

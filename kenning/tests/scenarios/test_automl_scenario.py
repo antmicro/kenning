@@ -28,7 +28,7 @@ ConfigType = Iterable[Tuple[Path, Dict]]
 
 @pytest.fixture()
 def define_anomaly_detection_csv_file(
-    tmpfolder
+    tmpfolder,
 ) -> Generator[Path, None, None]:
     """
     Creates random CSV file for AnomalyDetectionDataset

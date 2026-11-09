@@ -11,6 +11,7 @@ Except for the actual model output, there is
 additional metadata from the CFG model definition stored in the outputs
 from TVM-compiled model.
 """
+
 from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper

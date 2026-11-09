@@ -222,7 +222,7 @@ class VLLMRuntime(Runtime):
         ------
         FileNotFoundError
             If the model path does not exist or if it is not a directory.
-        """
+        """  # noqa: DOC503
         import tarfile
 
         if not path.is_dir():

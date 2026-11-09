@@ -103,7 +103,7 @@ def _jaccard(
         Boxes in corner form, either (A, 4) or (N, A, 4).
     box_b : torch.Tensor
         Boxes in corner form, either (B, 4) or (N, B, 4).
-    iscrowd : bool, optional
+    iscrowd : bool
         If True, compute intersection-over-area-of-box_a instead of the
         standard intersection-over-union. Used for crowd annotations where
         the crowd box can contain many objects. Defaults to False.
@@ -213,7 +213,7 @@ def _sanitize_coordinates(
         Second normalized coordinate, shape (N,).
     img_size : int
         Pixel dimension used for denormalization (width or height).
-    padding : int, optional
+    padding : int
         Integer pixel margin subtracted from x1 and added to x2 before
         clamping. Defaults to 0.
 
@@ -250,7 +250,7 @@ def _crop(
     boxes : torch.Tensor
         Normalized corner-form boxes of shape (N, 4) with columns
         [xmin, ymin, xmax, ymax], one per mask.
-    padding : int, optional
+    padding : int
         Extra pixel margin kept on each side of the box boundary.
         Defaults to 1.
 
@@ -265,12 +265,14 @@ def _crop(
     y1, y2 = _sanitize_coordinates(boxes[:, 1], boxes[:, 3], h, padding)
 
     rows = (
-        torch.arange(w, device=masks.device, dtype=x1.dtype)
+        torch
+        .arange(w, device=masks.device, dtype=x1.dtype)
         .view(1, -1, 1)
         .expand(h, w, n)
     )
     cols = (
-        torch.arange(h, device=masks.device, dtype=x1.dtype)
+        torch
+        .arange(h, device=masks.device, dtype=x1.dtype)
         .view(-1, 1, 1)
         .expand(h, w, n)
     )
@@ -486,10 +488,10 @@ def _fast_nms(
         Confidence scores for each detection, shape (N,).
     classes : torch.Tensor
         Integer class index for each detection, shape (N,).
-    iou_threshold : float, optional
+    iou_threshold : float
         Boxes with IoU above this value with a higher-scoring box of the same
         class are suppressed. Defaults to 0.5.
-    top_k : int, optional
+    top_k : int
         Maximum number of boxes considered per class before NMS.
         Defaults to 200.
 
@@ -537,13 +539,13 @@ def _select_detections(
         the background class at index 0.
     coefs : torch.Tensor
         Mask coefficients for one image, shape (P, coef_dim).
-    score_threshold : float, optional
+    score_threshold : float
         Detections whose max foreground score falls below this value are
         discarded before NMS. Defaults to 0.05.
-    max_detections : int, optional
+    max_detections : int
         Maximum number of detections kept after top-k filtering, applied both
         before and as the NMS top_k cap. Defaults to 200.
-    iou_threshold : float, optional
+    iou_threshold : float
         IoU threshold passed to _fast_nms. Defaults to 0.5.
 
     Returns

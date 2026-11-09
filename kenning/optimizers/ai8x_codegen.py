@@ -154,14 +154,12 @@ def generate_model_bin(
     model_chunks = [kernels_int]
 
     for bias_target, bias in zip(targets, biases_int):
-        model_chunks.append(
-            [
-                int(bias_target, base=16),
-                len(bias),
-                *bias,
-                0,
-            ]
-        )
+        model_chunks.append([
+            int(bias_target, base=16),
+            len(bias),
+            *bias,
+            0,
+        ])
 
     model_int = list(itertools.chain(*model_chunks))
     model_bytes = b"".join(

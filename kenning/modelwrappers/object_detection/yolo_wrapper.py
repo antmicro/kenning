@@ -287,13 +287,11 @@ class YOLOWrapper(ModelWrapper, ABC):
         # batches layerouts dets params width height
         perbatchoutputs = []
         for i in range(outputs[0].shape[0]):
-            perbatchoutputs.append(
-                [
-                    outputs[0][i],
-                    outputs[1][i],
-                    outputs[2][i],
-                ]
-            )
+            perbatchoutputs.append([
+                outputs[0][i],
+                outputs[1][i],
+                outputs[2][i],
+            ])
         result = []
         # parse the combined outputs for each image in batch, and return result
         for out in perbatchoutputs:
@@ -353,5 +351,4 @@ class YOLOWrapper(ModelWrapper, ABC):
     @abstractmethod
     def _get_io_specification(
         cls, keyparams: Dict[str, Any], batch_size: int
-    ) -> Dict[str, List[Dict]]:
-        ...
+    ) -> Dict[str, List[Dict]]: ...

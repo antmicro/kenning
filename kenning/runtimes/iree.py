@@ -124,9 +124,9 @@ class IREERuntime(Runtime):
         from iree import runtime as ireert
 
         available_drivers = ireert.HalDriver.query()
-        assert (
-            driver in available_drivers
-        ), f"Unknown driver, select one of {available_drivers}"
+        assert driver in available_drivers, (
+            f"Unknown driver, select one of {available_drivers}"
+        )
 
         self.model = None
         self.entry_func = None

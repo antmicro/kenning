@@ -55,7 +55,7 @@ class CustomCompletion(CompletionFinder):
         parser = argparse.ArgumentParser(add_help=False)
         for flag in CLASS_FLAG_NAMES:
             parser.add_argument(
-                f'--{flag.replace("_", "-")}', nargs="?", const=None
+                f"--{flag.replace('_', '-')}", nargs="?", const=None
             )
         parser.add_argument("--json-cfg", "--cfg")
         args, _ = parser.parse_known_args(comp_words)
@@ -105,12 +105,12 @@ class CustomCompletion(CompletionFinder):
                     break
             # Extend parser with arguments for classes
             if subparser:
-                subactions[0].choices[
-                    subcommands[-1]
-                ] = argparse.ArgumentParser(
-                    subparser.prog,
-                    parents=[subparser] + parsers,
-                    add_help=False,
+                subactions[0].choices[subcommands[-1]] = (
+                    argparse.ArgumentParser(
+                        subparser.prog,
+                        parents=[subparser] + parsers,
+                        add_help=False,
+                    )
                 )
 
         completions = super()._get_completions(

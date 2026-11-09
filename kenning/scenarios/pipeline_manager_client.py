@@ -132,7 +132,7 @@ class PipelineManagerClient(CommandTemplate):
 
             Raises
             ------
-            VisualEditorError:
+            VisualEditorError
                 Raised if frontend building failed
             """
             # provided these files exist, do not build the frontend again

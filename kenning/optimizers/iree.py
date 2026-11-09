@@ -396,12 +396,10 @@ class IREECompiler(Optimizer):
                         " https://github.com/iree-org/iree/issues/21122."
                         " Use 'sm_86' instead."
                     )
-                self.parsed_compiler_args.extend(
-                    [
-                        "--iree-hal-target-device=cuda",
-                        f"--iree-cuda-target={platform.compute_capability}",
-                    ]
-                )
+                self.parsed_compiler_args.extend([
+                    "--iree-hal-target-device=cuda",
+                    f"--iree-cuda-target={platform.compute_capability}",
+                ])
             case "BareMetalPlatform":
                 KLogger.info("BareMetalPlatform support still in development.")
             case "CoralNPUPlatform":

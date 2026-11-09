@@ -106,9 +106,9 @@ def generate_html_report(
             # Ensure report file isn't excluded
             "exclude_patterns": [],
             # Use report file as main source
-            "master_doc": f'{report_path.with_suffix("").name}',
+            "master_doc": f"{report_path.with_suffix('').name}",
             # Static files for HTML
-            "html_static_path": [f'{_conf.parent / "_static"}'],
+            "html_static_path": [f"{_conf.parent / '_static'}"],
             # Remove PFD button
             "html_theme_options.pdf_url": [],
             # Warning about using h2 header

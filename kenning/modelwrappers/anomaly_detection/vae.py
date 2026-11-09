@@ -549,9 +549,9 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             if arg not in vae_trainer_conf:
                 KLogger.warn(f"Missing {arg} for VAE trainer")
                 continue
-            kenning_conf["model_wrapper"]["parameters"][
-                arg
-            ] = vae_trainer_conf[arg]
+            kenning_conf["model_wrapper"]["parameters"][arg] = (
+                vae_trainer_conf[arg]
+            )
         return kenning_conf
 
     @classmethod

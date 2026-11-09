@@ -341,9 +341,11 @@ class MMPoseModelWrapper(ModelWrapper):
 
         data = data[1:]
 
-        keypoints = data[: number_of_samples * num_keypoints * 2].reshape(
-            (number_of_samples, num_keypoints, 2)
-        )
+        keypoints = data[: number_of_samples * num_keypoints * 2].reshape((
+            number_of_samples,
+            num_keypoints,
+            2,
+        ))
 
         data = data[number_of_samples * num_keypoints * 2 :]
 

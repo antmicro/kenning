@@ -13,9 +13,9 @@ from kenning.utils.serializable import Serializable
 def serializables_equal(left: Serializable, right: Serializable) -> bool:
     assert left.serializable_fields == right.serializable_fields
     for field, _, _ in left.serializable_fields:
-        assert getattr(left, str(field)) == getattr(
-            right, str(field)
-        ), f"Differing field: {str(field)}"
+        assert getattr(left, str(field)) == getattr(right, str(field)), (
+            f"Differing field: {str(field)}"
+        )
 
 
 class ExampleClass(Serializable):
@@ -49,7 +49,7 @@ class TestSerializable:
                     "f": 0x5DF3,
                     "g": 0x01,
                 },
-                b"\x0A\x27\xFE\xE7\xBB\x01",
+                b"\x0a\x27\xfe\xe7\xbb\x01",
                 does_not_raise(),
             ),
             # Valid fields with an extra field, that should be ignored
@@ -64,7 +64,7 @@ class TestSerializable:
                     "g": 0x01,
                     "redundant": 0x00,
                 },
-                b"\x0A\x27\xFE\xE7\xBB\x01",
+                b"\x0a\x27\xfe\xe7\xbb\x01",
                 does_not_raise(),
             ),
             # Invalid field value ('e' field too large)
@@ -122,13 +122,13 @@ class TestSerializable:
             ),
             # Too long bytestream (16 bytes)
             (
-                b"\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 {},
                 pytest.raises(ValueError),
             ),
             # Valid fields
             (
-                b"\x01\x2F\x1E\x02\x02\x07",
+                b"\x01\x2f\x1e\x02\x02\x07",
                 {
                     "a": 0x01,
                     "b": 0x3C,

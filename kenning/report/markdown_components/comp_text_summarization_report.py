@@ -69,7 +69,7 @@ def comparison_text_summarization_report(
         if not metrics:
             KLogger.warning(
                 "No metrics were computed for the text summarization task "
-                + f'for {data["model_name"]} in a comparison report'
+                + f"for {data['model_name']} in a comparison report"
             )
             continue
 

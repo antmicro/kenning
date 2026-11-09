@@ -7,7 +7,6 @@ A package that provides Report-related class used mainly to retrieve
 basic report parameters.
 """
 
-
 from pathlib import Path
 from typing import List, Optional
 

@@ -266,7 +266,8 @@ class PyTorchAnomalyDetectionGRU(PyTorchAnomalyDetectionWrapper):
         # function where we have access both to model inputs and outputs, but
         # we can't calculate the mean, because we need to conform to io_spec
         scores = (
-            self.model.anomaly_score(inp, out, aggregate=False)
+            self.model
+            .anomaly_score(inp, out, aggregate=False)
             .detach()
             .cpu()
             .numpy()

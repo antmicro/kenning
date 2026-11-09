@@ -110,7 +110,10 @@ class TensorFlowOptimizer(Optimizer, ABC):
         )
         assert (
             not self.save_to_zip or self.compiled_model_path.suffix != ".zip"
-        ), "Please use different extension than `.zip`, it will be used by archived model"  # noqa: E501
+        ), (
+            "Please use different extension than `.zip`, "
+            "it will be used by archived model"
+        )
 
     def prepare_train_validation(self) -> Tuple:
         """

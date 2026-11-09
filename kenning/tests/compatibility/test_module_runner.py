@@ -36,15 +36,13 @@ def mark_xfail_if_abstract(cls_name: Type):
         pytest.xfail(f"Abstract class: {cls_name}")
 
 
-all_classes = sorted(
-    [
-        f"{module_path}.{module_cls}"
-        for module_name, (path, cls) in get_base_classes_dict().items()
-        for module_cls, module_path in get_all_subclasses(
-            path, cls, import_classes=False
-        )
-    ]
-)
+all_classes = sorted([
+    f"{module_path}.{module_cls}"
+    for module_name, (path, cls) in get_base_classes_dict().items()
+    for module_cls, module_path in get_all_subclasses(
+        path, cls, import_classes=False
+    )
+])
 
 skipped = []
 

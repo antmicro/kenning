@@ -25,6 +25,5 @@ class SmolLM2(LLM):
     )
 
     user_prompt_template = (
-        "<|im_start|>user\n{{user_message}}<|im_end|>\n"
-        "<|im_start|>assistant\n"
+        "<|im_start|>user\n{{user_message}}<|im_end|>\n<|im_start|>assistant\n"
     )

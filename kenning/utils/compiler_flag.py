@@ -5,6 +5,7 @@
 """
 Class for easily handling compiler flags in optimizers.
 """
+
 from typing import List, Optional, Union
 
 

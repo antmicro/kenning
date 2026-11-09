@@ -66,7 +66,9 @@ struct __attribute__((packed)) EntryInstruction
  * Profiler dump entry body for memory type entry.
  */
 struct __attribute__((packed)) EntryMemory
-{ MemoryOperationType op; };
+{
+    MemoryOperationType op;
+};
 
 /**
  * Profiler dump entry body for peripheral type entry.
@@ -81,7 +83,9 @@ struct __attribute__((packed)) EntryPeripherals
  * Profiler dump entry body for exception type entry.
  */
 struct __attribute__((packed)) EntryExceptions
-{ unsigned long long index; };
+{
+    unsigned long long index;
+};
 
 /**
  * Prints progress in percentage and parsed vs total bytes.
@@ -116,7 +120,9 @@ void print_progress(std::uintmax_t done, std::uintmax_t total)
  */
 template < typename T >
 void read_into(std::ifstream &stream, T &var)
-{ stream.read((char *)&var, sizeof(T)); }
+{
+    stream.read((char *)&var, sizeof(T));
+}
 
 /**
  * Reads string of given length from input stream.

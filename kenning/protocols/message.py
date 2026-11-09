@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Message class, for serializaing and de-serializing messages in Kenning Protocol
+Message class, for serializing and de-serializing messages in Kenning Protocol
 with some helper classes.
 """
 
@@ -62,7 +62,7 @@ class MessageType(Enum):
     Message type denotes what kind of data is being sent:
 
     PING - message for checking the connection
-    STATUS - message contains inference server stauts report.
+    STATUS - message contains inference server status report.
     DATA - message contains inference input/output/statistics.
     MODEL - message contains model to load.
     PROCESS - message means the data should be processed.

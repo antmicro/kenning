@@ -26,11 +26,9 @@ class MagicWandDataset(Dataset):
     gestures captured by accelerometer and gyroscope.
     """
 
-    resources = Resources(
-        {
-            "data": "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz",
-        }
-    )
+    resources = Resources({
+        "data": "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz",
+    })
     arguments_structure = {
         "window_size": {
             "argparse_name": "--window-size",

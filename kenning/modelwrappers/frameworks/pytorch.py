@@ -264,9 +264,10 @@ class PyTorchWrapper(ModelWrapper, ABC):
                     labels = labels.to(self.device)
                     outputs = self.model(input)
                     outputs, labels = postprocess(outputs, labels)
-                    predicted = np.concatenate(
-                        [predicted, outputs.cpu().numpy()]
-                    )
+                    predicted = np.concatenate([
+                        predicted,
+                        outputs.cpu().numpy(),
+                    ])
                     true = np.concatenate((true, labels.cpu().numpy()))
                     metric = metric_func(true, predicted)
                     bar.set_description(

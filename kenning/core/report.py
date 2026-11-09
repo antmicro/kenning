@@ -212,8 +212,10 @@ class Report(ArgumentsHandler, ABC):
 
         _append_type_if(
             ReportTypes.COMPILATION,
-            lambda data: "compilation_metadata" in data
-            and "iree" in data["compilation_metadata"],
+            lambda data: (
+                "compilation_metadata" in data
+                and "iree" in data["compilation_metadata"]
+            ),
         )
 
         _append_type_if(
@@ -246,8 +248,10 @@ class Report(ArgumentsHandler, ABC):
         )
         _append_type_if(
             ReportTypes.PERFORMANCE,
-            lambda data: "target_inference_step" in data
-            or "protocol_inference_step" in data,
+            lambda data: (
+                "target_inference_step" in data
+                or "protocol_inference_step" in data
+            ),
         )
         _append_type_if(
             ReportTypes.RENODE,
@@ -325,8 +329,7 @@ class Report(ArgumentsHandler, ABC):
             )
         else:
             report_name = (
-                f"{report_types[0]} of "
-                f"{measurements_data[0]['model_name']}"
+                f"{report_types[0]} of {measurements_data[0]['model_name']}"
             )
         report_name = report_name[0].upper() + report_name[1:]
         if cfg_name is not None:
@@ -374,7 +377,7 @@ class Report(ArgumentsHandler, ABC):
 
         Raises
         ------
-        argparse.ArgumentError :
+        ArgumentError
             Raised when report types cannot be deduced from measurements data
         """
         measurements_data = []
@@ -401,9 +404,9 @@ class Report(ArgumentsHandler, ABC):
             ):
                 unoptimized = measurements.pop(Measurements.UNOPTIMIZED)
                 if "model_name" not in unoptimized:
-                    unoptimized[
-                        "model_name"
-                    ] = f"unoptimized {measurements['model_name']}"
+                    unoptimized["model_name"] = (
+                        f"unoptimized {measurements['model_name']}"
+                    )
                 unoptimized[Measurements.UNOPTIMIZED] = True
                 unoptimized["measurements_path"] = Path(measurements_path)
                 measurements_data.append(unoptimized)

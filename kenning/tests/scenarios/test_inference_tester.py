@@ -109,9 +109,9 @@ def test_measurements_evaluate_unoptimized(
         report_cls="StubReport",
     )
 
-    assert (
-        InferenceTester.run(mock_args) == 0
-    ), "InferenceTester.run did not finish successfully"
+    assert InferenceTester.run(mock_args) == 0, (
+        "InferenceTester.run did not finish successfully"
+    )
 
     with output.open() as outputfile:
         outputdata = json.load(outputfile)

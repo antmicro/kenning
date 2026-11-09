@@ -11,6 +11,7 @@ The images are downloaded using the script `downloader.py` as
 instructed on this page:
 https://storage.googleapis.com/openimages/web/download_v7.html.
 """
+
 import argparse
 from pathlib import Path
 

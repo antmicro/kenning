@@ -5,6 +5,7 @@
 """
 Contains implementation of a pytorch dataset used for Yolov4 fine tuning.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional
@@ -84,12 +85,10 @@ class YoloDataset(Dataset):
 
         target = {
             "boxes": boxes,
-            "labels": torch.tensor(
-                [
-                    self.wrapper.classnames_to_index[det_obj.clsname] + 1
-                    for det_obj in label
-                ]
-            ),
+            "labels": torch.tensor([
+                self.wrapper.classnames_to_index[det_obj.clsname] + 1
+                for det_obj in label
+            ]),
             "iscrowd": torch.tensor([det_obj.iscrowd for det_obj in label]),
             "scores": torch.tensor([det_obj.score for det_obj in label]),
         }

@@ -5,6 +5,7 @@
 """
 Wrapper for TensorFlowClustering optimizer.
 """
+
 from typing import Dict, List, Literal, Optional
 
 import tensorflow as tf

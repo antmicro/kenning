@@ -8,7 +8,6 @@ Provides wrapper for Mistral-instruct model.
 https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1
 """
 
-
 from kenning.modelwrappers.llm.llm import LLM
 
 

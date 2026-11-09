@@ -66,7 +66,7 @@ class TestQCompressedGemmSparseGPTQ:
         self.a = torch.randn(
             (self.n, self.k_in), dtype=torch.float16, device="cuda"
         )
-        # Temporar memory buffers.
+        # Temporary memory buffers.
         self.workspace = torch.zeros(
             (4 * 1024 * 1024,), dtype=torch.uint8, device="cuda"
         )

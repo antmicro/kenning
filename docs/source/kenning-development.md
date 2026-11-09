@@ -193,10 +193,10 @@ This structure is used to create:
 
 ```python
 arguments_structure = {
-    'argument_name': {
-        'description': 'Help for the argument',
-        'type': str,
-        'required': True
+    "argument_name": {
+        "description": "Help for the argument",
+        "type": str,
+        "required": True,
     }
 }
 ```
@@ -240,42 +240,42 @@ from kenning.core.dataset import Dataset
 
 class TensorFlowLiteCompiler(Optimizer):
     arguments_structure = {
-        'inferenceinputtype': {
-            'argparse_name': '--inference-input-type',
-            'description': 'Data type of the input layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceinputtype": {
+            "argparse_name": "--inference-input-type",
+            "description": "Data type of the input layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'inferenceoutputtype': {
-            'argparse_name': '--inference-output-type',
-            'description': 'Data type of the output layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceoutputtype": {
+            "argparse_name": "--inference-output-type",
+            "description": "Data type of the output layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'quantize_model': {
-            'argparse_name': '--quantize-model',
-            'description': 'Tells if model should be quantized',
-            'type': bool,
-            'default': False
+        "quantize_model": {
+            "argparse_name": "--quantize-model",
+            "description": "Tells if model should be quantized",
+            "type": bool,
+            "default": False,
         },
-        'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to '
-                           '1.0) will be used for calibration dataset',
-            'type': float,
-            'default': 0.25
-        }
+        "dataset_percentage": {
+            "description": "Tells how much data from dataset (from 0.0 to "
+            "1.0) will be used for calibration dataset",
+            "type": float,
+            "default": 0.25,
+        },
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantize_model: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantize_model: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
@@ -296,7 +296,7 @@ class TensorFlowLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.quantize_model
+            args.quantize_model,
         )
 ```
 
@@ -317,18 +317,13 @@ Usually, each class can accept multiple model input formats and provides at leas
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
 ```python test-skip
-    outputtypes = [
-        'tflite'
-    ]
+outputtypes = ["tflite"]
 ```
 
 Likewise, the list of support input formats is also organized in the same class as the `inputtypes` list:
 
 ```python test-skip
-    inputtypes = [
-        'keras',
-        'tensorflow'
-    ]
+inputtypes = ["keras", "tensorflow"]
 ```
 
 Let's update the code with supported types:
@@ -346,53 +341,47 @@ from pathlib import Path
 
 
 class TensorFlowLiteCompiler(Optimizer):
+    outputtypes = ["tflite"]
 
-    outputtypes = [
-        'tflite'
-    ]
-
-    inputtypes = [
-        'keras',
-        'tensorflow'
-    ]
+    inputtypes = ["keras", "tensorflow"]
 
     arguments_structure = {
-        'inferenceinputtype': {
-            'argparse_name': '--inference-input-type',
-            'description': 'Data type of the input layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceinputtype": {
+            "argparse_name": "--inference-input-type",
+            "description": "Data type of the input layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'inferenceoutputtype': {
-            'argparse_name': '--inference-output-type',
-            'description': 'Data type of the output layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceoutputtype": {
+            "argparse_name": "--inference-output-type",
+            "description": "Data type of the output layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'quantize_model': {
-            'argparse_name': '--quantize-model',
-            'description': 'Tells if model should be quantized',
-            'type': bool,
-            'default': False
+        "quantize_model": {
+            "argparse_name": "--quantize-model",
+            "description": "Tells if model should be quantized",
+            "type": bool,
+            "default": False,
         },
-        'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to '
-                           '1.0) will be used for calibration dataset',
-            'type': float,
-            'default': 0.25
-        }
+        "dataset_percentage": {
+            "description": "Tells how much data from dataset (from 0.0 to "
+            "1.0) will be used for calibration dataset",
+            "type": float,
+            "default": 0.25,
+        },
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantize_model: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantize_model: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
@@ -413,7 +402,7 @@ class TensorFlowLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.quantize_model
+            args.quantize_model,
         )
 ```
 
@@ -440,53 +429,52 @@ from typing import Optional, Dict, List, Literal
 
 from kenning.converters import converter_registry
 
+
 class TensorFlowLiteCompiler(Optimizer):
-    outputtypes = [
-        'mytflite'
-    ]
+    outputtypes = ["mytflite"]
 
     inputtypes = [
-        'keras',
-        'tensorflow',
+        "keras",
+        "tensorflow",
     ]
 
     arguments_structure = {
-        'inferenceinputtype': {
-            'argparse_name': '--inference-input-type',
-            'description': 'Data type of the input layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceinputtype": {
+            "argparse_name": "--inference-input-type",
+            "description": "Data type of the input layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'inferenceoutputtype': {
-            'argparse_name': '--inference-output-type',
-            'description': 'Data type of the output layer',
-            'default': 'float32',
-            'enum': ['float32', 'int8', 'uint8']
+        "inferenceoutputtype": {
+            "argparse_name": "--inference-output-type",
+            "description": "Data type of the output layer",
+            "default": "float32",
+            "enum": ["float32", "int8", "uint8"],
         },
-        'quantize_model': {
-            'argparse_name': '--quantize-model',
-            'description': 'Tells if model should be quantized',
-            'type': bool,
-            'default': False
+        "quantize_model": {
+            "argparse_name": "--quantize-model",
+            "description": "Tells if model should be quantized",
+            "type": bool,
+            "default": False,
         },
-        'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to '
-                           '1.0) will be used for calibration dataset',
-            'type': float,
-            'default': 0.25
-        }
+        "dataset_percentage": {
+            "description": "Tells how much data from dataset (from 0.0 to "
+            "1.0) will be used for calibration dataset",
+            "type": float,
+            "default": 0.25,
+        },
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantize_model: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantize_model: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
@@ -502,21 +490,22 @@ class TensorFlowLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.quantize_model
+            args.quantize_model,
         )
 
     def compile(
-            self,
-            inputmodelpath: Path,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        inputmodelpath: Path,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
 
         # load I/O specification for the model
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)
 
         # load the model using chosen input type
-        if self.inputtype == 'keras':
-            if inputmodelpath.suffix in ('.h5', '.hdf5'):
+        if self.inputtype == "keras":
+            if inputmodelpath.suffix in (".h5", ".hdf5"):
                 # Update to the newest version of Tensorflow.
                 inputmodelpath = update_h5_file(inputmodelpath)
             model = tf.keras.models.load_model(str(inputmodelpath))
@@ -528,8 +517,10 @@ class TensorFlowLiteCompiler(Optimizer):
                 def annotate_model(layer):
                     # Mark every dense layer so that it will be quantized.
                     if isinstance(layer, tf.keras.layers.Dense):
-                        return tfmot.quantization.keras.quantize_annotate_layer(
-                            layer
+                        return (
+                            tfmot.quantization.keras.quantize_annotate_layer(
+                                layer
+                            )
                         )
                     return layer
 
@@ -552,21 +543,21 @@ class TensorFlowLiteCompiler(Optimizer):
             # We need to find the converter somewhere else.
             inputtype = self.get_input_type(inputmodelpath)
             conversion_kwargs = {
-                'io_spec': io_spec_processed,
-                'target': self.target,
-                'inferenceinputtype': self.inferenceinputtype,
-                'inferenceoutputtype': self.inferenceoutputtype,
+                "io_spec": io_spec_processed,
+                "target": self.target,
+                "inferenceinputtype": self.inferenceinputtype,
+                "inferenceoutputtype": self.inferenceoutputtype,
             }
 
             # Use the converter_registry to find a converter from
             # our input type to tflite
             converter = converter_registry.convert(
-                inputmodelpath, inputtype, 'tflite', **conversion_kwargs
+                inputmodelpath, inputtype, "tflite", **conversion_kwargs
             )
 
         # compile and save the model
         tflite_model = converter.convert()
-        with open(self.compiled_model_path, 'wb') as f:
+        with open(self.compiled_model_path, "wb") as f:
             f.write(tflite_model)
 
         # update the I/O specification
@@ -575,44 +566,45 @@ class TensorFlowLiteCompiler(Optimizer):
 
         def update_io_spec(sig_det, int_det, key):
             for order, spec in enumerate(io_spec[key]):
-                old_name = spec['name']
-                new_name = sig_det[old_name]['name']
-                spec['name'] = new_name
-                spec['order'] = order
+                old_name = spec["name"]
+                new_name = sig_det[old_name]["name"]
+                spec["name"] = new_name
+                spec["order"] = order
 
-            quantized = any([det['quantization'][0] != 0 for det in int_det])
+            quantized = any([det["quantization"][0] != 0 for det in int_det])
             new_spec = []
             for det in int_det:
                 spec = [
-                    spec for spec in io_spec[key]
-                    if det['name'] == spec['name']
+                    spec
+                    for spec in io_spec[key]
+                    if det["name"] == spec["name"]
                 ][0]
 
                 if quantized:
-                    scale, zero_point = det['quantization']
-                    spec['scale'] = scale
-                    spec['zero_point'] = zero_point
-                    spec['prequantized_dtype'] = spec['dtype']
-                    spec['dtype'] = np.dtype(det['dtype']).name
+                    scale, zero_point = det["quantization"]
+                    spec["scale"] = scale
+                    spec["zero_point"] = zero_point
+                    spec["prequantized_dtype"] = spec["dtype"]
+                    spec["dtype"] = np.dtype(det["dtype"]).name
                 new_spec.append(spec)
             io_spec[key] = new_spec
 
         update_io_spec(
             signature.get_input_details(),
             interpreter.get_input_details(),
-            'input'
+            "input",
         )
         update_io_spec(
             signature.get_output_details(),
             interpreter.get_output_details(),
-            'output'
+            "output",
         )
 
         # save updated I/O specification
         self.save_io_specification(inputmodelpath, io_spec)
 
     def get_framework_and_version(self):
-        return 'tensorflow', tf.__version__
+        return "tensorflow", tf.__version__
 ```
 
 There are several important things regarding the code snippet above:
@@ -718,9 +710,10 @@ the `run` method access inputs as follows
 ```python
 from typing import Any, Dict
 
+
 def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-    input_data = inputs['frame']
-    output_data = inputs['detection_data']
+    input_data = inputs["frame"]
+    output_data = inputs["detection_data"]
     self.process_output(input_data, output_data)
 ```
 

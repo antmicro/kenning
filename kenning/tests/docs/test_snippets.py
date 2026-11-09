@@ -400,7 +400,7 @@ def get_subshell(
     # Activate virtual environment
     venv_path = working_dir / "venv"
     if not execute_script_and_wait(
-        SHELLS[markdown][_id], f'source {venv_path / "bin" / "activate"}'
+        SHELLS[markdown][_id], f"source {venv_path / 'bin' / 'activate'}"
     ):
         raise Exception("Virtual environment cannot be activated")
 
@@ -596,7 +596,7 @@ class TestDocsSnippets:
         try:
             if subshell.logfile_read:
                 subshell.logfile_read.write(
-                    f'\n\n{"-" * 32}\n\n{script}\n\n{"-" * 32}\n\n'
+                    f"\n\n{'-' * 32}\n\n{script}\n\n{'-' * 32}\n\n"
                 )
             success = execute_script_and_wait(subshell, script, timeout)
             if not success:

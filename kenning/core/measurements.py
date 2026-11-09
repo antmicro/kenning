@@ -246,9 +246,9 @@ class MeasurementsCollector(object):
             optimized_measurements = json.load(optimized_measurementsfile)
             unoptimized_measurements = json.load(unoptimized_measurementsfile)
 
-        optimized_measurements[
-            Measurements.UNOPTIMIZED
-        ] = unoptimized_measurements
+        optimized_measurements[Measurements.UNOPTIMIZED] = (
+            unoptimized_measurements
+        )
         cls._dump(optimized_measurements, optimized_measurementspath)
 
         if remove_unoptimized_measurementsfile:

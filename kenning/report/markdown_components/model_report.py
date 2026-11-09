@@ -83,7 +83,7 @@ def model_report(
     if report_path is None:
         report_path = Path(".")
 
-    KLogger.info(f'Running model_report for {measurementsdata["model_name"]}')
+    KLogger.info(f"Running model_report for {measurementsdata['model_name']}")
 
     if model_wrapper is None:
         KLogger.warn(
@@ -113,9 +113,9 @@ def model_report(
 
     measurementsdata["base model type"] = input_type
 
-    measurementsdata[
-        "framework version"
-    ] = model_wrapper.get_framework_version()
+    measurementsdata["framework version"] = (
+        model_wrapper.get_framework_version()
+    )
 
     ms = model_wrapper.get_model_size()
 
@@ -167,15 +167,13 @@ def model_report(
         dtype_str = ", ".join(sorted(dtypes)) if dtypes else "-"
         layer_count += 1
 
-        layers.append(
-            (
-                layer_count,
-                node.name or node.output[0],
-                layer_params,
-                layer_bytes,
-                dtype_str,
-            )
-        )
+        layers.append((
+            layer_count,
+            node.name or node.output[0],
+            layer_params,
+            layer_bytes,
+            dtype_str,
+        ))
 
     from kenning.core.drawing import Barplot
 

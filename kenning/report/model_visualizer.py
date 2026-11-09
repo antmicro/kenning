@@ -7,7 +7,6 @@ Module which provides specification and dataflow files for
 model visualization in pipeline-manager based on an ONNX model.
 """
 
-
 import json
 from pathlib import Path
 from typing import Optional
@@ -24,7 +23,7 @@ from pipeline_manager.specification_builder import SpecificationBuilder
 
 
 def _get_layer_information_from_onnx(
-    model: onnx.ModelProto
+    model: onnx.ModelProto,
 ) -> (list, int, list):
     """
     Extracts model information from onnx file.
@@ -101,20 +100,18 @@ def _get_layer_information_from_onnx(
             else:
                 output_count[input] = 1
         output_shape = shapes[i]
-        layers.append(
-            {
-                "number": layer_count,
-                "name": node.name or node.output[0],
-                "parameters": layer_params,
-                "bytes": layer_bytes,
-                "dtype": dtype_str,
-                "op_type": node.op_type,
-                "op_version": version,
-                "input": inputs,
-                "output": outputs,
-                "output_shape": output_shape,
-            }
-        )
+        layers.append({
+            "number": layer_count,
+            "name": node.name or node.output[0],
+            "parameters": layer_params,
+            "bytes": layer_bytes,
+            "dtype": dtype_str,
+            "op_type": node.op_type,
+            "op_version": version,
+            "input": inputs,
+            "output": outputs,
+            "output_shape": output_shape,
+        })
     inputs = []
     for input in model.graph.input:
         input_dimensions = list()

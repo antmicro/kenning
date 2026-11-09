@@ -212,12 +212,10 @@ class TestIOInterface:
 
     @pytest.mark.parametrize(
         "spec,data",
-        chain(
-            *[
-                product(specs, data)
-                for specs, data in zip(SPECS_VALID, DATA_VALID)
-            ]
-        ),
+        chain(*[
+            product(specs, data)
+            for specs, data in zip(SPECS_VALID, DATA_VALID)
+        ]),
     )
     def test_assert_data_format_valid(
         self, spec: Dict[str, List], data: List[Any]
@@ -226,12 +224,10 @@ class TestIOInterface:
 
     @pytest.mark.parametrize(
         "spec,data",
-        chain(
-            *[
-                product(specs, data)
-                for specs, data in zip(SPECS_VALID, DATA_INVALID)
-            ]
-        ),
+        chain(*[
+            product(specs, data)
+            for specs, data in zip(SPECS_VALID, DATA_INVALID)
+        ]),
     )
     def test_assert_data_format_invalid(
         self, spec: Dict[str, List], data: List[Any]

@@ -1,6 +1,7 @@
 """
 Test Kenning on multiple Python versions.
 """
+
 import os
 from glob import glob
 from pathlib import Path

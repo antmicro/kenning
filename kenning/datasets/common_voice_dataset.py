@@ -157,17 +157,15 @@ def _init_resources():
     }
     url_format = "https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz"
 
-    return Resources(
-        {
-            version: {
-                language: url_format.format(
-                    version_url=version_url, language=language
-                )
-                for language in languages
-            }
-            for version, version_url in url_per_version.items()
+    return Resources({
+        version: {
+            language: url_format.format(
+                version_url=version_url, language=language
+            )
+            for language in languages
         }
-    )
+        for version, version_url in url_per_version.items()
+    })
 
 
 class CommonVoiceDataset(Dataset):

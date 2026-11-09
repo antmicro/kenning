@@ -74,9 +74,9 @@ def comparison_classification_report(
 
     # check that each measurements have the same classes
     for data in measurementsdata:
-        assert (
-            measurementsdata[0]["class_names"] == data["class_names"]
-        ), "Invalid class names in measurements"
+        assert measurementsdata[0]["class_names"] == data["class_names"], (
+            "Invalid class names in measurements"
+        )
 
     (
         report_variables,
@@ -127,8 +127,7 @@ def comparison_classification_report(
         )
     elif skip_inference_metrics:
         KLogger.warning(
-            "No inference measurements available, "
-            "skipping report generation"
+            "No inference measurements available, skipping report generation"
         )
         return ""
 

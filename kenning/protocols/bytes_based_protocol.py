@@ -665,7 +665,7 @@ class BytesBasedProtocol(Protocol, ABC):
                     ]()
                 except Exception as e:
                     KLogger.error(
-                        "Download callback " f"raised an exception: {e}"
+                        f"Download callback raised an exception: {e}"
                     )
                     KLogger.debug(e, exc_info=e, stack_info=True)
                     self.transmit(

@@ -42,9 +42,9 @@ class TestGetUsedSubcommands:
                 [OPTIMIZE, TEST],
             ),
             (
-                argparse.Namespace(
-                    **{USED_SUBCOMMANDS: [AUTOML, OPTIMIZE, TEST, REPORT]}
-                ),
+                argparse.Namespace(**{
+                    USED_SUBCOMMANDS: [AUTOML, OPTIMIZE, TEST, REPORT]
+                }),
                 [AUTOML, OPTIMIZE, TEST, REPORT],
             ),
         ],

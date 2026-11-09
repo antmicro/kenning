@@ -24,7 +24,7 @@ DEVICE_NAMES = {"device_names": {"coralnpu": "CoralNPU"}}
 
 
 def _gather_spills_reloads(
-    data: Dict[str, Union[int, str]]
+    data: Dict[str, Union[int, str]],
 ) -> Tuple[int, int, bool, List[str], int]:
     total_spills = 0
     total_reloads = 0
@@ -194,9 +194,9 @@ def comparison_iree_compilation_report(
             ],
         ).plot(dispatch_distribution_path, image_formats)
 
-        report_variables[
-            "dispatch_distribution_path"
-        ] = get_plot_wildcard_path(dispatch_distribution_path, root_dir)
+        report_variables["dispatch_distribution_path"] = (
+            get_plot_wildcard_path(dispatch_distribution_path, root_dir)
+        )
         report_variables["dispatch_distribution_data"] = {
             "header": list(y.keys()) + ["Total"],
             "Total": list(map(sum, zip(*y.values()))),
@@ -270,9 +270,9 @@ def comparison_iree_compilation_report(
                 tooltip_additional_label="Type",
             ).plot(register_allocations_path, image_formats)
 
-            report_variables["register_allocations_path"][
-                regalloc_type
-            ] = get_plot_wildcard_path(register_allocations_path, root_dir)
+            report_variables["register_allocations_path"][regalloc_type] = (
+                get_plot_wildcard_path(register_allocations_path, root_dir)
+            )
             report_variables["register_allocations_data"][regalloc_type] = {
                 (dispatch, name): _find_dispatch(
                     allocations[i][regalloc_type]["dispatches"], dispatch
@@ -291,9 +291,9 @@ def comparison_iree_compilation_report(
                 )
             if "register_allocation_summary" not in report_variables:
                 report_variables["register_allocation_summary"] = {}
-            report_variables["register_allocation_summary"][
-                regalloc_type
-            ] = register_allocation_summary
+            report_variables["register_allocation_summary"][regalloc_type] = (
+                register_allocation_summary
+            )
         report_variables["regalloc_types"] = types
 
     if sum("compilation_duration" in data for data in iree_metadata) > 1:

@@ -42,11 +42,9 @@ class CNNDailymailDataset(Dataset):
         + "Keep the summarization concise and under thirty words."
     )
 
-    resources = Resources(
-        {
-            "cnn_dailymail": "hf://datasets/cnn_dailymail",
-        }
-    )
+    resources = Resources({
+        "cnn_dailymail": "hf://datasets/cnn_dailymail",
+    })
 
     arguments_structure = {
         "gather_predictions": {

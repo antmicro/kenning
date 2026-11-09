@@ -123,7 +123,7 @@ class ExecuTorchRuntime(Runtime):
 
         Raises
         ------
-        ModelNotPreparedError
+        ModulesIncompatibleError
             Raised if the input tensor has too many or
             too few dimensions.
         """
@@ -157,8 +157,6 @@ class ExecuTorchRuntime(Runtime):
         ------
         ModelNotLoadedError
             Raised if a PTE lacks the desired method.
-        IOSpecificationNotFoundError
-            Raised if model IO specification file could not be found.
         """
         from executorch.runtime import Verification
 

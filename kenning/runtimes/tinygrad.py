@@ -140,9 +140,9 @@ class TinygradRuntime(Runtime):
         """
         Loads metadata from json file from unpacked model file.
         """
-        assert (
-            self.workdir is not None
-        ), "Unpacking model .tar file is needed first"
+        assert self.workdir is not None, (
+            "Unpacking model .tar file is needed first"
+        )
 
         json_filename = self.model_path.with_suffix(".json").name
         with open(self.workdir / json_filename, mode="r") as f:
@@ -158,9 +158,9 @@ class TinygradRuntime(Runtime):
         Type
             model class that was loaded from unpacked model file.
         """
-        assert (
-            self.workdir is not None
-        ), "Upacking model .tar file is needed first"
+        assert self.workdir is not None, (
+            "Unpacking model .tar file is needed first"
+        )
         assert self.metadata is not None, "Loading metadata is needed first"
 
         from kenning.modelwrappers.frameworks.tinygrad import TinygradWrapper
@@ -190,9 +190,9 @@ class TinygradRuntime(Runtime):
         NotSupportedError
             Raised when loaded model_type format is not supported.
         """
-        assert (
-            self.workdir is not None
-        ), "Upacking model .tar file is needed first"
+        assert self.workdir is not None, (
+            "Unpacking model .tar file is needed first"
+        )
         assert self.metadata is not None, "loading metadata is needed first"
 
         from tinygrad.nn.state import load_state_dict, safe_load

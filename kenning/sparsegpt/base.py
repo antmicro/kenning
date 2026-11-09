@@ -372,7 +372,7 @@ class BaseSparseGPTForCausalML(nn.Module):
 
         Raises
         ------
-        Exception
+        InvalidMetadataError
             Raised if validation fails
         """
         if not (weights[metadata] == 0).all().item():
@@ -408,7 +408,9 @@ class BaseSparseGPTForCausalML(nn.Module):
         ------
         ValueError
             If the number of samples in the calibration dataset is different
-            than the number of samples specified in the pruning config
+                than the number of samples specified in the pruning config
+        Exception
+            Re-raised if running the model on calibration data fails.
         """
         use_cache = self.model.config.use_cache
         self.model.config.use_cache = False

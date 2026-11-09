@@ -404,7 +404,7 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 Optimizer parameters.
             """
             optimizer = load_class(import_path)
-            optimizer_name = f'{import_path.rsplit(".")[-1]}_{model_framework}'
+            optimizer_name = f"{import_path.rsplit('.')[-1]}_{model_framework}"
             file_name = optimizer_name + "." + filesuffix
             compiled_model_path = compiled_model_path / file_name
             self._params[optimizer_name] = (

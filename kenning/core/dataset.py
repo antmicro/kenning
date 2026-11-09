@@ -183,7 +183,7 @@ class Dataset(ArgumentsHandler, ABC):
         "split_fraction_val": {
             "argparse_name": "--split-fraction-val",
             "description": "Default fraction of data to leave for model "
-            "valdiation",
+            "validation",
             "type": float,
             "nullable": True,
             "default": None,
@@ -262,9 +262,9 @@ class Dataset(ArgumentsHandler, ABC):
             manually after initializing the dataset.
         """
         assert batch_size > 0
-        assert (
-            0 < dataset_percentage <= 1
-        ), "Percentage has to be between 0 and 1"
+        assert 0 < dataset_percentage <= 1, (
+            "Percentage has to be between 0 and 1"
+        )
         self.root = Path(root)
         self._dataindex = 0
         self._dataindices = []

@@ -148,7 +148,7 @@ def get_moe_quant_method(  # noqa: D103
             cloned_config,
             layer_name=prefix,
         )
-        == False  # noqa: E712
+        is False
     ):
         return UnquantizedFusedMoEMethod(layer.moe_config)
 
@@ -692,9 +692,9 @@ class AutoGPTQMoEMethod(FusedMoEMethodBase):
         )
 
         if is_a_8bit:
-            assert (
-                self.quant_config.quant_type.size_bits == 8
-            ), "W8A8-INT8 is not supported by marlin kernel."
+            assert self.quant_config.quant_type.size_bits == 8, (
+                "W8A8-INT8 is not supported by marlin kernel."
+            )
 
         intermediate_size_full = extra_weight_attrs.pop(
             "intermediate_size_full"
@@ -721,9 +721,10 @@ class AutoGPTQMoEMethod(FusedMoEMethodBase):
         layer.num_groups_w13 = scales_size13
         layer.num_groups_w2 = scales_size2
 
-        extra_weight_attrs.update(
-            {"quant_method": strategy, "is_transposed": True}
-        )
+        extra_weight_attrs.update({
+            "quant_method": strategy,
+            "is_transposed": True,
+        })
         # Fused gate_up_proj (column parallel)
         w13_qweight = torch.nn.Parameter(
             torch.empty(
@@ -891,9 +892,9 @@ class AutoGPTQMoEMethod(FusedMoEMethodBase):
             self.input_dtype is not None and self.input_dtype.itemsize == 1
         )
 
-        assert (
-            not is_a_8bit or self.quant_config.quant_type.size_bits == 8
-        ), "W8A8-INT8 is not supported by marlin kernel."
+        assert not is_a_8bit or self.quant_config.quant_type.size_bits == 8, (
+            "W8A8-INT8 is not supported by marlin kernel."
+        )
 
         w13_bias = getattr(layer, "w13_bias", None)
         if "w13_bias" not in layer._loaded_expert_biases:

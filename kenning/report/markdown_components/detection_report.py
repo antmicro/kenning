@@ -79,7 +79,7 @@ def detection_report(
     )
 
     KLogger.info(
-        f'Running detection report for {measurementsdata["model_name"]}'
+        f"Running detection report for {measurementsdata['model_name']}"
     )
     metrics = compute_detection_metrics(measurementsdata)
     measurementsdata |= metrics

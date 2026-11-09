@@ -139,7 +139,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
-            # is not writeable, which breaks output postprocessing.
+            # is not writable, which breaks output postprocessing.
             outputtensor = np.array(
                 np.frombuffer(output_data[:tensorsize], dtype=dtype)
             ).reshape(shape)

@@ -6,7 +6,6 @@
 Module used for classification report generation.
 """
 
-
 from importlib.resources import path
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -64,8 +63,8 @@ def classification_report(
     from kenning.core.drawing import Barplot, ConfusionMatrixPlot
 
     KLogger.info(
-        f'Running classification report for \
-        {measurementsdata["model_name"]}'
+        f"Running classification report for \
+        {measurementsdata['model_name']}"
     )
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics

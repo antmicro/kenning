@@ -65,12 +65,10 @@ class ROS2SegmentationDataProvider(ROS2CameraNodeDataProvider):
 
         for i in range(len(segmentation.classes)):
             mask = np.frombuffer(segmentation.masks[i].data, dtype=np.uint8)
-            mask = mask.reshape(
-                (
-                    segmentation.masks[i].dimension[0],
-                    segmentation.masks[i].dimension[1],
-                )
-            )
+            mask = mask.reshape((
+                segmentation.masks[i].dimension[0],
+                segmentation.masks[i].dimension[1],
+            ))
 
             segm = SegmObject(
                 clsname=segmentation.classes[i],

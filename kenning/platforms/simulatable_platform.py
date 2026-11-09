@@ -378,8 +378,7 @@ class SimulatablePlatform(Platform, ABC):
         if self.simulated:
             self.machine.load_elf(str(binary_path.expanduser()))
 
-    def _init_hardware(self):
-        ...
+    def _init_hardware(self): ...
 
     def _init_renode(self):
         """

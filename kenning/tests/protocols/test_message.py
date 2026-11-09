@@ -69,158 +69,146 @@ class TestMessage:
         [
             # Valid transmission message with byte payload.
             (
-                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xc0\x45\x2d\xe0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 1,
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 1,
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 17,
                 True,
             ),
             # Transmission message with byte payload, with invalid checksum.
             (
-                b"\x07\x00\x00\x00\xC0\x47\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xc0\x47\x2d\xe0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 1,
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 1,
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 17,
                 False,
             ),
             # Transmission message with a single bit error in the payload
             (
-                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x02\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xc0\x45\x2d\xe0\x05\x00\x00\x00\x01\x02\x02\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x02\x04\x05",  # Error in the 3rd byte
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 1,
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 1,
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 17,
                 False,
             ),
             # Transmission message with an error in message identifier
             (
-                b"\x0F\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x0f\x00\x00\x00\xc0\x45\x2d\xe0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     None,  # Error in message type
                     b"\x01\x02\x03\x04\x05",
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 1,
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 1,
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 17,
                 False,
             ),
             # Transmission message with an error in flags
             (
-                b"\x07\x00\x00\x00\xC0\x45\x2C\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xc0\x45\x2c\xe0\x05\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05",
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 0,  # Error in the flag
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 0,  # Error in the flag
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 17,
                 False,
             ),
             # Transmission message with an error in the size field
             (
-                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x07\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xC0\x44\x40\x00\x10\x01\x56\x89\xC0",
+                b"\x07\x00\x00\x00\xc0\x45\x2d\xe0\x07\x00\x00\x00\x01\x02\x03\x04\x05\x44\x40\x00\x10\x01\x56\x89\xc0\x44\x40\x00\x10\x01\x56\x89\xc0",
                 Message(
                     MessageType.IO_SPEC,
                     b"\x01\x02\x03\x04\x05\x44\x40",
                     FlowControlFlags.TRANSMISSION,
-                    Flags(
-                        {
-                            FlagName.SUCCESS: 1,
-                            FlagName.FAIL: 0,
-                            FlagName.IS_HOST_MESSAGE: 1,
-                            FlagName.FIRST: 0,
-                            FlagName.LAST: 1,
-                            FlagName.SPEC_FLAG_1: 0,
-                            FlagName.SPEC_FLAG_2: 1,
-                            FlagName.SPEC_FLAG_3: 1,
-                            FlagName.SPEC_FLAG_4: 1,
-                        }
-                    ),
+                    Flags({
+                        FlagName.SUCCESS: 1,
+                        FlagName.FAIL: 0,
+                        FlagName.IS_HOST_MESSAGE: 1,
+                        FlagName.FIRST: 0,
+                        FlagName.LAST: 1,
+                        FlagName.SPEC_FLAG_1: 0,
+                        FlagName.SPEC_FLAG_2: 1,
+                        FlagName.SPEC_FLAG_3: 1,
+                        FlagName.SPEC_FLAG_4: 1,
+                    }),
                 ),
                 19,
                 False,
             ),
             # Too short bytestream - message with payload
             (
-                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02",
+                b"\x07\x00\x00\x00\xc0\x45\x2d\xe0\x05\x00\x00\x00\x01\x02",
                 None,
                 0,
                 None,
             ),
             # Too short bytestream - message without
             (
-                b"\x05\x00\x00\x00\xC0\xCF\x21\x60\x00\x00\x00",
+                b"\x05\x00\x00\x00\xc0\xcf\x21\x60\x00\x00\x00",
                 None,
                 0,
                 None,
@@ -235,7 +223,7 @@ class TestMessage:
         ) = Message.from_bytes(bytestream)
         assert size == deserialized_size
         assert valid_checkusm == deserialized_valid_checksum
-        assert type(message) == type(deserialized_message)
+        assert type(message) is type(deserialized_message)
         if type(message) is Message:
             assert message.message_type == deserialized_message.message_type
             assert (
@@ -254,20 +242,18 @@ class TestMessage:
                 MessageType.IO_SPEC,
                 b"\x01\x02\x03\x04\x05",
                 FlowControlFlags.TRANSMISSION,
-                Flags(
-                    {
-                        FlagName.SUCCESS: 1,
-                        FlagName.FAIL: 0,
-                        FlagName.IS_HOST_MESSAGE: 1,
-                        FlagName.FIRST: 0,
-                        FlagName.LAST: 1,
-                        FlagName.SPEC_FLAG_1: 0,
-                        FlagName.SPEC_FLAG_2: 1,
-                        FlagName.SPEC_FLAG_3: 1,
-                        FlagName.SPEC_FLAG_4: 1,
-                    }
-                ),
-                b"\x07\x00\x00\x00\xC0\x45\x2D\xE0\x05\x00\x00\x00\x01\x02\x03\x04\x05",
+                Flags({
+                    FlagName.SUCCESS: 1,
+                    FlagName.FAIL: 0,
+                    FlagName.IS_HOST_MESSAGE: 1,
+                    FlagName.FIRST: 0,
+                    FlagName.LAST: 1,
+                    FlagName.SPEC_FLAG_1: 0,
+                    FlagName.SPEC_FLAG_2: 1,
+                    FlagName.SPEC_FLAG_3: 1,
+                    FlagName.SPEC_FLAG_4: 1,
+                }),
+                b"\x07\x00\x00\x00\xc0\x45\x2d\xe0\x05\x00\x00\x00\x01\x02\x03\x04\x05",
                 does_not_raise(),
             ),
             # Valid TRANSMISSION message without payload
@@ -275,20 +261,18 @@ class TestMessage:
                 MessageType.OUTPUT,
                 None,
                 FlowControlFlags.TRANSMISSION,
-                Flags(
-                    {
-                        FlagName.SUCCESS: 1,
-                        FlagName.FAIL: 0,
-                        FlagName.IS_HOST_MESSAGE: 0,
-                        FlagName.FIRST: 0,
-                        FlagName.LAST: 1,
-                        FlagName.SPEC_FLAG_1: 0,
-                        FlagName.SPEC_FLAG_2: 1,
-                        FlagName.SPEC_FLAG_3: 1,
-                        FlagName.SPEC_FLAG_4: 0,
-                    }
-                ),
-                b"\x05\x00\x00\x00\xC0\xCF\x21\x60\x00\x00\x00\x00",
+                Flags({
+                    FlagName.SUCCESS: 1,
+                    FlagName.FAIL: 0,
+                    FlagName.IS_HOST_MESSAGE: 0,
+                    FlagName.FIRST: 0,
+                    FlagName.LAST: 1,
+                    FlagName.SPEC_FLAG_1: 0,
+                    FlagName.SPEC_FLAG_2: 1,
+                    FlagName.SPEC_FLAG_3: 1,
+                    FlagName.SPEC_FLAG_4: 0,
+                }),
+                b"\x05\x00\x00\x00\xc0\xcf\x21\x60\x00\x00\x00\x00",
                 does_not_raise(),
             ),
             # Invalid message (non-serialized payload)
@@ -296,20 +280,18 @@ class TestMessage:
                 MessageType.OUTPUT,
                 31,
                 FlowControlFlags.REQUEST_RETRANSMIT,
-                Flags(
-                    {
-                        FlagName.SUCCESS: 1,
-                        FlagName.FAIL: 0,
-                        FlagName.IS_HOST_MESSAGE: 0,
-                        FlagName.FIRST: 0,
-                        FlagName.LAST: 1,
-                        FlagName.SPEC_FLAG_1: 0,
-                        FlagName.SPEC_FLAG_2: 1,
-                        FlagName.SPEC_FLAG_3: 1,
-                        FlagName.SPEC_FLAG_4: 1,
-                    }
-                ),
-                b"\x05\x00\x00\x00\x40\xD0\x21\xE0\x1F\x00\x00\x00",
+                Flags({
+                    FlagName.SUCCESS: 1,
+                    FlagName.FAIL: 0,
+                    FlagName.IS_HOST_MESSAGE: 0,
+                    FlagName.FIRST: 0,
+                    FlagName.LAST: 1,
+                    FlagName.SPEC_FLAG_1: 0,
+                    FlagName.SPEC_FLAG_2: 1,
+                    FlagName.SPEC_FLAG_3: 1,
+                    FlagName.SPEC_FLAG_4: 1,
+                }),
+                b"\x05\x00\x00\x00\x40\xd0\x21\xe0\x1f\x00\x00\x00",
                 pytest.raises(ValueError),
             ),
         ],
@@ -329,7 +311,7 @@ class TestMessage:
             deserialized_message, size, checksum_valid = Message.from_bytes(
                 serialized_message
             )
-            assert Message == type(deserialized_message)
+            assert Message is type(deserialized_message)
             if flags.has_payload:
                 assert len(payload) + HEADER_SIZE == size
             else:

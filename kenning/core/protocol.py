@@ -46,7 +46,7 @@ def check_request(
 
     Raises
     ------
-    RequestFailure :
+    RequestFailure
         Raised when the request did not finish successfully.
     """
     if isinstance(request, bool):

@@ -124,7 +124,7 @@ class ONNXYOLOV4(YOLOWrapper):
         outputs : List
             One batch of YOLO network output of type torch.Tensor
         target : List[List[DetectObject]]
-            True bounding boxes of object on precessed image
+            True bounding boxes of object on processed image
         eps : float
             Epsilon to prevent dividing by 0
 

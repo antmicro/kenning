@@ -102,7 +102,7 @@ class QuantLinear(nn.Module):
 
         Raises
         ------
-        NotImplementedError
+        NotSupportedError
             Raised if the parameters passed to the constructor are invalid.
         """
         super().__init__()

@@ -6,7 +6,6 @@
 Enables loading of Darknet model and conversion to other formats.
 """
 
-
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from kenning.core.converter import ModelConverter
@@ -113,9 +112,9 @@ class DarknetConverter(ModelConverter):
             Raised when libdarknet shared library cannot be loaded.
         IndexError
             Raised when no dtype is provided in the IO specification.
-        IOSpecificationNotFoundError
-            Raised if input specification is not provided.
-        """
+        ValueError
+            Raised if no shapes provided in the input specification.
+        """  # noqa: DOC503
         import tvm.relay as relay
 
         input_shapes = {

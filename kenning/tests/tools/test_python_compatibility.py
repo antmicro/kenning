@@ -62,9 +62,9 @@ def cases():
 @pytest.mark.parametrize(("version", "extra"), list(cases()))
 def test_extra_resolves(version: str, extra: str):
     requirements = EXTRAS[extra]
-    assert not is_untested(
-        requirements, EXTRAS[PROJECT.name], version
-    ), f"No package of {extra} has a requirement for Python {version}"
+    assert not is_untested(requirements, EXTRAS[PROJECT.name], version), (
+        f"No package of {extra} has a requirement for Python {version}"
+    )
 
     error = uv_resolve(
         PYPROJECT, version, extra=None if extra == PROJECT.name else extra

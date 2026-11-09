@@ -253,13 +253,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.dataset,
             self,
             self.device,
-            transform=transforms.Compose(
-                [
-                    transforms.ColorJitter(0.1, 0.1),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.Normalize(mean, std),
-                ]
-            ),
+            transform=transforms.Compose([
+                transforms.ColorJitter(0.1, 0.1),
+                transforms.RandomHorizontalFlip(),
+                transforms.Normalize(mean, std),
+            ]),
         )
 
         validdat = PetDatasetPytorch(
@@ -268,13 +266,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.dataset,
             self,
             self.device,
-            transform=transforms.Compose(
-                [
-                    transforms.ColorJitter(0.1, 0.1),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.Normalize(mean, std),
-                ]
-            ),
+            transform=transforms.Compose([
+                transforms.ColorJitter(0.1, 0.1),
+                transforms.RandomHorizontalFlip(),
+                transforms.Normalize(mean, std),
+            ]),
         )
 
         trainloader = torch.utils.data.DataLoader(

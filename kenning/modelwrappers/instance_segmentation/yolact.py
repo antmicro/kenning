@@ -67,13 +67,15 @@ def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:
     )
 
     rows = (
-        np.arange(w, dtype=x1.dtype)
+        np
+        .arange(w, dtype=x1.dtype)
         .reshape(1, -1, 1)
         .repeat(h, axis=0)
         .repeat(n, axis=2)
     )
     cols = (
-        np.arange(h, dtype=x1.dtype)
+        np
+        .arange(h, dtype=x1.dtype)
         .reshape(-1, 1, 1)
         .repeat(w, axis=1)
         .repeat(n, axis=2)
@@ -381,7 +383,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
-            # is not writeable, which breaks output postprocessing.
+            # is not writable, which breaks output postprocessing.
             outputtensor = np.array(
                 np.frombuffer(outputdata[:tensorsize], dtype=dtype)
             ).reshape(shape)
@@ -532,7 +534,7 @@ class YOLACT(YOLACTWrapper):
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
-            # is not writeable, which breaks output postprocessing.
+            # is not writable, which breaks output postprocessing.
             outputtensor = np.array(
                 np.frombuffer(outputdata[:tensorsize], dtype=dtype)
             ).reshape(shape)

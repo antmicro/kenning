@@ -48,11 +48,11 @@ The following parameters are available based on the argument specification:
 ```python test-skip
 # this argument structure is taken from kenning.core.model - it is inherited by child classes
 arguments_structure = {
-    'modelpath': {
-        'argparse_name': '--model-path',
-        'description': 'Path to the model',
-        'type': Path,
-        'required': True
+    "modelpath": {
+        "argparse_name": "--model-path",
+        "description": "Path to the model",
+        "type": Path,
+        "required": True,
     }
 }
 ```
@@ -65,36 +65,36 @@ The `dataset` used here, is `PetDataset`. Like previously, it is provided in a m
 ```python test-skip
 arguments_structure = {
     # coming from kenning.core.dataset.Dataset
-    'root': {
-        'argparse_name': '--dataset-root',
-        'description': 'Path to the dataset directory',
-        'type': Path,
-        'required': True
+    "root": {
+        "argparse_name": "--dataset-root",
+        "description": "Path to the dataset directory",
+        "type": Path,
+        "required": True,
     },
-    'batch_size': {
-        'argparse_name': '--inference-batch-size',
-        'description': 'The batch size for providing the input data',
-        'type': int,
-        'default': 1
+    "batch_size": {
+        "argparse_name": "--inference-batch-size",
+        "description": "The batch size for providing the input data",
+        "type": int,
+        "default": 1,
     },
-    'download_dataset': {
-        'description': 'Downloads the dataset before taking any action',
-        'type': bool,
-        'default': False
+    "download_dataset": {
+        "description": "Downloads the dataset before taking any action",
+        "type": bool,
+        "default": False,
     },
     # coming from kenning.datasets.pet_dataset.PetDataset
-    'classify_by': {
-        'argparse_name': '--classify-by',
-        'description': 'Determines if classification should be performed by species or by breeds',
-        'default': 'breeds',
-        'enum': ['species', 'breeds']
+    "classify_by": {
+        "argparse_name": "--classify-by",
+        "description": "Determines if classification should be performed by species or by breeds",
+        "default": "breeds",
+        "enum": ["species", "breeds"],
     },
-    'image_memory_layout': {
-        'argparse_name': '--image-memory-layout',
-        'description': 'Determines if images should be delivered in NHWC or NCHW format',
-        'default': 'NHWC',
-        'enum': ['NHWC', 'NCHW']
-    }
+    "image_memory_layout": {
+        "argparse_name": "--image-memory-layout",
+        "description": "Determines if images should be delivered in NHWC or NCHW format",
+        "default": "NHWC",
+        "enum": ["NHWC", "NCHW"],
+    },
 }
 ```
 

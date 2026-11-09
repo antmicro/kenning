@@ -5,6 +5,7 @@
 """
 Module for preparing and serializing class arguments.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -210,7 +211,7 @@ def convert(converters: Iterable[Callable], v: Any) -> Any:
     Parameters
     ----------
     converters : Iterable[Callable]
-        List of convertes.
+        List of converters.
     v : Any
         Value to be converted.
 
@@ -431,7 +432,7 @@ def add_parameterschema_argument(
 
     Raises
     ------
-    KeyError :
+    KeyError
         Raised if there is a keyword that is not recognized or if there is
         already a property with a different `argparse_name` and the same
         property name.
@@ -611,8 +612,10 @@ class ArgumentsHandler(ABC):
 
         Raises
         ------
-        KeyError :
+        KeyError
             Raised if there is a keyword that is not recognized.
+        InvalidArgumentsError
+            Raised if the argument definition is invalid.
         """
         from kenning.cli.config import AVAILABLE_COMMANDS
 
@@ -823,6 +826,8 @@ class ArgumentsHandler(ABC):
 
         Raises
         ------
+        ArgsManagerConvertError
+            Raised if the value cannot be converted to the target type.
         ValueError
             Casting is not possible.
         """
@@ -851,17 +856,13 @@ class ArgumentsHandler(ABC):
             # corresponding type. Otherwise we assume that the entire type
             # applies to every item separately (e.g. List[str] vs
             # Tuple[int, str])
-            return type(value)(
-                [
-                    cls.cast_complex_type(
-                        value[i],
-                        subtypes[i]
-                        if len(subtypes) == len(value)
-                        else subtypes,
-                    )
-                    for i in range(len(value))
-                ]
-            )
+            return type(value)([
+                cls.cast_complex_type(
+                    value[i],
+                    subtypes[i] if len(subtypes) == len(value) else subtypes,
+                )
+                for i in range(len(value))
+            ])
         if type(target_type) is tuple:
             target_type = target_type[0]
         if type(value) is target_type:

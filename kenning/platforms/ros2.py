@@ -6,7 +6,6 @@
 Provides a wrapper for ROS2 inference.
 """
 
-
 from kenning.core.platform import Platform
 
 

@@ -92,9 +92,10 @@ class TinygradImageNet(TinygradWrapper):
         self.outputshape = [inputshape[0], numclasses]
 
         if dataset and dataset.batch_size != self.inputshape[0]:
-            raise ParametersMismatchError(
-                ["dataset.batch_size", "modelwrapper.inputshape[0]"]
-            )
+            raise ParametersMismatchError([
+                "dataset.batch_size",
+                "modelwrapper.inputshape[0]",
+            ])
 
     @classmethod
     def _get_io_specification(

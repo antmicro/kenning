@@ -9,7 +9,6 @@ when it gets too slow. If this test fails, consider lazy loading heavy
 packages.
 """
 
-
 import json
 import subprocess
 import sys

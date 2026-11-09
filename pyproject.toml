@@ -291,10 +291,12 @@ allow-init-docstring = true
 exclude = 'kenning/tests|kenning/utils/sphinx_html_as_figure.py'
 quiet = true
 check-return-types = true
+check-class-attributes = false
 
 [tool.ruff]
 preview = true
 line-length = 79
+[tool.ruff.lint]
 select = [
     "I",      # enable isort
     "D",      # docstring errors
@@ -316,13 +318,13 @@ ignore = [
     "D407",  # Missing argument description in the docstring (handled by pydoclint)
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 extra-standard-library = ["pathlib"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.ruff.extend-per-file-ignores]
+[tool.ruff.lint.extend-per-file-ignores]
 "setup.py" = ["D100"]
 "kenning/tests/*" = ["D100", "D101", "D103"]
 
@@ -380,6 +382,11 @@ ignore_errors = true
 
 [tool.coverage.html]
 directory = "docs/source/generated/coverage"
+
+[tool.typos.default.extend-words]
+thr = "thr"
+setp = "setp"
+yhat = "yhat"
 
 [tool.typos.default.extend-identifiers]
 __Pyx_LocalBuf_ND = "__Pyx_LocalBuf_ND"

@@ -155,9 +155,14 @@ class AnomalyDetectionDataset(Dataset):
         **kwargs: Any
             Extra args passed into the `Dataset` superclass.
         """
-        assert (
-            label_type in ["last_timestep", "any_timestep", "per_timestep"]
-        ), "label_type must be one of last_timestep, any_timestep, per_timestep."  # noqa: E501
+        assert label_type in [
+            "last_timestep",
+            "any_timestep",
+            "per_timestep",
+        ], (
+            "label_type must be one of last_timestep, any_timestep, "
+            "per_timestep."
+        )
 
         self.csv_file = csv_file
         if not isinstance(self.csv_file, ResourceURI):

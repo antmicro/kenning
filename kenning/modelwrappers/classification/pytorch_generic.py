@@ -22,7 +22,7 @@ from kenning.utils.resource_manager import PathOrURI
 
 class PyTorchGenericClassification(PyTorchWrapper):
     """
-    Wrapper for generic PyTorch classfication models.
+    Wrapper for generic PyTorch classification models.
     """
 
     arguments_structure = {
@@ -310,12 +310,9 @@ class PyTorchGenericClassification(PyTorchWrapper):
         import torch
 
         self.prepare_model()
-        y = self.model(
-            *[
-                torch.tensor(x, device=self.device, dtype=torch.float32)
-                for x in X
-            ]
-        )
+        y = self.model(*[
+            torch.tensor(x, device=self.device, dtype=torch.float32) for x in X
+        ])
         if not isinstance(y, (list, tuple)):
             y = [y]
         return [_y.detach().cpu().numpy() for _y in y]

@@ -154,9 +154,9 @@ class PipelineRunner(object):
         if self.dataconverter is None:
             self.dataconverter = ModelWrapperDataConverter(self.model_wrapper)
 
-        assert (
-            self.model_wrapper or self.dataconverter
-        ), "Provide either dataconverter or model_wrapper."
+        assert self.model_wrapper or self.dataconverter, (
+            "Provide either dataconverter or model_wrapper."
+        )
 
         if self.model_wrapper:
             self.model_wrapper.read_platform(self.platform)
@@ -336,6 +336,8 @@ class PipelineRunner(object):
         ------
         ValueError
             Raised when invalid values are provided.
+        Exception
+            Re-raised if running the inference loop fails.
         """
         if output is None:
             output = self.output
@@ -591,11 +593,11 @@ class PipelineRunner(object):
 
         Raises
         ------
-        ValueError :
+        ValueError
             Model wrapper is missing.
-        KenningOptimizerError :
+        KenningOptimizerError
             Failed to upload optimizer configuration.
-        CompilationError :
+        CompilationError
             Model Compilation failed.
         """
         if not run_optimization:
@@ -843,7 +845,7 @@ class PipelineRunner(object):
 
         Raises
         ------
-        ValueError :
+        ConfigurationError
             Raised if blocks are incompatible.
         """
         chain = [model_wrapper] + optimizers

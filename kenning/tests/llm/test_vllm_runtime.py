@@ -6,7 +6,6 @@
 Test code for checking sanity of LLM optimizers and vLLM compatibility.
 """
 
-
 import pytest
 
 from kenning.tests.core.conftest import remove_file_or_dir

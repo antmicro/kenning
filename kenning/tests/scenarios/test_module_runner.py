@@ -76,6 +76,6 @@ class TestModuleRunner:
         ModuleRunner.run(args)
 
         mock_wait.assert_called_once()
-        mock_module_cls.build_from_config.assert_called_once_with(
-            {"key": "value"}
-        )
+        mock_module_cls.build_from_config.assert_called_once_with({
+            "key": "value"
+        })

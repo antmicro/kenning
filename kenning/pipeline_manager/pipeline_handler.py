@@ -104,7 +104,7 @@ class PipelineHandler(BaseDataflowHandler):
 
             Raises
             ------
-            VisualEditorGraphParserError:
+            VisualEditorGraphParserError
                 Raised when provided node type is not available.
             """
             *_, kenning_name = kenning_block["type"].rsplit(".", 1)
@@ -198,7 +198,7 @@ class PipelineHandler(BaseDataflowHandler):
                                 self.pm_graph.nodes[oid]["name"],
                             )
                         )
-                        corelation = next(
+                        correlation = next(
                             (
                                 i
                                 for i, (char1, char2) in bundle
@@ -206,7 +206,7 @@ class PipelineHandler(BaseDataflowHandler):
                             ),
                             None,
                         )
-                        if corelation > 2:
+                        if correlation > 2:
                             self.pm_graph.create_connection(oid, id)
                     iter += 1
             else:

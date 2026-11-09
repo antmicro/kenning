@@ -276,7 +276,7 @@ def get_unaffiliated_parameter_from_config_dict(
 
 
 def argparse_to_config_dict(
-    args: argparse.Namespace
+    args: argparse.Namespace,
 ) -> KenningBlockConfigDict:
     """
     Builds a config dict from an argparse.Namespace, containing
@@ -354,9 +354,9 @@ def yaml_or_json_to_config_dict(config: Dict) -> KenningBlockConfigDict:
                 BLOCK_CONFIG_PARAMETERS_KEY: block_parameters,
                 BLOCK_DIRECT_ARGUMENTS_KEY: {},
             }
-            result[BLOCK_CONFIGURATIONS_KEY][
-                block_type.value
-            ] = final_block_configs
+            result[BLOCK_CONFIGURATIONS_KEY][block_type.value] = (
+                final_block_configs
+            )
     return result
 
 
@@ -382,7 +382,7 @@ def block_parameters_to_config_dict(
     Returns
     -------
     KenningBlockConfigDict
-        Kenning config dict, containing thr given configuration for the given
+        Kenning config dict, containing the given configuration for the given
         block.
     """
     return {
@@ -414,7 +414,7 @@ def get_empty_config_dict() -> KenningBlockConfigDict:
 
 
 def merge_config_dicts(
-    *dicts: List[KenningBlockConfigDict]
+    *dicts: List[KenningBlockConfigDict],
 ) -> KenningBlockConfigDict:
     """
     Merges multiple config dicts.
@@ -529,9 +529,9 @@ def apply_default_blocks_by_block_type(
             None in block_configurations[block_type]
             and default_block not in block_configurations[block_type]
         ):
-            block_configurations[block_type][
-                default_block
-            ] = block_configurations[block_type][None]
+            block_configurations[block_type][default_block] = (
+                block_configurations[block_type][None]
+            )
             del block_configurations[block_type][None]
 
 
@@ -582,6 +582,6 @@ def set_block_direct_argument(
     for block_parameters in config[BLOCK_CONFIGURATIONS_KEY][
         block_type
     ].values():
-        block_parameters[BLOCK_DIRECT_ARGUMENTS_KEY][
-            argument_name
-        ] = argument_value
+        block_parameters[BLOCK_DIRECT_ARGUMENTS_KEY][argument_name] = (
+            argument_value
+        )

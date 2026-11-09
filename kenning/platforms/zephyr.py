@@ -60,13 +60,11 @@ def _prepare_traces(
     if last_optimizer:
         prepare_cmd.extend(last_optimizer.zpl_prepare_cmd_flags())
 
-    prepare_cmd.extend(
-        [
-            "-o",
-            str(prepare_output_path),
-            str(prepare_input_path),
-        ]
-    )
+    prepare_cmd.extend([
+        "-o",
+        str(prepare_output_path),
+        str(prepare_input_path),
+    ])
 
     KLogger.info("Traces conversion started.")
 

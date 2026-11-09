@@ -140,35 +140,29 @@ def prepare_objects(
             protocol = protocol_factory(
                 output_layer["shape"], output_layer["dtype"]
             )
-            loop_kwargs.update(
-                {
-                    "model_path": str(model.model_path),
-                    "protocol": protocol,
-                }
-            )
+            loop_kwargs.update({
+                "model_path": str(model.model_path),
+                "protocol": protocol,
+            })
         elif inference_loop_cls is AnomalyDetectionInferenceLoop:
             protocol = protocol_factory(
                 output_layer["shape"], output_layer["dtype"]
             )
             platform = platform_factory(platform_name, SimulatablePlatform)
-            loop_kwargs.update(
-                {
-                    "platform": platform,
-                    "protocol": protocol,
-                }
-            )
+            loop_kwargs.update({
+                "platform": platform,
+                "protocol": protocol,
+            })
 
         elif inference_loop_cls is (SensorRealtimeInferenceLoop):
             protocol = protocol_factory(
                 output_layer["shape"], output_layer["dtype"]
             )
             platform = platform_factory(platform_name, ZephyrPlatform)
-            loop_kwargs.update(
-                {
-                    "platform": platform,
-                    "protocol": protocol,
-                }
-            )
+            loop_kwargs.update({
+                "platform": platform,
+                "protocol": protocol,
+            })
 
         inference_loop = inference_loop_cls(**loop_kwargs)
         yield dataset, inference_loop

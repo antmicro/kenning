@@ -190,15 +190,13 @@ class AutoPyTorchModel(AutoMLModel):
             )
         ]
 
-        cs.add_forbidden_clauses(
-            [
-                CS.ForbiddenAndConjunction(
-                    network_back,
-                    clause,
-                )
-                for clause in clauses
-            ]
-        )
+        cs.add_forbidden_clauses([
+            CS.ForbiddenAndConjunction(
+                network_back,
+                clause,
+            )
+            for clause in clauses
+        ])
         return cs
 
     @classmethod
@@ -255,12 +253,14 @@ class AutoPyTorchModel(AutoMLModel):
 
         Raises
         ------
+        ModelClassNotValidError
+            If the model class is not valid.
         ValueError
             If config requaries for model is missing.
         """
-        assert (
-            input_shape is not None
-        ), "AutoPyTorch has not provided input shape"
+        assert input_shape is not None, (
+            "AutoPyTorch has not provided input shape"
+        )
 
         from torch.nn import Sequential, Unflatten
 
@@ -400,15 +400,15 @@ class AutoPyTorchModel(AutoMLModel):
                 "define_forbidden_clauses": staticmethod(
                     cls.define_forbidden_clauses
                 ),
-                "build_backbone": lambda self,
-                *args,
-                **kwargs: cls.build_backbone(
-                    self,
-                    *args,
-                    **kwargs,
-                    dataset=dataset,
-                    platform=platform,
-                    processed_input=processed_input,
+                "build_backbone": lambda self, *args, **kwargs: (
+                    cls.build_backbone(
+                        self,
+                        *args,
+                        **kwargs,
+                        dataset=dataset,
+                        platform=platform,
+                        processed_input=processed_input,
+                    )
                 ),
                 "get_properties": staticmethod(cls.get_properties),
             }
@@ -692,23 +692,21 @@ class AutoPyTorchML(AutoML):
             callback_max_samples=callback_max_samples,
             seed=seed,
         )
-        assert all(
-            [
-                issubclass(model, AutoPyTorchModel)
-                and issubclass(model, PyTorchWrapper)
-                for model in self.use_models
-            ]
-        ), (
+        assert all([
+            issubclass(model, AutoPyTorchModel)
+            and issubclass(model, PyTorchWrapper)
+            for model in self.use_models
+        ]), (
             "All provided classes in `use_models` have to "
             f"inherit from {AutoPyTorchModel.__name__} "
             f"and {PyTorchWrapper.__name__}"
         )
-        assert (
-            budget_type in BUDGET_TYPES
-        ), f"Budget has to be one of {BUDGET_TYPES}"
-        assert (
-            callback_max_samples > 0
-        ), "`callback_max_samples` has to be greater than 0"
+        assert budget_type in BUDGET_TYPES, (
+            f"Budget has to be one of {BUDGET_TYPES}"
+        )
+        assert callback_max_samples > 0, (
+            "`callback_max_samples` has to be greater than 0"
+        )
 
         self.use_models: List[AutoPyTorchModel]
         self.max_memory_usage = max_memory_usage
@@ -793,9 +791,9 @@ class AutoPyTorchML(AutoML):
         self._prepared = True
 
     def search(self):
-        assert (
-            self._prepared
-        ), "`search` has to be called after `prepare_framework`"
+        assert self._prepared, (
+            "`search` has to be called after `prepare_framework`"
+        )
 
         autoPyTorch_tmp_dir = self.output_directory / "_autoPyTorch_tmp"
         if autoPyTorch_tmp_dir.exists():
@@ -958,15 +956,13 @@ class AutoPyTorchML(AutoML):
                                         "`end_epoch` received before `start_epoch`"  # noqa: E501
                                     )
                                     continue
-                                training_epochs[num_run].append(
-                                    {
-                                        "epoch_range": (
-                                            start_epoch,
-                                            int(e_val.simple_value),
-                                        ),
-                                        "end_time": event.wall_time,
-                                    }
-                                )
+                                training_epochs[num_run].append({
+                                    "epoch_range": (
+                                        start_epoch,
+                                        int(e_val.simple_value),
+                                    ),
+                                    "end_time": event.wall_time,
+                                })
                                 start_epoch = None
                             elif e_val.tag.startswith(model_prefix):
                                 v = e_val.simple_value
@@ -982,15 +978,13 @@ class AutoPyTorchML(AutoML):
                         # Add missing epoch range
                         # if the end_epoch was not received
                         if start_epoch:
-                            training_epochs[num_run].append(
-                                {
-                                    "epoch_range": (
-                                        start_epoch,
-                                        float("inf"),
-                                    ),
-                                    "end_time": float("inf"),
-                                }
-                            )
+                            training_epochs[num_run].append({
+                                "epoch_range": (
+                                    start_epoch,
+                                    float("inf"),
+                                ),
+                                "end_time": float("inf"),
+                            })
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
                     continue
@@ -1041,9 +1035,9 @@ class AutoPyTorchML(AutoML):
 
                             try:
                                 event_name = PipelineEvent.from_tag(e_val.tag)
-                                run_infos[num_run][
-                                    event_name.value
-                                ] = e_val.simple_value
+                                run_infos[num_run][event_name.value] = (
+                                    e_val.simple_value
+                                )
 
                             except KeyError:
                                 (
@@ -1107,9 +1101,9 @@ class AutoPyTorchML(AutoML):
         import torch
         from smac.tae import StatusType
 
-        assert (
-            self._api is not None
-        ), "`get_best_config` has to be called after `search`"
+        assert self._api is not None, (
+            "`get_best_config` has to be called after `search`"
+        )
 
         # Get n best results
         results = self._api.run_history.data

@@ -262,16 +262,16 @@ class TVMCompiler(Optimizer):
         """
         import tvm
 
-        assert not (
-            use_fp16_precision and use_int8_precision
-        ), "Compilation cannot use both FP16 and INT8 conversion"
+        assert not (use_fp16_precision and use_int8_precision), (
+            "Compilation cannot use both FP16 and INT8 conversion"
+        )
         assert not (
             use_tensorrt and (use_fp16_precision or use_int8_precision)
         ), "TensorRT usage with FP16 or INT8 passes is not supported"
         if target:
-            assert not (
-                use_tensorrt and ("cuda" not in target)
-            ), "TensorRT is only supported with CUDA target"
+            assert not (use_tensorrt and ("cuda" not in target)), (
+                "TensorRT is only supported with CUDA target"
+            )
         self.model_framework = model_framework
 
         self.target = target
@@ -387,22 +387,20 @@ class TVMCompiler(Optimizer):
             if self.conv2d_data_layout == "":
                 raise CompilationError("conv2d_data_layout cannot be empty")
             transforms.append(
-                relay.transform.ConvertLayout(
-                    {
-                        "nn.conv2d": [
-                            self.conv2d_data_layout,
-                            self.conv2d_kernel_layout,
-                        ],
-                        "nn.max_pool2d": [
-                            self.conv2d_data_layout,
-                            self.conv2d_kernel_layout,
-                        ],
-                        "qnn.conv2d": [
-                            self.conv2d_data_layout,
-                            self.conv2d_kernel_layout,
-                        ],
-                    }
-                )
+                relay.transform.ConvertLayout({
+                    "nn.conv2d": [
+                        self.conv2d_data_layout,
+                        self.conv2d_kernel_layout,
+                    ],
+                    "nn.max_pool2d": [
+                        self.conv2d_data_layout,
+                        self.conv2d_kernel_layout,
+                    ],
+                    "qnn.conv2d": [
+                        self.conv2d_data_layout,
+                        self.conv2d_kernel_layout,
+                    ],
+                })
             )
 
         additional_opts = tvm.transform.Sequential(transforms)
@@ -483,9 +481,9 @@ class TVMCompiler(Optimizer):
                     set(TVM_FUNC_PATTERN.findall(lib.get_lib().get_source()))
                 )
                 tvm_funcs.sort()
-                template_tvmgen_functions = "".join(
-                    [f" \\\n    FUNC({func_name})" for func_name in tvm_funcs]
-                )
+                template_tvmgen_functions = "".join([
+                    f" \\\n    FUNC({func_name})" for func_name in tvm_funcs
+                ])
                 template_tvmgen_functions_count = f'"\\x{len(tvm_funcs):02x}"'
 
                 if self.zephyr_llext_source_template is None:
@@ -501,9 +499,9 @@ class TVMCompiler(Optimizer):
                         f"_{self.module_name}" if self.module_name else ""
                     )
                     mod_name_macro = mod_name.upper()
-                    mod_name_pascal = "".join(
-                        [m.title() for m in mod_name.split("_")]
-                    )
+                    mod_name_pascal = "".join([
+                        m.title() for m in mod_name.split("_")
+                    ])
 
                     # For compatibility with Kenning Zephyr Runtime we need an
                     # option to preserve default function names, which is done
@@ -621,30 +619,26 @@ class TVMCompiler(Optimizer):
     def zpl_prepare_cmd_flags(self):
         flags = super().zpl_prepare_cmd_flags()
         if getattr(self, "compiled_model_path", None) is not None:
-            flags.extend(
-                [
-                    "--tvm-model-paths",
-                    str(
-                        ZplSuffix.TVM_GRAPH_JSON._get_path_with_suffix(
-                            self.compiled_model_path
-                        )
-                    ),
-                    "--tvm-model-metadata-paths",
-                    str(
-                        ZplSuffix.TVM_METADATA._get_path_with_suffix(
-                            self.compiled_model_path
-                        )
-                    ),
-                ]
-            )
+            flags.extend([
+                "--tvm-model-paths",
+                str(
+                    ZplSuffix.TVM_GRAPH_JSON._get_path_with_suffix(
+                        self.compiled_model_path
+                    )
+                ),
+                "--tvm-model-metadata-paths",
+                str(
+                    ZplSuffix.TVM_METADATA._get_path_with_suffix(
+                        self.compiled_model_path
+                    )
+                ),
+            ])
 
         if self.module_name is not None:
-            flags.extend(
-                [
-                    "--tvm-model-op-remove-prefix",
-                    f"tvmgen_{self.module_name}_",
-                ]
-            )
+            flags.extend([
+                "--tvm-model-op-remove-prefix",
+                f"tvmgen_{self.module_name}_",
+            ])
 
         return flags
 

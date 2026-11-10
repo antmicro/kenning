@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Homer"
+  given-names: "Michael"
+  orcid: "https://orcid.org/0000-0003-0280-6748"
+title: "jqjs"
+url: "https://github.com/mwh/jqjs"
+preferred-citation:
+  type: conference-paper
+  authors:
+  - family-names: "Homer"
+    given-names: "Michael"
+    orcid: "https://orcid.org/0000-0003-0280-6748"
+  doi: "10.1145/3623504.3623567"
+  conference:
+    name: "ACM SIGPLAN International Workshop on Programming Abstractions and Interactive Notations, Tools, and Environments"
+    abbreviation: "PAINT"
+    date-start: 2023-10-23
+    date-end: 2023-10-23
+  month: 10
+  title: "Branching Compositional Data Transformations in jq, Visually"
+  year: 2023

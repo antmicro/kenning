@@ -1,0 +1,21 @@
+/*
+ * Copyright (c) 2020-2026 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+summary.sd-summary-title.sd-card-header {
+    zoom: 0.75;
+}
+
+summary.sd-summary-title.sd-card-header {
+    zoom: 0.75;
+}
+
+summary.sd-summary-title.sd-card-header::before {
+    content: none;
+}
+
+summary.sd-summary-title.sd-card-header::after {
+    content: none;
+}

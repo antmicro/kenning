@@ -1,0 +1,199 @@
+/*
+ * Copyright (c) 2022-2026 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.baklava-node {
+    min-width: 300px;
+    width: auto;
+    display: table;
+    max-width: none;
+
+    background-color: #{$gray-600}E6;
+    transition: box-shadow var(--baklava-visual-transition) !important;
+    filter: none;
+
+    .--shape {
+        width: 100%;
+        height: 100%;
+    }
+
+    &.--selected {
+        z-index: 5;
+        box-shadow: 0 0 0 calc(1px / var(--scale)) $green;
+    }
+
+    &:hover {
+        box-shadow: 0 0 0 calc(1px / var(--scale)) $green;
+    }
+
+    &.--transparent {
+        background-color: rgba(255, 255, 255, 0);
+    }
+
+    &.--dragging {
+        box-shadow: 0 0 0 calc(1.5px / var(--scale)) $green;
+        filter: none;
+    }
+
+    & > .__content {
+        & > .__properties {
+          .__label {
+            display: var(--kpm-property-display-label);
+          }
+        }
+        & > div > div {
+          margin: 0;
+        }
+    }
+
+    &.--minimal:not(.--shaped)
+    {
+        min-width: 30px !important;
+    }
+
+    &.--minimal {
+        min-height: 4em;
+        width: auto;
+        cursor: grab;
+        position: absolute;
+
+        & > .__title {
+            display: none;
+        }
+    }
+    &.--clean {
+        min-width: 30px !important;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        justify-items: center;
+        align-items: center;
+
+        & > .__title {
+            grid-column: 1;
+            grid-row: 1;
+            z-index: 2;
+
+            margin: 0;
+            padding: 1em 1em;
+            width: 95%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        & > .__content {
+            grid-column: 1;
+            grid-row: 1;
+            z-index: 1;
+
+            width: 100%;
+            box-sizing: border-box;
+
+            & > .__properties {
+                display: none;
+            }
+            & > .__interfaces {
+                span {
+                    display: none;
+                }
+                baklava-node-interface {
+                    min-height: 1em;
+                }
+            }
+        }
+    }
+
+
+
+
+    & > .__title {
+        display: flex;
+        height: var(--kpm-node-title-height);
+        align-items: center;
+        gap: 1em;
+        padding: 0 1em;
+        width: auto;
+        white-space: nowrap;
+
+        & > .baklava-input {
+            width: fit-content;
+        }
+
+        & > .__title-icon {
+            flex-grow: 0;
+            padding: 0;
+            height: 2em;
+            width: 2em;
+            pointer-events: none;
+        }
+
+        & > .__title-label {
+            flex-grow: 0;
+            & > .subtitle {
+                margin: 0;
+                font-size: $fs-small;
+                color: $gray-100;
+                pointer-events: all;
+
+                & > span {
+                    color: $green;
+                }
+            }
+
+            & > span {
+                color: $green;
+            }
+        }
+
+        & > .__menu {
+            cursor: pointer;
+            flex-grow: 0;
+            height: 2em;
+            width: 2em;
+            padding: 0.5em;
+
+            & > svg {
+                height: 1em;
+                width: 1em;
+            }
+        }
+
+        & > .__menu:hover {
+
+            & > svg {
+                color: $green;
+
+            }
+        }
+    }
+
+    &.--two-column > .__content {
+        display: block;
+
+        & > .__interfaces {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            & > .__inputs {
+                grid-row: 1;
+                grid-column: 1;
+            }
+
+            & > .__outputs {
+                grid-row: 1;
+                grid-column: 2;
+            }
+        }
+    }
+
+    &.--greyed-out {
+        filter: brightness(60%) blur(0.5px);
+    }
+
+    &.--hidden {
+        visibility: hidden;
+    }
+}

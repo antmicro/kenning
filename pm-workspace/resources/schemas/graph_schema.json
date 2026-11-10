@@ -1,0 +1,421 @@
+{
+    "$id": "graph_schema.json",
+    "description": "Schema used to validate a single subgraph",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "Unique identifier of a graph",
+            "type": "string"
+        },
+        "groups": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of a group",
+                        "type": "string"
+                    },
+                    "color": {
+                        "description": "Color of the group",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "Unique identifier of a group",
+                        "type": "string"
+                    },
+                    "nodes": {
+                        "description": "Nodes belonging to the group",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "nodes"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "nodes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the node type as defined in the specification",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "Unique identifier of a node",
+                        "type": "string"
+                    },
+                    "instanceName": {
+                        "description": "Optional field defining a node name rendered to the user",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "Optional field defining an instance name rendered to the user",
+                        "type": "string"
+                    },
+                    "color": {
+                        "description": "Optional field defining the color of the node rendered to the user",
+                        "type": "string"
+                    },
+                    "properties": {
+                        "description": "List describing the node parameterized values",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "description": "Unique value assigned to the property",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "Name of the property",
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "description": "Actual value of the property",
+                                    "type": [
+                                        "number",
+                                        "string",
+                                        "boolean",
+                                        "object",
+                                        "array",
+                                        "null"
+                                    ]
+                                },
+                                "externalName": {
+                                    "description": "Name of the external property displayed in the node",
+                                    "type": ["string", "null"]
+                                },
+                                "dynamicCounter": {
+                                    "description": "Indicates that the property controls the number of dynamic interfaces",
+                                    "type": ["boolean", "null"]
+                                },
+                                "hidden": {
+                                    "$ref": "#/$defs/hidden"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name",
+                                "value"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "interfaces": {
+                        "description": "List describing the node interfaces",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "description": "Unique value assigned to the interface",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "name of the interface",
+                                    "type": "string"
+                                },
+                                "direction": {
+                                    "description": "Determines the type of the interfaces",
+                                    "enum": [
+                                        "input",
+                                        "output",
+                                        "inout"
+                                    ]
+                                },
+                                "side": {
+                                    "description": "Determines side of the node the interface that the interface is placed on",
+                                    "enum": [
+                                        "left",
+                                        "right",
+                                        "top",
+                                        "bottom"
+                                    ]
+                                },
+                                "sidePosition": {
+                                    "description": "Determines the order of interfaces rendered",
+                                    "type": "number"
+                                },
+                                "externalName": {
+                                    "description": "Name of the external socket displayed in the node",
+                                    "type": ["string", "null"]
+                                },
+                                "hidden": {
+                                    "$ref": "#/$defs/hidden"
+                                },
+                                "bus": {
+                                    "description": "Determines bus attributes",
+                                    "type": "object",
+                                    "properties": {
+                                        "size": {
+                                            "description": "Size of the bus in pixels",
+                                            "type": "number"
+                                        },
+                                        "stubs": {
+                                            "description": "Endpoints of connections going into the bus",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "description": "Unique id for the stub, needed for connection",
+                                                        "type": "string"
+                                                    },
+                                                    "offset": {
+                                                        "description": "Offset of stub within the bus in pixels",
+                                                        "type": "number"
+                                                    },
+                                                    "side": {
+                                                        "description": "Side has to be specified in the two-sided bus variant",
+                                                        "enum": [
+                                                            "left",
+                                                            "right"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "offset"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "name",
+                                "direction"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "enabledInterfaceGroups": {
+                        "description": "List of names of chosen interface groups",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "direction": {
+                                    "enum": [
+                                        "input",
+                                        "output",
+                                        "inout"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "direction"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "width": {
+                        "description": "Width of the node",
+                        "type": "number"
+                    },
+                    "height": {
+                        "description": "Height of the node",
+                        "type": "number"
+                    },
+                    "twoColumn": {
+                        "description": "Determines whether sockets should be rendered in the top part of the node and properties below them",
+                        "type": "boolean"
+                    },
+                    "subgraph": {
+                        "description": "Optional field defining the id of the subgraph that this node represents",
+                        "type": "string"
+                    },
+                    "relatedGraphs": {
+                        "description": "Map containing name and ID of a related graph",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "id"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "position": {
+                        "description": "Position of a node in an editor",
+                        "allOf": [
+                            {
+                                "$ref": "#/$defs/coordinates"
+                            }
+                        ]
+                    },
+                    "views": {
+                        "type": "array",
+                        "description": "List of alternative ways to display the graph",
+                        "items": {
+                            "type": "object",
+                            "description": "Description of a view",
+                            "properties": {
+                                "name": {
+                                    "description": "Name of a view",
+                                    "type": "string"
+                                },
+                                "position": {
+                                    "description": "Node id, identifies node being described",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/$defs/coordinates"
+                                        }
+                                    ]
+                                },
+                                "style": {
+                                    "description": "A style or an array of non-repeating styles defined by 'styles' in metadata",
+                                    "type": [
+                                        "string",
+                                        "array"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "interfaces"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "connections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier of a connection"
+                    },
+                    "from": {
+                        "type": "string",
+                        "description": "Identifier of a from interface"
+                    },
+                    "to": {
+                        "type": "string",
+                        "description": "Identifier of a to interface"
+                    },
+                    "anchors": {
+                        "type": "array",
+                        "description": "Definition of anchor points that are used for orthogonal connections",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "x": {
+                                    "description": "x coordinate of the corner",
+                                    "type": "number"
+                                },
+                                "y": {
+                                    "description": "y coordinate of the corner",
+                                    "type": "number"
+                                },
+                                "index": {
+                                    "description": "index that the anchor corresponds to",
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "x",
+                                "y"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "from",
+                    "to"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "panning": {
+            "description": "Defines the position of the top-left corner in the rendered editor",
+            "allOf": [
+                {
+                    "$ref": "#/$defs/coordinates"
+                }
+            ]
+        },
+        "scaling": {
+            "description": "Floating-point number that defines the zoom level in the editor",
+            "type": "number"
+        },
+        "name": {
+            "type": "string",
+            "description": "Name of the graph"
+        },
+        "disabledLayers": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "additionalData": {
+            "description": "Any JSON data that provides additional information regarding the graph",
+            "type": [
+                "number",
+                "string",
+                "boolean",
+                "object",
+                "array",
+                "null"
+            ]
+        }
+    },
+    "$defs": {
+        "coordinates": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "description": "x coordinate of the corner",
+                    "type": "number"
+                },
+                "y": {
+                    "description": "y coordinate of the corner",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "x",
+                "y"
+            ],
+            "additionalProperties": false
+        },
+        "hidden": {
+            "description": "Determines whether the property should be rendered in the node",
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "required": [
+        "nodes",
+        "connections"
+    ]
+}

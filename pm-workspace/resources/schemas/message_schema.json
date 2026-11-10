@@ -1,0 +1,24 @@
+{
+    "$id": "message_schema.json",
+    "type": "object",
+    "description": "Schema used to validate messages coming from 'window.postMessage'",
+    "anyOf": [
+        {"required": ["specification"]},
+        {"required": ["dataflow"]}
+    ],
+    "properties": {
+        "specification": {
+            "type": [
+                "string",
+                "object"
+            ]
+        },
+        "dataflow": {
+            "type": [
+                "string",
+                "object"
+            ]
+        }
+    },
+    "unevaluatedProperties": false
+}

@@ -1,0 +1,12 @@
+diff --git a/node_modules/@baklavajs/renderer-vue/package.json b/node_modules/@baklavajs/renderer-vue/package.json
+index c383ab6..bf5bafe 100644
+--- a/node_modules/@baklavajs/renderer-vue/package.json
++++ b/node_modules/@baklavajs/renderer-vue/package.json
+@@ -11,6 +11,7 @@
+     "main": "./dist/renderer-vue.umd.js",
+     "module": "./dist/renderer-vue.es.js",
+     "types": "./dist/index.d.ts",
++    "type": "module",
+     "exports": {
+         ".": {
+             "import": "./dist/renderer-vue.es.js",

@@ -1,0 +1,16 @@
+{
+  "name": "boolify",
+  "description": "Convert true/false strings to booleans",
+  "version": "1.0.1",
+  "license": "MIT",
+  "repository": {
+    "url": "git://github.com/timhudson/boolify.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test/*.js"
+  },
+  "devDependencies": {
+    "tape": "^4.0.0"
+  }
+}

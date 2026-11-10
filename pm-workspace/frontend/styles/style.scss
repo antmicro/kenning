@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Download fonts (Montserrat, Roboto, Roboto Mono) */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Roboto&family=Roboto+Mono&display=swap');
+
+/* Import styles */
+@import 'variables';
+@import 'editor';
+@import 'toast';
+@import 'global';
+@import 'connection';
+@import 'menu';
+@import 'node';
+@import 'node_sidebar';
+@import 'markdown_style';

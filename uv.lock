@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11, <3.16"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-7-kenning-all' and extra != 'extra-7-kenning-llm' and extra != 'extra-7-kenning-sparsity-aware-kernel' and extra != 'extra-7-kenning-tvm' and extra != 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax'",
@@ -5226,7 +5226,7 @@ wheels = [
 
 [[package]]
 name = "kenning"
-version = "0.8.2"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "argcomplete" },

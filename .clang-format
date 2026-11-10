@@ -19,6 +19,7 @@ AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: true
 AllowShortLambdasOnASingleLine: All
 AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: true
 SpacesInAngles: true
 

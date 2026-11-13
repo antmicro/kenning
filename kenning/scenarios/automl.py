@@ -15,6 +15,7 @@ It requires implementations of two classes as input:
 
 import argparse
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -33,6 +34,7 @@ from kenning.cli.completers import (
 )
 from kenning.cli.parser import get_used_subcommands
 from kenning.core.automl import AutoML
+from kenning.core.optimizer import Optimizer
 from kenning.dispatcher.block_config import (
     filter_block_types_from_config_dict,
     merge_config_dicts,
@@ -361,6 +363,20 @@ class AutoMLCommand(InferenceTester):
                 rets.append(ret)
                 if n_valid_models >= automl_runner.autoML.n_best_models:
                     break
+
+        # Save the best model to the configured compiled model path
+        for opt in objs[ConfigKey.optimizers]:
+            best_model_path = opt.compiled_model_path.with_suffix(
+                f".0{opt.compiled_model_path.suffix}"
+            )
+            if best_model_path.exists():
+                shutil.copy(best_model_path, opt.compiled_model_path)
+                spec_path = Optimizer.get_spec_path(best_model_path)
+                if spec_path.exists():
+                    shutil.copy(
+                        spec_path,
+                        Optimizer.get_spec_path(opt.compiled_model_path),
+                    )
 
         if not use_previous_results:
             AutoMLCache.save(

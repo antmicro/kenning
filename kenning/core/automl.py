@@ -626,6 +626,17 @@ class AutoML(ArgumentsHandler, ABC):
 
             # Run Kenning optimize flow for the model
             if self.optimizers:
+                # Use temporary compiled model paths, so the configured
+                # ones are not modified by the size check
+                original_paths = [
+                    opt.compiled_model_path for opt in self.optimizers
+                ]
+                compiled_model_paths = [
+                    NamedTemporaryFile("w", suffix=path.suffix)
+                    for path in original_paths
+                ]
+                for opt, path in zip(self.optimizers, compiled_model_paths):
+                    opt.set_compiled_model_path(Path(path.name))
                 try:
                     for opt in self.optimizers:
                         opt.model_wrapper = model_wrapper
@@ -635,28 +646,27 @@ class AutoML(ArgumentsHandler, ABC):
                     )
                     if not is_compatible:
                         return CompatibilityStatus.FAILED_CHECK, None
+                    try:
+                        model_size = runner.optimizers[
+                            -1
+                        ].get_optimized_model_size()
+                    except OptimizedModelSizeError as ex:
+                        model_size = None
+                        KLogger.warn(
+                            f"Cannot retrieve optimized model size: {ex}"
+                        )
                 finally:
+                    for opt, path in zip(self.optimizers, original_paths):
+                        opt.set_compiled_model_path(path)
                     for opt in self.optimizers:
                         opt.model_wrapper = None
                         opt.dataset = self.dataset
-                try:
-                    model_size = runner.optimizers[
-                        -1
-                    ].get_optimized_model_size()
-                except OptimizedModelSizeError as ex:
-                    model_size = None
-                    logger.warning(
-                        f"Cannot retrieve optimized model size: {ex}"
-                    )
                 if runtime and model_size and self.platform:
                     runtime_check_fail = runtime._run_compatibility_checks(
                         self.platform, self.application_size + model_size
                     )
                     if runtime_check_fail != CompatibilityStatus.SUCCESS:
                         return runtime_check_fail, model_size
-                # Cleanup optimized models
-                for opt in self.optimizers:
-                    opt.compiled_model_path.unlink()
             else:
                 model_size = model_wrapper.get_model_size()
                 if runtime and self.platform:

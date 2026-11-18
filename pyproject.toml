@@ -64,7 +64,7 @@ docs = [
 tensorflow = [
     "kenning[onnx2tf]",
     "tf-keras>=2.21.0",
-    "tensorflow>=2.21.0",
+    "tensorflow>=2.22.0-rc1",
     "tensorflow_model_optimization",
     "tensorboard",
     "h5py",
@@ -212,7 +212,7 @@ onnx2tf = [
     "onnxsim>=0.4.33; python_version == '3.12'",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
-    "tensorflow>=2.21.0",
+    "tensorflow>=2.22.0-rc1",
     "tf-keras>=2.21.0",
     "ai-edge-litert>=2.1.6",
     "psutil==5.9.5",

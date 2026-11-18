@@ -5751,8 +5751,8 @@ requires-dist = [
     { name = "tensorboard", marker = "extra == 'nni'" },
     { name = "tensorboard", marker = "extra == 'tensorflow'" },
     { name = "tensorboard", marker = "extra == 'torch'" },
-    { name = "tensorflow", marker = "extra == 'onnx2tf'", specifier = ">=2.21.0" },
-    { name = "tensorflow", marker = "extra == 'tensorflow'", specifier = ">=2.21.0" },
+    { name = "tensorflow", marker = "extra == 'onnx2tf'", specifier = ">=2.22.0rc1" },
+    { name = "tensorflow", marker = "extra == 'tensorflow'", specifier = ">=2.22.0rc1" },
     { name = "tensorflow-model-optimization", marker = "extra == 'tensorflow'" },
     { name = "tensorflow-probability", marker = "python_full_version < '3.13' and extra == 'tensorflow'", specifier = ">=0.19.0,<0.23.0" },
     { name = "tensorstore", marker = "extra == 'coralnpu'" },
@@ -5810,6 +5810,26 @@ name = "keras"
 version = "3.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "absl-py", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "h5py", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "ml-dtypes", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "namex", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.14') or (python_full_version < '3.12' and extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (python_full_version < '3.12' and extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (python_full_version < '3.12' and extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (python_full_version < '3.12' and extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (python_full_version < '3.12' and extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax') or (python_full_version >= '3.14' and extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (python_full_version >= '3.14' and extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (python_full_version >= '3.14' and extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (python_full_version >= '3.14' and extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (python_full_version >= '3.14' and extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "optree", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "packaging", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+    { name = "rich", marker = "python_full_version >= '3.12' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/a6/4cebb4196f4e6284b35e68dc17dda9a4111a2e2bf21db8211de12881ef89/keras-3.15.1.tar.gz", hash = "sha256:92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29", size = 1919818, upload-time = "2026-07-29T18:20:13.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/b3/c9b848bbdba18e765a8051917c0cc82585b64278ce87895f2e521a27438f/keras-3.15.1-py3-none-any.whl", hash = "sha256:836460e480930acbd19bb7a17e62f9ecad40e8a9af9a651fc8d0586a96d27e20", size = 2398595, upload-time = "2026-07-29T18:20:12.345Z" },
+]
+
+[[package]]
+name = "keras-nightly"
+version = "3.16.0.dev2026111703"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
     { name = "absl-py" },
     { name = "h5py" },
     { name = "ml-dtypes" },
@@ -5820,9 +5840,9 @@ dependencies = [
     { name = "packaging" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/a6/4cebb4196f4e6284b35e68dc17dda9a4111a2e2bf21db8211de12881ef89/keras-3.15.1.tar.gz", hash = "sha256:92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29", size = 1919818, upload-time = "2026-07-29T18:20:13.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/69/108b766ede3bdeab3bdd8354e68bd3a3b49218479021450fccf78cb0f9bd/keras_nightly-3.16.0.dev2026111703.tar.gz", hash = "sha256:f2a25f466b8986028ad38f7b0f9ea3ea694c148de41b12cd52d6228db84634f0", size = 1341526, upload-time = "2026-11-17T03:55:52.061Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/b3/c9b848bbdba18e765a8051917c0cc82585b64278ce87895f2e521a27438f/keras-3.15.1-py3-none-any.whl", hash = "sha256:836460e480930acbd19bb7a17e62f9ecad40e8a9af9a651fc8d0586a96d27e20", size = 2398595, upload-time = "2026-07-29T18:20:12.345Z" },
+    { url = "https://files.pythonhosted.org/packages/24/09/e4b52597e0bc1be6e18d1577efee8e0830c7c0a3fca6a51aa9b430ec34c1/keras_nightly-3.16.0.dev2026111703-py3-none-any.whl", hash = "sha256:3d4b41d3b7f70c419cd0a595677abf9041987d5fc39530271168ac383abb9e19", size = 1725228, upload-time = "2026-11-17T03:55:49.142Z" },
 ]
 
 [[package]]
@@ -12868,7 +12888,7 @@ wheels = [
 
 [[package]]
 name = "tensorflow"
-version = "2.21.0"
+version = "2.22.0rc1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -12878,7 +12898,7 @@ dependencies = [
     { name = "google-pasta" },
     { name = "grpcio" },
     { name = "h5py" },
-    { name = "keras" },
+    { name = "keras-nightly" },
     { name = "libclang" },
     { name = "ml-dtypes" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' or (extra == 'extra-7-kenning-all' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-llm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-sparsity-aware-kernel' and extra == 'group-7-kenning-tvm-relax') or (extra == 'extra-7-kenning-tvm' and extra == 'group-7-kenning-tvm-relax') or (extra == 'group-7-kenning-tvm-cuda' and extra == 'group-7-kenning-tvm-relax')" },
@@ -12887,25 +12907,28 @@ dependencies = [
     { name = "packaging" },
     { name = "protobuf" },
     { name = "requests" },
-    { name = "setuptools" },
     { name = "six" },
     { name = "termcolor" },
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/76/b649b02a243c09f0348199dbd81408c1558cfbec2b6d77d820c428a95254/tensorflow-2.21.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:51f46f4806139d01fc7920cc72a4c75876f80649bf40ff083ab6212ceb43ca88", size = 223405849, upload-time = "2026-03-06T17:23:12.976Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/7c/57b7ee953b40d5d837136d20af6851b20ea6ca63753fc05699e8bcfab6d5/tensorflow-2.21.0-cp311-cp311-manylinux_2_27_aarch64.whl", hash = "sha256:4b24aca16d527a3cf1c37f720c04c484c3d20f4d0fdfa98632ac8b9f3be6eb5c", size = 281828020, upload-time = "2026-03-06T17:23:21.243Z" },
-    { url = "https://files.pythonhosted.org/packages/26/a1/23b9b39c046c723db63a1c2c93397703efa3400a36f98d9c717b473aafb8/tensorflow-2.21.0-cp311-cp311-manylinux_2_27_x86_64.whl", hash = "sha256:9056fbc9ba04235810b71ae6cbd958a196e8804fb53bbcffbf3e23b56155f124", size = 572440367, upload-time = "2026-03-06T17:23:35.279Z" },
-    { url = "https://files.pythonhosted.org/packages/8f/a2/6d7e6a738e302530586d484895de2cf3fc158ad9c73b4504a670b2956dd9/tensorflow-2.21.0-cp311-cp311-win_amd64.whl", hash = "sha256:0064a19bdc054a4b7c5e7e21cdf50ce38a114c2bada578b4f5267a37410f6784", size = 350834005, upload-time = "2026-03-06T17:23:53.021Z" },
-    { url = "https://files.pythonhosted.org/packages/39/59/27adba20bbd1088b00fc0e9232aa21493b4800af2299eb6005017a6053f4/tensorflow-2.21.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:56ecd7d47429acbe1df2694d50b75bf9fc3995ac92cb367cd9af6c4780ead712", size = 223488205, upload-time = "2026-03-06T17:24:03.48Z" },
-    { url = "https://files.pythonhosted.org/packages/20/a5/f139fbbd4e81a2e556170718698acf518a71a84927fa1dc1f5935b6ab3d2/tensorflow-2.21.0-cp312-cp312-manylinux_2_27_aarch64.whl", hash = "sha256:b07d15737406533898e36c7ef7944b1be18e9028dc521b9229952c537bbc5552", size = 281946471, upload-time = "2026-03-06T17:24:11.896Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/d7/6e71b4ded8ce99cd21add95611ca14af6e9ad4f2baeabdeb79a4a6b3cb1f/tensorflow-2.21.0-cp312-cp312-manylinux_2_27_x86_64.whl", hash = "sha256:b3b95643c4e70eb925839938fb35cbe142f317ec84af6844ee61513713bb13c0", size = 572611111, upload-time = "2026-03-06T17:24:26.209Z" },
-    { url = "https://files.pythonhosted.org/packages/7d/0d/4ee4bc074597b41c9c00dc97b4418ef1eb8736fe9186ffdb3961efdfb730/tensorflow-2.21.0-cp312-cp312-win_amd64.whl", hash = "sha256:27ba0682572b1e50a0db1ee74cfb787eafcfdb1b751bbbf401fed62fe32a92e0", size = 350945509, upload-time = "2026-03-06T17:24:41.65Z" },
-    { url = "https://files.pythonhosted.org/packages/40/09/268b45a61be2bce136dabf3a3cd7099c8a984ae398198f71920b4c60c502/tensorflow-2.21.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:a145ed46c58192b7c3f9916d070caf4f6afc6dc7e5511f83dd97677f4c4947f4", size = 223766900, upload-time = "2026-03-06T17:24:51.349Z" },
-    { url = "https://files.pythonhosted.org/packages/72/72/343b86b4c9bfe28e81f749439f908c1e26aeac73d9f12b8dcdb996eb8ecb/tensorflow-2.21.0-cp313-cp313-manylinux_2_27_aarch64.whl", hash = "sha256:a10abdfb8b1189210c251021a3f153b7ccc52a8e6521351f3dc3331e8ba593e0", size = 282213003, upload-time = "2026-03-06T17:24:59.859Z" },
-    { url = "https://files.pythonhosted.org/packages/86/6c/10d075ffc09754c7f10e749ba3c9d46dd809fb007990c7f788128044180c/tensorflow-2.21.0-cp313-cp313-manylinux_2_27_x86_64.whl", hash = "sha256:e9d8da8dcab9650efb45f032ba70af2f016f907e6e0c6bda29dd101bba945406", size = 572881074, upload-time = "2026-03-06T17:25:14.453Z" },
-    { url = "https://files.pythonhosted.org/packages/86/91/dedad8403e7b0036d99be4878987693b7b7f62097eb8537fa6ce62ea131c/tensorflow-2.21.0-cp313-cp313-win_amd64.whl", hash = "sha256:76cccbe0a95d9392dee1ae501ae0656b6c73c1cac29a7f8f32d570e0670863f7", size = 351205371, upload-time = "2026-03-06T17:25:33.144Z" },
+    { url = "https://files.pythonhosted.org/packages/15/56/681aba2e936b46b5271d7ac1922c564448682ab83d300b8cda48d5e9c320/tensorflow-2.22.0rc1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:a32d091f26d9eb29730c3f1f8d6f405bcbdad27e5fab4f2cd65a590873c08ac5", size = 245363109, upload-time = "2026-11-16T18:44:59.066Z" },
+    { url = "https://files.pythonhosted.org/packages/da/1b/ce30b9797bc3b7d246a6501cf166de02b013511056789ace942ddb5f8281/tensorflow-2.22.0rc1-cp311-cp311-manylinux_2_27_aarch64.whl", hash = "sha256:e1583962fa1756bc13f963c473721bde211b61b77e8ac176cd5b8856523aa39c", size = 304227137, upload-time = "2026-11-16T18:45:07.284Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/6b/5ea86ff22c35b659757a7bc25c9c878f3702dc4cbfdb1a616b8f8099a80b/tensorflow-2.22.0rc1-cp311-cp311-manylinux_2_27_x86_64.whl", hash = "sha256:2d2b840f2f930583b6a69609b0962d3ed25684df8998d75e14033ee16f6202c0", size = 635326175, upload-time = "2026-11-16T18:45:24.476Z" },
+    { url = "https://files.pythonhosted.org/packages/da/7d/464ac9b2ced21e7a0cbe27392a4afcfd5155facc9d470b8a816e75ca9324/tensorflow-2.22.0rc1-cp311-cp311-win_amd64.whl", hash = "sha256:717767dc02e780dcc413553c4fce473dcc9f3751b1414ed14836946033878eff", size = 374968807, upload-time = "2026-11-16T18:45:39.132Z" },
+    { url = "https://files.pythonhosted.org/packages/20/3c/8e18e74b4465c2cd50b92f560e84d3096868beea005fed683dae0a722499/tensorflow-2.22.0rc1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:52ea965dc273ea9326ec04f8c642c51bef98515b1d33872f7d2a705ba6ca0ce4", size = 245383791, upload-time = "2026-11-16T18:45:48.907Z" },
+    { url = "https://files.pythonhosted.org/packages/52/d8/d7e4f94d0a4c2af4efc450dcbb7d4807197b45ebef3ce4651212501fc21c/tensorflow-2.22.0rc1-cp312-cp312-manylinux_2_27_aarch64.whl", hash = "sha256:cea4afcda1fac25e0b7076e8d554836aab25e77015dad8e6a83d13d98b5a85a1", size = 304276110, upload-time = "2026-11-16T18:45:56.929Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/92/10f57f19c409ad690d9d3fc747ab9b22912188fae5f9afe51ebeb64c441d/tensorflow-2.22.0rc1-cp312-cp312-manylinux_2_27_x86_64.whl", hash = "sha256:252f0eb940c7c1bbb68bb023152d51846a4eda50e74541619300dfe36b601b8f", size = 635426907, upload-time = "2026-11-16T18:46:12.888Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/06/0a1168779231f49dd79af0bedef62e31f4291fffffbebdea69f740188fa6/tensorflow-2.22.0rc1-cp312-cp312-win_amd64.whl", hash = "sha256:145501cfc1a29eb983a8b10a914b58ab71b3abb59dbeadb8ca488663d19976a0", size = 375016518, upload-time = "2026-11-16T18:46:27.672Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/95/2348b302c457d8c79d71592c1e181b45d5b46c96dea14a25df998f0d95e6/tensorflow-2.22.0rc1-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:2c4778d6456badcf644afd0b6cd3eb7373e4808377c1952fb8a7eca878c2f92a", size = 245521854, upload-time = "2026-11-16T18:46:38.216Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/a2/79ec67cf5b6ea40bc12e9a8f1dc92fea4ee1697029319500b6cab36dd513/tensorflow-2.22.0rc1-cp313-cp313-manylinux_2_27_aarch64.whl", hash = "sha256:d73ae489fdd6869dd7b269641f3b4659b5a4da28917a9ca9f257446701ac8fdf", size = 304411962, upload-time = "2026-11-16T18:46:46.999Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/ec/404f065349c2e6a0c0cd10d184f6faa3cebc66eca674645e858f526e4ebe/tensorflow-2.22.0rc1-cp313-cp313-manylinux_2_27_x86_64.whl", hash = "sha256:9c359f9cd1b00059f6337bff1afe844f640f10e26081ea249617a5574e7d1510", size = 635567040, upload-time = "2026-11-16T18:47:03.411Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/02/d2ec9e255e17decf788f03e8d511f5f78f38daf73cace6e1b1bbe09f3af9/tensorflow-2.22.0rc1-cp313-cp313-win_amd64.whl", hash = "sha256:2231334e1a45ef6c4d407d5d4adea1d6d2e8a46d17f81ea75163781f2460a428", size = 375147469, upload-time = "2026-11-16T18:47:18.684Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/36/eb424e818202a256faaee715a989b352767ec5afd8c6ebca296580c05fe9/tensorflow-2.22.0rc1-cp314-cp314-macosx_12_0_arm64.whl", hash = "sha256:ea64128686046258fec252aeff9d9236bd3f55f2518c8fa5546dc6b3b1fda2df", size = 245563180, upload-time = "2026-11-17T01:04:38.574Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/bc/69e90c0b7d2bbe21f331ddf2ad46ceabefc1c443e69b459b9b70bbaa5053/tensorflow-2.22.0rc1-cp314-cp314-manylinux_2_27_aarch64.whl", hash = "sha256:f28d5ef72cdb2a6cebb63024defdfabe64f7ccf686d80fb5064cd60a8f6dbe64", size = 304469745, upload-time = "2026-11-17T01:04:47.859Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/7e/59d38696ed9779cf0c5ba598b21086a215acf8cd9270bfc9bae40959c9d2/tensorflow-2.22.0rc1-cp314-cp314-manylinux_2_27_x86_64.whl", hash = "sha256:a5c82aa26f6de89f09fadba009405c80d4a25473fcf1cd7c84ebc50c81638c1c", size = 635615966, upload-time = "2026-11-17T01:05:01.855Z" },
+    { url = "https://files.pythonhosted.org/packages/70/5a/071d2aa1f08150737b62fa1e59814e4e65d2b7dd5303f74ab0011b8e96a2/tensorflow-2.22.0rc1-cp314-cp314-win_amd64.whl", hash = "sha256:0bd1df91965b905695556c42bf6cb6484bba4033fbf1986035b09d2af6feb2e8", size = 382740640, upload-time = "2026-11-17T01:05:16.317Z" },
 ]
 
 [[package]]
@@ -13071,14 +13094,14 @@ wheels = [
 
 [[package]]
 name = "tf-keras"
-version = "2.21.0"
+version = "2.22.0rc0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tensorflow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/76/80/b005b59f9ccdbabc1b6cd07ca1126cbd4d902288438f0c00072f91a43c6f/tf_keras-2.21.0.tar.gz", hash = "sha256:f9af0f2546cd5532de0fae7a481f34a1ca2253737d4cd1000f6b713dc733f770", size = 1255377, upload-time = "2026-03-18T22:12:02.103Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/85/b28050505542676954ea939b83724c7acbe4f423706230a9a233c43a29a6/tf_keras-2.22.0rc0.tar.gz", hash = "sha256:047000a242182736f9e999e4f55a1633dba796749d43019efd793cffdb2b1c3c", size = 1257616, upload-time = "2026-11-16T21:37:27.995Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/d2/5220e3b93444f1c57c092ab5eb2c30cdc762a6e412234750f2d6a85b3769/tf_keras-2.21.0-py3-none-any.whl", hash = "sha256:f858bf3d97f892304e7fbcf5eb0942ed91674e27204f940a85de8c93cf07fe62", size = 1694939, upload-time = "2026-03-18T22:12:00.662Z" },
+    { url = "https://files.pythonhosted.org/packages/27/79/6f03c7ad2cd03b51a72cadf07fa11f00849524fcea26513711729cacd1c0/tf_keras-2.22.0rc0-py3-none-any.whl", hash = "sha256:ad59c8ef6979a3af2a53d7f531af9c5ca99545a5b3b1896d070f4d6973282618", size = 1698005, upload-time = "2026-11-16T21:37:26.281Z" },
 ]
 
 [[package]]

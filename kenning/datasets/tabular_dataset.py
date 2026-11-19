@@ -94,6 +94,10 @@ class TabularDataset(Dataset):
         assert dataset_path is not None
         self.window_size = window_size
         self.expand_classes = expand_classes
+
+        if window_size is not None:
+            shuffle_data = False
+
         super().__init__(
             root,
             batch_size,
@@ -151,6 +155,41 @@ class TabularDataset(Dataset):
         self.max = np.asarray(list(dfX.max())).transpose()
         self.num_features = dfX.shape[1]
 
+    def train_test_split_representations(
+        self,
+        test_fraction=None,
+        val_fraction=None,
+        seed=None,
+        stratify=True,
+        append_index=False,
+    ):
+        if self.window_size is None:
+            return super().train_test_split_representations(
+                test_fraction, val_fraction, seed, stratify, append_index
+            )
+
+        split = list(
+            super().train_test_split_representations(
+                test_fraction,
+                val_fraction,
+                seed,
+                stratify=False,
+                append_index=True,
+            )
+        )
+        gap = self.window_size - 1
+        if gap and split[0] and split[1]:
+            for i in (0, 2, 6 if len(split) == 9 else 4):
+                split[i] = split[i][:-gap]
+            self.dataXtrain, self.dataYtrain = split[0], split[2]
+            if len(split) == 9 and split[4]:
+                for i in (4, 5, 8):
+                    split[i] = split[i][:-gap]
+                self.dataXval, self.dataYval = split[4], split[5]
+        return tuple(
+            split if append_index else split[: 6 if len(split) == 9 else 4]
+        )
+
     def prepare_output_samples(self, samples):
         if self.expand_classes:
             return [np.eye(len(self.classnames))[samples]]
@@ -158,12 +197,14 @@ class TabularDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         measurements = Measurements()
-        if self.expand_classes:
-            ts = [np.argmax(truth[0], axis=-1)]
-            ps = [np.argmax(predictions[0], axis=-1)]
-        else:
-            ts = truth
-            ps = np.round(np.asarray(predictions[0]).flatten()).astype("int32")
+        ts = np.asarray(truth[0])
+        ps = np.asarray(predictions[0])
+        if ts.ndim > 1:
+            ts = np.argmax(ts, axis=-1)
+        if ps.ndim > 1:
+            ps = np.argmax(ps, axis=-1)
+        ts = ts.reshape(-1).astype(np.int32)
+        ps = ps.reshape(-1).astype(np.int32)
         confusion_matrix = metrics.confusion_matrix(
             ts, ps, labels=range(len(self.classnames))
         )

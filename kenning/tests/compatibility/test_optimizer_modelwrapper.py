@@ -68,11 +68,13 @@ NON_LLM_OPTIMIZERS = sort_by_classname(
     set(OPTIMIZER_SUBCLASSES) - set(LLM_OPTIMIZERS)
 )
 
+VELA_COMPATIBLE_MODELS = ["PersonDetectionModelWrapper"]
+
 EXPECTED_FAIL = [
     # Skipping because these tests will fail if there is no dataset provided
-    ("Ai8xAnomalyDetectionCnn", "ExecuTorchOptimizer"),
-    ("Ai8xAnomalyDetectionCnn", "TensorFlowClusteringOptimizer"),
-    ("Ai8xAnomalyDetectionCnn", "TensorFlowPruningOptimizer"),
+    ("Ai8xAnomalyDetectionCNN", "ExecuTorchOptimizer"),
+    ("Ai8xAnomalyDetectionCNN", "TensorFlowClusteringOptimizer"),
+    ("Ai8xAnomalyDetectionCNN", "TensorFlowPruningOptimizer"),
     ("Dinov2ONNX", "Ai8xCompiler"),
     ("Dinov2ONNX", "ExecuTorchOptimizer"),
     ("Dinov2ONNX", "NNIPruningOptimizer"),
@@ -208,6 +210,12 @@ EXPECTED_FAIL = [
     ("TVMDarknetCOCOYOLOV3", "TVMCompiler"),
     ("TVMDarknetCOCOYOLOV3", "TensorFlowClusteringOptimizer"),
     ("TVMDarknetCOCOYOLOV3", "TensorFlowPruningOptimizer"),
+    ("KerasGenericClassification", "Ai8xCompiler"),
+    ("KerasGenericClassification", "ExecuTorchOptimizer"),
+    ("KerasGenericClassification", "IREECompiler"),
+    ("KerasGenericClassification", "NNIPruningOptimizer"),
+    ("KerasGenericClassification", "TensorFlowPruningOptimizer"),
+    ("KerasGenericClassification", "TensorFlowPruningOptimizer"),
     # doesn't work for unknown causes
     ("SKLearnGenericDecisionTreeClassifier", "Ai8xCompiler"),
     ("SKLearnGenericDecisionTreeClassifier", "ExecuTorchOptimizer"),
@@ -253,6 +261,13 @@ SKIP = (
     # Skip TFLiteCompiler tests
     # because TFLiteCompiler is an alias for LiteRTCompiler
     + [(model.__name__, "TFLiteCompiler") for model in MODELWRAPPER_SUBCLASSES]
+    # Skip VelaCompiler tests
+    # because it is compatible with TFLite model wrappers
+    + [
+        (model.__name__, "VelaCompiler")
+        for model in MODELWRAPPER_SUBCLASSES
+        if model.__name__ not in VELA_COMPATIBLE_MODELS
+    ]
 )
 
 EXPECTED_FAIL += [

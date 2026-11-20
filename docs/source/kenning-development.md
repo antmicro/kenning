@@ -256,15 +256,15 @@ class LiteRTCompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantization_aware_training: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantization_aware_training: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
@@ -293,9 +293,7 @@ Usually, each class can accept multiple model input formats and provides at leas
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
 ```python test-skip
-    outputtypes = [
-        'litert'
-    ]
+outputtypes = ["litert"]
 ```
 
 Likewise, the list of support input formats is also organized in the same class as the `inputtypes` list:
@@ -317,15 +315,9 @@ from kenning.core.optimizer import Optimizer
 
 
 class LiteRtCompiler(Optimizer):
+    outputtypes = ["litert"]
 
-    outputtypes = [
-        'litert'
-    ]
-
-    inputtypes = [
-        'keras',
-        'tensorflow'
-    ]
+    inputtypes = ["keras", "tensorflow"]
 
     arguments_structure = {
         "inferenceinputtype": {
@@ -348,15 +340,15 @@ class LiteRtCompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantization_aware_training: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantization_aware_training: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
@@ -398,10 +390,9 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 from kenning.utils.update_h5_file import update_h5_file
 
+
 class LiteRtCompiler(Optimizer):
-    outputtypes = [
-        'litert'
-    ]
+    outputtypes = ["litert"]
 
     inputtypes = [
         "keras",
@@ -429,15 +420,15 @@ class LiteRtCompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            location: Literal['host', 'target'] = 'host',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantization_aware_training: bool = False,
-            model_wrapper: Optional[ModelWrapper] = None
+        self,
+        dataset: Dataset,
+        compiled_model_path: Path,
+        location: Literal["host", "target"] = "host",
+        inferenceinputtype: str = "float32",
+        inferenceoutputtype: str = "float32",
+        dataset_percentage: float = 0.25,
+        quantization_aware_training: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype

@@ -30,6 +30,9 @@ from kenning.datasets.random_dataset import (
 )
 from kenning.datasets.tabular_dataset import TabularDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
+from kenning.modelwrappers.classification.keras_generic import (
+    KerasGenericClassification,
+)
 from kenning.modelwrappers.classification.pytorch_generic_ae import (
     PyTorchGenericAutoencoderClassification,
 )
@@ -434,15 +437,19 @@ def get_dataset_random_mock(
             window_size=5,
         )
     if dataset_cls is TabularDataset:
+        numclasses = 4
+        inputdims = (128, 1)
+
+        if modelwrapper_cls is PyTorchGenericAutoencoderClassification:
+            numclasses = 128
+        if modelwrapper_cls is KerasGenericClassification:
+            numclasses = 2
+
         return RandomizedClassificationDataset(
             get_tmp_path(),
             samplescount=4 * 10,
-            numclasses=(
-                128
-                if modelwrapper_cls is PyTorchGenericAutoencoderClassification
-                else 4
-            ),
-            inputdims=(128, 1),
+            numclasses=numclasses,
+            inputdims=inputdims,
         )
     if dataset_cls is OpenImagesDatasetV6:
         return RandomizedDetectionSegmentationDataset(

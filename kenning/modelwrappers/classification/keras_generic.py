@@ -92,12 +92,16 @@ class KerasGenericClassification(TensorFlowWrapper):
         else:
             self.model_source = self.default_template_path
 
-        if normalization_method == "mean":
-            self.zero, self.scale = dataset.get_input_mean_std()
-        elif normalization_method == "min_max":
-            self.scale, self.zero = dataset.get_min_max_scaler_params()
+        if dataset is not None:
+            if normalization_method == "mean":
+                self.zero, self.scale = dataset.get_input_mean_std()
+            elif normalization_method == "min_max":
+                self.scale, self.zero = dataset.get_min_max_scaler_params()
+            else:
+                self.scale, self.zero = dataset.get_robust_scaler_params()
         else:
-            self.scale, self.zero = dataset.get_robust_scaler_params()
+            self.scale = 1.0
+            self.zero = 0.0
 
         self.scale = np.maximum(np.asarray(self.scale, dtype=np.float32), 1e-6)
         self.zero = np.asarray(self.zero, dtype=np.float32)
@@ -173,15 +177,22 @@ class KerasGenericClassification(TensorFlowWrapper):
         KLogger.debug(f"Test x shape: {test_x.shape}")
         KLogger.debug(f"Test y shape: {test_y.shape}")
 
-        classes = np.unique(train_y)
-        weights = compute_class_weight("balanced", classes=classes, y=train_y)
-
-        KLogger.debug(f"Class weighs: {weights}")
+        if len(train_y.shape) == 1:
+            classes = np.unique(train_y)
+            weights = compute_class_weight(
+                "balanced", classes=classes, y=train_y
+            )
+            class_weight = dict(zip(classes, weights))
+            KLogger.debug(f"Class weighs: {weights}")
+        else:
+            class_weight = None
 
         class_number = len(self.dataset.get_class_names())
 
-        train_y = tf.one_hot(train_y, class_number)
-        test_y = tf.one_hot(test_y, class_number)
+        if len(train_y.shape) == 1:
+            train_y = tf.one_hot(train_y, class_number)
+        if len(test_y.shape) == 1:
+            test_y = tf.one_hot(test_y, class_number)
 
         optimizer = tf.keras.optimizers.Adam(self.learning_rate)
         loss = tf.keras.losses.CategoricalCrossentropy()
@@ -195,7 +206,7 @@ class KerasGenericClassification(TensorFlowWrapper):
             validation_data=(test_x, test_y),
             epochs=self.num_epochs,
             batch_size=self.batch_size,
-            class_weight=dict(zip(classes, weights)),
+            class_weight=class_weight,
             callbacks=[
                 tf.keras.callbacks.EarlyStopping(
                     monitor="val_F1Score",

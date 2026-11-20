@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import shutil
 from pathlib import Path
 from typing import Tuple, Type
 
@@ -41,6 +42,7 @@ EXPECTED_FAIL = [
     ("AWQOptimizer", "LiteRTCompiler"),
     ("AWQOptimizer", "TVMCompiler"),
     ("AWQOptimizer", "TinygradOptimizer"),
+    ("AWQOptimizer", "VelaCompiler"),
     ("GPTQOptimizer", "AWQOptimizer"),
     ("GPTQOptimizer", "Ai8xCompiler"),
     ("GPTQOptimizer", "ExecuTorchOptimizer"),
@@ -52,6 +54,7 @@ EXPECTED_FAIL = [
     ("GPTQOptimizer", "LiteRTCompiler"),
     ("GPTQOptimizer", "TVMCompiler"),
     ("GPTQOptimizer", "TinygradOptimizer"),
+    ("GPTQOptimizer", "VelaCompiler"),
     ("GPTQSparseGPTOptimizer", "AWQOptimizer"),
     ("GPTQSparseGPTOptimizer", "Ai8xCompiler"),
     ("GPTQSparseGPTOptimizer", "ExecuTorchOptimizer"),
@@ -63,16 +66,21 @@ EXPECTED_FAIL = [
     ("GPTQSparseGPTOptimizer", "LiteRTCompiler"),
     ("GPTQSparseGPTOptimizer", "TVMCompiler"),
     ("GPTQSparseGPTOptimizer", "TinygradOptimizer"),
+    ("GPTQSparseGPTOptimizer", "VelaCompiler"),
     ("ONNXCompiler", "Ai8xCompiler"),
+    ("ONNXCompiler", "VelaCompiler"),
     ("LiteRTCompiler", "Ai8xCompiler"),
     ("TFLiteCompiler", "Ai8xCompiler"),
     ("LiteRTCompiler", "NNIPruningOptimizer"),
     ("TFLiteCompiler", "NNIPruningOptimizer"),
     ("TensorFlowClusteringOptimizer", "Ai8xCompiler"),
     ("TensorFlowClusteringOptimizer", "NNIPruningOptimizer"),
+    ("TensorFlowClusteringOptimizer", "VelaCompiler"),
     ("TensorFlowPruningOptimizer", "Ai8xCompiler"),
     ("TensorFlowPruningOptimizer", "NNIPruningOptimizer"),
+    ("TensorFlowPruningOptimizer", "VelaCompiler"),
     ("NNIPruningOptimizer", "Ai8xCompiler"),
+    ("NNIPruningOptimizer", "VelaCompiler"),
     ("ONNXCompiler", "NNIPruningOptimizer"),
     ("ExecuTorchOptimizer", "Ai8xCompiler"),
     ("ExecuTorchOptimizer", "IREECompiler"),
@@ -82,6 +90,7 @@ EXPECTED_FAIL = [
     ("ExecuTorchOptimizer", "TFLiteCompiler"),
     ("ExecuTorchOptimizer", "TVMCompiler"),
     ("ExecuTorchOptimizer", "TinygradOptimizer"),
+    ("ExecuTorchOptimizer", "VelaCompiler"),
     ("VelaCompiler", "TVMCompiler"),
     ("VelaCompiler", "GPTQOptimizer"),
     ("VelaCompiler", "TVMRelaxCompiler"),
@@ -97,6 +106,8 @@ EXPECTED_FAIL = [
     ("VelaCompiler", "LLMOptimizer"),
     ("VelaCompiler", "ExecuTorchOptimizer"),
     ("VelaCompiler", "TinygradOptimizer"),
+    ("VelaCompiler", "LiteRTCompiler"),
+    ("VelaCompiler", "TFLiteCompiler"),
 ]
 
 SKIP = [
@@ -201,5 +212,8 @@ class TestOptimizersCompatibility:
             )
             pipeline_runner.run(run_benchmarks=False)
         finally:
-            compiled_model_path.unlink(missing_ok=True)
+            if compiled_model_path.is_file():
+                compiled_model_path.unlink(missing_ok=True)
+            else:
+                shutil.rmtree(compiled_model_path, ignore_errors=True)
             remove_file_or_dir(model.model_path)

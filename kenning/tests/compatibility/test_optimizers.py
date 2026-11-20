@@ -82,6 +82,21 @@ EXPECTED_FAIL = [
     ("ExecuTorchOptimizer", "TFLiteCompiler"),
     ("ExecuTorchOptimizer", "TVMCompiler"),
     ("ExecuTorchOptimizer", "TinygradOptimizer"),
+    ("VelaCompiler", "TVMCompiler"),
+    ("VelaCompiler", "GPTQOptimizer"),
+    ("VelaCompiler", "TVMRelaxCompiler"),
+    ("VelaCompiler", "AWQOptimizer"),
+    ("VelaCompiler", "EmlearnCompiler"),
+    ("VelaCompiler", "IREECompiler"),
+    ("VelaCompiler", "TensorFlowClusteringOptimizer"),
+    ("VelaCompiler", "TensorFlowPruningOptimizer"),
+    ("VelaCompiler", "NNIPruningOptimizer"),
+    ("VelaCompiler", "ONNXCompiler"),
+    ("VelaCompiler", "GPTQSparseGPTOptimizer"),
+    ("VelaCompiler", "Ai8xCompiler"),
+    ("VelaCompiler", "LLMOptimizer"),
+    ("VelaCompiler", "ExecuTorchOptimizer"),
+    ("VelaCompiler", "TinygradOptimizer"),
 ]
 
 SKIP = [
@@ -91,6 +106,7 @@ SKIP = [
     ("IREECompiler", "IREECompiler"),
     ("NNIPruningOptimizer", "NNIPruningOptimizer"),
     ("TinygradOptimizer", "TinygradOptimizer"),
+    ("VelaCompiler", "VelaCompiler"),
     # Not yet supported.
     ("GPTQOptimizer", "GPTQOptimizer"),
     ("AWQOptimizer", "AWQOptimizer"),

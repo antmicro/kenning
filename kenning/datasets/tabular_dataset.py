@@ -147,7 +147,7 @@ class TabularDataset(Dataset):
     def prepare_output_samples(self, samples):
         if self.expand_classes:
             return [np.eye(len(self.classnames))[samples]]
-        return samples
+        return [samples]
 
     def evaluate(self, predictions, truth):
         measurements = Measurements()

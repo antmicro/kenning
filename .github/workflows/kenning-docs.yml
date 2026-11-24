@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  UV_FROZEN: 1
+  UV_PYTHON: 3.12
+
 jobs:
   inference-test:
     runs-on: ubuntu-latest
@@ -24,7 +28,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -32,9 +36,12 @@ jobs:
              gcc g++ build-essential cmake llvm protobuf-compiler \
              libprotoc-dev libtinfo-dev zlib1g-dev libedit-dev libxml2-dev \
              llvm curl wget fonts-lato
-          python -m pip install .[tensorflow,docs,tvm,reports]
+          wget -qO- https://astral.sh/uv/install.sh | sh
       - name: Run sample compilation and inference
         run: |
+          uv venv
+          uv sync --extra tensorflow,docs,tvm,reports
+          source .venv/bin/activate
           ./scripts/tvm-tensorflow-classification-cpu.sh
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -63,7 +70,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -79,7 +86,7 @@ jobs:
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart" --frozen --active
+          uv sync --extra "torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart" --active
           export AUTOML_SCENARIO_CONFIG=$(realpath ./scripts/configs/automl-scenario.yml)
           export DOCS_DIR=$(realpath $DOCS_DIR)
           ./scripts/zephyr-automl-report.sh
@@ -110,7 +117,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -128,7 +135,7 @@ jobs:
           export OUTPUT_DIR=$(realpath $DOCS_DIR)
           export SCENARIO_PATH=$(realpath ./scripts/configs/zephyr-tvm-magic-wand-hifive-unmatched-report.yml)
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "torch,tvm,tensorflow,reports,renode,uart" --frozen --active
+          uv sync --extra "torch,tvm,tensorflow,reports,renode,uart" --active
           uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
           ./scripts/zephyr-tvm-magic-wand-hifive-unmatched-report.sh
           cp $OUTPUT_DIR/source/zephyr_traces_report.html $OUTPUT_DIR/source/generated/
@@ -146,14 +153,17 @@ jobs:
       - uses: actions/download-artifact@v4
       - uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
       - name: Install dependencies
         run: |
           sudo apt-get update
-          python -m pip install .[docs]
           sudo apt-get install -y texlive-full pandoc fonts-lato
+          wget -qO- https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv sync --extra docs
       - name: Generate documentation
         run: |
+          source .venv/bin/activate
           cp -r inferencetest docs/source/generated
           cp -r automltest/. docs/source/generated
           cp -r riscvzephelinreport/. docs/source/generated

@@ -75,18 +75,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
-            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make cmake ninja-build \
+            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make ninja-build \
             python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
-            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler
+            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler libicu-dev
           FLATC_URL=https://github.com/google/flatbuffers/releases/download/v25.2.10/Linux.flatc.binary.g++-13.zip
           wget ${FLATC_URL} -O flatc.zip
           sudo unzip flatc.zip -d /usr/bin
           rm flatc.zip
           wget -qO- https://astral.sh/uv/install.sh | sh
+          uv tool install cmake==3.28.4
       - name: Prepare Kenning Zephyr Runtime and run AutoML
         run: |
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart" --active
+          uv pip install ".[torch,anomaly_detection,auto_pytorch,tensorflow,litert,reports,renode,uart,tvm,zephyr]"
           export AUTOML_SCENARIO_CONFIG=$(realpath ./scripts/configs/automl-scenario.yml)
           export DOCS_DIR=$(realpath $DOCS_DIR)
           ./scripts/zephyr-automl-report.sh
@@ -130,14 +131,13 @@ jobs:
           sudo unzip flatc.zip -d /usr/bin
           rm flatc.zip
           wget -qO- https://astral.sh/uv/install.sh | sh
-          source $HOME/.local/bin/env
           uv tool install cmake==3.28.4
       - name: Prepare Kenning Zephyr Runtime and run evaluation
         run: |
           export OUTPUT_DIR=$(realpath $DOCS_DIR)
           export SCENARIO_PATH=$(realpath ./scripts/configs/zephyr-tvm-magic-wand-hifive-unmatched-report.yml)
           source ./scripts/prepare-kenning-zephyr-runtime.sh
-          uv sync --extra "torch,tvm,tensorflow,reports,renode,uart" --active
+          uv pip install ".[torch,tvm,tensorflow,reports,renode,uart]"
           uv pip install -r $ZEPHYR_WORKSPACE/zephelin/requirements.txt
           ./scripts/zephyr-tvm-magic-wand-hifive-unmatched-report.sh
           cp $OUTPUT_DIR/source/zephyr_traces_report.html $OUTPUT_DIR/source/generated/

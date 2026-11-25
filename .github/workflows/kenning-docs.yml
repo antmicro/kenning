@@ -122,14 +122,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
-            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make cmake ninja-build \
+            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make ninja-build \
             python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
-            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler
+            mono-complete wget xxd xz-utils patch fonts-lato protobuf-compiler libicu-dev
           FLATC_URL=https://github.com/google/flatbuffers/releases/download/v25.2.10/Linux.flatc.binary.g++-13.zip
           wget ${FLATC_URL} -O flatc.zip
           sudo unzip flatc.zip -d /usr/bin
           rm flatc.zip
           wget -qO- https://astral.sh/uv/install.sh | sh
+          source $HOME/.local/bin/env
+          uv tool install cmake==3.28.4
       - name: Prepare Kenning Zephyr Runtime and run evaluation
         run: |
           export OUTPUT_DIR=$(realpath $DOCS_DIR)

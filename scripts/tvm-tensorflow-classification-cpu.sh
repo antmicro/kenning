@@ -27,7 +27,7 @@ python -m kenning report \
     --report-path docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
     --report-name "Pet Dataset classification using TVM-compiled TensorFlow model" \
     --root-dir docs/source/ \
-    --img-dir docs/source/generated/img \
+    --img-dir docs/source/generated/img/local-cpu-tvm-tensorflow-classification \
     --report-types performance classification \
     --measurements build/local-cpu-tvm-tensorflow-classification.json \
     --smaller-header

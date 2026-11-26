@@ -14,7 +14,7 @@ python3 -m kenning automl optimize test report \
   --report-path $DOCS_DIR/source/generated/$REPORT_NAME \
   --allow-failures --to-html \
   --root-dir $DOCS_DIR/source \
-  --img-dir $DOCS_DIR/source/generated/img \
+  --img-dir $DOCS_DIR/source/generated/img/$REPORT_NAME \
   --comparison-only \
   --skip-general-information \
   --smaller-header \

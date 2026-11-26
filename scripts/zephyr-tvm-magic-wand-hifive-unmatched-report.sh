@@ -23,7 +23,7 @@ python -m kenning optimize test report \
         zephyr_traces \
         model \
     --root-dir $OUTPUT_DIR_VAL/source/ \
-    --img-dir $OUTPUT_DIR_VAL/source/generated/img/ \
+    --img-dir $OUTPUT_DIR_VAL/source/generated/img/$REPORT_NAME_VAL \
     --report-name "Sample RISC-V Zephyr Tracing Report" \
     --verbosity INFO \
     --to-html

@@ -1,0 +1,31 @@
+/*
+ * Copyright (c) 2022-2025 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.create-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    height: max-content;
+    max-height: 85vh;
+    box-sizing: border-box;
+
+    & > div {
+        & > .__name-option > .baklava-input {
+            // Padding is included into width
+            box-sizing: border-box;
+        }
+
+        & > .option-label {
+            padding-bottom: $spacing-s;
+            color: $white;
+            font-size: $fs-medium;
+        }
+        & input.baklava-input {
+          box-sizing: border-box;
+        }
+    }
+}

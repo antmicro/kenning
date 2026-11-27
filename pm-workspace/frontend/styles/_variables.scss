@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+$navbar-height: 60px;
+$terminal-container-height: 35px;
+
+/* Colors */
+$white: #ffffff;
+$gray-100: #999999;
+$gray-200: #6f6f6f;
+$gray-300: #606060;
+$gray-400: #4a4a4a;
+$gray-500: #343434;
+$gray-600: #1d1d1d;
+$gray-700: #151515;
+$black: #0f0f0f;
+$gold: #cca747;
+$red: #cc4747;
+$red-dark: hsl(0, 57%, 40%);
+$green: #00E58D;
+
+/* Fonts */
+$montserrat: 'Montserrat', sans-serif;
+$roboto: 'Roboto', sans-serif;
+$roboto-mono: 'Roboto Mono', monospace;
+
+/* Font sizes */
+$fs-tiny: 10px;
+$fs-small: 12px;
+$fs-medium: 14px;
+$fs-large: 16px;
+
+/* Spacings  */
+$spacing-xs: 5px;
+$spacing-s: 10px;
+$spacing-m: 15px;
+$spacing-l: 20px;
+$spacing-xl: 25px;
+$spacing-xxl: 30px;

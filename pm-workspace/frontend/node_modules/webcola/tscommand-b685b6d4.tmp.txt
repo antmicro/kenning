@@ -1,0 +1,1 @@
+WebCola\test\apitests.ts WebCola\test\geomtests.ts WebCola\test\gridrouting.ts WebCola\test\matrixperftest.ts WebCola\test\routingtests.ts WebCola\test\tests.ts --sourcemap --removeComments --target ES5

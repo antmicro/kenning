@@ -1,0 +1,512 @@
+/*
+ * Copyright (c) 2022-2024 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+@use 'sass:color';
+
+:root {
+    // Controls
+    --baklava-control-color-primary: #{$green};
+    --baklava-control-color-error: #{$red};
+    --baklava-control-color-background: #{$gray-500};
+    --baklava-control-color-foreground: #{$white};
+    --baklava-control-color-hover: #{$gray-400};
+    --baklava-control-color-active: #{$gray-200};
+    --baklava-control-border-radius: 10px;
+
+    // Nodes
+    --baklava-node-color-background: #{$gray-600};
+    --baklava-node-color-foreground: #{$white};
+    --baklava-node-color-selected: --baklava-control-color-primary;
+    --baklava-node-title-color-background: #{$gray-500};
+    --baklava-node-title-color-foreground: #{$white};
+    --baklava-node-border-radius: 15px;
+    --kpm-node-title-height: 4em;
+    --kpm-property-display-label: block;
+
+    // Connections
+    --baklava-color-connection-default: #{$white};
+    --baklava-color-connection-allowed: #{$green};
+    --baklava-color-connection-forbidden: #{$red};
+
+    // Background pattern
+    --baklava-editor-background-pattern-default: #{$black};
+    --baklava-editor-background-pattern-line: #{$gray-500};
+    --baklava-editor-background-pattern-black: #{$gray-500};
+
+    // Sidebar
+    --baklava-sidebar-color-background: #{$gray-600};
+    --baklava-sidebar-color-foreground: #{$white};
+}
+
+.custom-connections-container {
+    overflow: visible !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none !important;
+    z-index: 1;
+}
+
+.node-container {
+    z-index: 2;
+}
+.grouping-container {
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.selection-container {
+    z-index: 3;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+
+.baklava-editor .background {
+    background-image: linear-gradient($gray-700 2%, transparent 2%),
+        linear-gradient(90deg, $gray-700 2%, transparent 2%);
+}
+
+.baklava-slider > .__slider {
+    background-color: var(--baklava-control-color-primary);
+}
+.__big-bus {
+    width: auto !important;
+    margin-left: -0.75em !important;
+    margin-right: -0.75em !important;
+    & > .--input {
+        margin-left: -0.5em;
+        margin-right: auto;
+    }
+    & > .--output {
+        margin-right: 0em;
+        margin-left: auto;
+    }
+    & > .__port-bus-name {
+        display: block;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        writing-mode: horizontal-tb;
+    }
+}
+.__port-bus {
+    width: 3em;
+    background-color: var(--baklava-control-color-background);
+    cursor: crosshair;
+    border-radius: 1px;
+    border-color: var(--baklava-control-color-primary);
+    border-style: dotted;
+    & > .__port-bus-stub {
+      width: 0;
+      max-height: 0px;
+      z-index: 2;
+      & > .__port {
+        cursor: grab;
+      }
+    }
+}
+.__port-bus-name {
+    display: var(--kpm-interface-display-name);
+    writing-mode: vertical-lr;
+}
+.__port-name {
+    display: var(--kpm-interface-display-name);
+    color: var(--baklava-control-color-foreground);
+    min-height: 1em;
+}
+
+.--output {
+  & > .__port-bus:not(.__big-bus) {
+    margin-right: -1.25em;
+    margin-left: auto;
+    & > .__port-bus-name {
+      float: left;
+    }
+  }
+}
+.--input {
+  & > .__port-bus:not(.__big-bus) {
+    margin-left: -1.25em;
+    margin-right: auto;
+    & > .__port-bus-name {
+      float: right;
+    }
+  }
+}
+
+.baklava-node-interface {
+    padding: 0.5em 0;
+
+    &.--positioned {
+        padding: 0;
+        width: fit-content;
+        height: fit-content;
+    }
+
+    .--output {
+        height: 1em;
+    }
+
+    .--input {
+        height: 1em;
+    }
+
+    .highlighted {
+        color: black;
+        background-color: color.adjust($green, $alpha: -0.5);
+        padding: 0 0.3em 0 0.3em;
+        border-radius: 5px;
+        opacity: 1.0;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .--top {
+        position: absolute;
+        translate: calc(-100% - 1.5em) calc(-100% - 1.5em);
+        white-space: nowrap;
+    }
+    .--left {
+        position: absolute;
+        translate: calc(-100% - 1.5em) calc(-50% - 2em);
+        white-space: nowrap;
+    }
+    .--right {
+        position: absolute;
+        translate: 1.5em calc(-50% - 2em);
+        white-space: nowrap;
+    }
+    .--bottom {
+        position: absolute;
+        translate: 1.5em 1.5em;
+        white-space: nowrap;
+    }
+
+    .__port_centered {
+        left: calc(50% - .5em);
+    }
+
+    .--positioned
+    {
+        display: block;
+    }
+
+    & > .__port,
+    & > .__square {
+        background-color: var(--baklava-control-color-primary);
+        width: 1em;
+        height: 1em;
+        top: calc(50% - 0.5em);
+
+        &>svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 1em;
+            width: 1em;
+        }
+    }
+
+    & > .__square {
+        border-radius: 10%;
+    }
+    .__port_name_left,
+    .__port_name_right,
+    .__port_name_top,
+    .__port_name_bottom {
+        position: absolute;
+        height: 1em;
+        width: fit-content;
+        top: calc((100% - 1em) * 0.5);
+
+        & > span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 0.3em 0 0.3em;
+            border-radius: 5px;
+            background-color: var(--baklava-control-color-background);
+        }
+
+        & > input {
+            color: var(--baklava-control-color-foreground);
+            background-color: var(--baklava-control-color-background);
+            position: relative;
+            outline: none;
+            border: none;
+            border-radius: 5px;
+        }
+        & > input:focus {
+            outline: solid 2px $green;
+        }
+        // Incorrect class for input with red outline
+        & > input.__error {
+            outline: solid 2px $red;
+        }
+    }
+
+    .__port_name_left {
+        left: 0;
+        translate: -100%;
+        & > span,
+        & > input {
+            margin-left: 0;
+        }
+        & > span { margin-right: 0.15em; }
+        & > input { margin-right: 0.3em; }
+    }
+
+    .__port_name_top {
+        top: -1.5em;
+        & > span,
+        & > input {
+            margin-bottom: 0.15em;
+        }
+        & > span { margin-top: 0; }
+        & > input { margin-top: 0; }
+    }
+
+    .__port_name_bottom {
+        top: 1.5em;
+        & > span,
+        & > input {
+            margin-top: 0;
+        }
+        & > span { margin-right: 0.15em; }
+        & > input { margin-right: 0.3em; }
+    }
+
+    .__port_name_right {
+        left: 100%;
+        & > span,
+        & > input {
+            margin-right: 0;
+        }
+        & > span { margin-left: 0.15em; }
+        & > input { margin-left: 0.3em; }
+    }
+
+    .__port_input {
+        position: relative;
+        top: -0.15em;
+        height: 1em;
+        width: fit-content;
+
+        background-color: #00000000;
+        border: none;
+        border-radius: 10%;
+        color: $white;
+        caret-color: $white;
+    }
+
+    .__property_name {
+        left: 0;
+        translate: -100%;
+        position: absolute;
+        height: 1em;
+        width: fit-content;
+        top: 50%;
+
+        & > span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 0.3em 0 0.3em;
+            border-radius: 5px;
+            background-color: color.adjust($green, $alpha: -0.5);
+            position: absolute;
+            transform: translate(-102%, -50%);
+        }
+
+        & > input {
+            color: var(--baklava-node-color-foreground);
+            background-color: var(--baklava-node-color-background);
+            outline: none;
+            border: none;
+            border-radius: 5px;
+            position: absolute;
+            transform: translate(-102%, -50%);
+        }
+        & > input:focus {
+            outline: solid 2px $green;
+        }
+        & > input.__error {
+            outline: solid 2px $red;
+        }
+    }
+
+    .__property_input {
+        position: relative;
+        height: 1em;
+        width: fit-content;
+
+        background-color: var(--baklava-control-color-background);
+        border: none;
+        border-radius: 10%;
+        color: var(--baklava-control-color-foreground);
+        caret-color: var(--baklava-control-color-foreground);
+    }
+
+    &.__readonly {
+        user-select: none;
+        cursor: auto;
+
+        &, * {
+            pointer-events: none;
+        }
+
+        .__markdown-content, .baklava-button {
+            user-select: text;
+
+            &, * {
+                pointer-events: auto;
+            }
+        }
+    }
+
+    & > .baklava-num-input {
+        & > .__button {
+            &.--inc {
+                border-bottom-right-radius: var(--baklava-control-border-radius);
+                border-top-right-radius: var(--baklava-control-border-radius);
+            }
+
+            &.--dec {
+                border-bottom-left-radius: var(--baklava-control-border-radius);
+                border-top-left-radius: var(--baklava-control-border-radius);
+            }
+        }
+    }
+}
+
+.baklava-checkbox .__checkmark-container > svg > path {
+    display: none;
+}
+
+.baklava-node-interface .greyedout_arrow {
+    background-color: $gray-500 !important;
+};
+.__port-bus.greyedout_arrow {
+    border-color: $gray-500 !important;
+};
+
+.baklava-node-interface .picked {
+    background-color: $gold !important;
+};
+
+.baklava-context-menu {
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    transform-origin: 0 0;
+
+    background-color: var(--baklava-context-menu-background);
+    border-radius: unset;
+    border: 1px solid $gray-500;
+    cursor: auto;
+
+    &.hidden-navbar {
+        translate: 0 $navbar-height;
+    }
+
+    & > .item {
+        display: flex;
+        gap: 1em;
+        position: relative;
+        flex-direction: row;
+        text-decoration: none;
+        padding: 0.75em 1em;
+        height: 2.75em;
+        color: inherit;
+        font-size: 0.875em;
+
+        &:not(.--disabled):hover {
+            color: var(--baklava-control-color-primary);
+            cursor: pointer;
+        }
+
+        & > .icon {
+            flex-grow: 0;
+            pointer-events: none;
+            width: auto;
+            height: 1.25em;
+            width: 1.25em;
+
+            &:not(.readonly) {
+                    &:hover {
+                            color: var(--baklava-control-color-primary);
+                    }
+            }
+
+            & > img {
+                height: 1.25em;
+                width: 1.25em;
+            }
+
+            & > svg {
+                height: 1.25em;
+                width: 1.25em;
+            }
+        }
+    }
+}
+
+.baklava-context-menu > .item:not(.--header):not(.--active):not(.--disabled):hover {
+    background-color: var(--baklava-context-menu-background);
+}
+
+.baklava-context-menu > .item:not(.--header):not(.--active):not(.--disabled):hover > .flex-fill {
+    color: var(--baklava-control-color-primary);
+}
+
+.baklava-context-menu
+    > .item:not(.--header):not(.--active):not(.--disabled):hover
+    > .ml-3
+    svg
+    path {
+    fill: var(--baklava-control-color-primary);
+}
+
+.baklava-context-menu > .item > .ml-3 > svg {
+    height: 7px;
+    transform: scale(80);
+    scale: 0.02;
+}
+
+.baklava-context-menu > .item > .ml-3 > svg > path {
+    d: path('M99.4,111.6l64.2,69.2L99.4,250h54.5l64.2-69.2l-64.2-69.2H99.4z') !important;
+}
+
+.rectangle-selection {
+    height: 100%;
+    width: 100%;
+    opacity: 0.15;
+    background-color: var(--baklava-control-color-primary);
+}
+
+.rectangle-selection-border {
+    border: 2px dashed $green;
+    opacity: 0.7;
+}
+.baklava-ignore-mouse .__port-bus {
+    pointer-events: all !important;
+}
+.baklava-ignore-mouse .__port-bus-stub {
+    pointer-events: all !important;
+}

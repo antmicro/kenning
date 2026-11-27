@@ -1,0 +1,35 @@
+{
+    "$id": "dataflow_schema.json",
+    "description": "Schema used to validate dataflows",
+    "type": "object",
+    "properties": {
+        "version": {
+            "description": "Version of the dataflow",
+            "type": "string"
+        },
+        "metadata": {
+            "$ref": "metadata_schema.json"
+        },
+        "graphs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "graph_schema.json"
+                    }
+                ],
+                "unevaluatedProperties": false
+            }
+        },
+        "entryGraph": {
+            "description": "Id of a graph that is displayed when a dataflow is loaded",
+            "type": "string"
+        }
+    },
+    "required": [
+        "graphs"
+    ],
+    "unevaluatedProperties": false
+}

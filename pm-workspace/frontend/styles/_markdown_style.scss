@@ -1,0 +1,62 @@
+.__markdown {
+    background-color: #{$gray-600}80;
+    backdrop-filter: blur(10px);
+    position: absolute;
+    padding: $spacing-l;
+    color: white;
+    left: 0%;
+    z-index: 10;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    min-height: fit-content;
+    overflow-y: scroll;
+}
+
+.__markdown-content {
+    &>div {
+        display: block;
+        width: 30%;
+    }
+
+    span {
+        display: block;
+        max-width: 30vh;
+        width: max-content;
+    }
+
+    &>.node_description {
+        display: block;
+        margin-left: 1em;
+        margin-right: 1em;
+        margin-bottom: 1em;
+        width: auto;
+        overflow-wrap: break-word;
+    }
+
+    code {
+        background-color: #{$gray-500}E0;
+        color: $gold;
+        font-family: monospace;
+        padding: 0px 2px 2px 2px;
+    }
+
+    a {
+        color: #00E58D;
+        text-decoration: none;
+        word-wrap: normal;
+    }
+
+    img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 10px;
+        max-width: 100%;
+    }
+
+    li {
+        list-style-type: circle;
+        margin-left: 20px;
+    }
+}

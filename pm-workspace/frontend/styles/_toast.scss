@@ -1,0 +1,17 @@
+/*
+ * Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.Vue-Toastification__toast--default {
+    background-color: $gray-600 !important;
+}
+
+@media only screen and (max-width: 600px) {
+    .Vue-Toastification__toast {
+        width: 90% !important;
+        margin-left: 5%;
+        border-radius: 8px !important;
+    }
+}
